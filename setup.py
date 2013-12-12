@@ -20,11 +20,13 @@ setup(
         CleverExtension(
             "chemreac.cpp_chem_wrapper",
             sources=[
-                'chemreac/cpp_chem.cpp',
+                'chemreac/cpp_chem_template.cpp',
                 'chemreac/cpp_chem_wrapper.pyx',
             ],
             template_regexps=[
-                (r'(\w+)_template(\w+)', r'\1\2', {}),
-            ]
+                (r'^(\w+)_template.(\w+)$', r'\1.\2', {}),
+            ],
+            include_dirs=['chemreac/']
+        )
     ]
 )

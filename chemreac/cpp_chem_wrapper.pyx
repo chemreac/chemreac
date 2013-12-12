@@ -1,3 +1,5 @@
+# distutils: language = c++
+
 from libcpp.vector cimport vector
 
 cdef extern from "cpp_chem.hpp":
@@ -17,8 +19,6 @@ cdef extern from "cpp_chem.hpp":
         void dense_jac_cmaj(double, double*, double*, int, double, int)
         void banded_jac_cmaj(double, double*, double*, int, double, int)
         void banded_packed_jac_cmaj(double, double*, double*, int, double, int)
-        int banded_jaclu_solve(double, double*, double*, double, int)
-        int dense_jaclu_solve(double, double*, double*, double, int)
 
 DEF DENSE=0
 DEF BANDED=1
@@ -64,16 +64,6 @@ cdef class PyReactionDiffusion:
                        double [::1, :] J, double factor, bint sub_one):
         self.thisptr.banded_packed_jac_cmaj(
             t, &y[0], &J[0,0], J.shape[0], factor, sub_one)
-
-    def banded_jaclu_solve(self, double t, double [::1] y,
-                           double [::1] b, double factor, bint sub_one):
-        self.thisptr.banded_jaclu_solve(
-            t, &y[0], &b[0], factor, sub_one)
-
-    def dense_jaclu_solve(self, double t, double [::1] y,
-                          double [::1] b, double factor, bint sub_one):
-        self.thisptr.dense_jaclu_solve(
-            t, &y[0], &b[0], factor, sub_one)
 
     property n:
         def __get__(self): return self.thisptr.n
