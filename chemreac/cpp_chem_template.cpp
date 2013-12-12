@@ -1,0 +1,215 @@
+// This is a templated source file.
+// Render template using Mako (Python templating engine)
+
+#include <algorithm> // count
+#include <vector>
+#include "cpp_chem.hpp"
+
+#ifdef _OPENMP
+   #include <omp.h>
+#else
+   #define omp_get_thread_num() 0
+#endif
+
+using std::vector;
+using std::count;
+
+ReactionDiffusion::ReactionDiffusion(int n, int N, 
+				     vector<vector<int> > stoich_reac,
+				     vector<vector<int> > stoich_prod,
+				     vector<double> k,
+				     vector<double> D,
+				     int mode):
+  n(n), N(N), mode(mode), stoich_reac(stoich_reac), 
+  stoich_prod(stoich_prod), k(k), D(D)
+{
+  if (stoich_reac.size() != stoich_prod.size())
+    throw std::length_error("stoich_reac and stoich_prod \
+                             of different sizes.");
+  nr = stoich_reac.size();
+
+  coeff_reac = new int[nr*n];
+  coeff_prod = new int[nr*n];
+  coeff_totl = new int[nr*n];
+  
+  for (int ri=0; ri<nr; ++ri) // reaction index 
+    for (int si=0; si<n; ++si){ // species index
+      coeff_reac[ri*n+si] = count(stoich_reac[ri].begin(), 
+				  stoich_reac[ri].end(), si);
+      coeff_prod[ri*n+si] = count(stoich_prod[ri].begin(), 
+				  stoich_prod[ri].end(), si);
+      coeff_totl[ri*n+si] = coeff_prod[ri*n+si] - coeff_reac[ri*n+si];
+    }
+
+  nfeval = 0;
+  njeval = 0;
+}
+
+ReactionDiffusion::~ReactionDiffusion()
+{
+  delete []coeff_reac;
+  delete []coeff_prod;
+  delete []coeff_totl;
+}
+
+void
+ReactionDiffusion::_fill_local_r(double * yi, double * local_r)
+{
+  // intent(out) :: local_r
+  for (int j=0; j<nr; ++j){
+    // reaction j
+    local_r[j] = k[j];
+    for (int l=0; l<stoich_reac[j].size(); ++l){
+      // reactant index l
+      int m = stoich_reac[j][l];
+      local_r[j] *= yi[m];
+    }
+  }
+}
+
+double *
+ReactionDiffusion::_get_p(int i, double * y)
+{
+  // Concentrations in previous compartments (mind the boundary)
+  if (i == 0)
+    return y + i*n; // No diffusion to the left (solid interface)
+  else
+    return y + (i-1)*n;
+}
+
+double *
+ReactionDiffusion::_get_n(int i, double * y)
+{
+  // Concentrations in previous compartments (mind the boundary)
+  if (i == N-1)
+    return y + i*n; // No diffusion to the right (solid interface)
+  else
+    return y + (i+1)*n; 
+}
+
+void
+ReactionDiffusion::f(double t, double * y, double * dydt)
+{
+#ifdef _OPENMP
+#pragma omp parallel for
+#else
+  double * local_r = new double[nr];
+#endif
+  for (int i=0; i<N; ++i){
+    // compartment i
+#ifdef _OPENMP
+    double * local_r = new double[nr];
+#endif
+
+    for (int j=0; j<n; ++j)
+      dydt[n*i+j] = 0.0; // zero out
+
+    // Contributions from reactions
+    // ----------------------------
+    _fill_local_r(y+i*n, local_r);
+    for (int j=0; j<nr; ++j){
+      // reaction j
+      for (int k=0; k<n; ++k){
+	// species k
+	int overall = coeff_totl[j*n + k];
+	if (overall != 0)
+	  dydt[i*n + k] += overall*local_r[j];
+      }
+    }
+    
+    // Contributions from diffusion
+    // ----------------------------
+    double * p_ = _get_p(i, y);
+    double * n_ = _get_n(i, y);
+    double * C = y + i*n;
+    for (int k=0; k<n; ++k)
+      dydt[i*n + k] += D[k]*(p_[k] - 2*C[k] + n_[k]);
+
+#ifdef _OPENMP
+    delete []local_r;
+#endif
+
+  }
+
+#ifndef _OPENMP
+  delete []local_r;
+#endif
+  nfeval++;
+}
+
+
+%for token, imaj, imin in					\
+  [('dense_jac_rmaj', '((bri)*n + ri)', '(bci)*n + ci'), \
+   ('dense_jac_cmaj', '((bci)*n + ci)', '(bri)*n + ri'),\
+   ('banded_jac_cmaj','((bci)*n + ci)', '2*n+((bri)*n+ri)-((bci)*n+ci)'),\
+   ('banded_packed_jac_cmaj','((bci)*n + ci)', 'n+((bri)*n+ri)-((bci)*n+ci)'),\
+   ]:
+#define JAC(bri, bci, ri, ci) ja[${imaj}*ldj+${imin}]
+void
+ReactionDiffusion::${token}(double t, double * y, double * ja, 
+			    int ldj, double factor, int sub_one)
+{
+  // intent(out) :: ja
+  // Assume ja zeroed out on entry
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#else
+  double * local_r = new double[nr];
+#endif
+  for (int i=0; i<N; ++i){
+    double * C = y + i*n; // Concentrations in `i:th` compartment
+
+#ifdef _OPENMP
+    double * local_r = new double[nr];
+#endif
+    
+    // Contributions from reactions
+    // ----------------------------
+    _fill_local_r(C, local_r);
+    for (int j=0; j<n; ++j){
+      // species j
+      for (int m=0; m<n; ++m){
+	// derivative wrt species m
+	// j_i[j, m] = Sum_l(n_lj*Derivative(r[l], C[m]))
+	JAC(i,i,j,m) = 0.0;
+	for (int l=0; l<nr; ++l){
+	  // reaction l
+	  if (coeff_totl[l*n + j] == 0)
+	    continue;
+	  else if (coeff_reac[l*n + m] == 0)
+	    continue;
+	  JAC(i,i,j,m) += coeff_totl[l*n + j]*\
+	    coeff_reac[l*n + m]*local_r[l]/C[m];
+	}
+	JAC(i,i,j,m) *= factor;
+	if (sub_one && j==m)
+	  JAC(i,i,j,j) -= 1.0;
+      }
+    }
+
+    // Contributions from diffusion
+    // ----------------------------
+    for (int j=0; j<n; ++j){
+      // species j
+      if (i > 0){ // Subdiagonal (diffusion from left)
+	JAC(i,i-1,j,j) = factor*D[j]; 
+	JAC(i,i,j,j) -= factor*D[j]; // Diagonal (mass balance)
+      }
+      if (i < N-1){ // Superdiagonal (diffusion from right)
+	JAC(i,i+1,j,j) = factor*D[j]; 
+	JAC(i,i,j,j) -= factor*D[j]; // Diagonal (mass balance)
+      }
+    }
+#ifdef _OPENMP
+    delete []local_r;
+#endif
+  }
+
+#ifndef _OPENMP
+  delete []local_r;
+#endif
+  njeval++;
+}
+#undef JAC
+%endfor

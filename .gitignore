@@ -1,0 +1,22 @@
+# Lockfiles and auto-save files
+#*#
+*/#*#
+.#*
+*/.#*
+*~
+*/*~
+.metadata_CompilerRunner
+
+
+demo/plot.png
+demo/profile.out
+
+# Files from compilation
+build/
+*.pyc
+*/*.pyc
+*/*/*.pyc
+*/*.html
+*/*.o
+*/*.mod
+*/*.so
