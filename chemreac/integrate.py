@@ -1,91 +1,58 @@
 # -*- coding: utf-8 -*-
 
+import time
+
+import numpy as np
+
 from scipy.integrate import ode
 
+def run(sys, y0, t0, tend, nt, **kwargs):
 
-class ScipyIntegrator:
+    defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-12,
+                'rtol': 1e-6, 'with_jacobian': True,
+                'first_step': 1e-9, 'lband': sys.n, 'uband': sys.n}
 
-    order = 5 # It actually uses dynamic order
+    for k, v in defaults.items():
+        if not k in kwargs:
+            kwargs[k] = v
 
-    atol = None
-    rtol = None
+    if nt == 0: nt = 1024 # Good plotting density
 
-    pickle_attrs = ('ny', 'tout', 'eout', 'yout')
+    # Create python callbacks with right signature
+    fout = np.empty(sys.n*sys.N)
+    def f(t, y, *f_args):
+        # Python function closure circumvents reallocation
+        f.neval += 1
+        sys.f(t, y, fout)
+        return fout
+    f.neval = 0
 
-    def __getstate__(self):
-        return [getattr(self, x) for x in self.pickle_attrs]
+    jout = np.zeros((sys.n*3+1, sys.n*sys.N), order="F")
+    def jac(t, y, *j_args):
+        jac.neval += 1
+        sys.banded_packed_jac_cmaj(t, y, jout)
+        return jout
+    jac.neval = 0
 
-    def __setstate__(self, state):
-        for attr, val in zip(self.pickle_attrs, state):
-            setattr(self, attr, val)
+    # print('sys.stoich_reac', sys.stoich_reac)
+    # print('sys.stoich_prod', sys.stoich_prod)
+    # print('sys.stoich_actv', sys.stoich_actv)
+    # print(y0)
+    # f(t0, y0)
+    # print(fout)
 
-    def f_vec(self, t, y):
-        out = np.empty(self.ny)
-        self.sys.f(t, y, out)
-        return out
-
-
-
-    def __init__(self, sys, y0, t0, integrator='vode',
-                 method='adams', **kwargs):
-        self.sys = sys
-        self.ny = len(y0)
-        self.__dict__.update(kwargs)
-
-        self._ode = ode(self.f_vec, jac=self.dense_jac_rmaj_scipy)
-        # Set stricter tolerances (used as a reference)
-        self._ode.set_integrator(
-            integrator, method=method,
-            with_jacobian=True,
-            atol=1e-12, rtol=1e-12)
-        self._ode.set_initial_value(np.array(y0), t0)
-
-    def dense_jac_rmaj_scipy(self, t, y):
-        """
-        Returns a dense jacobian matrix
-        """
-        out = np.zeros((self.ny, self.ny))
-        self.sys.dense_jac_rmaj(t, y, out, 1.0, False)
-        return out
-
-
-    def _run(self, tend, nt, h=None, hmax=None, errcalc_freq=10):
-        if nt == 0:
-            # Dynamic step-size
-            self._ode._integrator.iwork[2] = -1
-            tout, yout, fout, eout, hout = [], [], [], [], []
-            warnings.filterwarnings("ignore", category=UserWarning)
-            zero_arr = np.zeros(self.ny)
-            while self._ode.t < tend:
-                fvec = self.f_vec(self._ode.t, self._ode.y)
-                yout.append([self._ode.y, fvec])
-                tout.append(self._ode.t)
-                # Step size last used
-                hout.append(self._ode._integrator.rwork[11-1])
-                # Doesn't work (not ciritical)
-                eout.append(self._ode._integrator.rwork[-self.ny:])
-                self._ode.integrate(tend, step=True)
-            warnings.resetwarnings()
-
-            self.tout = np.array(tout)
-            self.yout = np.array(yout).swapaxes(0,1)
-            self.eout = np.array(eout)
-            self.hout = np.array(hout)
-        else:
-            fvec = self.f_vec(self.tout[0], self._ode.y)
-            self.tout[0] = self.tout[0]
-            self.yout[0, 0, :] = self._ode.y
-            self.yout[1, 0, :] = fvec
-            self.eout[0, :] = 0.0
-            for i, t in np.ndenumerate(self.tout[1:]):
-                self._ode.integrate(t)
-                fvec = self.f_vec(self._ode.t, self._ode.y)
-                self.tout[i[0]+1] = self._ode.t
-                self.yout[0, i[0]+1, :] = self._ode.y
-                self.yout[1, i[0]+1, :] = fvec
-                if self.use_extrapol_jac:
-                    self.yout[2, i[0]+1, :] = self.f2_vec(
-                        self._ode.t, self._ode.y, fvec)
-                else:
-                    self.yout[2, i[0], :] = 0.0
-                self.eout[i[0]+1, :] = self.atol
+    runner = ode(f, jac=jac)
+    runner.set_integrator(**kwargs)
+    runner.set_initial_value(y0.flatten(), t0)
+    tout = np.logspace(-9,np.log10(tend),nt)
+    yout = np.empty((nt, sys.n*sys.N))
+    texec = time.time()
+    for i in range(nt):
+        runner.integrate(tout[i])
+        yout[i, :] = runner.y
+    texec = time.time() - texec
+    return tout, yout, {
+        'texec': texec,
+        'neval_f': f.neval,
+        'neval_j': jac.neval,
+    }

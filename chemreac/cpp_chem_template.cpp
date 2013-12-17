@@ -14,33 +14,42 @@
 using std::vector;
 using std::count;
 
+// 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(int n, int N, 
 				     vector<vector<int> > stoich_reac,
 				     vector<vector<int> > stoich_prod,
+				     vector<vector<int> > stoich_actv,
 				     vector<double> k,
 				     vector<double> D,
+				     vector<double> x, // separation
 				     int mode):
   n(n), N(N), mode(mode), stoich_reac(stoich_reac), 
-  stoich_prod(stoich_prod), k(k), D(D)
+  stoich_prod(stoich_prod), stoich_actv(stoich_actv), k(k), D(D), x(x)
 {
   if (stoich_reac.size() != stoich_prod.size())
-    throw std::length_error("stoich_reac and stoich_prod \
-                             of different sizes.");
+    throw std::length_error("stoich_reac and stoich_prod of different sizes.");
+  if (D.size() != n)
+    throw std::length_error("Number of diffusion coefficients does not match number of species.");
+  if (x.size() != N)
+    throw std::length_error("Number of separation distances does not match number of compartments.");
+
   nr = stoich_reac.size();
 
   coeff_reac = new int[nr*n];
   coeff_prod = new int[nr*n];
   coeff_totl = new int[nr*n];
   
-  for (int ri=0; ri<nr; ++ri) // reaction index 
+  for (int ri=0; ri<nr; ++ri){ // reaction index 
+    if (stoich_actv[ri].size() == 0)
+      stoich_actv[ri] = stoich_reac[ri]; // Strict massaction
     for (int si=0; si<n; ++si){ // species index
       coeff_reac[ri*n+si] = count(stoich_reac[ri].begin(), 
 				  stoich_reac[ri].end(), si);
       coeff_prod[ri*n+si] = count(stoich_prod[ri].begin(), 
 				  stoich_prod[ri].end(), si);
-      coeff_totl[ri*n+si] = coeff_prod[ri*n+si] - coeff_reac[ri*n+si];
+	coeff_totl[ri*n+si] = coeff_prod[ri*n+si] - coeff_reac[ri*n+si];
     }
-
+  }
   nfeval = 0;
   njeval = 0;
 }
@@ -88,6 +97,23 @@ ReactionDiffusion::_get_n(int i, double * y)
 }
 
 void
+ReactionDiffusion::_get_dx(int i, double * dx_p, 
+			   double * dx, double * dx_n)
+{
+  if (i == 0){
+    *dx_n = x[i+1]-x[i];
+    *dx_p = *dx_n;
+  }else if (i == N-1){
+    *dx_p = x[i]-x[i-1];
+    *dx_n = *dx_p;
+  }else{
+    *dx_p = x[i]-x[i-1];
+    *dx_n = x[i+1]-x[i];
+  }
+  *dx = (*dx_p + *dx_n)/2.0;
+}
+
+void
 ReactionDiffusion::f(double t, double * y, double * dydt)
 {
 #ifdef _OPENMP
@@ -122,8 +148,10 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
     double * p_ = _get_p(i, y);
     double * n_ = _get_n(i, y);
     double * C = y + i*n;
+    double dx_p, dx, dx_n;
+    _get_dx(i, &dx_p, &dx, &dx_n);
     for (int k=0; k<n; ++k)
-      dydt[i*n + k] += D[k]*(p_[k] - 2*C[k] + n_[k]);
+      dydt[i*n + k] += D[k]*(p_[k]/dx_p - 2*C[k]/dx + n_[k]/dx_n);
 
 #ifdef _OPENMP
     delete []local_r;
@@ -147,7 +175,7 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
 #define JAC(bri, bci, ri, ci) ja[${imaj}*ldj+${imin}]
 void
 ReactionDiffusion::${token}(double t, double * y, double * ja, 
-			    int ldj, double factor, int sub_one)
+			    int ldj)
 {
   // intent(out) :: ja
   // Assume ja zeroed out on entry
@@ -182,23 +210,22 @@ ReactionDiffusion::${token}(double t, double * y, double * ja,
 	  JAC(i,i,j,m) += coeff_totl[l*n + j]*\
 	    coeff_reac[l*n + m]*local_r[l]/C[m];
 	}
-	JAC(i,i,j,m) *= factor;
-	if (sub_one && j==m)
-	  JAC(i,i,j,j) -= 1.0;
       }
     }
 
+    double dx_p, dx, dx_n;
+    _get_dx(i, &dx_p, &dx, &dx_n);
     // Contributions from diffusion
     // ----------------------------
     for (int j=0; j<n; ++j){
       // species j
       if (i > 0){ // Subdiagonal (diffusion from left)
-	JAC(i,i-1,j,j) = factor*D[j]; 
-	JAC(i,i,j,j) -= factor*D[j]; // Diagonal (mass balance)
+	JAC(i,i-1,j,j) = D[j]/dx_p; 
+	JAC(i,i,j,j) -= D[j]/dx; // Diagonal (mass balance)
       }
       if (i < N-1){ // Superdiagonal (diffusion from right)
-	JAC(i,i+1,j,j) = factor*D[j]; 
-	JAC(i,i,j,j) -= factor*D[j]; // Diagonal (mass balance)
+	JAC(i,i+1,j,j) = D[j]/dx_n; 
+	JAC(i,i,j,j) -= D[j]/dx; // Diagonal (mass balance)
       }
     }
 #ifdef _OPENMP

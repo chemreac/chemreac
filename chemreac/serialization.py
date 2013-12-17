@@ -15,7 +15,8 @@ def dump(rd, path):
 
 def load(path, RD=None, mode=0, N=None):
     if not RD:
-        from reactiondiffusion.cpp_chem_wrapper import PyReactionDiffusion as ReactionDiffusion
+        from chemreac.cpp_chem_wrapper import \
+            PyReactionDiffusion as ReactionDiffusion
         RD = ReactionDiffusion
     fh = open(path, 'rt')
     data = json.load(fh)
