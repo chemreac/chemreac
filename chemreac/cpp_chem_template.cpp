@@ -12,10 +12,13 @@
 
 %if USE_OPENMP:
 #include <omp.h>
+#ifndef _OPENMP
+#include "CRASH_COMPILER___OPENMP_USED_IN_SOURCE_BUT_NOT_USED_IN_COMPILATION"
+#endif
 %else:
 #define omp_get_thread_num() 0
 #ifdef _OPENMP
-#include "CRASH_COMPILER_PLEASE_OPENMP_NOT_ENABLED"
+#include "CRASH_COMPILER___OPENMP_NOT_USED_IN_SOURCE_BUT_USED_IN_COMPILATION"
 #endif
 %endif
 
@@ -98,7 +101,7 @@ ReactionDiffusion::_fill_local_r(double * yi, double * local_r)
 }
 
 double *
-ReactionDiffusion::_get_p(int i, double * y)
+ReactionDiffusion::_get_p_C(int i, double * y)
 {
     // Concentrations in previous compartments (mind the boundary)
     if (i == 0)
@@ -108,11 +111,13 @@ ReactionDiffusion::_get_p(int i, double * y)
 }
 
 double *
-ReactionDiffusion::_get_n(int i, double * y)
+ReactionDiffusion::_get_n_C(int i, double * y)
 {
-    // Concentrations in previous compartments (mind the boundary)
+    // Concentrations in next compartments (mind the boundary)
     if (i == N-1)
-	return y + i*n; // No diffusion to the right (solid interface)
+        // Reflective boundary
+	// (no diffusion to the right (solid interface))
+	return y + i*n; 
     else
 	return y + (i+1)*n; 
 }
@@ -162,8 +167,8 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
 	// Contributions from diffusion
 	// ----------------------------
 	if (N>1){
-	    double * p_ = _get_p(i, y);
-	    double * n_ = _get_n(i, y);
+	    double * p_C = _get_p_C(i, y);
+	    double * n_C = _get_n_C(i, y);
 	    double * C = y + i*n;
 	    double diffusion_contrib = 0.0;
 	    double dx_p, dx, dx_n;
@@ -175,9 +180,9 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
 #endif
 	    for (int k=0; k<n; ++k){
 		if (i > 0)
-		    diffusion_contrib += SA_p*(p_[k] - C[k])/dx_p/V;
+		    diffusion_contrib += SA_p*(p_C[k] - C[k])/dx_p/V;
 		if (i < N-1)
-		    diffusion_contrib += SA_n*(n_[k] - C[k])/dx_n/V;
+		    diffusion_contrib += SA_n*(n_C[k] - C[k])/dx_n/V;
 		diffusion_contrib *= D[k];
 		dydt[i*n + k] += diffusion_contrib;
 	    }
@@ -242,6 +247,8 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
 	    if (N>1){
 		double dx_p, dx, dx_n;
 		_get_dx(i, &dx_p, &dx, &dx_n);
+		double * p_C = _get_p_C(i, y);
+		double * n_C = _get_n_C(i, y);
 		// Contributions from diffusion
 		// ----------------------------
 		for (int j=0; j<n; ++j){
