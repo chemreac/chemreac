@@ -6,11 +6,25 @@ import numpy as np
 
 from scipy.integrate import ode
 
-def run(sys, y0, t0, tend, nt, **kwargs):
+from chemreac import DENSE, BANDED, SPARSE
+
+def run(sys, y0, t0, tend, nt, mode=None, log_time=False, **kwargs):
 
     defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-12,
                 'rtol': 1e-6, 'with_jacobian': True,
-                'first_step': 1e-9, 'lband': sys.n, 'uband': sys.n}
+                'first_step': 1e-9}
+
+    if mode == None:
+        if sys.N == 1:
+            mode = DENSE
+        elif sys.N > 1:
+            mode = BANDED
+        else:
+            raise NotImplementedError
+
+    if mode == BANDED:
+        defaults['lband'] = sys.n
+        defaults['uband'] = sys.n
 
     for k, v in defaults.items():
         if not k in kwargs:
@@ -27,27 +41,30 @@ def run(sys, y0, t0, tend, nt, **kwargs):
         return fout
     f.neval = 0
 
-    jout = np.zeros((sys.n*3+1, sys.n*sys.N), order="F")
+    if mode == DENSE:
+        jout = np.zeros((sys.n*sys.N, sys.n*sys.N), order='F')
+    elif mode == BANDED:
+        jout = np.zeros((sys.n*3+1, sys.n*sys.N), order='F')
+    else:
+        raise NotImplementedError
+
     def jac(t, y, *j_args):
         jac.neval += 1
         sys.banded_packed_jac_cmaj(t, y, jout)
         return jout
     jac.neval = 0
 
-    # print('sys.stoich_reac', sys.stoich_reac)
-    # print('sys.stoich_prod', sys.stoich_prod)
-    # print('sys.stoich_actv', sys.stoich_actv)
-    # print(y0)
-    # f(t0, y0)
-    # print(fout)
-
     runner = ode(f, jac=jac)
     runner.set_integrator(**kwargs)
     runner.set_initial_value(y0.flatten(), t0)
-    tout = np.logspace(-9,np.log10(tend),nt)
-    yout = np.empty((nt, sys.n*sys.N))
+    if log_time:
+        tout = np.logspace(t0+1e-12, np.log10(tend), nt+1)
+    else:
+        tout = np.linspace(t0, tend, nt+1)
+    yout = np.empty((nt+1, sys.n*sys.N))
+    yout[0,:] = y0
     texec = time.time()
-    for i in range(nt):
+    for i in range(1, nt+1):
         runner.integrate(tout[i])
         yout[i, :] = runner.y
     texec = time.time() - texec

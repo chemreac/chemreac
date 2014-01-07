@@ -4,23 +4,24 @@ from libcpp.vector cimport vector
 
 cdef extern from "cpp_chem.hpp":
     cdef cppclass ReactionDiffusion:
-        int n, N, nr
+        int n, N, nr, mode, geom, nfeval, njeval
         vector[vector[int]] stoich_reac
-        vector[vector[int]] stoich_prod
         vector[vector[int]] stoich_actv
+        vector[vector[int]] stoich_prod
         vector[double] k
         vector[double] D
         vector[double] x
-        int nfeval
-        int njeval
 
-        ReactionDiffusion(int, int,
+        ReactionDiffusion(int,
+                          int,
                           vector[vector[int]],
                           vector[vector[int]],
                           vector[vector[int]],
                           vector[double],
                           vector[double],
-                          vector[double], int) except +
+                          vector[double],
+                          int,
+                          int) except +
         void f(double, double*, double*)
         void dense_jac_rmaj(double, double*, double*, int)
         void dense_jac_cmaj(double, double*, double*, int)
@@ -30,6 +31,10 @@ cdef extern from "cpp_chem.hpp":
 DEF DENSE=0
 DEF BANDED=1
 DEF SPARSE=2
+
+DEF FLAT=0
+DEF SPHERICAL=1
+DEF CYLINDRICAL=2
 
 cdef class PyReactionDiffusion:
     cdef ReactionDiffusion *thisptr
@@ -41,7 +46,8 @@ cdef class PyReactionDiffusion:
                   vector[double] D,
                   x = None,
                   stoich_actv = None,
-                  int mode=0
+                  int mode=0,
+                  int geom=0,
               ):
         cdef vector[vector[int]] _stoich_actv
         cdef vector[double] _x
@@ -54,9 +60,9 @@ cdef class PyReactionDiffusion:
         x = x or 1
 
         if isinstance(x, float) or isinstance(x, int):
-            _x = list([x]*N)
+            _x = [x/float(N)*i for i in range(N+1)]
         else:
-            assert len(x) == N
+            assert len(x) == N+1
             _x = x
 
         assert len(stoich_reac) == len(stoich_prod) == len(k)
@@ -66,7 +72,7 @@ cdef class PyReactionDiffusion:
         print(_x)
         self.thisptr = new ReactionDiffusion(
             n, N, stoich_reac, stoich_prod, _stoich_actv, k,
-            D, _x, mode)
+            D, _x, mode, geom)
 
     def __dealloc__(self):
         del self.thisptr

@@ -26,7 +26,8 @@ setup(
             template_regexps=[
                 (r'^(\w+)_template.(\w+)$', r'\1.\2', {}),
             ],
-            include_dirs=['chemreac/']
+            include_dirs=['chemreac/'],
+            define_macros=['DEBUG']
         )
     ]
 )
