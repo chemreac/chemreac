@@ -1,5 +1,6 @@
 import json
 
+from chemreac import DENSE
 
 def dump(rd, path):
     fh = open(path, 'wt')
@@ -13,13 +14,17 @@ def dump(rd, path):
     }
     json.dump(data, fh)
 
-def load(path, RD=None, mode=0, N=None):
+def load(path, RD=None, **kwargs):
+    """
+    Loads a ReactionDiffusion instance from implementation RD
+    and overwrites with kwargs if passed
+    """
     if not RD:
         from chemreac.cpp_chem_wrapper import \
             PyReactionDiffusion as ReactionDiffusion
         RD = ReactionDiffusion
     fh = open(path, 'rt')
     data = json.load(fh)
-    data['mode'] = mode
-    if N: data['N'] = N
+    data.update(kwargs)
+    if not 'mode' in data: data['mode'] = DENSE
     return RD(**data)

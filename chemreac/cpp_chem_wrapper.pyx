@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # distutils: language = c++
 
 from libcpp.vector cimport vector
@@ -77,25 +78,26 @@ cdef class PyReactionDiffusion:
     def __dealloc__(self):
         del self.thisptr
 
-    def f(self, double t, double [::1] y, double [::1] dydt):
-        self.thisptr.f(t, &y[0], &dydt[0])
+    def f(self, double t, double [::1] y, double [::1] fout):
+        self.thisptr.f(t, &y[0], &fout[0])
 
     def dense_jac_rmaj(self, double t, double [::1] y,
-                       double [:, ::1] J):
-        self.thisptr.dense_jac_rmaj(t, &y[0], &J[0,0], J.shape[1])
+                       double [:, ::1] Jout):
+        self.thisptr.dense_jac_rmaj(t, &y[0], &Jout[0,0], Jout.shape[1])
 
     def dense_jac_cmaj(self, double t, double [::1] y,
-                       double [::1, :] J):
-        self.thisptr.dense_jac_cmaj(t, &y[0], &J[0,0], J.shape[1])
+                       double [::1, :] Jout):
+        self.thisptr.dense_jac_cmaj(t, &y[0], &Jout[0,0], Jout.shape[1])
 
     def banded_jac_cmaj(self, double t, double [::1] y,
-                       double [::1, :] J):
-        self.thisptr.banded_jac_cmaj(t, &y[0], &J[0,0], J.shape[0])
+                       double [::1, :] Jout):
+        self.thisptr.banded_jac_cmaj(t, &y[0], &Jout[0,0],
+                                     Jout.shape[0])
 
     def banded_packed_jac_cmaj(self, double t, double [::1] y,
-                       double [::1, :] J):
+                       double [::1, :] Jout):
         self.thisptr.banded_packed_jac_cmaj(
-            t, &y[0], &J[0,0], J.shape[0])
+            t, &y[0], &Jout[0,0], Jout.shape[0])
 
     property n:
         def __get__(self): return self.thisptr.n

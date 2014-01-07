@@ -19,15 +19,14 @@ from chemreac.integrate import run
 Demo of a large chemical reaction diffusion system.
 """
 
+name = 'aqueous_radiolysis'
 
 def main(tend=10.0, N=3, nt=0,
          plot=False):
 
-    sys = load('aqueous_radiolysis'+'.json', ReactionDiffusion, N=N)
-
-
-    y0_by_name = json.load(open('aqueous_radiolysis'+'.y0.json', 'rt'))
-    names = json.load(open('aqueous_radiolysis'+'.names.json', 'rt'))
+    sys = load(name+'.json', ReactionDiffusion, N=N)
+    y0_by_name = json.load(open(name+'.y0.json', 'rt'))
+    names = json.load(open(name+'.names.json', 'rt'))
 
     # y0 with a H2 gradient
     y0 = np.array([[y0_by_name.get(k, 1e-9) if k != 'H2' else \

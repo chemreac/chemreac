@@ -9,6 +9,7 @@ from scipy.integrate import ode
 from chemreac import DENSE, BANDED, SPARSE
 
 def run(sys, y0, t0, tend, nt, mode=None, log_time=False, **kwargs):
+    assert y0.size == sys.n*sys.N
 
     defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-12,
                 'rtol': 1e-6, 'with_jacobian': True,

@@ -1,2 +1,2 @@
-cython>=0.19
+cython>=0.19.1
 https://github.com/bjodah/pycompilation/archive/v0.2.2.tar.gz

@@ -42,13 +42,17 @@ ReactionDiffusion::ReactionDiffusion(
     if (stoich_reac.size() != stoich_prod.size())
 	throw std::length_error(
 	    "stoich_reac and stoich_prod of different sizes.");
-    if (D.size() != n)
+    if (k.size() != stoich_prod.size())
 	throw std::length_error(
-	    "Number of diff. coeff. does not match number of species.");
-    if (x.size() != N + 1)
-	throw std::length_error(
-	    "Number bin edges != number of compartments + 1.");
-
+	    "k and stoich_prod of different sizes.");
+    if (N>1){
+	if (D.size() != n)
+	    throw std::length_error(
+		"Length of D does not match number of species.");
+	if (x.size() != N + 1)
+	    throw std::length_error(
+		"Number bin edges != number of compartments + 1.");
+    }
     nr = stoich_reac.size();
 
     coeff_reac = new int[nr*n];
@@ -157,25 +161,28 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
     
 	// Contributions from diffusion
 	// ----------------------------
-	double * p_ = _get_p(i, y);
-	double * n_ = _get_n(i, y);
-	double * C = y + i*n;
-	double diffusion_contrib = 0.0;
-	double dx_p, dx, dx_n;
-	_get_dx(i, &dx_p, &dx, &dx_n);
+	if (N>1){
+	    double * p_ = _get_p(i, y);
+	    double * n_ = _get_n(i, y);
+	    double * C = y + i*n;
+	    double diffusion_contrib = 0.0;
+	    double dx_p, dx, dx_n;
+	    _get_dx(i, &dx_p, &dx, &dx_n);
 #ifdef DEBUG
-	printf("dx_p=%12.5e\n", dx_p);
-	printf("dx=%12.5e\n", dx);
-	printf("dx_n=%12.5e\n", dx_n);
+	    printf("dx_p=%12.5e\n", dx_p);
+	    printf("dx=%12.5e\n", dx);
+	    printf("dx_n=%12.5e\n", dx_n);
 #endif
-	for (int k=0; k<n; ++k){
-	    if (i > 0)
-		diffusion_contrib += SA_p*(p_[k] - C[k])/dx_p/V;
-	    if (i < N-1)
-		diffusion_contrib += SA_n*(n_[k] - C[k])/dx_n/V;
-	    diffusion_contrib *= D[k];
-	    dydt[i*n + k] += diffusion_contrib;
+	    for (int k=0; k<n; ++k){
+		if (i > 0)
+		    diffusion_contrib += SA_p*(p_[k] - C[k])/dx_p/V;
+		if (i < N-1)
+		    diffusion_contrib += SA_n*(n_[k] - C[k])/dx_n/V;
+		diffusion_contrib *= D[k];
+		dydt[i*n + k] += diffusion_contrib;
+	    }
 	}
+
 	${"delete []local_r;" if USE_OPENMP else ""}
 
     }
@@ -232,19 +239,21 @@ ReactionDiffusion::f(double t, double * y, double * dydt)
 		}
 	    }
 
-	    double dx_p, dx, dx_n;
-	    _get_dx(i, &dx_p, &dx, &dx_n);
-	    // Contributions from diffusion
-	    // ----------------------------
-	    for (int j=0; j<n; ++j){
-		// species j
-		if (i > 0){ // Subdiagonal (diffusion from left)
-		    JAC(i,i-1,j,j)  = SA_p*D[j]/dx_p/V; 
-		    JAC(i,  i,j,j) -= SA_p*D[j]/dx_p/V;
-		}
-		if (i < N-1){ // Superdiagonal (diffusion from right)
-		    JAC(i,i+1,j,j)  = SA_n*D[j]/dx_n/V; 
-		    JAC(i,  i,j,j) -= SA_n*D[j]/dx_n/V;
+	    if (N>1){
+		double dx_p, dx, dx_n;
+		_get_dx(i, &dx_p, &dx, &dx_n);
+		// Contributions from diffusion
+		// ----------------------------
+		for (int j=0; j<n; ++j){
+		    // species j
+		    if (i > 0){ // Subdiag. (diffusion from left)
+			JAC(i,i-1,j,j)  = SA_p*D[j]/dx_p/V; 
+			JAC(i,  i,j,j) -= SA_p*D[j]/dx_p/V;
+		    }
+		    if (i < N-1){ // Superdiag. (diffusion from right)
+			JAC(i,i+1,j,j)  = SA_n*D[j]/dx_n/V; 
+			JAC(i,  i,j,j) -= SA_n*D[j]/dx_n/V;
+		    }
 		}
 	    }
 #ifdef _OPENMP
