@@ -37,13 +37,13 @@ public:
     vector<double> x; // Bin edges (length = N+1)
 
     ReactionDiffusion(int, 
-		      int,
-		      vector<vector<int> >, 
 		      vector<vector<int> >, 
 		      vector<vector<int> >, 
 		      vector<double>, 
+		      int,
 		      vector<double>, 
 		      vector<double>,
+		      vector<vector<int> >, 
 		      int,
 		      int);
     ~ReactionDiffusion();

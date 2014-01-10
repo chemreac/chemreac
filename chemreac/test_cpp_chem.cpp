@@ -33,7 +33,7 @@ void test_f(){
     for (int i=0; i<N+1; ++i)
 	x.push_back((double)i);
     printf("x.size()=%d\n", x.size());
-    ReactionDiffusion rd(4, N, stoich_reac, stoich_prod, stoich_actv, k, D, x, 0, 0);
+    ReactionDiffusion rd(n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv, 0, 0);
     vector<double> y;
     vector<double> b;
     vector<double> timings;

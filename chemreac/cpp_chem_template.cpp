@@ -29,19 +29,18 @@ using std::count;
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     int n,
-    int N, 
     vector<vector<int> > stoich_reac,
     vector<vector<int> > stoich_prod,
-    vector<vector<int> > stoich_actv_,
     vector<double> k,
+    int N, 
     vector<double> D,
     vector<double> x, // separation
+    vector<vector<int> > stoich_actv_,
     int mode,
     int geom_
     ):
-    n(n), N(N), stoich_reac(stoich_reac), 
-    stoich_prod(stoich_prod), k(k), D(D), x(x),
-    mode(mode)
+    n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
+    k(k), N(N), D(D), x(x), mode(mode)
 {
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(

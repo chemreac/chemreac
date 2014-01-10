@@ -1,27 +1,40 @@
-hpcprj
-======
+chemreac
+========
+Chemical Reaction-Diffusion ODE systems discretized in one
+dimension. Currently flat and spherical geometry is
+implemented. Kinetics are governed by the law of mass action (with the
+exception that we allow to make a difference between kinetically
+active and stoichiometric reactants - e.g. solvent may participate)
 
-Chemical Reaction-Diffusion ODE systems discretized in
-one dimension. The Jacobian is used by implicit methods (which is usually needed
-since the systems are stiff)
+The Jacobian can be evaluated and stored in several
+formats. (currently dense row-major, dense col-major and banded
+formats are supported).
+
+The ODE systems is computed in the C++ class ReactionDiffusion
+(`cpp_chem_template.cpp`). It is conveniently accessible from Python
+(wrapped using Cython). A simple wrapper to scipy.integrate.ode is
+provided in `chemreac.integrate.run`
 
 Setup
 =====
-``` python setup.py build ``` is enough on most *NIX machines.
+``` python setup.py build_ext --inplace ``` is enough on most *NIX machines.
 
-Parallelized evaluation of f and jac
-====================================
-```
-env OMP_NUM_THREADS=1 python -m cProfile -o profile.out radiolysis.py -t 60 -N 300 -i cpp && runsnake profile.out
-```
+Tests
+=====
+Run `./py.test`
 
+Prerequisites
+=============
+C++11 compliant compiler
+Python
+Cython
+Pycompilation 0.2.4
 
-Installation
-============
-To install using Intel's compilers and Intel MKL, you need to set environment
-variables. On my system (MKL 11.1) I would do:
+License
+=======
+Open Soucrce. Released under the very permissive "simplified
+(2-clause) BSD license". See LICENCE.txt for further details.
 
-source /opt/intel/mkl/bin/mklvars.sh intel64 lp64; COMPILER_VENDOR=intel python setup.py
-
-for i in {1,2,3,4}; do env OMP_NUM_THREADS=$i python -m cProfile -o profile_${i}.out radiolysis.py -i cpp -N 3000; done
-
+Author
+======
+Björn Dahlgren, contact (gmail adress): bjodah

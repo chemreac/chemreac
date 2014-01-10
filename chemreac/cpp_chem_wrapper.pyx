@@ -14,13 +14,13 @@ cdef extern from "cpp_chem.hpp":
         vector[double] x
 
         ReactionDiffusion(int,
+                          vector[vector[int]],
+                          vector[vector[int]],
+                          vector[double],
                           int,
-                          vector[vector[int]],
-                          vector[vector[int]],
-                          vector[vector[int]],
                           vector[double],
                           vector[double],
-                          vector[double],
+                          vector[vector[int]],
                           int,
                           int) except +
         void f(double, const double * const, double * const)
@@ -43,10 +43,10 @@ cdef class PyReactionDiffusion:
 
     def __cinit__(self,
                   int n,
-                  int N,
                   vector[vector[int]] stoich_reac,
                   vector[vector[int]] stoich_prod,
                   vector[double] k,
+                  int N = 0,
                   D = None,
                   x = None,
                   stoich_actv = None,
@@ -57,17 +57,17 @@ cdef class PyReactionDiffusion:
         cdef vector[double] _x
         cdef vector[double] _D
 
+        if N == 0:
+            if x == None:
+                N = 1
+            else:
+                N = len(x)-1
+
         if N > 1:
             assert n == len(D)
             _D = D
         else:
             _D = list([0]*n)
-
-        if stoich_actv == None:
-            _stoich_actv = list([[]]*len(stoich_reac))
-        else:
-            _stoich_actv = stoich_actv
-        assert len(_stoich_actv) == len(stoich_reac)
 
         x = x or 1
 
@@ -77,11 +77,18 @@ cdef class PyReactionDiffusion:
             assert len(x) == N+1
             _x = x
 
+        if stoich_actv == None:
+            _stoich_actv = list([[]]*len(stoich_reac))
+        else:
+            _stoich_actv = stoich_actv
+        assert len(_stoich_actv) == len(stoich_reac)
+
         assert len(stoich_reac) == len(stoich_prod) == len(k)
-        assert mode in range(3)
+        assert mode in (DENSE, BANDED, SPARSE)
+        assert geom in (FLAT, SPHERICAL, CYLINDRICAL)
         self.thisptr = new ReactionDiffusion(
-            n, N, stoich_reac, stoich_prod, _stoich_actv, k,
-            _D, _x, mode, geom)
+            n, stoich_reac, stoich_prod, k, N,
+            _D, _x, _stoich_actv, mode, geom)
 
     def __dealloc__(self):
         del self.thisptr

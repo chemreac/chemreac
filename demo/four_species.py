@@ -5,15 +5,11 @@ import argh
 import numpy as np
 
 from chemreac.serialization import load
-from chemreac.cpp_chem_wrapper import \
-    PyReactionDiffusion as ReactionDiffusion
 
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
+from chemreac.util import coloured_spy
 
-import matplotlib.cm
-from matplotlib import pyplot as plt
-from matplotlib.ticker import MaxNLocator
 
 """
 Demo of chemical reaction diffusion system.
@@ -22,24 +18,12 @@ Demo of chemical reaction diffusion system.
 # A -> B               k1=0.05
 # 2C + B -> D + B      k2=3.0
 
-def coloured_spy(A, cmap_name='gray'):
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
-    plt.imshow(A, cmap=matplotlib.cm.get_cmap(cmap_name),
-               interpolation='none')
-    ax = plt.gca()
-    ya = ax.get_yaxis()
-    ya.set_major_locator(MaxNLocator(integer=True))
-    xa = ax.get_xaxis()
-    xa.set_major_locator(MaxNLocator(integer=True))
-    plt.colorbar()
-
 
 def main(tend=10.0, N=1, nt=50, plot=True, spy=False, mode=None):
-    sys = load('four_species.json', N=N)
+    sys = load('four_species.json', N=N, x=N)
 
-    y0 = [1.3, 1e-4, 0.7, 1e-4]
-    y0 = np.array(y0*sys.N)
+    y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
+    y0 = np.concatenate([y0/(i+1)*(0.25*i**2+1) for i in range(N)])
     #y0 = np.array([[float(x)]*4 for x in range(1,N+1)]).flatten()
 
     t0 = 0.0
