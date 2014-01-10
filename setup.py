@@ -9,7 +9,7 @@ from pycompilation.dist import clever_build_ext, CleverExtension
 name_ = 'chemreac'
 version_ = '0.0.1'
 
-USE_OPENMP = False
+USE_OPENMP = os.environ.get('USE_OPENMP', False)
 
 setup(
     name=name_,

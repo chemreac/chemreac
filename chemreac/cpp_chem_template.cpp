@@ -219,22 +219,10 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
-#ifdef DEBUG2
-	    printf("Fluxes:\n");
-	    for (int i=0; i<N-1; ++i)
-		printf("%12.5e ",fluxes[i]);
-	    printf("\n");
-#endif
-            for (int si=0; si<n; ++si)// species index si
-#ifdef DEBUG2
-	    {
-		double tmp = diffusion_contrib(bi, si, fluxes);
-		DCDT+=tmp;
-		printf("diffusion_contrib(%d, %d, fluxes)=%12.5e\n",bi,si,tmp);
-	}
-#else
+            for (int si=0; si<n; ++si){ // species index si
+		if (D[si] == 0.0) continue;
                 DCDT += diffusion_contrib(bi, si, fluxes);
-#endif
+	    }
         }
 
         ${"delete []local_r;" if USE_OPENMP else ""}
@@ -295,6 +283,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 		double tmp = diffusion_contrib_jac_prev(bi);
 		for (int si=0; si<n; ++si){
 		    // species index si
+		    if (D[si] == 0.0) continue;
                     JAC(bi, bi-1, si, si)  = D[si]*tmp;
                     JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
                 }
@@ -303,6 +292,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 		double tmp = diffusion_contrib_jac_next(bi);
 		for (int si=0; si<n; ++si){
 		    // species index si
+		    if (D[si] == 0.0) continue;
                     JAC(bi, bi+1, si, si)  = D[si]*tmp;
                     JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
                 }
