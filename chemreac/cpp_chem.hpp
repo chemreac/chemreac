@@ -14,13 +14,14 @@ private:
     int * coeff_reac;
     int * coeff_prod;
     int * coeff_totl;
-    vector<double> dx; // bin separations (from center) (length = N)
+    int * coeff_actv;
+    double * dx; // bin separations (from center) (length = N)
 
-    void _fill_local_r(double*, double*);
-    double flux(int bi, int si, const double * const restrict y);
-    double diffusion_contrib(int bi, int si, const double * const restrict fluxes);
-    double diffusion_contrib_jac_prev(int bi, int si, const double * const restrict y);
-    double diffusion_contrib_jac_next(int bi, int si, const double * const restrict y);
+    void _fill_local_r(const double * const restrict, double * const restrict) const;
+    double flux(int i, int si, const double * const restrict y) const;
+    double diffusion_contrib(int bi, int si, const double * const restrict fluxes) const;
+    double diffusion_contrib_jac_prev(int bi) const;
+    double diffusion_contrib_jac_next(int bi) const;
 
 public:
     int n; // number of species
@@ -28,8 +29,6 @@ public:
     int nr; // number of reactions
     int mode; // Jacobian storage: 0: DENSE, 1: BANDED, 2: SPARSE
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Spherical, 2: 1D Cylind.
-    int nfeval; // Number of funcion evaluations
-    int njeval; // Number of Jacobian evaluations
     vector<vector<int> > stoich_reac; // Reactants per reaction
     vector<vector<int> > stoich_actv; // Active reactants per reaction
     vector<vector<int> > stoich_prod; // Products per reaction
@@ -48,11 +47,11 @@ public:
 		      int,
 		      int);
     ~ReactionDiffusion();
-    void f(double, double*, double*);
-    void dense_jac_rmaj(double, double*, double*, int);
-    void dense_jac_cmaj(double, double*, double*, int);
-    void banded_jac_cmaj(double, double*, double*, int);
-    void banded_packed_jac_cmaj(double, double*, double*, int);
+    void f(double, const double * const restrict, double * const restrict) const;
+    void dense_jac_rmaj(double, const double * const restrict, double * const restrict, int) const;
+    void dense_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
+    void banded_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
+    void banded_packed_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
 
 };
 #endif

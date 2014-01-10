@@ -5,7 +5,7 @@ from libcpp.vector cimport vector
 
 cdef extern from "cpp_chem.hpp":
     cdef cppclass ReactionDiffusion:
-        int n, N, nr, mode, geom, nfeval, njeval
+        int n, N, nr, mode, geom
         vector[vector[int]] stoich_reac
         vector[vector[int]] stoich_actv
         vector[vector[int]] stoich_prod
@@ -23,11 +23,12 @@ cdef extern from "cpp_chem.hpp":
                           vector[double],
                           int,
                           int) except +
-        void f(double, double*, double*)
-        void dense_jac_rmaj(double, double*, double*, int)
-        void dense_jac_cmaj(double, double*, double*, int)
-        void banded_jac_cmaj(double, double*, double*, int)
-        void banded_packed_jac_cmaj(double, double*, double*, int)
+        void f(double, const double * const, double * const)
+        void dense_jac_rmaj(double, const double * const, double * const, int)
+        void dense_jac_cmaj(double, const double * const, double * const, int)
+        void banded_jac_cmaj(double, const double * const, double * const, int)
+        void banded_packed_jac_cmaj(double, const double * const, double * const, int)
+
 
 DEF DENSE=0
 DEF BANDED=1
@@ -40,23 +41,33 @@ DEF CYLINDRICAL=2
 cdef class PyReactionDiffusion:
     cdef ReactionDiffusion *thisptr
 
-    def __cinit__(self, int n, int N,
+    def __cinit__(self,
+                  int n,
+                  int N,
                   vector[vector[int]] stoich_reac,
                   vector[vector[int]] stoich_prod,
                   vector[double] k,
-                  vector[double] D,
+                  D = None,
                   x = None,
                   stoich_actv = None,
-                  int mode=0,
-                  int geom=0,
+                  int mode=DENSE,
+                  int geom=FLAT,
               ):
         cdef vector[vector[int]] _stoich_actv
         cdef vector[double] _x
+        cdef vector[double] _D
+
+        if N > 1:
+            assert n == len(D)
+            _D = D
+        else:
+            _D = list([0]*n)
 
         if stoich_actv == None:
             _stoich_actv = list([[]]*len(stoich_reac))
         else:
             _stoich_actv = stoich_actv
+        assert len(_stoich_actv) == len(stoich_reac)
 
         x = x or 1
 
@@ -67,13 +78,10 @@ cdef class PyReactionDiffusion:
             _x = x
 
         assert len(stoich_reac) == len(stoich_prod) == len(k)
-        assert n == len(D)
         assert mode in range(3)
-        print(_stoich_actv)
-        print(_x)
         self.thisptr = new ReactionDiffusion(
             n, N, stoich_reac, stoich_prod, _stoich_actv, k,
-            D, _x, mode, geom)
+            _D, _x, mode, geom)
 
     def __dealloc__(self):
         del self.thisptr
@@ -101,23 +109,12 @@ cdef class PyReactionDiffusion:
 
     property n:
         def __get__(self): return self.thisptr.n
-#        def __set__(self, int n): self.thisptr.n = n
 
     property N:
         def __get__(self): return self.thisptr.N
-        def __set__(self, int N): self.thisptr.N = N
 
     property nr:
         def __get__(self): return self.thisptr.nr
-#        def __set__(self, int nr): self.thisptr.nr = nr
-
-    property nfeval:
-        def __get__(self): return self.thisptr.nfeval
-        def __set__(self, int nfeval): self.thisptr.nfeval = nfeval
-
-    property njeval:
-        def __get__(self): return self.thisptr.njeval
-        def __set__(self, int njeval): self.thisptr.njeval = njeval
 
     property stoich_reac:
         def __get__(self): return self.thisptr.stoich_reac

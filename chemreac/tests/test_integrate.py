@@ -17,7 +17,7 @@ chemical reaction system. (no diffusion)
 def test_integrate(N=1):
     sys = load('four_species.json', N=N)
 
-    y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
+    y0 = np.array([1.3, 1e-4, 0.7, 1e-4]*N)
 
     ref = np.genfromtxt('four_species_blessed.txt')
     ref_t = ref[:,0]
