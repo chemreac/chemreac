@@ -113,6 +113,9 @@ ReactionDiffusion::_fill_local_r(const double * const restrict yi, double * cons
     }
 }
 
+// The indices of x, fluxes and bins
+// <indices.png>
+
 
 double
 ReactionDiffusion::flux(int bi, int si, const double * const restrict y)
