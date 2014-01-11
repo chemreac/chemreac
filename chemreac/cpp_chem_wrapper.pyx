@@ -12,6 +12,8 @@ cdef extern from "cpp_chem.hpp":
         vector[double] k
         vector[double] D
         vector[double] x
+        vector[vector[double]] bin_k_factor
+        vector[int] bin_k_factor_span
 
         ReactionDiffusion(int,
                           vector[vector[int]],
@@ -21,6 +23,8 @@ cdef extern from "cpp_chem.hpp":
                           vector[double],
                           vector[double],
                           vector[vector[int]],
+                          vector[vector[double]],
+                          vector[int],
                           int,
                           int) except +
         void f(double, const double * const, double * const)
@@ -50,6 +54,8 @@ cdef class PyReactionDiffusion:
                   D = None,
                   x = None,
                   stoich_actv = None,
+                  bin_k_factor = None,
+                  bin_k_factor_span = None,
                   int mode=DENSE,
                   int geom=FLAT,
               ):
@@ -86,14 +92,27 @@ cdef class PyReactionDiffusion:
         assert len(stoich_reac) == len(stoich_prod) == len(k)
         assert mode in (DENSE, BANDED, SPARSE)
         assert geom in (FLAT, SPHERICAL, CYLINDRICAL)
+
+        # Handle bin_k_factor
+        if bin_k_factor == None:
+            assert bin_k_factor_span == None
+            bin_k_factor = []
+            bin_k_factor_span = []
+        else:
+            assert bin_k_factor_span != None
+            assert len(bin_k_factor) == N
+            assert all([len(x) == len(bin_k_factor_span) for x in bin_k_factor])
+            assert all([x >= 0 for x in bin_k_factor_span])
+
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
-            _D, _x, _stoich_actv, mode, geom)
+            _D, _x, _stoich_actv, bin_k_factor, bin_k_factor_span, mode, geom)
 
     def __dealloc__(self):
         del self.thisptr
 
     def f(self, double t, double [::1] y, double [::1] fout):
+        assert y.size == fout.size # OPTIMIZE AWAY
         self.thisptr.f(t, &y[0], &fout[0])
 
     def dense_jac_rmaj(self, double t, double [::1] y,

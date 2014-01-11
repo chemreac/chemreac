@@ -12,15 +12,15 @@
 #endif
 
 %if USE_OPENMP:
-#include <omp.h>
 #ifndef _OPENMP
   #error
 #endif
+#include <omp.h>
 %else:
-#define omp_get_thread_num() 0
 #ifdef _OPENMP
   #error
 #endif
+#define omp_get_thread_num() 0
 %endif
 
 using std::vector;
@@ -36,11 +36,14 @@ ReactionDiffusion::ReactionDiffusion(
     vector<double> D,
     vector<double> x, // separation
     vector<vector<int> > stoich_actv_,
+    vector<vector<double> > bin_k_factor, // per bin modulation of first k's
+    vector<int> bin_k_factor_span, // 
     int mode,
     int geom_
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
-    k(k), N(N), D(D), x(x), mode(mode)
+    k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
+    bin_k_factor_span(bin_k_factor_span), mode(mode)
 {
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
@@ -94,6 +97,12 @@ ReactionDiffusion::ReactionDiffusion(
                 coeff_reac[rxni*n+si];
         }
     }
+
+    // Handle bin_k_factors:
+    for (int i=0; i<bin_k_factor_span.size(); ++i)
+	for (int j=0; j<bin_k_factor_span[i]; ++j)
+	    i_bin_k.push_back(i);
+    n_factor_affected_k = i_bin_k.size();
 }
 
 ReactionDiffusion::~ReactionDiffusion()
@@ -105,14 +114,16 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []coeff_actv;
 }
 
+#define FACTOR(ri, bi) (((ri) < n_factor_affected_k) ? \
+			bin_k_factor[bi][i_bin_k[ri]] : 1)
 void
-ReactionDiffusion::_fill_local_r(const double * const restrict yi,
+ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
 				 double * const restrict local_r) const
 {
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-        local_r[rxni] = k[rxni];
+        local_r[rxni] = FACTOR(rxni,bi)*k[rxni];
         for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
@@ -120,6 +131,7 @@ ReactionDiffusion::_fill_local_r(const double * const restrict yi,
         }
     }
 }
+#undef FACTOR
 
 // The indices of x, fluxes and bins
 // <indices.png>
@@ -205,7 +217,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         // Contributions from reactions
         // ----------------------------
 	const double * const yi = y+bi*n;
-        _fill_local_r(yi, local_r);
+        _fill_local_r(bi, yi, local_r);
         for (int rxni=0; rxni<nr; ++rxni){
             // reaction index rxni
             for (int si=0; si<n; ++si){
@@ -257,7 +269,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     
         // Contributions from reactions
         // ----------------------------
-        _fill_local_r(C, local_r);
+        _fill_local_r(bi, C, local_r);
         for (int si=0; si<n; ++si){
             // species si
             for (int dsi=0; dsi<n; ++dsi){

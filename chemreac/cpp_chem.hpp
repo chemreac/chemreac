@@ -16,8 +16,10 @@ private:
     int * coeff_totl;
     int * coeff_actv;
     double * dx; // bin separations (from center) (length = N)
+    vector<int> i_bin_k;
+    int n_factor_affected_k;
 
-    void _fill_local_r(const double * const restrict, double * const restrict) const;
+    void _fill_local_r(int, const double * const restrict, double * const restrict) const;
     double flux(int i, int si, const double * const restrict y) const;
     double diffusion_contrib(int bi, int si, const double * const restrict fluxes) const;
     double diffusion_contrib_jac_prev(int bi) const;
@@ -35,6 +37,8 @@ public:
     vector<double> k; // Rate coefficients (law of mass action)
     vector<double> D; // Diffusion coefficients
     vector<double> x; // Bin edges (length = N+1)
+    vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
+    vector<int> bin_k_factor_span; // 
 
     ReactionDiffusion(int, 
 		      vector<vector<int> >, 
@@ -44,6 +48,8 @@ public:
 		      vector<double>, 
 		      vector<double>,
 		      vector<vector<int> >, 
+		      vector<vector<double> >,
+		      vector<int>,
 		      int,
 		      int);
     ~ReactionDiffusion();
