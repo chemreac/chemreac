@@ -3,9 +3,9 @@
 
 import argh
 import numpy as np
+import matplotlib.pyplot as plt
 
 from chemreac.serialization import load
-
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
 from chemreac.util import coloured_spy
@@ -45,7 +45,7 @@ def main(tend=10.0, N=1, nt=50, plot=True, spy=False, mode=None):
             sys.dense_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(jout))
         elif mode == BANDED:
-            jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F')
+            jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F') # note sys.n*3 needed in actual call
             sys.banded_packed_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(jout))
         plt.show()
