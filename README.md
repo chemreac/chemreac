@@ -11,7 +11,7 @@ formats. (currently dense row-major, dense col-major and banded
 formats are supported).
 
 The ODE systems is computed in the C++ class ReactionDiffusion
-(`cpp_chem_template.cpp`). It is conveniently accessible from Python
+(see `src/chemreac_template.cpp`). It is conveniently accessible from Python
 (wrapped using Cython). A simple wrapper to scipy.integrate.ode is
 provided in `chemreac.integrate.run`
 
@@ -21,7 +21,9 @@ Setup
 
 Tests
 =====
-Run `./py.test`
+``` python setup.py build_ext --inplace ```
+`./py.test`
+requires make
 
 Prerequisites
 =============

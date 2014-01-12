@@ -94,7 +94,7 @@ FLAGS += $(EXTRA_FLAGS)
 %.o: %.f90
 	$(FC) -fPIC $(FORTFLAGS) $(FLAGS) -c -o $@ $<
 
-all: test_chemreac
+all: test_chemreac.out
 
 .PHONY: clean all
 
@@ -108,6 +108,9 @@ chemreac.cpp: ../chemreac_template.cpp
 test_chemreac: chemreac.cpp test_chemreac.cpp
 	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) $(OPENMPFLAG) -I.. -Drestrict=__restrict__\
 	 -o $@ $^ -lrt $(OPENMPLIBS)
+
+test_chemreac.out: test_chemreac
+	./$< >$@
 
 profile_test_chemreac.out: test_chemreac
 	./$<
