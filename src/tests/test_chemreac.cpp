@@ -1,19 +1,16 @@
-// ignore this for now... : compile with  -Dprivate=public
-
 #include <ctime> // clock_gettime
 #include <iostream>
 #include <vector>
 #include <numeric> // std::accumulate
 #include <algorithm> // min, max
 #include <cassert>
-#include "cpp_chem.hpp"
+#include "chemreac.h"
 
 
 using std::max;
 using std::min;
 using std::accumulate;
 using std::vector;
-
 
 
 void test_f(){
@@ -27,13 +24,16 @@ void test_f(){
     vector<double> k {0.05, 3.0};
     vector<double> D {.1, .2, .3, .4};
     vector<double> x;
+    vector<vector<double> > bin_k_factor;
+    vector<int> bin_k_factor_span;
     vector<int> v;
     for (int i=0; i<2; ++i)
 	stoich_actv.push_back(v);
     for (int i=0; i<N+1; ++i)
 	x.push_back((double)i);
     printf("x.size()=%d\n", x.size());
-    ReactionDiffusion rd(n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv, 0, 0);
+    chemreac::ReactionDiffusion rd(n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
+				   bin_k_factor, bin_k_factor_span, 0, 0);
     vector<double> y;
     vector<double> b;
     vector<double> timings;

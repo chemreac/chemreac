@@ -1,12 +1,19 @@
-#ifndef _CPP_CHEM_H_
-#define _CPP_CHEM_H_
+#ifndef _CHEMREAC_H_
+#define _CHEMREAC_H_
 
 #include <vector>
 #include <stdexcept>
 
 using std::vector;
 
-enum class Geom {FLAT, SPHERICAL, CYLINDRICAL};
+enum class Geom {FLAT, SPHERICAL, CYLINDRICAL}; // Geom:: -> GEOM_
+
+/* #define Geom int */
+/* #define GEOM_FLAT 0 */
+/* #define GEOM_SPHERICAL 1 */
+/* #define GEOM_CYLINDRICAL 2 */
+
+namespace chemreac {
 
 class ReactionDiffusion
 {
@@ -59,5 +66,7 @@ public:
     void banded_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
     void banded_packed_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
 
-};
+}; // class ReactionDiffusion
+
+}; // namespace chemreac
 #endif

@@ -8,7 +8,8 @@ def render_mako_template_to(template_path, outpath, subsd):
     template_str = open(template_path, 'rt').read()
     with open(outpath, 'wt') as ofh:
         try:
-            rendered = Template(template_str).render(**subsd)
+            rendered = Template(template_str, input_encoding='utf-8',
+                                output_encoding='utf-8').render(**subsd)
         except:
             print(text_error_template().render())
             raise

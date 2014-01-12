@@ -38,3 +38,5 @@ Open Soucrce. Released under the very permissive "simplified
 Author
 ======
 Björn Dahlgren, contact (gmail adress): bjodah
+python -m pudb /home/bjorn/.local/bin/xdress --debug
+env DISTUTILS_DEBUG=1 python -m pudb setup.py build

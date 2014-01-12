@@ -21,17 +21,17 @@ else:
     cmdclass_ = {'build_ext': clever_build_ext}
     ext_modules_ = [
         CleverExtension(
-            "chemreac.cpp_chem_wrapper",
+            "chemreac._chemreac",
             sources=[
-                'chemreac/cpp_chem_template.cpp',
-                'chemreac/cpp_chem_wrapper.pyx',
+                'src/chemreac_template.cpp',
+                'chemreac/_chemreac.pyx',
             ],
             template_regexps=[
                 (r'^(\w+)_template.(\w+)$', r'\1.\2', {'USE_OPENMP': USE_OPENMP}),
             ],
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {
-                    'chemreac/cpp_chem.cpp': {
+                    'src/chemreac.cpp': {
                         'std': 'c++11',
                         'options': ['pic', 'warn', 'fast'] +\
                         (['openmp'] if USE_OPENMP else []),
@@ -39,11 +39,12 @@ else:
                         (['DEBUG'] if DEBUG else []),
                     },
                 },
+                'defmacros': ['restrict=__restrict__'],
             },
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
             },
-            include_dirs=['chemreac/'],
+            include_dirs=['src/'],
             logger=True,
         )
     ]

@@ -3,7 +3,7 @@
 
 from libcpp.vector cimport vector
 
-cdef extern from "cpp_chem.hpp":
+cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
         int n, N, nr, mode, geom
         vector[vector[int]] stoich_reac

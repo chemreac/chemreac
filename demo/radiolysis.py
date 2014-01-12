@@ -10,8 +10,7 @@ import numpy as np
 
 #project internal imports
 from chemreac.serialization import load
-from chemreac.cpp_chem_wrapper import \
-    PyReactionDiffusion as ReactionDiffusion
+from chemreac import ReactionDiffusion
 
 from chemreac.integrate import run
 

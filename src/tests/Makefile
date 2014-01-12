@@ -1,5 +1,3 @@
-## When using intel compiler: source e.g. /opt/intel/mkl/bin/mklvars.sh to get $MKLROOT
-
 ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
   FC=ifort
   CXX=icpc 
@@ -14,8 +12,6 @@ ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
   CXXFLAGS=-std=c++0x
   OPENMPLIBS=-liomp5
   OPENMPFLAG=-openmp
-  LAPACKLIBS=$(MKLROOT)/lib/intel64/libmkl_lapack95_lp64.a -lpthread -lm 
-  LAPACKFLAGS=-openmp -I$(MKLROOT)/include/intel64/lp64 -mkl=parallel
   C99=-std=c99
 else
 ifeq ($(COMPILER_VENDOR),cray-pgi)
@@ -29,8 +25,7 @@ ifeq ($(COMPILER_VENDOR),cray-pgi)
   PERFFLAGS=-O2
   FLAGS=-DCRAY
   CXXFLAGS=
-  LAPACKLIBS=
-  LAPACKFLAGS=
+
   C99=-c99
   OPENMPLIBS=
   OPENMPFLAG=-mp
@@ -48,8 +43,7 @@ ifeq ($(COMPILER_VENDOR),cray-gnu)
   PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
   FLAGS=-Wall -Wextra -pedantic -DCRAY
   CXXFLAGS=-std=c++0x
-  LAPACKLIBS=
-  LAPACKFLAGS=
+
   C99=-std=c99
   OPENMPLIBS=#-lgomp
   OPENMPFLAG=-fopenmp
@@ -64,8 +58,7 @@ else
   PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
   FLAGS=-Wall -Wextra -pedantic
   CXXFLAGS=-std=c++0x
-  LAPACKLIBS=-llapack -lblas
-  LAPACKFLAGS=
+
   C99=-std=c99
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
@@ -101,7 +94,7 @@ FLAGS += $(EXTRA_FLAGS)
 %.o: %.f90
 	$(FC) -fPIC $(FORTFLAGS) $(FLAGS) -c -o $@ $<
 
-all: test_cpp_chem
+all: test_chemreac
 
 .PHONY: clean all
 
@@ -109,12 +102,13 @@ clean:
 	rm $(GENERATED)
 	rm $(OBJS)
 
-cpp_chem.cpp: cpp_chem_template.cpp
-	python enmako.py -g '{}' -o $@ $<
+chemreac.cpp: ../chemreac_template.cpp
+	python enmako.py -g '{"USE_OPENMP": True}' -o $@ $<
 
-test_cpp_chem: cpp_chem.cpp test_cpp_chem.cpp
-	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) ${LAPACKFLAGS} -o $@ $^ -lrt $(LAPACKLIBS) $(OPENMPLIBS)
+test_chemreac: chemreac.cpp test_chemreac.cpp
+	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) $(OPENMPFLAG) -I.. -Drestrict=__restrict__\
+	 -o $@ $^ -lrt $(OPENMPLIBS)
 
-profile_test_cpp_chem.out: test_cpp_chem
+profile_test_chemreac.out: test_chemreac
 	./$<
 	gprof ./$< > $@

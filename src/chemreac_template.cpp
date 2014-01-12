@@ -5,7 +5,7 @@
 
 #include <algorithm> // count
 #include <vector>
-#include "cpp_chem.hpp"
+#include "chemreac.h"
 
 #ifdef DEBUG
 #include <cstdio>
@@ -25,6 +25,7 @@
 
 using std::vector;
 using std::count;
+namespace chemreac {
 
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
@@ -317,3 +318,4 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 }
 #undef JAC
 %endfor
+};

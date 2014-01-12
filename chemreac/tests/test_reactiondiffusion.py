@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from chemreac import PyReactionDiffusion as ReactionDiffusion
+from chemreac import ReactionDiffusion
 
 @pytest.mark.xfail
 def test_ReactionDiffusion__f__wrong_fout_dimension():

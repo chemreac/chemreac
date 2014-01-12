@@ -4,8 +4,7 @@
 import argh
 import numpy as np
 
-from chemreac.cpp_chem_wrapper import \
-    PyReactionDiffusion as ReactionDiffusion
+from chemreac import ReactionDiffusion
 
 from chemreac import BANDED
 from chemreac.integrate import run
