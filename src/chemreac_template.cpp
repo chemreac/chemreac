@@ -39,12 +39,11 @@ ReactionDiffusion::ReactionDiffusion(
     vector<vector<int> > stoich_actv_,
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
     vector<int> bin_k_factor_span, // 
-    int mode,
     int geom_
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
-    bin_k_factor_span(bin_k_factor_span), mode(mode)
+    bin_k_factor_span(bin_k_factor_span)
 {
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
@@ -147,10 +146,13 @@ ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 }
 #undef C
 
-// 4π cancel
 #define L(i) (x[i+1]-x[i])
-#define A(i) (x[i]*x[i]) // 4πrₖ²
-#define V(i) ((x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i])/3) // 4πrₖ₊₁³/3 - 4πrₖ³/3
+// Sphere - coefficients rearranged for correct A/V (4π cancel)
+#define A(i) (3*x[i]*x[i]) // 4πrₖ²
+#define V(i) (x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i]) // 4πrₖ₊₁³/3 - 4πrₖ³/3
+// Cylinder - coefficients rearranged for correct A/V (π cancel)
+#define AC(i) (2*x[i]) // 2πrₖ*h
+#define VC(i) (x[i+1]*x[i+1] - x[i]*x[i]) // πrₖ₊₁²*h - πrₖ²*h
 //define FLUX(i) fluxes[(i)+si*n]
 #define FLUX(i) fluxes[(i)*n+si]
 double
@@ -167,6 +169,10 @@ ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restri
         if (bi > 0)   contrib += FLUX(bi-1)*A(bi)/V(bi);
         if (bi < N-1) contrib -= FLUX(bi)*A(bi+1)/V(bi);
         break;
+    case Geom::CYLINDRICAL :
+        if (bi > 0)   contrib += FLUX(bi-1)*AC(bi)/VC(bi);
+        if (bi < N-1) contrib -= FLUX(bi)*AC(bi+1)/VC(bi);
+        break;
     }
     return contrib;
 }
@@ -175,24 +181,29 @@ double
 ReactionDiffusion::diffusion_contrib_jac_prev(int bi) const
 {
     switch(geom){
-    case Geom::FLAT :      return 1.0/dx[bi-1]/L(bi);
-    case Geom::SPHERICAL : return 1.0/dx[bi-1]*A(bi)/V(bi);
+    case Geom::FLAT :        return 1.0/dx[bi-1]/L(bi);
+    case Geom::SPHERICAL :   return 1.0/dx[bi-1]*A(bi)/V(bi);
+    case Geom::CYLINDRICAL : return 1.0/dx[bi-1]*AC(bi)/VC(bi);
     }
-    return 0.0/0.0; // Cylindrical goes here later
+
+    return 0.0/0.0; // NaN (shouldn't be possible to reach)
 }
 
 double
 ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
 {
     switch(geom){
-    case Geom::FLAT :      return 1.0/dx[bi]/L(bi);
-    case Geom::SPHERICAL : return 1.0/dx[bi]*A(bi+1)/V(bi);
+    case Geom::FLAT :        return 1.0/dx[bi]/L(bi);
+    case Geom::SPHERICAL :   return 1.0/dx[bi]*A(bi+1)/V(bi);
+    case Geom::CYLINDRICAL : return 1.0/dx[bi]*AC(bi+1)/VC(bi);
     }
-    return 0.0/0.0; // Cylindrical goes here later
+    return 0.0/0.0; // NaN (shouldn't be possible to reach)
 }
 #undef L
 #undef A
 #undef V
+#undef AC
+#undef VC
 
 
 #define DCDT dydt[bi*n+si]

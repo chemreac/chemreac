@@ -36,7 +36,6 @@ public:
     int n; // number of species
     int N; // number of compartments
     int nr; // number of reactions
-    int mode; // Jacobian storage: 0: DENSE, 1: BANDED, 2: SPARSE
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Spherical, 2: 1D Cylind.
     vector<vector<int> > stoich_reac; // Reactants per reaction
     vector<vector<int> > stoich_actv; // Active reactants per reaction
@@ -57,7 +56,6 @@ public:
 		      vector<vector<int> >, 
 		      vector<vector<double> >,
 		      vector<int>,
-		      int,
 		      int);
     ~ReactionDiffusion();
     void f(double, const double * const restrict, double * const restrict) const;
