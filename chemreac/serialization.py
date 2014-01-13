@@ -1,7 +1,5 @@
 import json
 
-from . import DENSE
-
 def dump(rd, path):
     fh = open(path, 'wt')
     data = {
@@ -25,5 +23,4 @@ def load(path, RD=None, **kwargs):
     fh = open(path, 'rt')
     data = json.load(fh)
     data.update(kwargs)
-    if not 'mode' in data: data['mode'] = DENSE
     return RD(**data)

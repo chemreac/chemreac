@@ -5,7 +5,7 @@ from libcpp.vector cimport vector
 
 cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
-        int n, N, nr, mode, geom
+        int n, N, nr, geom
         vector[vector[int]] stoich_reac
         vector[vector[int]] stoich_actv
         vector[vector[int]] stoich_prod
@@ -25,7 +25,6 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           vector[vector[int]],
                           vector[vector[double]],
                           vector[int],
-                          int,
                           int) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
@@ -33,14 +32,6 @@ cdef extern from "chemreac.h" namespace "chemreac":
         void banded_jac_cmaj(double, const double * const, double * const, int)
         void banded_packed_jac_cmaj(double, const double * const, double * const, int)
 
-
-DEF DENSE=0
-DEF BANDED=1
-DEF SPARSE=2
-
-DEF FLAT=0
-DEF SPHERICAL=1
-DEF CYLINDRICAL=2
 
 cdef class PyReactionDiffusion:
     cdef ReactionDiffusion *thisptr
@@ -50,63 +41,17 @@ cdef class PyReactionDiffusion:
                   vector[vector[int]] stoich_reac,
                   vector[vector[int]] stoich_prod,
                   vector[double] k,
-                  int N = 0,
-                  D = None,
-                  x = None,
-                  stoich_actv = None,
-                  bin_k_factor = None,
-                  bin_k_factor_span = None,
-                  int mode=DENSE,
-                  int geom=FLAT,
+                  int N,
+                  vector[double] D,
+                  vector[double] x,
+                  vector[vector[int]] stoich_actv,
+                  vector[vector[double]] bin_k_factor,
+                  vector[int] bin_k_factor_span,
+                  int geom,
               ):
-        cdef vector[vector[int]] _stoich_actv
-        cdef vector[double] _x
-        cdef vector[double] _D
-
-        if N == 0:
-            if x == None:
-                N = 1
-            else:
-                N = len(x)-1
-
-        if N > 1:
-            assert n == len(D)
-            _D = D
-        else:
-            _D = list([0]*n)
-
-        x = x or 1
-
-        if isinstance(x, float) or isinstance(x, int):
-            _x = [x/float(N)*i for i in range(N+1)]
-        else:
-            assert len(x) == N+1
-            _x = x
-
-        if stoich_actv == None:
-            _stoich_actv = list([[]]*len(stoich_reac))
-        else:
-            _stoich_actv = stoich_actv
-        assert len(_stoich_actv) == len(stoich_reac)
-
-        assert len(stoich_reac) == len(stoich_prod) == len(k)
-        assert mode in (DENSE, BANDED, SPARSE)
-        assert geom in (FLAT, SPHERICAL, CYLINDRICAL)
-
-        # Handle bin_k_factor
-        if bin_k_factor == None:
-            assert bin_k_factor_span == None
-            bin_k_factor = []
-            bin_k_factor_span = []
-        else:
-            assert bin_k_factor_span != None
-            assert len(bin_k_factor) == N
-            assert all([len(x) == len(bin_k_factor_span) for x in bin_k_factor])
-            assert all([x >= 0 for x in bin_k_factor_span])
-
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
-            _D, _x, _stoich_actv, bin_k_factor, bin_k_factor_span, mode, geom)
+            D, x, stoich_actv, bin_k_factor, bin_k_factor_span, geom)
 
     def __dealloc__(self):
         del self.thisptr
@@ -121,7 +66,7 @@ cdef class PyReactionDiffusion:
 
     def dense_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
-        self.thisptr.dense_jac_cmaj(t, &y[0], &Jout[0,0], Jout.shape[1])
+        self.thisptr.dense_jac_cmaj(t, &y[0], &Jout[0,0], Jout.shape[0])
 
     def banded_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
@@ -168,3 +113,7 @@ cdef class PyReactionDiffusion:
     property x:
         def __get__(self): return self.thisptr.x
         def __set__(self, vector[double] x): self.thisptr.x = x
+
+    # Extra convenience property
+    property ny:
+        def __get__(self): return self.N*self.n
