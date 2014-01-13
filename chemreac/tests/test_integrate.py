@@ -9,6 +9,9 @@ import numpy as np
 from chemreac.serialization import load
 from chemreac.integrate import run
 
+from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+
+
 """
 Tests the integration routine for the
 chemical reaction system. (no diffusion)
@@ -38,3 +41,25 @@ def test_integrate(N):
 
     assert np.allclose(tout, ref_t)
     assert np.allclose(yout[:,:4], ref_y, atol=1e-3)
+
+@pytest.mark.parametrize("N", range(2,15,3))
+def test_integrate__only_1_species_diffusion__mass_conservation(N):
+    # Test that mass convervation is fulfilled wrt diffusion.
+    x = np.linspace(0.1, 1.0, N+1)
+    y0 = (x[0]/2+x[1:])**2
+
+    geoms = (FLAT, SPHERICAL, CYLINDRICAL)
+
+    for i, G in enumerate(geoms):
+        sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=G)
+        tout, yout, info = run(sys, y0, t0=0, tend=10.0, nt=50)
+        if i == 0:
+            yprim = yout
+        elif i == 1:
+            yprim = yout*(x[1:]**3-x[:-1]**3)
+        else:
+            yprim = yout*(x[1:]**2-x[:-1]**2)
+
+        ybis = np.sum(yprim, axis=1)
+
+        assert np.allclose(np.average(ybis), ybis)

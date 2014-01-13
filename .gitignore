@@ -22,3 +22,5 @@ build/
 */*.so
 
 src/tests/*.out
+src/tests/test_chemreac
+src/tests/chemreac.cpp

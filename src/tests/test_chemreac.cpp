@@ -33,7 +33,7 @@ void test_f(){
 	x.push_back((double)i);
     printf("x.size()=%d\n", x.size());
     chemreac::ReactionDiffusion rd(n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
-				   bin_k_factor, bin_k_factor_span, 0, 0);
+				   bin_k_factor, bin_k_factor_span, 0);
     vector<double> y;
     vector<double> b;
     vector<double> timings;
