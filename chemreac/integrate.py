@@ -51,7 +51,10 @@ def run(sys, y0, t0, tend, nt, mode=None, log_time=False, **kwargs):
 
     def jac(t, y, *j_args):
         jac.neval += 1
-        sys.banded_packed_jac_cmaj(t, y, jout)
+        if mode == DENSE:
+            sys.dense_jac_cmaj(t, y, jout)
+        else:
+            sys.banded_packed_jac_cmaj(t, y, jout)
         return jout
     jac.neval = 0
 
