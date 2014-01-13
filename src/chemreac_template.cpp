@@ -38,7 +38,7 @@ ReactionDiffusion::ReactionDiffusion(
     vector<double> x, // separation
     vector<vector<int> > stoich_actv_,
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
-    vector<int> bin_k_factor_span, // 
+    vector<int> bin_k_factor_span, // modulation over reactions
     int geom_
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
