@@ -1,8 +1,9 @@
 ## -*- coding: utf-8 -*-
-// This is a templated source file. (Make sure you're editing the 
-// template)
+// ${_warning_in_the_generated_file_not_to_edit}
+<%doc>
+// This is a templated source file.
 // Render template using Mako (Python templating engine)
-
+</%doc>
 #include <algorithm> // count
 #include <vector>
 #include "chemreac.h"
