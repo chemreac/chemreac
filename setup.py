@@ -10,7 +10,7 @@ name_ = 'chemreac'
 version_ = '0.0.4'
 
 DEBUG=True
-USE_OPENMP = os.environ.get('USE_OPENMP', False)
+USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 
 if '--help'in sys.argv[1:] or sys.argv[1] in (
         '--help-commands', 'egg_info', 'clean', '--version'):

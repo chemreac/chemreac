@@ -32,7 +32,6 @@ ifeq ($(COMPILER_VENDOR),cray-pgi)
 else
   PROFFLAGS=-pg
 ifeq ($(COMPILER_VENDOR),cray-gnu)
-#-lpgf90 -lpgf90_rpm1 -lpgf902 -lpgf90rtl -lpgftnrtl
   FC=ftn
   CXX=CC
   CC=cc
@@ -43,7 +42,6 @@ ifeq ($(COMPILER_VENDOR),cray-gnu)
   PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
   FLAGS=-Wall -Wextra -pedantic -DCRAY
   CXXFLAGS=-std=c++0x
-
   C99=-std=c99
   OPENMPLIBS=#-lgomp
   OPENMPFLAG=-fopenmp
@@ -58,14 +56,12 @@ else
   PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
   FLAGS=-Wall -Wextra -pedantic
   CXXFLAGS=-std=c++0x
-
   C99=-std=c99
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
 endif
 endif
 endif
-EXTRA_FLAGS=
 
 ifeq ($(OPTIMIZE),1)
   FLAGS += $(PERFFLAGS)
