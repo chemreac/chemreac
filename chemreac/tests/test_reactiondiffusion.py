@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from chemreac import ReactionDiffusion
+from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 
 @pytest.mark.xfail
 def test_ReactionDiffusion__f__wrong_fout_dimension():
@@ -54,3 +54,73 @@ def test_ReactionDiffusion__only_1_species_diffusion():
     J = D*(y0[0]-y0[1])/(0.5*(x[2]-x[0]))
     fref = np.array([-J/(x[1]-x[0]), J/(x[2]-x[1])])
     assert np.allclose(fout, fref)
+
+def test_ReactionDiffusion__actv():
+    pass
+
+@pytest.mark.parametrize("geom", (FLAT, SPHERICAL, CYLINDRICAL))
+def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
+    # r1: A + B -> C
+    # r2: D + C -> D + A + B
+    # r3: B + B -> D
+    geom = SPHERICAL
+    #               r1        r2     r3
+    stoich_reac = [[0,1],   [2,3], [1,1]]
+    stoich_prod = [  [2], [0,1,3],   [3]]
+    n = 4
+    N = 5
+    D = [2.5, 3.7, 5.11, 7.13]
+    y0 = np.array([2.5, 1.2, 3.2, 4.3,
+                   2.7, 0.8, 1.6, 2.4,
+                   3.1, 0.3, 1.5, 1.8,
+                   3.3, 0.6, 1.6, 1.4,
+                   3.6, 0.9, 1.7, 1.2])
+    x = np.array([11.0, 13.0, 17.0, 23.0, 29.0, 37.0])
+    k = [31.0, 37.0, 41.0]
+    bin_k_factor = [(x+3, x+4) for x in range(N)] #(r1, r2) modulations
+    bin_k_factor_span = [1, 1]
+    rd = ReactionDiffusion(
+        4, stoich_reac, stoich_prod, k, N, D, x, bin_k_factor=bin_k_factor,
+        bin_k_factor_span=bin_k_factor_span, geom=geom)
+
+    # Let's calculate f "by hand"
+    if geom == FLAT:
+        A = 1.0
+        Vincl = x
+    elif geom == SPHERICAL:
+        A = [4*pi*r**2 for r in x]
+        Vincl = [4*pi*r**3/3 for r in x]
+    elif geom == CYLINDRICAL:
+        A = [2*pi*r for r in x]
+        Vincl = [pi*r**2 for r in x]
+    V = [V[i+1]-V[i] for i in range(N)]
+    dx = x.diff()
+    def flux(si, bi):
+        C = y0[si+n*bi]
+        if bi > 0: # previous
+            Cp = y0[si+n*(bi-1)]
+        else:
+            Cp = C
+
+        if bi < N:
+            Cn = y0[si+n*(bi+1)]
+        else:
+            Cn = C
+
+        f = 0.0
+        f -= D[si]*A[bi]*(C-Cp)/dx[bi]
+        f += D[si]*A[bi+1]*(Cn-C)/dx[bi+1]
+        return f
+
+    ref_f = np.array([
+        [
+            -r1[bi]+r2[bi]+flux(0, bi)/V[bi],
+            -r1[bi]+r2[bi]-2*r3[bi]+flux(1, bi)/V[bi],
+            r1[bi] - r2[bi]+flux(2, bi)/V[bi],
+            r3[bi]+flux(3, bi)/V[bi]
+        ] for bi in range(N)]).flatten()
+
+    # Compare to what is calculated using our C++ callback
+    fout = np.empty(n*N)
+    rd.f(0.0, y0, fout)
+    assert np.allclose(fout, ref_f)

@@ -56,6 +56,8 @@ def ReactionDiffusion(
         _x = [x/float(N)*i for i in range(N+1)]
     else:
         assert len(x) == N+1
+        # monotonic:
+        assert all([x[i+1]>x[i] for i in range(len(x)-1)])
         _x = x
 
     if stoich_actv == None:
@@ -68,7 +70,7 @@ def ReactionDiffusion(
     assert geom in (FLAT, SPHERICAL, CYLINDRICAL)
 
     if geom == SPHERICAL or geom == CYLINDRICAL:
-        assert x[0] != 0.0
+        assert _x[0] != 0.0
 
     # Handle bin_k_factor
     if bin_k_factor == None:
