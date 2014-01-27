@@ -262,11 +262,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 
 
 
-%for token, imaj, imin in						\
-    [('dense_jac_rmaj', '(bri)*n + ri', '(bci)*n + ci'),		\
-     ('dense_jac_cmaj', '(bci)*n + ci', '(bri)*n + ri'),		\
-     ('banded_jac_cmaj','(bci)*n + ci', '2*n+(bri)*n+ri-((bci)*n+ci)'),	\
-     ('banded_packed_jac_cmaj','(bci)*n+ci','n+(bri)*n+ri-(bci)*n-ci'), \
+%for token, imaj, imin in\
+    [('dense_jac_rmaj', '(bri)*n + ri', '(bci)*n + ci'),\
+     ('dense_jac_cmaj', '(bci)*n + ci', '(bri)*n + ri'),\
+     ('banded_padded_jac_cmaj','(bci)*n + ci', '(2+bri-bci)*n+ri-ci'),\
+     ('banded_packed_jac_cmaj','(bci)*n+ci','(1+bri-bci)*n+ri-ci'),\
         ]:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
 void
@@ -330,4 +330,4 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 }
 #undef JAC
 %endfor
-};
+}; // namespace chemreac

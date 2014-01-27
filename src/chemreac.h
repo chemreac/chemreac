@@ -61,7 +61,7 @@ public:
     void f(double, const double * const restrict, double * const restrict) const;
     void dense_jac_rmaj(double, const double * const restrict, double * const restrict, int) const;
     void dense_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
-    void banded_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
+    void banded_padded_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
     void banded_packed_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
 
 }; // class ReactionDiffusion

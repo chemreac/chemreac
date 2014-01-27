@@ -186,9 +186,13 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     for ri, ci in np.ndindex(n*N, n*N):
         ref_j[ri, ci] = jac_elem(ri, ci)
 
-    jout = np.zeros((n*N, n*N), order='C')
-    rd.dense_jac_rmaj(0.0, y0, jout)
-    print('ref_j\n', ref_j[:n,:n])
-    print('jout\n', jout[:n,:n])
-    print('diff\n', (ref_j - jout)[:n,:n])
-    assert np.allclose(jout, ref_j)
+    jout_rmaj = np.zeros((n*N, n*N), order='C')
+    rd.dense_jac_rmaj(0.0, y0, jout_rmaj)
+    assert np.allclose(jout_rmaj, ref_j)
+
+    jout_cmaj = np.zeros((n*N, n*N), order='F')
+    rd.dense_jac_cmaj(0.0, y0, jout_cmaj)
+    assert np.allclose(jout_cmaj, ref_j)
+
+    jout_bnd_cmaj = np.zeros((n*N, n*N), order='F')
+    jout_pck_bnd_cmaj = np.zeros((n*N, n*N), order='F')

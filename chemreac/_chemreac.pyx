@@ -29,7 +29,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
         void dense_jac_cmaj(double, const double * const, double * const, int)
-        void banded_jac_cmaj(double, const double * const, double * const, int)
+        void banded_padded_jac_cmaj(double, const double * const, double * const, int)
         void banded_packed_jac_cmaj(double, const double * const, double * const, int)
 
 
@@ -62,19 +62,31 @@ cdef class PyReactionDiffusion:
 
     def dense_jac_rmaj(self, double t, double [::1] y,
                        double [:, ::1] Jout):
+        assert y.size >= self.n*self.N
+        assert Jout.shape[0] >= self.n*self.N
+        assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_rmaj(t, &y[0], &Jout[0,0], Jout.shape[1])
 
     def dense_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
+        assert y.size >= self.n*self.N
+        assert Jout.shape[0] >= self.n*self.N
+        assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_cmaj(t, &y[0], &Jout[0,0], Jout.shape[0])
 
-    def banded_jac_cmaj(self, double t, double [::1] y,
+    def banded_padded_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
-        self.thisptr.banded_jac_cmaj(t, &y[0], &Jout[0,0],
+        assert y.size >= self.n*self.N
+        assert Jout.shape[0] >= self.n*4
+        assert Jout.shape[1] >= self.n*self.N
+        self.thisptr.banded_padded_jac_cmaj(t, &y[0], &Jout[0,0],
                                      Jout.shape[0])
 
     def banded_packed_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
+        assert y.size >= self.n*self.N
+        assert Jout.shape[0] >= self.n*3
+        assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_packed_jac_cmaj(
             t, &y[0], &Jout[0,0], Jout.shape[0])
 
