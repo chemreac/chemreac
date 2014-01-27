@@ -9,13 +9,14 @@ def spy(sys):
     plt.spy(b)
     plt.show()
 
-def coloured_spy(A, cmap_name='gray'):
+def coloured_spy(A, cmap_name='gray', ax = None):
     from matplotlib import pyplot as plt
     from matplotlib.ticker import MaxNLocator
     from matplotlib.cm import get_cmap
 
-    fig = plt.figure()
-    ax = fig.add_subplot(111)
+    if not ax:
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
     plt.imshow(A, cmap=get_cmap(cmap_name), interpolation='none')
     ax = plt.gca()
     ya = ax.get_yaxis()

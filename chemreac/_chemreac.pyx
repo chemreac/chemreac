@@ -57,7 +57,7 @@ cdef class PyReactionDiffusion:
         del self.thisptr
 
     def f(self, double t, double [::1] y, double [::1] fout):
-        assert y.size == fout.size # OPTIMIZE AWAY
+        assert y.size == fout.size
         self.thisptr.f(t, &y[0], &fout[0])
 
     def dense_jac_rmaj(self, double t, double [::1] y,
@@ -65,27 +65,29 @@ cdef class PyReactionDiffusion:
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
-        self.thisptr.dense_jac_rmaj(t, &y[0], &Jout[0,0], Jout.shape[1])
+        self.thisptr.dense_jac_rmaj(
+            t, &y[0], &Jout[0,0], Jout.shape[1])
 
     def dense_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
-        self.thisptr.dense_jac_cmaj(t, &y[0], &Jout[0,0], Jout.shape[0])
+        self.thisptr.dense_jac_cmaj(
+            t, &y[0], &Jout[0,0], Jout.shape[0])
 
     def banded_padded_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
         assert y.size >= self.n*self.N
-        assert Jout.shape[0] >= self.n*4
+        assert Jout.shape[0] >= self.n*3+1
         assert Jout.shape[1] >= self.n*self.N
-        self.thisptr.banded_padded_jac_cmaj(t, &y[0], &Jout[0,0],
-                                     Jout.shape[0])
+        self.thisptr.banded_padded_jac_cmaj(
+            t, &y[0], &Jout[0,0], Jout.shape[0])
 
     def banded_packed_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
         assert y.size >= self.n*self.N
-        assert Jout.shape[0] >= self.n*3
+        assert Jout.shape[0] >= self.n*2+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_packed_jac_cmaj(
             t, &y[0], &Jout[0,0], Jout.shape[0])

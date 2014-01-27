@@ -84,7 +84,7 @@ ReactionDiffusion::ReactionDiffusion(
     stoich_actv.reserve(nr);
     for (int rxni=0; rxni<nr; ++rxni){ // reaction index 
         if (stoich_actv_[rxni].size() == 0)
-            stoich_actv.push_back(stoich_reac[rxni]); // Strict massaction
+            stoich_actv.push_back(stoich_reac[rxni]); // massaction
 	else
 	    stoich_actv.push_back(stoich_actv_[rxni]);
         for (int si=0; si<n; ++si){ // species index
@@ -262,21 +262,26 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 
 
 
-%for token, imaj, imin in\
-    [('dense_jac_rmaj', '(bri)*n + ri', '(bci)*n + ci'),\
-     ('dense_jac_cmaj', '(bci)*n + ci', '(bri)*n + ri'),\
-     ('banded_padded_jac_cmaj','(bci)*n + ci', '(2+bri-bci)*n+ri-ci'),\
-     ('banded_packed_jac_cmaj','(bci)*n+ci','(1+bri-bci)*n+ri-ci'),\
-        ]:
+%for token, imaj, imin in [\
+    ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
+    ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
+    ('banded_packed_jac_cmaj', '(bci)*n+ci', '(1+bri-bci)*n+ri-ci'),\
+    ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-bci)*n+ri-ci'),\
+    ]:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
 void
 ReactionDiffusion::${token}(double t, const double * const restrict y,
                             double * const restrict ja, int ldj) const
 {
+    // `t`: time
+    // `y`: concentrations
+    // `ja`: jacobian (allocated 1D array to hold dense or banded)
+    // `ldj`: leading dimension of ja (useful for padding)
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for" if USE_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
-        const double * const C = y + bi*n; // Conc. in `bi:th` compartment
+        // Conc. in `bi:th` compartment
+        const double * const C = y + bi*n;
 
 	${'double * local_r = new double[nr];' if USE_OPENMP else ''}
     
@@ -302,9 +307,9 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         }
 
         if (N>1){
-            // Contributions from diffusion
-            // ----------------------------
+	    // Contributions from diffusion
 	    if (bi > 0){
+		// Diffusion over left boundary
 		double tmp = diffusion_contrib_jac_prev(bi);
 		for (int si=0; si<n; ++si){
 		    // species index si
@@ -314,6 +319,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
                 }
 	    }
 	    if (bi < N-1){
+		// Diffusion over right boundary
 		double tmp = diffusion_contrib_jac_next(bi);
 		for (int si=0; si<n; ++si){
 		    // species index si

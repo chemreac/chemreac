@@ -30,7 +30,7 @@ Prerequisites
 C++11 compliant compiler
 Python
 Cython
-Pycompilation 0.2.4
+Pycompilation 0.2.14
 
 License
 =======
