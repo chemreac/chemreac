@@ -28,6 +28,7 @@ def main(tend=10.0, N=25, nt=30):
     y0 = (x[0]/2+x[1:])**2
 
     geoms = (FLAT, SPHERICAL, CYLINDRICAL)
+    geom_name = {FLAT: 'Flat', SPHERICAL: 'Spherical', CYLINDRICAL: 'Cylindrical'}
 
     fig = plt.figure()
     res = []
@@ -50,7 +51,7 @@ def main(tend=10.0, N=25, nt=30):
             ax.set_xlabel('r / m')
         ax.set_ylabel('time / s')
         ax.set_zlabel(r'C / mol*m**-3')
-        ax.set_title(str(G))
+        ax.set_title(geom_name[G])
 
 
     for i, G in enumerate(geoms):
@@ -83,7 +84,7 @@ def main(tend=10.0, N=25, nt=30):
                 ax.set_xlabel('r / m')
             ax.set_ylabel('time / s')
             ax.set_zlabel(r'C / mol*m**-3')
-            ax.set_title('diff ' + str(G))
+            ax.set_title(geom_name[G] + ' minus ' + geom_name[0])
 
     plt.show()
 
