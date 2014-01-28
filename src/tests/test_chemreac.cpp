@@ -11,18 +11,18 @@
   #include <ctime> // clock_gettime
 #endif
 
+double dabs(double a){
+    return (a < 0.0) ? -a : a;
+}
 
 using std::max;
 using std::min;
 using std::accumulate;
 using std::vector;
+using chemreac::ReactionDiffusion;
 
-
-void test_f(){
-    double t = 0.0;
-    int ntimings = 10;
+ReactionDiffusion get_four_species_system(int N){
     int n = 4;
-    int N = 1000000; // A ridiculous number of bins for 1D but used for benchmarking
     vector<vector<int> > stoich_reac {{0}, {1, 2, 2}};
     vector<vector<int> > stoich_actv;
     vector<vector<int> > stoich_prod {{1}, {1, 3}};
@@ -36,9 +36,36 @@ void test_f(){
 	stoich_actv.push_back(v);
     for (int i=0; i<N+1; ++i)
 	x.push_back((double)i);
-    printf("x.size()=%lu\n", (unsigned long)x.size());
-    chemreac::ReactionDiffusion rd(n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
-				   bin_k_factor, bin_k_factor_span, 0);
+    return ReactionDiffusion(\
+	n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
+	bin_k_factor, bin_k_factor_span, 0);
+}
+
+int test_j(){
+    ReactionDiffusion rd = get_four_species_system(2);
+    vector<double> y0 {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
+// about to add test code here
+    return 0;
+}
+
+int test_f(){
+    ReactionDiffusion rd = get_four_species_system(2);
+    vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
+    vector<double> ref_f {-0.05*y[0], 0.05*y[0], -2*3.0*y[2]*y[2]*y[1], 3.0*y[2]*y[2]*y[1],\
+	    -0.05*y[4], 0.05*y[4], -2*3.0*y[6]*y[6]*y[5], 3.0*y[6]*y[6]*y[5]};
+    double f[8];
+    rd.f(0.0, &y[0], f);
+    for (int i=0; i<8; ++i)
+	if (dabs(f[i]-ref_f[i]) > 1e-15)
+	    return 1;
+    return 0;
+}
+
+int bench_f(){
+    double t = 0.0;
+    int ntimings = 10;
+    int N = 1000000; // A ridiculous number of bins for 1D but used for benchmarking
+    ReactionDiffusion rd = get_four_species_system(N);
     vector<double> y;
     vector<double> b;
     vector<double> timings;
@@ -51,7 +78,7 @@ void test_f(){
     timespec start, finish;
 #endif
 
-    b.reserve(n*N);
+    b.reserve(rd.n*N);
     for (auto i = 0; i < N; ++i){
 	y.push_back(1.30/(1+1/(i+1)));
 	y.push_back(1e-4/(1+1/(i+1)));
@@ -88,10 +115,13 @@ void test_f(){
     std::cout << "Best timing: " << best_timing << std::endl;
     std::cout << "Worst timing: " << worst_timing << std::endl;
     std::cout << "Average timing: " << std::accumulate(timings.begin(), timings.end(), 0.0)/ntimings << std::endl;
-
+    return 0;
 }
 
 int main(){
-    test_f();
-    return 0;
+    int status = 0;
+    status += test_f();
+    status += bench_f();
+    status += test_j();
+    return status;
 }
