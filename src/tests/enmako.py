@@ -35,12 +35,12 @@ def render_mako_template_to(
                 "Dest. dir. non-existent: {}".format(outdir))
 
     if only_update:
-        if prev_subsd == subsd and not \
-           missing_or_other_newer(outpath, template):
-            if logger:
-                msg = "Did not re-render {}. (destination newer + same dict)"
-                logger.info(msg.format(template))
-            return
+        if not missing_or_other_newer(outpath, template):
+            if (prev_subsd == None) or (prev_subsd == subsd):
+                if logger:
+                    msg = "Did not re-render {}. (destination newer + same dict)"
+                    logger.info(msg.format(template))
+                return
 
     msg = None
     if pass_warn_string == True:

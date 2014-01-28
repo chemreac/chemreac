@@ -103,7 +103,7 @@ chemreac.cpp: ../chemreac_template.cpp
 
 test_chemreac: chemreac.cpp test_chemreac.cpp
 	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) $(OPENMPFLAG) -I.. -Drestrict=__restrict__\
-	 -o $@ $^ -lrt $(OPENMPLIBS)
+	 -o $@ $^ $(OPENMPLIBS) # -lrt  only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac
 	./$< >$@
