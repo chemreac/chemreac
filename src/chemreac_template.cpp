@@ -80,7 +80,6 @@ ReactionDiffusion::ReactionDiffusion(
     coeff_totl = new int[nr*n];
     coeff_actv = new int[nr*n];
 
-
     stoich_actv.reserve(nr);
     for (int rxni=0; rxni<nr; ++rxni){ // reaction index 
         if (stoich_actv_[rxni].size() == 0)
@@ -265,8 +264,8 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 %for token, imaj, imin in [\
     ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
     ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
-    ('banded_packed_jac_cmaj', '(bci)*n+ci', '(1+bri-bci)*n+ri-ci'),\
-    ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-bci)*n+ri-ci'),\
+    ('banded_packed_jac_cmaj', '(bci)*n+ci', '(1+bri-(bci))*n+ri-ci'),\
+    ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-(bci))*n+ri-ci'),\
     ]:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
 void
