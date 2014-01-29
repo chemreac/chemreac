@@ -42,7 +42,7 @@ def test_integrate(N):
     assert np.allclose(tout, ref_t)
     assert np.allclose(yout[:,:4], ref_y, atol=1e-3)
 
-@pytest.mark.parametrize("N", range(2,15,3))
+@pytest.mark.parametrize("N", range(2,17))
 def test_integrate__only_1_species_diffusion__mass_conservation(N):
     # Test that mass convervation is fulfilled wrt diffusion.
     x = np.linspace(0.1, 1.0, N+1)
