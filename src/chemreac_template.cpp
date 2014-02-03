@@ -40,11 +40,13 @@ ReactionDiffusion::ReactionDiffusion(
     vector<vector<int> > stoich_actv_,
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
     vector<int> bin_k_factor_span, // modulation over reactions
-    int geom_
+    int geom_,
+    int logy,
+    int logt,
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
-    bin_k_factor_span(bin_k_factor_span)
+    bin_k_factor_span(bin_k_factor_span), logy(logy), logt(logt)
 {
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
@@ -123,11 +125,15 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-        local_r[rxni] = FACTOR(rxni,bi)*k[rxni];
+	local_r[rxni] = FACTOR(rxni,bi)*k[rxni];
+
         for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
-            local_r[rxni] *= yi[si];
+	    if (logy)
+		local_r[rxni] *= exp(yi[si]);
+	    else
+		local_r[rxni] *= yi[si];
         }
     }
 }
@@ -235,11 +241,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
             for (int si=0; si<n; ++si){
                 // species index si
                 int overall = coeff_totl[rxni*n + si];
-                if (overall != 0)
-                    DCDT += overall*local_r[rxni];
+                if (overall != 0){
+		    DCDT += overall*local_r[rxni];
+		}
             }
         }
-
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
@@ -248,6 +254,9 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                 DCDT += diffusion_contrib(bi, si, fluxes);
 	    }
         }
+	if (logy)
+	    for (int si=0; si<n; ++si)
+		DCDT *= log(y[bi*n+si]);
 
         ${"delete []local_r;" if USE_OPENMP else ""}
 
