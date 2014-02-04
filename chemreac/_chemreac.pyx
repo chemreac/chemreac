@@ -25,6 +25,8 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           vector[vector[int]],
                           vector[vector[double]],
                           vector[int],
+                          int,
+                          int,
                           int) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
