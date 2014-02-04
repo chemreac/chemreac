@@ -74,6 +74,12 @@ ReactionDiffusion::ReactionDiffusion(
     default: throw std::logic_error("Unknown geom.");
     }
 
+    if ((logt<0) || (logt>1))
+	std::logic_error("logt needs to be 0 or 1.");
+
+    if ((logy<0) || (logy>1))
+	std::logic_error("logy needs to be 0 or 1.");
+
     dx = new double[N-1];
 
     for (int i=0; i<N-1; ++i)
@@ -106,8 +112,8 @@ ReactionDiffusion::ReactionDiffusion(
 
     // Handle bin_k_factors:
     for (int i=0; i<bin_k_factor_span.size(); ++i)
-    for (int j=0; j<bin_k_factor_span[i]; ++j)
-        i_bin_k.push_back(i);
+	for (int j=0; j<bin_k_factor_span[i]; ++j)
+	    i_bin_k.push_back(i);
     n_factor_affected_k = i_bin_k.size();
 }
 
@@ -129,18 +135,18 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-    if (logy)
-        local_r[rxni] = 0;
-    else
-        local_r[rxni] = 1;
+	if (logy)
+	    local_r[rxni] = 0;
+	else
+	    local_r[rxni] = 1;
 
         for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
         if (logy)
-        local_r[rxni] += yi[si];
+	    local_r[rxni] += yi[si];
         else
-        local_r[rxni] *= yi[si];
+	    local_r[rxni] *= yi[si];
         }
 
     if (logy)
@@ -161,20 +167,24 @@ ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 {
     // bi: bin index, si: species index
     if (logy)
-    return -D[si]/dx[bi]*(exp(C(bi+1)) - exp(C(bi)));
+	return -D[si]/dx[bi]*(exp(C(bi+1)) - exp(C(bi)));
     else
-    return -D[si]/dx[bi]*(C(bi+1) - C(bi));
+	return -D[si]/dx[bi]*(C(bi+1) - C(bi));
 }
 #undef C
 
+// Some common macros
+#define FLUX(i) fluxes[(i)*n+si]
 #define L(i) (x[i+1]-x[i])
+
 // Sphere - coefficients rearranged for correct A/V (4π cancel)
-#define A(i) (3*x[i]*x[i]) // 4πrₖ²
-#define V(i) (x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i]) // 4πrₖ₊₁³/3 - 4πrₖ³/3
+#define AS(i) (3*x[i]*x[i]) // 4πrₖ²
+#define VS(i) (x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i]) // 4πrₖ₊₁³/3 - 4πrₖ³/3
+
 // Cylinder - coefficients rearranged for correct A/V (π cancel)
 #define AC(i) (2*x[i]) // 2πrₖ*h
 #define VC(i) (x[i+1]*x[i+1] - x[i]*x[i]) // πrₖ₊₁²*h - πrₖ²*h
-#define FLUX(i) fluxes[(i)*n+si]
+
 double
 ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restrict fluxes) const
 {
@@ -186,8 +196,8 @@ ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restri
         if (bi < N-1) contrib -= FLUX(bi)/L(bi);
         break;
     case Geom::SPHERICAL :
-        if (bi > 0)   contrib += FLUX(bi-1)*A(bi)/V(bi);
-        if (bi < N-1) contrib -= FLUX(bi)*A(bi+1)/V(bi);
+        if (bi > 0)   contrib += FLUX(bi-1)*AS(bi)/VS(bi);
+        if (bi < N-1) contrib -= FLUX(bi)*AS(bi+1)/VS(bi);
         break;
     case Geom::CYLINDRICAL :
         if (bi > 0)   contrib += FLUX(bi-1)*AC(bi)/VC(bi);
@@ -202,7 +212,7 @@ ReactionDiffusion::diffusion_contrib_jac_prev(int bi) const
 {
     switch(geom){
     case Geom::FLAT :        return 1.0/dx[bi-1]/L(bi);
-    case Geom::SPHERICAL :   return 1.0/dx[bi-1]*A(bi)/V(bi);
+    case Geom::SPHERICAL :   return 1.0/dx[bi-1]*AS(bi)/VS(bi);
     case Geom::CYLINDRICAL : return 1.0/dx[bi-1]*AC(bi)/VC(bi);
     }
     return 0.0/0.0; // NaN (shouldn't be possible to reach)
@@ -213,16 +223,17 @@ ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
 {
     switch(geom){
     case Geom::FLAT :        return 1.0/dx[bi]/L(bi);
-    case Geom::SPHERICAL :   return 1.0/dx[bi]*A(bi+1)/V(bi);
+    case Geom::SPHERICAL :   return 1.0/dx[bi]*AS(bi+1)/VS(bi);
     case Geom::CYLINDRICAL : return 1.0/dx[bi]*AC(bi+1)/VC(bi);
     }
     return 0.0/0.0; // NaN (shouldn't be possible to reach)
 }
 #undef L
-#undef A
-#undef V
+#undef AS
+#undef VS
 #undef AC
 #undef VC
+// FLUX still defined at this point.
 
 
 #define DCDT dydt[bi*n+si]
