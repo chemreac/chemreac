@@ -10,7 +10,7 @@ FLAT, SPHERICAL, CYLINDRICAL = range(3)
 def ReactionDiffusion(
         n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
         stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
-        geom=FLAT, logy=False, logt=True):
+        geom=FLAT, logy=False, logt=False):
     """
     Returns a PyReactionDiffusion instance (defined in _chemreac.pyx)
 
