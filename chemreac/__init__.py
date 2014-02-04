@@ -10,7 +10,7 @@ FLAT, SPHERICAL, CYLINDRICAL = range(3)
 def ReactionDiffusion(
         n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
         stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
-        geom=FLAT):
+        geom=FLAT, logy=False, logt=True):
     """
     Returns a PyReactionDiffusion instance (defined in _chemreac.pyx)
 
@@ -82,5 +82,7 @@ def ReactionDiffusion(
         assert len(bin_k_factor) == N
         assert all([len(x) == len(bin_k_factor_span) for x in bin_k_factor])
         assert all([x >= 0 for x in bin_k_factor_span])
-    return PyReactionDiffusion(n, stoich_reac, stoich_prod, k, N,
-        _D, _x, _stoich_actv, bin_k_factor, bin_k_factor_span, geom)
+    return PyReactionDiffusion(
+        n, stoich_reac, stoich_prod, k, N, _D, _x, _stoich_actv,
+        bin_k_factor, bin_k_factor_span, geom, logy, logt
+    )

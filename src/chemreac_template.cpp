@@ -24,6 +24,10 @@
 #define omp_get_thread_num() 0
 %endif
 
+#ifndef NULL
+#define NULL 0
+#endif // NULL not part of C++ standard
+
 using std::vector;
 using std::count;
 namespace chemreac {
@@ -42,7 +46,7 @@ ReactionDiffusion::ReactionDiffusion(
     vector<int> bin_k_factor_span, // modulation over reactions
     int geom_,
     int logy,
-    int logt,
+    int logt
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
@@ -86,8 +90,8 @@ ReactionDiffusion::ReactionDiffusion(
     for (int rxni=0; rxni<nr; ++rxni){ // reaction index 
         if (stoich_actv_[rxni].size() == 0)
             stoich_actv.push_back(stoich_reac[rxni]); // massaction
-	else
-	    stoich_actv.push_back(stoich_actv_[rxni]);
+    else
+        stoich_actv.push_back(stoich_actv_[rxni]);
         for (int si=0; si<n; ++si){ // species index
             coeff_reac[rxni*n+si] = count(stoich_reac[rxni].begin(), 
                                         stoich_reac[rxni].end(), si);
@@ -102,8 +106,8 @@ ReactionDiffusion::ReactionDiffusion(
 
     // Handle bin_k_factors:
     for (int i=0; i<bin_k_factor_span.size(); ++i)
-	for (int j=0; j<bin_k_factor_span[i]; ++j)
-	    i_bin_k.push_back(i);
+    for (int j=0; j<bin_k_factor_span[i]; ++j)
+        i_bin_k.push_back(i);
     n_factor_affected_k = i_bin_k.size();
 }
 
@@ -117,24 +121,32 @@ ReactionDiffusion::~ReactionDiffusion()
 }
 
 #define FACTOR(ri, bi) (((ri) < n_factor_affected_k) ? \
-			bin_k_factor[bi][i_bin_k[ri]] : 1)
+            bin_k_factor[bi][i_bin_k[ri]] : 1)
 void
 ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
-				 double * const restrict local_r) const
+                 double * const restrict local_r) const
 {
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-	local_r[rxni] = FACTOR(rxni,bi)*k[rxni];
+    if (logy)
+        local_r[rxni] = 0;
+    else
+        local_r[rxni] = 1;
 
         for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
-	    if (logy)
-		local_r[rxni] *= exp(yi[si]);
-	    else
-		local_r[rxni] *= yi[si];
+        if (logy)
+        local_r[rxni] += yi[si];
+        else
+        local_r[rxni] *= yi[si];
         }
+
+    if (logy)
+        local_r[rxni] = exp(local_r[rxni]);
+
+    local_r[rxni] *= FACTOR(rxni,bi)*k[rxni];
     }
 }
 #undef FACTOR
@@ -143,12 +155,15 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
 // <indices.png>
 
 
-#define C(i) y[(i)*n+si]
+#define C(bi) y[(bi)*n+si]
 double
 ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 {
     // bi: bin index, si: species index
-    return -D[si]*(C(bi+1) - C(bi))/dx[bi];
+    if (logy)
+    return -D[si]/dx[bi]*(exp(C(bi+1)) - exp(C(bi)));
+    else
+    return -D[si]/dx[bi]*(C(bi+1) - C(bi));
 }
 #undef C
 
@@ -159,12 +174,11 @@ ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 // Cylinder - coefficients rearranged for correct A/V (π cancel)
 #define AC(i) (2*x[i]) // 2πrₖ*h
 #define VC(i) (x[i+1]*x[i+1] - x[i]*x[i]) // πrₖ₊₁²*h - πrₖ²*h
-//define FLUX(i) fluxes[(i)+si*n]
 #define FLUX(i) fluxes[(i)*n+si]
 double
 ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restrict fluxes) const
 {
-    // bi: bin index, si: species index, fluxes: mol/m2/s through right wall of bin
+    // bi: bin index, si: species index (see FLUX macro), fluxes: mol/m2/s through right wall of bin
     double contrib = 0;
     switch(geom){
     case Geom::FLAT :
@@ -191,7 +205,6 @@ ReactionDiffusion::diffusion_contrib_jac_prev(int bi) const
     case Geom::SPHERICAL :   return 1.0/dx[bi-1]*A(bi)/V(bi);
     case Geom::CYLINDRICAL : return 1.0/dx[bi-1]*AC(bi)/VC(bi);
     }
-
     return 0.0/0.0; // NaN (shouldn't be possible to reach)
 }
 
@@ -255,8 +268,12 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 	    }
         }
 	if (logy)
-	    for (int si=0; si<n; ++si)
-		DCDT *= log(y[bi*n+si]);
+	    if (logt)
+		for (int si=0; si<n; ++si)
+		    DCDT *= exp(t-y[bi*n+si]);
+	    else
+		for (int si=0; si<n; ++si)
+		    DCDT *= exp(-y[bi*n+si]);
 
         ${"delete []local_r;" if USE_OPENMP else ""}
 
@@ -267,7 +284,6 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 }
 #undef DCDT
 #undef FLUX
-
 
 
 %for token, imaj, imin in [\
@@ -285,6 +301,12 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     // `y`: concentrations
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding)
+    double * restrict fout = NULL;
+    if (logy){
+	fout = new double[n*N];
+	f(t, y, fout);
+    }
+
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for" if USE_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
@@ -308,22 +330,31 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
                         continue; // si unaffected by reaction
                     else if (coeff_actv[rxni*n + dsi] == 0)
                         continue; // rate of reaction unaffected by dsi
-                    JAC(bi,bi,si,dsi) += coeff_totl[rxni*n + si]*\
-                        coeff_actv[rxni*n + dsi]*local_r[rxni]/C[dsi];
+		    double tmp = coeff_totl[rxni*n + si]*\
+			coeff_actv[rxni*n + dsi]*local_r[rxni];
+		    if (!logy)
+			tmp /= C[dsi];
+                    JAC(bi,bi,si,dsi) += tmp;
                 }
             }
         }
 
         if (N>1){
 	    // Contributions from diffusion
+	    // ----------------------------
 	    if (bi > 0){
 		// Diffusion over left boundary
 		double tmp = diffusion_contrib_jac_prev(bi);
 		for (int si=0; si<n; ++si){
 		    // species index si
 		    if (D[si] == 0.0) continue;
-                    JAC(bi, bi-1, si, si)  = D[si]*tmp;
-                    JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
+		    if (logy){
+			JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(y[(bi-1)*n+si]);
+			JAC(bi, bi,   si, si) -= D[si]*tmp*exp(y[bi*n+si]); // from symmetry
+		    } else {
+			JAC(bi, bi-1, si, si)  = D[si]*tmp;
+			JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
+		    }
                 }
 	    }
 	    if (bi < N-1){
@@ -332,15 +363,35 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 		for (int si=0; si<n; ++si){
 		    // species index si
 		    if (D[si] == 0.0) continue;
-                    JAC(bi, bi+1, si, si)  = D[si]*tmp;
-                    JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
+		    if (logy){
+			JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(y[(bi+1)*n+si]);
+			JAC(bi, bi,   si, si) -= D[si]*tmp*exp(y[bi*n+si]); // from symmetry
+		    } else {
+			JAC(bi, bi+1, si, si)  = D[si]*tmp;
+			JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
+		    }
                 }
             }
         }
+
+	if (logy){
+	    for (int si=0; si<n; ++si){
+		for (int dsi=0; dsi<n; ++dsi){
+		    if (logt)
+			JAC(bi, bi, si, dsi) *= exp(t-C[si]);
+		    else
+			JAC(bi, bi, si, dsi) *= exp(-C[si]);
+		}
+	    }
+	    for (int si=0; si<n; ++si)
+		JAC(bi, bi, si, si) -= fout[bi*n+si];
+	}
+
 	${'delete []local_r;' if USE_OPENMP else ''}
     }
-
     ${'delete []local_r;' if not USE_OPENMP else ''}
+    if (logy)
+	delete []fout;
 }
 #undef JAC
 %endfor

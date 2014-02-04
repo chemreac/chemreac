@@ -5,7 +5,7 @@ from libcpp.vector cimport vector
 
 cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
-        int n, N, nr, geom
+        int n, N, nr, geom, logy, logt
         vector[vector[int]] stoich_reac
         vector[vector[int]] stoich_actv
         vector[vector[int]] stoich_prod
@@ -48,10 +48,13 @@ cdef class PyReactionDiffusion:
                   vector[vector[double]] bin_k_factor,
                   vector[int] bin_k_factor_span,
                   int geom,
+                  bint logy,
+                  bint logt,
               ):
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
-            D, x, stoich_actv, bin_k_factor, bin_k_factor_span, geom)
+            D, x, stoich_actv, bin_k_factor,
+            bin_k_factor_span, geom, logy, logt)
 
     def __dealloc__(self):
         del self.thisptr

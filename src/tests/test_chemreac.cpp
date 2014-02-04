@@ -38,7 +38,7 @@ ReactionDiffusion get_four_species_system(int N){
 	x.push_back((double)i);
     return ReactionDiffusion(\
 	n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
-	bin_k_factor, bin_k_factor_span, 0);
+	bin_k_factor, bin_k_factor_span, 0, 0, 0);
 }
 
 #define RJ(i, j) ref_jac[(i)*8+j]
