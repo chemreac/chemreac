@@ -3,10 +3,16 @@
 
 from __future__ import division, print_function
 
+from itertools import product
+
 import numpy as np
 import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+
+np.set_printoptions(precision=3, linewidth=120)
+
+TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
 
 @pytest.mark.xfail
@@ -21,15 +27,24 @@ def test_ReactionDiffusion__f__wrong_fout_dimension():
 
 @pytest.mark.parametrize("N", range(1,5))
 def test_ReactionDiffusion__only_1_reaction(N):
+    t0 = 3.0
     y0 = np.array([2.0, 3.0]*N)
     k = 5.0
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0])
     fout = np.ones((2*N,))*99
-    rd.f(0.0, y0, fout)
+    rd.f(t0, y0, fout)
 
     for i in range(N):
         assert np.allclose(fout[i*2:(i+1)*2], np.array([-10.0, 10.0]))
+
+    jout = np.zeros((2*N,2*N))
+    jref = np.zeros((2*N,2*N))
+    for i in range(N):
+        jref[i*2,  i*2] = -k
+        jref[i*2+1,i*2] =  k
+    rd.dense_jac_rmaj(t0, y0, jout)
+    assert np.allclose(jout, jref)
 
 
 def test_ReactionDiffusion__actv():
@@ -39,16 +54,28 @@ def test_ReactionDiffusion__actv():
 @pytest.mark.parametrize("N", range(1,5))
 def test_ReactionDiffusion__only_1_reaction__logy(N):
     # See <test_ReactionDiffusion__only_1_reaction__logy.png>
+    t0 = 3.0
     y0 = np.array([2.0, 3.0]*N)
     k = 5.0
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0], logy=True)
     fout = np.ones((2*N,))*99
-    rd.f(0.0, np.log(y0), fout)
+    rd.f(t0, np.log(y0), fout)
 
     for i in range(N):
         y0_ = y0[i*2:(i+1)*2]
         assert np.allclose(fout[i*2:(i+1)*2], [-k, k*y0_[0]/y0_[1]])
+
+    jout = np.zeros((2*N,2*N))
+    jref = np.zeros((2*N,2*N))
+    for i in range(N):
+        A = y0[i*2]
+        B = y0[i*2+1]
+        jref[i*2+1,i*2] = k/B*A
+        jref[i*2+1,i*2+1] = -k/B*A
+    rd.dense_jac_rmaj(t0, np.log(y0), jout)
+    assert np.allclose(jout, jref)
+
 
 @pytest.mark.parametrize("N", range(1,5))
 def test_ReactionDiffusion__only_1_reaction__logy__logt(N):
@@ -141,7 +168,7 @@ def test__get_banded():
     ])
     assert np.allclose(B, B_ref)
 
-@pytest.mark.parametrize("log", [(False, False), (True, False), (True, True)])
+@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion(log):
     # Diffusion without reaction
     # 2 bins
@@ -158,13 +185,12 @@ def test_ReactionDiffusion__only_1_species_diffusion(log):
     fref = np.array([-J/V[0], J/V[1]])
     if logy:
         fref /= y0
-        if logt:
-            fref *= t0
-            rd.f(np.log(t0), np.log(y0), fout)
-        else:
-            rd.f(t0, np.log(y0), fout)
-    else:
-        rd.f(t0, y0, fout)
+    if logt:
+        fref *= t0
+
+    y = np.log(y0) if logy else y0
+    t = np.log(t0) if logt else t0
+    rd.f(t, y, fout)
 
     assert np.allclose(fout, fref)
 
@@ -178,12 +204,6 @@ def test_ReactionDiffusion__only_1_species_diffusion(log):
             [-D/dx/V[1]*y0[0]/y0[1],
               D/dx/V[1]*y0[0]/y0[1]]
         ])
-        if logt:
-            jref *= t0
-            rd.dense_jac_rmaj(np.log(t0), np.log(y0), jout)
-        else:
-            rd.dense_jac_rmaj(t0, np.log(y0), jout)
-
     else:
         jref = np.array([
             [-D/dx/V[0],
@@ -191,13 +211,17 @@ def test_ReactionDiffusion__only_1_species_diffusion(log):
             [ D/dx/V[1],
              -D/dx/V[1]]
         ])
-        rd.dense_jac_rmaj(t0, y0, jout)
+
+    if logt:
+        jref *= t0
+
+    rd.dense_jac_rmaj(t, y, jout)
 
     assert np.allclose(jout, jref)
 
     if not logy:
         jout_bnd = np.zeros((3,2), order='F')
-        rd.banded_packed_jac_cmaj(0.0, y0, jout_bnd)
+        rd.banded_packed_jac_cmaj(t, y, jout_bnd)
         jref_bnd = _get_banded(jref,1,2)
         assert np.allclose(jout_bnd, jref_bnd)
 
