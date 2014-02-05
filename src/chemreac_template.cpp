@@ -161,20 +161,20 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
 // <indices.png>
 
 
-#define C(bi) y[(bi)*n+si]
+#define Y(bi) y[(bi)*n+si]
 double
 ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 {
     // bi: bin index, si: species index
     if (logy)
-	return -D[si]/dx[bi]*(exp(C(bi+1)) - exp(C(bi)));
+	return -D[si]/dx[bi]*(exp(Y(bi+1)) - exp(Y(bi)));
     else
-	return -D[si]/dx[bi]*(C(bi+1) - C(bi));
+	return -D[si]/dx[bi]*(Y(bi+1) - Y(bi));
 }
-#undef C
+#undef Y
 
 // Some common macros
-#define FLUX(i) fluxes[(i)*n+si]
+#define FLUXES(bi, si) fluxes[(bi)*(n)+(si)]
 #define L(i) (x[i+1]-x[i])
 
 // Sphere - coefficients rearranged for correct A/V (4π cancel)
@@ -188,20 +188,20 @@ ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 double
 ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restrict fluxes) const
 {
-    // bi: bin index, si: species index (see FLUX macro), fluxes: mol/m2/s through right wall of bin
+    // bi: bin index, si: species index, fluxes: e.g. mol/m2/s through right wall of bin
     double contrib = 0;
     switch(geom){
     case Geom::FLAT :
-        if (bi > 0)   contrib += FLUX(bi-1)/L(bi);
-        if (bi < N-1) contrib -= FLUX(bi)/L(bi);
+        if (bi > 0)   contrib += FLUXES(bi-1, si)/L(bi);
+        if (bi < N-1) contrib -= FLUXES(bi, si)/L(bi);
         break;
     case Geom::SPHERICAL :
-        if (bi > 0)   contrib += FLUX(bi-1)*AS(bi)/VS(bi);
-        if (bi < N-1) contrib -= FLUX(bi)*AS(bi+1)/VS(bi);
+        if (bi > 0)   contrib += FLUXES(bi-1, si)*AS(bi)/VS(bi);
+        if (bi < N-1) contrib -= FLUXES(bi, si)*AS(bi+1)/VS(bi);
         break;
     case Geom::CYLINDRICAL :
-        if (bi > 0)   contrib += FLUX(bi-1)*AC(bi)/VC(bi);
-        if (bi < N-1) contrib -= FLUX(bi)*AC(bi+1)/VC(bi);
+        if (bi > 0)   contrib += FLUXES(bi-1, si)*AC(bi)/VC(bi);
+        if (bi < N-1) contrib -= FLUXES(bi, si)*AC(bi+1)/VC(bi);
         break;
     }
     return contrib;
@@ -233,10 +233,10 @@ ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
 #undef VS
 #undef AC
 #undef VC
-// FLUX still defined at this point.
+// FLUXES still defined at this point.
 
 
-#define DCDT dydt[bi*n+si]
+#define DCDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
@@ -245,7 +245,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     ${"#pragma omp parallel for" if USE_OPENMP else ""}
     for (int bi=0; bi<N-1; ++bi)
         for (int si=0; si<n; ++si)
-            FLUX(bi) = flux(bi, si, y);
+            FLUXES(bi, si) = flux(bi, si, y);
 
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for" if USE_OPENMP else ""}
@@ -254,7 +254,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         ${"double * local_r = new double[nr];" if USE_OPENMP else ""}
 
         for (int si=0; si<n; ++si)
-            DCDT = 0.0; // zero out
+            DCDT(bi, si) = 0.0; // zero out
 
         // Contributions from reactions
         // ----------------------------
@@ -266,7 +266,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                 // species index si
                 int overall = coeff_totl[rxni*n + si];
                 if (overall != 0){
-		    DCDT += overall*local_r[rxni];
+		    DCDT(bi, si) += overall*local_r[rxni];
 		}
             }
         }
@@ -275,16 +275,21 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
             // ----------------------------
             for (int si=0; si<n; ++si){ // species index si
 		if (D[si] == 0.0) continue;
-                DCDT += diffusion_contrib(bi, si, fluxes);
+                DCDT(bi, si) += diffusion_contrib(bi, si, fluxes);
 	    }
         }
-	if (logy)
+	if (logy){
 	    if (logt)
 		for (int si=0; si<n; ++si)
-		    DCDT *= exp(t-y[bi*n+si]);
+		    DCDT(bi, si) *= exp(t-y[bi*n+si]);
 	    else
 		for (int si=0; si<n; ++si)
-		    DCDT *= exp(-y[bi*n+si]);
+		    DCDT(bi, si) *= exp(-y[bi*n+si]);
+	} else {
+	    if (logt)
+		for (int si=0; si<n; ++si)
+		    DCDT(bi, si) *= exp(t);
+	}
 
         ${"delete []local_r;" if USE_OPENMP else ""}
 
@@ -294,9 +299,10 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     delete []fluxes;
 }
 #undef DCDT
-#undef FLUX
+#undef FLUXES
 
 
+#define Y(bi, si) y[(bi)*n+(si)]
 %for token, imaj, imin in [\
     ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
     ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
@@ -318,33 +324,33 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 	f(t, y, fout);
     }
 
-    ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
-    ${"#pragma omp parallel for" if USE_OPENMP else ""}
+    ${'double * local_r = new double[nr];' if not USE_OPENMP else ''}
+    ${'#pragma omp parallel for' if USE_OPENMP else ''}
     for (int bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
-        const double * const C = y + bi*n;
+        const double * const local_y = y + bi*n;
 
 	${'double * local_r = new double[nr];' if USE_OPENMP else ''}
     
         // Contributions from reactions
         // ----------------------------
-        _fill_local_r(bi, C, local_r);
+        _fill_local_r(bi, local_y, local_r);
         for (int si=0; si<n; ++si){
             // species si
             for (int dsi=0; dsi<n; ++dsi){
                 // derivative wrt species dsi
-                // j_i[si, dsi] = Sum_l(n_lj*Derivative(r[l], C[dsi]))
+                // j_i[si, dsi] = Sum_l(n_lj*Derivative(r[l], local_y[dsi]))
                 JAC(bi,bi,si,dsi) = 0.0;
                 for (int rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
                     if (coeff_totl[rxni*n + si] == 0)
                         continue; // si unaffected by reaction
-                    else if (coeff_actv[rxni*n + dsi] == 0)
+                    if (coeff_actv[rxni*n + dsi] == 0)
                         continue; // rate of reaction unaffected by dsi
 		    double tmp = coeff_totl[rxni*n + si]*\
 			coeff_actv[rxni*n + dsi]*local_r[rxni];
 		    if (!logy)
-			tmp /= C[dsi];
+			tmp /= local_y[dsi];
                     JAC(bi,bi,si,dsi) += tmp;
                 }
             }
@@ -355,17 +361,15 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 	    // ----------------------------
 	    if (bi > 0){
 		// Diffusion over left boundary
-		double tmp = diffusion_contrib_jac_prev(bi);
+		double tmp1 = diffusion_contrib_jac_prev(bi);
 		for (int si=0; si<n; ++si){
 		    // species index si
 		    if (D[si] == 0.0) continue;
-		    if (logy){
-			JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(y[(bi-1)*n+si]);
-			JAC(bi, bi,   si, si) -= D[si]*tmp*exp(y[bi*n+si]); // from symmetry
-		    } else {
-			JAC(bi, bi-1, si, si)  = D[si]*tmp;
-			JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
-		    }
+		    double tmp2 = 1.0;
+		    if (logy)
+			tmp2 = exp(Y(bi,si) - Y(bi-1,si));
+		    JAC(bi, bi-1, si, si)  = D[si]*tmp1*tmp2;
+		    JAC(bi, bi,   si, si) -= D[si]*tmp1*tmp2;
                 }
 	    }
 	    if (bi < N-1){
@@ -375,11 +379,11 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 		    // species index si
 		    if (D[si] == 0.0) continue;
 		    if (logy){
-			JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(y[(bi+1)*n+si]);
-			JAC(bi, bi,   si, si) -= D[si]*tmp*exp(y[bi*n+si]); // from symmetry
+			JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(y[(bi+1)*n+si]-y[bi*n+si]);
+			JAC(bi, bi,   si, si) -= D[si]*tmp*exp(y[(bi+1)*n+si]-y[bi*n+si]);
 		    } else {
 			JAC(bi, bi+1, si, si)  = D[si]*tmp;
-			JAC(bi, bi,   si, si) -= D[si]*tmp; // from symmetry
+			JAC(bi, bi,   si, si) -= D[si]*tmp;
 		    }
                 }
             }
@@ -389,13 +393,20 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 	    for (int si=0; si<n; ++si){
 		for (int dsi=0; dsi<n; ++dsi){
 		    if (logt)
-			JAC(bi, bi, si, dsi) *= exp(t-C[si]);
+			JAC(bi, bi, si, dsi) *= exp(t-local_y[si]);
 		    else
-			JAC(bi, bi, si, dsi) *= exp(-C[si]);
+			JAC(bi, bi, si, dsi) *= exp(-local_y[si]);
 		}
 	    }
 	    for (int si=0; si<n; ++si)
 		JAC(bi, bi, si, si) -= fout[bi*n+si];
+	} else {
+	    if (logt){
+		for (int si=0; si<n; ++si)
+		    for (int dsi=0; dsi<n; ++dsi)
+			JAC(bi, bi, si, dsi) *= exp(t);
+
+	    }
 	}
 
 	${'delete []local_r;' if USE_OPENMP else ''}
