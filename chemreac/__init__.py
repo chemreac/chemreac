@@ -26,6 +26,8 @@ def ReactionDiffusion(
     -`bin_k_factor`: per compartment modulation of rate coefficients
     -`bin_k_factor_span`: spans over reactions affected by bin_k_factor
     -`geom`: any of (FLAT, SPHERICAL, CYLINDRICAL)
+    -`logy`: f and *_jac_* routines operate on log(concentration)
+    -`logt`: f and *_jac_* routines operate on log(time)
 
     The instance provides methods:
 
