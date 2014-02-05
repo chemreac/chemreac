@@ -356,56 +356,76 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
             }
         }
 
-        if (N>1){
-	    // Contributions from diffusion
-	    // ----------------------------
-	    if (bi > 0){
-		// Diffusion over left boundary
-		double tmp1 = diffusion_contrib_jac_prev(bi);
-		for (int si=0; si<n; ++si){
-		    // species index si
-		    if (D[si] == 0.0) continue;
-		    double tmp2 = 1.0;
-		    if (logy)
-			tmp2 = exp(Y(bi,si) - Y(bi-1,si));
-		    JAC(bi, bi-1, si, si)  = D[si]*tmp1*tmp2;
-		    JAC(bi, bi,   si, si) -= D[si]*tmp1*tmp2;
-                }
-	    }
-	    if (bi < N-1){
-		// Diffusion over right boundary
-		double tmp = diffusion_contrib_jac_next(bi);
-		for (int si=0; si<n; ++si){
-		    // species index si
-		    if (D[si] == 0.0) continue;
-		    if (logy){
-			JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(y[(bi+1)*n+si]-y[bi*n+si]);
-			JAC(bi, bi,   si, si) -= D[si]*tmp*exp(y[(bi+1)*n+si]-y[bi*n+si]);
-		    } else {
-			JAC(bi, bi+1, si, si)  = D[si]*tmp;
-			JAC(bi, bi,   si, si) -= D[si]*tmp;
-		    }
-                }
-            }
-        }
-
-	if (logy){
+	// Contributions from diffusion
+	// ----------------------------
+	if (bi > 0){
+	    // Diffusion over left boundary
+	    double tmp = diffusion_contrib_jac_prev(bi);
 	    for (int si=0; si<n; ++si){
-		for (int dsi=0; dsi<n; ++dsi){
-		    if (logt)
+		// species index si
+		if (D[si] == 0.0) continue;
+		if (logy){
+		    JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(Y(bi-1,si));
+		    JAC(bi, bi,   si, si) -= D[si]*tmp*exp(Y(bi,si));
+		} else{
+		    JAC(bi, bi-1, si, si)  = D[si]*tmp;
+		    JAC(bi, bi,   si, si) -= D[si]*tmp;
+		}
+	    }
+	}
+	if (bi < N-1){
+	    // Diffusion over right boundary
+	    double tmp = diffusion_contrib_jac_next(bi);
+	    for (int si=0; si<n; ++si){
+		// species index si
+		if (D[si] == 0.0) continue;
+		if (logy){
+		    JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(Y(bi+1,si));
+		    JAC(bi, bi,   si, si) -= D[si]*tmp*exp(Y(bi,si));
+		} else{
+		    JAC(bi, bi+1, si, si)  = D[si]*tmp;
+		    JAC(bi, bi,   si, si) -= D[si]*tmp;
+		}
+	    }
+	}
+
+
+	// Handle logy / logt case
+	if (logy){
+	    if (logt){
+		for (int si=0; si<n; ++si){
+		    for (int dsi=0; dsi<n; ++dsi){
 			JAC(bi, bi, si, dsi) *= exp(t-local_y[si]);
-		    else
+		    }
+		    if (bi>0)
+			JAC(bi, bi-1, si, si) *= exp(t-Y(bi-1, si));
+		    if (bi<N-1)
+			JAC(bi, bi+1, si, si) *= exp(t-Y(bi+1, si));
+		}
+	    }else {
+		for (int si=0; si<n; ++si){
+		    for (int dsi=0; dsi<n; ++dsi){
 			JAC(bi, bi, si, dsi) *= exp(-local_y[si]);
+		    }
+		    if (bi>0)
+			JAC(bi, bi-1, si, si) *= exp(-Y(bi-1, si));
+		    if (bi<N-1)
+			JAC(bi, bi+1, si, si) *= exp(-Y(bi+1, si));
 		}
 	    }
 	    for (int si=0; si<n; ++si)
 		JAC(bi, bi, si, si) -= fout[bi*n+si];
 	} else {
 	    if (logt){
-		for (int si=0; si<n; ++si)
-		    for (int dsi=0; dsi<n; ++dsi)
+		for (int si=0; si<n; ++si){
+		    for (int dsi=0; dsi<n; ++dsi){
 			JAC(bi, bi, si, dsi) *= exp(t);
-
+		    }
+		    if (bi>0)
+			JAC(bi, bi-1, si, si) *= exp(t);
+		    if (bi<N-1)
+			JAC(bi, bi+1, si, si) *= exp(t);
+		}
 	    }
 	}
 
