@@ -1,4 +1,4 @@
-numpy>=1.6.1
+numpy>=1.7.0
 cython>=0.19.1
 mako>=0.5.0
 https://github.com/bjodah/pycompilation/archive/v0.2.15.tar.gz
