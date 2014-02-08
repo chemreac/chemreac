@@ -282,10 +282,10 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 	if (logy){
 	    if (logt)
 		for (int si=0; si<n; ++si)
-		    DCDT(bi, si) *= exp(t-y[bi*n+si]);
+		    DCDT(bi, si) *= exp(t-Y(bi,si));
 	    else
 		for (int si=0; si<n; ++si)
-		    DCDT(bi, si) *= exp(-y[bi*n+si]);
+		    DCDT(bi, si) *= exp(-Y(bi,si));
 	} else {
 	    if (logt)
 		for (int si=0; si<n; ++si)
