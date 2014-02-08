@@ -236,6 +236,7 @@ ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
 // FLUXES still defined at this point.
 
 
+#define Y(bi, si) y[(bi)*n+(si)]
 #define DCDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
@@ -298,11 +299,10 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     ${"delete []local_r;" if not USE_OPENMP else ""}
     delete []fluxes;
 }
-#undef DCDT
+#undef DCDT // Y(bi, si) still defined.
 #undef FLUXES
 
 
-#define Y(bi, si) y[(bi)*n+(si)]
 %for token, imaj, imin in [\
     ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
     ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
@@ -314,8 +314,8 @@ void
 ReactionDiffusion::${token}(double t, const double * const restrict y,
                             double * const restrict ja, int ldj) const
 {
-    // `t`: time
-    // `y`: concentrations
+    // `t`: time (log(t) if logt=1)
+    // `y`: concentrations (log(conc) if logy=1)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding)
     double * restrict fout = NULL;
@@ -350,9 +350,11 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 		    double tmp = coeff_totl[rxni*n + si]*\
 			coeff_actv[rxni*n + dsi]*local_r[rxni];
 		    if (!logy)
-			tmp /= local_y[dsi];
+			tmp /= Y(bi,dsi);
                     JAC(bi,bi,si,dsi) += tmp;
                 }
+		if (logy)
+		    JAC(bi,bi,si,dsi) *= exp(-Y(bi,si));
             }
         }
 
@@ -364,13 +366,11 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 	    for (int si=0; si<n; ++si){
 		// species index si
 		if (D[si] == 0.0) continue;
-		if (logy){
-		    JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(Y(bi-1,si));
-		    JAC(bi, bi,   si, si) -= D[si]*tmp*exp(Y(bi,si));
-		} else{
+		JAC(bi, bi,   si, si) -= D[si]*tmp;
+		if (logy)
+		    JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(Y(bi-1,si)-Y(bi,si));
+		else
 		    JAC(bi, bi-1, si, si)  = D[si]*tmp;
-		    JAC(bi, bi,   si, si) -= D[si]*tmp;
-		}
 	    }
 	}
 	if (bi < N-1){
@@ -379,54 +379,33 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 	    for (int si=0; si<n; ++si){
 		// species index si
 		if (D[si] == 0.0) continue;
-		if (logy){
-		    JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(Y(bi+1,si));
-		    JAC(bi, bi,   si, si) -= D[si]*tmp*exp(Y(bi,si));
-		} else{
+		JAC(bi, bi,   si, si) -= D[si]*tmp;
+		if (logy)
+		    JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(Y(bi+1,si)-Y(bi,si));
+		else
 		    JAC(bi, bi+1, si, si)  = D[si]*tmp;
-		    JAC(bi, bi,   si, si) -= D[si]*tmp;
-		}
 	    }
 	}
 
-
-	// Handle logy / logt case
-	if (logy){
-	    if (logt){
-		for (int si=0; si<n; ++si){
-		    for (int dsi=0; dsi<n; ++dsi){
-			JAC(bi, bi, si, dsi) *= exp(t-local_y[si]);
-		    }
-		    if (bi>0)
-			JAC(bi, bi-1, si, si) *= exp(t-Y(bi-1, si));
-		    if (bi<N-1)
-			JAC(bi, bi+1, si, si) *= exp(t-Y(bi+1, si));
+	// Logartihmic time
+	// ----------------------------
+	if (logt){
+	    for (int si=0; si<n; ++si){
+		for (int dsi=0; dsi<n; ++dsi){
+		    JAC(bi, bi, si, dsi) *= exp(t);
 		}
-	    }else {
-		for (int si=0; si<n; ++si){
-		    for (int dsi=0; dsi<n; ++dsi){
-			JAC(bi, bi, si, dsi) *= exp(-local_y[si]);
-		    }
-		    if (bi>0)
-			JAC(bi, bi-1, si, si) *= exp(-Y(bi-1, si));
-		    if (bi<N-1)
-			JAC(bi, bi+1, si, si) *= exp(-Y(bi+1, si));
-		}
+		if (bi>0)
+		    JAC(bi, bi-1, si, si) *= exp(t);
+		if (bi<N-1)
+		    JAC(bi, bi+1, si, si) *= exp(t);
 	    }
+	}
+
+	// Logrithmic concentrations
+	// ----------------------------
+	if (logy){
 	    for (int si=0; si<n; ++si)
 		JAC(bi, bi, si, si) -= fout[bi*n+si];
-	} else {
-	    if (logt){
-		for (int si=0; si<n; ++si){
-		    for (int dsi=0; dsi<n; ++dsi){
-			JAC(bi, bi, si, dsi) *= exp(t);
-		    }
-		    if (bi>0)
-			JAC(bi, bi-1, si, si) *= exp(t);
-		    if (bi<N-1)
-			JAC(bi, bi+1, si, si) *= exp(t);
-		}
-	    }
 	}
 
 	${'delete []local_r;' if USE_OPENMP else ''}

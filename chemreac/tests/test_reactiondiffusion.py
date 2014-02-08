@@ -4,6 +4,7 @@
 from __future__ import division, print_function
 
 from itertools import product
+from math import exp
 
 import numpy as np
 import pytest
@@ -168,8 +169,9 @@ def test__get_banded():
     ])
     assert np.allclose(B, B_ref)
 
+
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
-def test_ReactionDiffusion__only_1_species_diffusion(log):
+def test_ReactionDiffusion__only_1_species_diffusion_2bins(log):
     # Diffusion without reaction
     # 2 bins
     t0 = 3.0
@@ -195,14 +197,14 @@ def test_ReactionDiffusion__only_1_species_diffusion(log):
     assert np.allclose(fout, fref)
 
 
-    # See <test_ReactionDiffusion__only_1_species_diffusion.png>
+    # See <test_ReactionDiffusion__only_1_species_diffusion_2bins.png>
     jout = np.zeros((2,2))
     if logy:
         jref = np.array([
-            [ D/dx/V[0]*y0[1]/y0[0],
-             -D/dx/V[0]*y0[1]/y0[0]],
-            [-D/dx/V[1]*y0[0]/y0[1],
-              D/dx/V[1]*y0[0]/y0[1]]
+            [-D/dx/V[0]*y0[1]/y0[0],
+              D/dx/V[0]*y0[1]/y0[0]],
+            [ D/dx/V[1]*y0[0]/y0[1],
+             -D/dx/V[1]*y0[0]/y0[1]]
         ])
     else:
         jref = np.array([
@@ -224,6 +226,72 @@ def test_ReactionDiffusion__only_1_species_diffusion(log):
         rd.banded_packed_jac_cmaj(t, y, jout_bnd)
         jref_bnd = _get_banded(jref,1,2)
         assert np.allclose(jout_bnd, jref_bnd)
+
+
+@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
+    # Diffusion without reaction
+    # 3 bins
+    N = 3
+    t0 = 3.0
+    logy, logt = log
+    D = 2.0
+    y0 = np.array([12., 8., 11.])
+    x = [3., 5., 13., 17.]
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt)
+    fout = np.ones((N,))*99
+    V = [x[i+1]-x[i] for i in range(N)]
+    l = np.diff(x)
+    dx = np.array([0.5*(x[i+2]-x[i]) for i in range(N-1)])
+    dC = np.array([y0[i+1]-y0[i] for i in range(N-1)])
+    J = -D*dC/dx
+    J_ = np.pad(J, ((1,1),), mode='constant')
+    fref = np.array([(J_[i]-J_[i+1])/l[i] for i in range(N)])
+    assert np.allclose(fref, [-4./5, 13./40, -1./4])
+    if logy:
+        fref /= y0
+        a,b,c = np.log(y0)
+        assert np.allclose(fref, np.array([
+            D/dx[0]/l[0]*(exp(b-a)-1),
+            D/l[1]*((exp(c-b)-1)/dx[1]-(1-exp(a-b))/dx[0]),
+            D/l[2]/dx[1]*(exp(b-c)-1)
+         ]))
+    if logt:
+        fref *= t0
+
+    y = np.log(y0) if logy else y0
+    t = np.log(t0) if logt else t0
+    rd.f(t, y, fout)
+
+    assert np.allclose(fout, fref)
+
+
+    jout = np.zeros((N,N))
+    if logy:
+        unlogt = t0 if logt else 1.0
+        jref = np.array([
+            [-fref[0]/unlogt-D/dx[0]/V[0],           D/dx[0]/V[0]*exp(b-a),             0],
+            [ D/dx[0]/V[1]*exp(a-b),  -fref[1]/unlogt-D/V[1]*(1/dx[0]+1/dx[1]),  D/V[1]/dx[1]*exp(c-b)],
+            [            0,              D/V[2]/dx[1]*exp(b-c),  -fref[2]/unlogt-D/dx[1]/V[2]],
+        ])
+    else:
+        jref = np.array([
+            [-D/dx[0]/V[0],             D/dx[0]/V[0],             0],
+            [ D/dx[0]/V[1],  D/V[1]*(-1/dx[0]-1/dx[1]),  D/V[1]/dx[1]],
+            [            0,              D/V[2]/dx[1],  -D/dx[1]/V[2]],
+        ])
+
+    if logt:
+        jref *= t0
+
+    rd.dense_jac_rmaj(t, y, jout)
+
+    assert np.allclose(jout, jref)
+
+    jout_bnd = np.zeros((3,N), order='F')
+    rd.banded_packed_jac_cmaj(t, y, jout_bnd)
+    jref_bnd = _get_banded(jref,1,N)
+    assert np.allclose(jout_bnd, jref_bnd)
 
 
 @pytest.mark.parametrize("geom", (FLAT, SPHERICAL, CYLINDRICAL))
