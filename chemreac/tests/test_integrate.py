@@ -38,9 +38,9 @@ def test_integrate(N):
     tend=10.0
     nt=100
     tout, yout, info = run(sys, y0, t0, tend, nt)
-
     assert np.allclose(tout, ref_t)
-    assert np.allclose(yout[:,:4], ref_y, atol=1e-3)
+    assert np.allclose(yout[:,:4], ref_y, atol=1e-5)
+
 
 @pytest.mark.parametrize("N", range(2,17))
 def test_integrate__only_1_species_diffusion__mass_conservation(N):
