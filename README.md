@@ -1,44 +1,48 @@
 chemreac
 ========
 Chemical Reaction-Diffusion ODE systems discretized in one
-dimension. Currently flat and spherical geometry is
+dimension. Currently flat, spherical and cylindrical geometries are
 implemented. Kinetics are governed by the law of mass action (with the
-exception that we allow to make a difference between kinetically
-active and stoichiometric reactants - e.g. solvent may participate)
+exception that it is allowed to make a difference between kinetically
+active and stoichiometric reactants - e.g. solvent)
 
-The Jacobian can be evaluated and stored in several
+The Jacobian matrix can be evaluated and stored in several
 formats. (currently dense row-major, dense col-major and banded
 formats are supported).
 
-The ODE systems is computed in the C++ class ReactionDiffusion
+The system of ODE is evaluated in the C++ class chemreac::ReactionDiffusion
 (see `src/chemreac_template.cpp`). It is conveniently accessible from Python
-(wrapped using Cython). A simple wrapper to scipy.integrate.ode is
-provided in `chemreac.integrate.run`
+(wrapped using Cython). For ease of use, a simple wrapper to
+scipy.integrate.ode is provided in `chemreac.integrate.run`.
 
 Setup
 =====
-``` python setup.py build_ext --inplace ``` is enough on most *NIX machines.
+```
+    git clone https://bitbucket.org/bjodah/chemreac.git
+    cd chemreac
+    python pip install --upgrade -r requirements.txt
+    python setup.py build_ext --inplace
+```
+
+should be enough (tested on Ubuntu 12.04). Add to $PYTHONPATH to use
+or ``python setup.py install --user``
 
 Tests
 =====
-``` python setup.py build_ext --inplace ```
-`./py.test`
-requires make
+Run py.test
+``py.test``
+(requires make, python-pytest)
 
 Prerequisites
 =============
+In addition to Python packages listed in ``requirements.txt`` you also need:
 C++11 compliant compiler
-Python
-Cython
-Pycompilation 0.2.14
 
 License
 =======
 Open Source. Released under the very permissive "simplified
-(2-clause) BSD license". See LICENCE.txt for further details.
+(2-clause) BSD license". See ``LICENSE.txt`` for further details.
 
 Author
 ======
 Björn Dahlgren, contact (gmail adress): bjodah
-python -m pudb /home/bjorn/.local/bin/xdress --debug
-env DISTUTILS_DEBUG=1 python -m pudb setup.py build
