@@ -232,6 +232,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_2bins(log):
 def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     # Diffusion without reaction
     # 3 bins
+    # See
+    # <test_ReactionDiffusion__only_1_species_diffusion_3bins.png>
+    # <test_ReactionDiffusion__only_1_species_diffusion_3bins_logy.png>
+    # <only_1_species_diffusion_3bins_logy_formulae.png>
     N = 3
     t0 = 3.0
     logy, logt = log
