@@ -8,7 +8,12 @@ from scipy.integrate import ode
 
 from chemreac import DENSE, BANDED, SPARSE
 
-def run(sys, y0, t0, tend, nt, mode=None, log_time=False, **kwargs):
+def run(sys, y0, tout, mode=None, log_time=False, **kwargs):
+    """
+    tout: at what times to report, e.g.:
+        np.linspace(t0, tend, nt+1)
+        np.logspace(t0+1e-12, np.log10(tend), nt+1)
+    """
     assert y0.size == sys.n*sys.N
 
     defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-12,
@@ -30,8 +35,6 @@ def run(sys, y0, t0, tend, nt, mode=None, log_time=False, **kwargs):
     for k, v in defaults.items():
         if not k in kwargs:
             kwargs[k] = v
-
-    if nt == 0: nt = 1024 # Good plotting density
 
     # Create python callbacks with right signature
     fout = np.empty(sys.n*sys.N)
@@ -60,15 +63,11 @@ def run(sys, y0, t0, tend, nt, mode=None, log_time=False, **kwargs):
 
     runner = ode(f, jac=jac)
     runner.set_integrator(**kwargs)
-    runner.set_initial_value(y0.flatten(), t0)
-    if log_time:
-        tout = np.logspace(t0+1e-12, np.log10(tend), nt+1)
-    else:
-        tout = np.linspace(t0, tend, nt+1)
-    yout = np.empty((nt+1, sys.n*sys.N))
+    runner.set_initial_value(y0.flatten(), tout[0])
+    yout = np.empty((len(tout), sys.n*sys.N))
     yout[0,:] = y0
     texec = time.time()
-    for i in range(1, nt+1):
+    for i in range(1, len(tout)):
         runner.integrate(tout[i])
         yout[i, :] = runner.y
     texec = time.time() - texec
