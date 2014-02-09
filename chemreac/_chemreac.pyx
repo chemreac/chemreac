@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 # distutils: language = c++
 
+from libcpp cimport bool
 from libcpp.vector cimport vector
 
 cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
-        int n, N, nr, geom, logy, logt
+        int n, N, nr, geom
+        bool logy, logt
         vector[vector[int]] stoich_reac
         vector[vector[int]] stoich_actv
         vector[vector[int]] stoich_prod
@@ -26,8 +28,8 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           vector[vector[double]],
                           vector[int],
                           int,
-                          int,
-                          int) except +
+                          bool,
+                          bool) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
         void dense_jac_cmaj(double, const double * const, double * const, int)

@@ -45,8 +45,8 @@ ReactionDiffusion::ReactionDiffusion(
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
     vector<int> bin_k_factor_span, // modulation over reactions
     int geom_,
-    int logy,
-    int logt
+    bool logy,
+    bool logt
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
@@ -73,12 +73,6 @@ ReactionDiffusion::ReactionDiffusion(
     case 2: geom = Geom::CYLINDRICAL; break;
     default: throw std::logic_error("Unknown geom.");
     }
-
-    if ((logt<0) || (logt>1))
-	std::logic_error("logt needs to be 0 or 1.");
-
-    if ((logy<0) || (logy>1))
-	std::logic_error("logy needs to be 0 or 1.");
 
     dx = new double[N-1];
 
@@ -315,7 +309,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
                             double * const restrict ja, int ldj) const
 {
     // `t`: time (log(t) if logt=1)
-    // `y`: concentrations (log(conc) if logy=1)
+    // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding)
     double * restrict fout = NULL;

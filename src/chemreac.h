@@ -37,8 +37,8 @@ public:
     int N; // number of compartments
     int nr; // number of reactions
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Spherical, 2: 1D Cylind.
-    int logy; // use logarithmic concenctraction
-    int logt; // use logarithmic time
+    bool logy; // use logarithmic concenctraction
+    bool logt; // use logarithmic time
     vector<vector<int> > stoich_reac; // Reactants per reaction
     vector<vector<int> > stoich_actv; // Active reactants per reaction
     vector<vector<int> > stoich_prod; // Products per reaction
@@ -59,8 +59,8 @@ public:
 		      vector<vector<double> >,
 		      vector<int>,
 		      int,
-		      int,
-		      int);
+		      bool,
+		      bool);
     ~ReactionDiffusion();
     void f(double, const double * const restrict, double * const restrict) const;
     void dense_jac_rmaj(double, const double * const restrict, double * const restrict, int) const;
