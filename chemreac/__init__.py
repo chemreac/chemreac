@@ -4,6 +4,8 @@ __version__ = '0.0.4'
 
 from ._chemreac import PyReactionDiffusion
 
+import numpy as np
+
 DENSE, BANDED, SPARSE = range(3)
 FLAT, SPHERICAL, CYLINDRICAL = range(3)
 
@@ -21,7 +23,7 @@ def ReactionDiffusion(
     -`k`: array of reaction rate coefficients
     -`N`: number of compartments
     -`D`: diffusion coefficients (of length n)
-    -`x`: compartment boundaries (of length N+1)
+    -`x`: compartment boundaries (of length N+1), default: linspace(1,2, N+1)
     -`stoich_actv`: list of ACTIVE reactant index lists per reaction.n
     -`bin_k_factor`: per compartment modulation of rate coefficients
     -`bin_k_factor_span`: spans over reactions affected by bin_k_factor
@@ -52,10 +54,10 @@ def ReactionDiffusion(
     else:
         _D = list([0]*n)
 
-    if x == None: x = 1
+    if x == None: x = 1.0
 
     if isinstance(x, float) or isinstance(x, int):
-        _x = [x/float(N)*i for i in range(N+1)]
+        _x = np.linspace(1, 2, N+1)
     else:
         assert len(x) == N+1
         # monotonic:
