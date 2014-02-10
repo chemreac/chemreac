@@ -14,10 +14,11 @@ def run(sys, y0, tout, mode=None, log_time=False, **kwargs):
         np.linspace(t0, tend, nt+1)
         np.logspace(t0+1e-12, np.log10(tend), nt+1)
     """
+    y0 = np.asarray(y0)
     assert y0.size == sys.n*sys.N
 
     defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-12,
-                'rtol': 1e-6, 'with_jacobian': True,
+                'rtol': 1e-8, 'with_jacobian': True,
                 'first_step': 1e-9}
 
     if mode == None:
@@ -71,7 +72,7 @@ def run(sys, y0, tout, mode=None, log_time=False, **kwargs):
         runner.integrate(tout[i])
         yout[i, :] = runner.y
     texec = time.time() - texec
-    return tout, yout, {
+    return yout, {
         'texec': texec,
         'neval_f': f.neval,
         'neval_j': jac.neval,
