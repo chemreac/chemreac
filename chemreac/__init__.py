@@ -9,6 +9,8 @@ import numpy as np
 DENSE, BANDED, SPARSE = range(3)
 FLAT, SPHERICAL, CYLINDRICAL = range(3)
 
+# Having a Python side wrapper for our Cython Extension (PyReactionDiffusion)
+# allows e.g. Jedi (Python IDE capabilities) to inspect and give help strings
 def ReactionDiffusion(
         n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
         stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
@@ -21,7 +23,7 @@ def ReactionDiffusion(
     -`stoich_reac`: list of reactant index lists per reaction.
     -`stoich_prod`: list of product index lists per reaction.
     -`k`: array of reaction rate coefficients
-    -`N`: number of compartments
+    -`N`: number of compartments (default: 1 if x==None else len(x)-1)
     -`D`: diffusion coefficients (of length n)
     -`x`: compartment boundaries (of length N+1), default: linspace(1,2, N+1)
     -`stoich_actv`: list of ACTIVE reactant index lists per reaction.n
