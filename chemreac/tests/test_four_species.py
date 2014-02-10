@@ -7,17 +7,23 @@ from itertools import product
 import numpy as np
 import pytest
 
+from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+from chemreac.integrate import run
 from chemreac.serialization import load
 
 """
 Test chemical reaction system with 4 species.
 (no diffusion)
 
+A -> B               k1=0.05
+2C + B -> D + B      k2=3.0
+
 tests:
-chemreac.serialization.load
-chemreac.PyReactionDiffusion.f
-chemreac.PyReactionDiffusion.dense_jac_rmaj
-chemreac.PyReactionDiffusion.dense_jac_cmaj
+* chemreac.serialization.load
+* chemreac.PyReactionDiffusion.f
+* chemreac.PyReactionDiffusion.dense_jac_rmaj
+* chemreac.PyReactionDiffusion.dense_jac_cmaj
+* chemreac.integrate.run
 
 See:
 <four_species_f_jac.png>
@@ -25,11 +31,37 @@ See:
 <four_species_f_jac_logt.png>
 """
 
-# A -> B               k1=0.05
-# 2C + B -> D + B      k2=3.0
-
-JSON_PATH = os.path.join(os.path.dirname(__file__), 'four_species.json')
+JSON_PATH, BLESSED_PATH = map(
+    lambda x: os.path.join(os.path.dirname(__file__), x),
+    ['four_species.json', 'four_species_blessed.txt']
+)
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
+
+combos = list(product([True, False], [True, False], range(1,4), [FLAT, SPHERICAL, CYLINDRICAL]))
+@pytest.mark.parametrize("combo", combos)
+def test_integrate(combo):
+    logy, logt, N, geom = combo
+    sys = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
+
+    y0 = np.array([1.3, 1e-4, 0.7, 1e-4]*N)
+
+    ref = np.genfromtxt(BLESSED_PATH)
+    ref_t = ref[:,0]
+    ref_y = ref[:,1:5]
+
+    t0 = 3.0
+    tend=10.0+t0
+    nt=100
+    tout = np.linspace(t0, tend, nt+1)
+    assert np.allclose(tout-t0, ref_t)
+
+    y = np.log(y0) if logy else y0
+    if logt:
+        tout = np.log(tout)
+    yout, info = run(sys, y, tout)
+    if logy: yout = np.exp(yout)
+
+    assert np.allclose(yout[:,:4], ref_y, atol=1e-5)
 
 
 def _get_ref_f(sys, t0, y0, logy, logt):
