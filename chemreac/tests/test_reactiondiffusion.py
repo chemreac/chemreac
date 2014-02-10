@@ -12,7 +12,6 @@ import pytest
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 
 np.set_printoptions(precision=3, linewidth=120)
-
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
 
@@ -154,7 +153,6 @@ def _get_banded(A, n, N):
     B = np.zeros((2*n+1, n*N))
     for ri in range(n*N):
         for ci in range(max(0, ri-n), min(n*N, ri+n+1)):
-            print(ri, ci)
             B[n+ri-ci, ci] = A[ri, ci]
     return B
 
@@ -221,11 +219,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_2bins(log):
 
     assert np.allclose(jout, jref)
 
-    if not logy:
-        jout_bnd = np.zeros((3,2), order='F')
-        rd.banded_packed_jac_cmaj(t, y, jout_bnd)
-        jref_bnd = _get_banded(jref,1,2)
-        assert np.allclose(jout_bnd, jref_bnd)
+    jout_bnd = np.zeros((3,2), order='F')
+    rd.banded_packed_jac_cmaj(t, y, jout_bnd)
+    jref_bnd = _get_banded(jref,1,2)
+    assert np.allclose(jout_bnd, jref_bnd)
 
 
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
@@ -266,17 +263,21 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
     rd.f(t, y, fout)
-
     assert np.allclose(fout, fref)
-
 
     jout = np.zeros((N,N))
     if logy:
         unlogt = t0 if logt else 1.0
         jref = np.array([
-            [-fref[0]/unlogt-D/dx[0]/V[0],           D/dx[0]/V[0]*exp(b-a),             0],
-            [ D/dx[0]/V[1]*exp(a-b),  -fref[1]/unlogt-D/V[1]*(1/dx[0]+1/dx[1]),  D/V[1]/dx[1]*exp(c-b)],
-            [            0,              D/V[2]/dx[1]*exp(b-c),  -fref[2]/unlogt-D/dx[1]/V[2]],
+            [-fref[0]/unlogt-D/dx[0]/V[0],
+             D/dx[0]/V[0]*exp(b-a),
+             0],
+            [D/dx[0]/V[1]*exp(a-b),
+             -fref[1]/unlogt-D/V[1]*(1/dx[0]+1/dx[1]),
+             D/V[1]/dx[1]*exp(c-b)],
+            [0,
+             D/V[2]/dx[1]*exp(b-c),
+             -fref[2]/unlogt-D/dx[1]/V[2]],
         ])
     else:
         jref = np.array([
@@ -289,7 +290,6 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
         jref *= t0
 
     rd.dense_jac_rmaj(t, y, jout)
-
     assert np.allclose(jout, jref)
 
     jout_bnd = np.zeros((3,N), order='F')
@@ -311,15 +311,17 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     n = 4
     N = 5
     D = [2.5, 3.7, 5.11, 7.13]
-    y0 = np.array([2.5, 1.2, 3.2, 4.3,
-                   2.7, 0.8, 1.6, 2.4,
-                   3.1, 0.3, 1.5, 1.8,
-                   3.3, 0.6, 1.6, 1.4,
-                   3.6, 0.9, 1.7, 1.2])
+    y0 = np.array([
+        2.5, 1.2, 3.2, 4.3,
+        2.7, 0.8, 1.6, 2.4,
+        3.1, 0.3, 1.5, 1.8,
+        3.3, 0.6, 1.6, 1.4,
+        3.6, 0.9, 1.7, 1.2
+    ])
     x = np.array([11.0, 13.0, 17.0, 23.0, 29.0, 37.0])
     k = [31.0, 37.0, 41.0]
 
-    #(r[0], r[1]) modulations
+    #(r[0], r[1]) modulations over bins
     bin_k_factor = [(i+3, i+4) for i in range(N)]
     bin_k_factor_span = [1, 1]
 
@@ -436,23 +438,24 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
     rd.banded_packed_jac_cmaj(0.0, y0, jout_bnd_packed_cmaj)
 
-    import matplotlib.pyplot as plt
-    from chemreac.util import coloured_spy
-    fig = plt.figure()
-    ax = fig.add_subplot(3,1,1)
-    coloured_spy(ref_banded_j, ax=ax)
-    plt.title('ref_banded_j')
-    ax = fig.add_subplot(3,1,2)
-    coloured_spy(jout_bnd_packed_cmaj, ax=ax)
-    plt.title('jout_bnd_packed_cmaj')
-    ax = fig.add_subplot(3,1,3)
-    coloured_spy(ref_banded_j-jout_bnd_packed_cmaj, ax=ax)
-    plt.title('diff')
-    # plt.show()
+    plot = False
+    if plot:
+        import matplotlib.pyplot as plt
+        from chemreac.util import coloured_spy
+        fig = plt.figure()
+        ax = fig.add_subplot(3,1,1)
+        coloured_spy(ref_banded_j, ax=ax)
+        plt.title('ref_banded_j')
+        ax = fig.add_subplot(3,1,2)
+        coloured_spy(jout_bnd_packed_cmaj, ax=ax)
+        plt.title('jout_bnd_packed_cmaj')
+        ax = fig.add_subplot(3,1,3)
+        coloured_spy(ref_banded_j-jout_bnd_packed_cmaj, ax=ax)
+        plt.title('diff')
+        plt.show()
 
-    # assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
-
+    assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 
     jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
     rd.banded_padded_jac_cmaj(0.0, y0, jout_bnd_padded_cmaj)
-    # assert np.allclose(jout_bnd_padded_cmaj[n:,:], ref_banded_j)
+    assert np.allclose(jout_bnd_padded_cmaj[n:,:], ref_banded_j)
