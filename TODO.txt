@@ -1,0 +1,7 @@
+* remove "banded_padded_jac_cmaj" (same effect can be achieved through
+  using and offset plus extra ldj.)
+
+* derive finite differences test by hand for geometries starting from
+  diffusion equation
+
+* write a separate test to confirm that it correctly handles active case.
