@@ -65,6 +65,7 @@ cdef class PyReactionDiffusion:
 
     def f(self, double t, double [::1] y, double [::1] fout):
         assert y.size == fout.size
+        assert y.size >= self.n
         self.thisptr.f(t, &y[0], &fout[0])
 
     def dense_jac_rmaj(self, double t, double [::1] y,
