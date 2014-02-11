@@ -10,6 +10,8 @@
 
 #ifdef DEBUG
 #include <cstdio>
+#include <iostream>
+#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " " << std::endl;};
 #endif
 
 %if USE_OPENMP:
@@ -74,12 +76,24 @@ ReactionDiffusion::ReactionDiffusion(
     default: throw std::logic_error("Unknown geom.");
     }
 
+    nr = stoich_reac.size();
+
+    for (int ri=0; ri<nr; ++ri){
+        for (vector<int>::iterator si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
+            if (*si > n-1)
+                throw std::logic_error("At least one species index in stoich_reac > (n-1)");
+        for (vector<int>::iterator si=stoich_prod[ri].begin(); si != stoich_prod[ri].end(); ++si)
+            if (*si > n-1)
+                throw std::logic_error("At least one species index in stoich_prod > (n-1)");
+        for (vector<int>::iterator si=stoich_actv_[ri].begin(); si != stoich_actv_[ri].end(); ++si)
+            if (*si > n-1)
+                throw std::logic_error("At least one species index in stoich_actv > (n-1)");
+    }
+
     dx = new double[N-1];
 
     for (int i=0; i<N-1; ++i)
         dx[i] = (x[i+2]-x[i])/2;
-
-    nr = stoich_reac.size();
 
     coeff_reac = new int[nr*n];
     coeff_prod = new int[nr*n];
@@ -106,8 +120,8 @@ ReactionDiffusion::ReactionDiffusion(
 
     // Handle bin_k_factors:
     for (int i=0; i<bin_k_factor_span.size(); ++i)
-	for (int j=0; j<bin_k_factor_span[i]; ++j)
-	    i_bin_k.push_back(i);
+        for (int j=0; j<bin_k_factor_span[i]; ++j)
+            i_bin_k.push_back(i);
     n_factor_affected_k = i_bin_k.size();
 }
 
@@ -129,18 +143,18 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-	if (logy)
-	    local_r[rxni] = 0;
-	else
-	    local_r[rxni] = 1;
+        if (logy)
+            local_r[rxni] = 0;
+        else
+            local_r[rxni] = 1;
 
         for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
         if (logy)
-	    local_r[rxni] += yi[si];
+            local_r[rxni] += yi[si];
         else
-	    local_r[rxni] *= yi[si];
+            local_r[rxni] *= yi[si];
         }
 
     if (logy)
@@ -161,9 +175,9 @@ ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
 {
     // bi: bin index, si: species index
     if (logy)
-	return -D[si]/dx[bi]*(exp(Y(bi+1)) - exp(Y(bi)));
+        return -D[si]/dx[bi]*(exp(Y(bi+1)) - exp(Y(bi)));
     else
-	return -D[si]/dx[bi]*(Y(bi+1) - Y(bi));
+        return -D[si]/dx[bi]*(Y(bi+1) - Y(bi));
 }
 #undef Y
 
@@ -253,38 +267,37 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 
         // Contributions from reactions
         // ----------------------------
-	const double * const yi = y+bi*n;
+        const double * const yi = y+bi*n;
         _fill_local_r(bi, yi, local_r);
         for (int rxni=0; rxni<nr; ++rxni){
             // reaction index rxni
             for (int si=0; si<n; ++si){
                 // species index si
                 int overall = coeff_totl[rxni*n + si];
-                if (overall != 0){
-		    DCDT(bi, si) += overall*local_r[rxni];
-		}
+                if (overall != 0)
+                    DCDT(bi, si) += overall*local_r[rxni];
             }
         }
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
             for (int si=0; si<n; ++si){ // species index si
-		if (D[si] == 0.0) continue;
-                DCDT(bi, si) += diffusion_contrib(bi, si, fluxes);
-	    }
+                if (D[si] != 0.0)
+                    DCDT(bi, si) += diffusion_contrib(bi, si, fluxes);
+            }
         }
-	if (logy){
-	    if (logt)
-		for (int si=0; si<n; ++si)
-		    DCDT(bi, si) *= exp(t-Y(bi,si));
-	    else
-		for (int si=0; si<n; ++si)
-		    DCDT(bi, si) *= exp(-Y(bi,si));
-	} else {
-	    if (logt)
-		for (int si=0; si<n; ++si)
-		    DCDT(bi, si) *= exp(t);
-	}
+        if (logy){
+            if (logt)
+                for (int si=0; si<n; ++si)
+                    DCDT(bi, si) *= exp(t-Y(bi,si));
+            else
+                for (int si=0; si<n; ++si)
+                    DCDT(bi, si) *= exp(-Y(bi,si));
+        } else {
+            if (logt)
+                for (int si=0; si<n; ++si)
+                    DCDT(bi, si) *= exp(t);
+        }
 
         ${"delete []local_r;" if USE_OPENMP else ""}
 
@@ -314,8 +327,8 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     // `ldj`: leading dimension of ja (useful for padding)
     double * restrict fout = NULL;
     if (logy){
-	fout = new double[n*N];
-	f(t, y, fout);
+        fout = new double[n*N];
+        f(t, y, fout);
     }
 
     ${'double * local_r = new double[nr];' if not USE_OPENMP else ''}
@@ -324,7 +337,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // Conc. in `bi:th` compartment
         const double * const local_y = y + bi*n;
 
-	${'double * local_r = new double[nr];' if USE_OPENMP else ''}
+        ${'double * local_r = new double[nr];' if USE_OPENMP else ''}
     
         // Contributions from reactions
         // ----------------------------
@@ -341,72 +354,72 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
                         continue; // si unaffected by reaction
                     if (coeff_actv[rxni*n + dsi] == 0)
                         continue; // rate of reaction unaffected by dsi
-		    double tmp = coeff_totl[rxni*n + si]*\
-			coeff_actv[rxni*n + dsi]*local_r[rxni];
-		    if (!logy)
-			tmp /= Y(bi,dsi);
+                    double tmp = coeff_totl[rxni*n + si]*\
+                    coeff_actv[rxni*n + dsi]*local_r[rxni];
+                    if (!logy)
+                        tmp /= Y(bi,dsi);
                     JAC(bi,bi,si,dsi) += tmp;
                 }
-		if (logy)
-		    JAC(bi,bi,si,dsi) *= exp(-Y(bi,si));
+                if (logy)
+                    JAC(bi,bi,si,dsi) *= exp(-Y(bi,si));
             }
         }
 
-	// Contributions from diffusion
-	// ----------------------------
-	if (bi > 0){
-	    // Diffusion over left boundary
-	    double tmp = diffusion_contrib_jac_prev(bi);
-	    for (int si=0; si<n; ++si){
-		// species index si
-		if (D[si] == 0.0) continue;
-		JAC(bi, bi,   si, si) -= D[si]*tmp;
-		if (logy)
-		    JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(Y(bi-1,si)-Y(bi,si));
-		else
-		    JAC(bi, bi-1, si, si)  = D[si]*tmp;
-	    }
-	}
-	if (bi < N-1){
-	    // Diffusion over right boundary
-	    double tmp = diffusion_contrib_jac_next(bi);
-	    for (int si=0; si<n; ++si){
-		// species index si
-		if (D[si] == 0.0) continue;
-		JAC(bi, bi,   si, si) -= D[si]*tmp;
-		if (logy)
-		    JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(Y(bi+1,si)-Y(bi,si));
-		else
-		    JAC(bi, bi+1, si, si)  = D[si]*tmp;
-	    }
-	}
+        // Contributions from diffusion
+        // ----------------------------
+        if (bi > 0){
+            // Diffusion over left boundary
+            double tmp = diffusion_contrib_jac_prev(bi);
+            for (int si=0; si<n; ++si){
+                // species index si
+                if (D[si] == 0.0) continue;
+                JAC(bi, bi,   si, si) -= D[si]*tmp;
+                if (logy)
+                    JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(Y(bi-1,si)-Y(bi,si));
+                else
+                    JAC(bi, bi-1, si, si)  = D[si]*tmp;
+            }
+        }
+        if (bi < N-1){
+            // Diffusion over right boundary
+            double tmp = diffusion_contrib_jac_next(bi);
+            for (int si=0; si<n; ++si){
+                // species index si
+                if (D[si] == 0.0) continue;
+                JAC(bi, bi,   si, si) -= D[si]*tmp;
+                if (logy)
+                    JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(Y(bi+1,si)-Y(bi,si));
+                else
+                    JAC(bi, bi+1, si, si)  = D[si]*tmp;
+            }
+        }
 
-	// Logartihmic time
-	// ----------------------------
-	if (logt){
-	    for (int si=0; si<n; ++si){
-		for (int dsi=0; dsi<n; ++dsi){
-		    JAC(bi, bi, si, dsi) *= exp(t);
-		}
-		if (bi>0)
-		    JAC(bi, bi-1, si, si) *= exp(t);
-		if (bi<N-1)
-		    JAC(bi, bi+1, si, si) *= exp(t);
-	    }
-	}
+        // Logartihmic time
+        // ----------------------------
+        if (logt){
+            for (int si=0; si<n; ++si){
+                for (int dsi=0; dsi<n; ++dsi){
+                    JAC(bi, bi, si, dsi) *= exp(t);
+                }
+                if (bi>0)
+                    JAC(bi, bi-1, si, si) *= exp(t);
+                if (bi<N-1)
+                    JAC(bi, bi+1, si, si) *= exp(t);
+            }
+        }
 
-	// Logrithmic concentrations
-	// ----------------------------
-	if (logy){
-	    for (int si=0; si<n; ++si)
-		JAC(bi, bi, si, si) -= fout[bi*n+si];
-	}
+        // Logrithmic concentrations
+        // ----------------------------
+        if (logy){
+            for (int si=0; si<n; ++si)
+                JAC(bi, bi, si, si) -= fout[bi*n+si];
+        }
 
-	${'delete []local_r;' if USE_OPENMP else ''}
+        ${'delete []local_r;' if USE_OPENMP else ''}
     }
     ${'delete []local_r;' if not USE_OPENMP else ''}
     if (logy)
-	delete []fout;
+        delete []fout;
 }
 #undef JAC
 %endfor

@@ -47,8 +47,26 @@ def test_ReactionDiffusion__only_1_reaction(N):
     assert np.allclose(jout, jref)
 
 
-def test_ReactionDiffusion__actv():
-    pass
+def test_ReactionDiffusion__actv_1():
+    y0 = np.array([2.0, 3.0, 7.0])
+    k = 5.0
+    # A + C -(+A)-> B + C
+    rd = ReactionDiffusion(3, [[0,0,2]], [[1,2]], [k], stoich_actv=[[0,2]])
+    fout = np.empty((3,))
+    rd.f(0.0, y0, fout)
+    r = k*y0[0]*y0[2]
+    assert np.allclose(fout, [-2*r, r, 0])
+
+
+def test_ReactionDiffusion__actv_2():
+    y0 = np.array([2.0, 3.0, 9.0])
+    k = 5.0
+    # A + C --(+A+5*C)--> B
+    rd = ReactionDiffusion(3, [[0,0,2,2,2,2,2,2]], [[1]], [k], stoich_actv=[[0,2]])
+    fout = np.empty((3,))
+    rd.f(0.0, y0, fout)
+    r = k*y0[0]*y0[2]
+    assert np.allclose(fout, [-2*r, r, -6*r])
 
 
 @pytest.mark.parametrize("N", range(1,5))
