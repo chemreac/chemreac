@@ -24,3 +24,6 @@ build/
 src/tests/*.out
 src/tests/test_chemreac
 src/tests/chemreac.cpp
+
+# Generated files for source distribution
+runtests.py

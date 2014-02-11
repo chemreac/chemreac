@@ -4,7 +4,7 @@
 import os
 import sys
 
-from distutils.core import setup
+from distutils.core import setup, Command
 
 name_ = 'chemreac'
 version_ = '0.0.4'
@@ -12,13 +12,29 @@ version_ = '0.0.4'
 DEBUG=True
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 
+# Make `python setup.py test` work without depending on py.test being installed
+# https://pytest.org/latest/goodpractises.html
+class PyTest(Command):
+    user_options = []
+    def initialize_options(self):
+        pass
+    def finalize_options(self):
+        pass
+    def run(self):
+        import sys,subprocess
+        # py.test --genscript=runtests.py
+        errno = subprocess.call([sys.executable, 'runtests.py'])
+        raise SystemExit(errno)
+
+cmdclass_ = {'test': PyTest}
+
 if '--help'in sys.argv[1:] or sys.argv[1] in (
         '--help-commands', 'egg_info', 'clean', '--version'):
-    cmdclass_ = {}
+    # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
 else:
     from pycompilation.dist import clever_build_ext, CleverExtension
-    cmdclass_ = {'build_ext': clever_build_ext}
+    cmdclass_['build_ext'] = clever_build_ext
     ext_modules_ = [
         CleverExtension(
             "chemreac._chemreac",
