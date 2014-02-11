@@ -24,6 +24,15 @@ def test_ReactionDiffusion__f__wrong_fout_dimension():
     fout = np.ones((1,))*99 # fout too small
     rd.f(0.0, y0, fout)
 
+@pytest.mark.xfail
+def test_ReactionDiffusion__to_few_species():
+    # Ensure exception raised when referencing species indices > (n-1)
+    y0 = np.array([2.0, 3.0])
+    k = 5.0
+    # A -> B
+    n = 1 # wrong: A, B makes 2
+    rd = ReactionDiffusion(1, [[0]], [[1]], [k])
+
 
 @pytest.mark.parametrize("N", range(1,5))
 def test_ReactionDiffusion__only_1_reaction(N):
