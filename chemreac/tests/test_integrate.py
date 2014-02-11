@@ -19,18 +19,17 @@ Tests the integration routine for the
 chemical reaction system. (no diffusion)
 """
 
-log = list(product([True, False], [True, False]))
-@pytest.mark.parametrize("log", log)
+LOG_COMOBS = list(product([True, False], [True, False]))
+
+@pytest.mark.parametrize("log", LOG_COMOBS)
 def test_decay(log):
     # A -> B
     n = 2
     logy, logt = log
-    k0 = 1.3
+    k0 = 0.13
     rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt)
     y0 = [3.0, 1.0]
-    t0 = 5.0
-    tend = 17.0
-    nt = 42
+    t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
 
     y = np.log(y0) if logy else y0
@@ -40,14 +39,57 @@ def test_decay(log):
 
     yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
                      y0[1]+y0[0]*(1-np.exp(-k0*(tout-t0)))]).transpose()
-    import sys
-    sys.stdout.write(yref-yout)
     assert np.allclose(yout, yref)
 
 
-def test_ReactionDiffusion__bin_k_factor():
-    # A -> B
-    pass
+@pytest.mark.parametrize("log_geom", product(LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
+def test_ReactionDiffusion__bin_k_factor(log_geom):
+    # A -> B # mod1 (x**2)
+    # C -> D # mod1 (x**2)
+    # E -> F # mod2 (sqrt(x))
+    # G -> H # no modulation
+    (logy, logt), geom = log_geom
+    k = np.array([3.0, 7.0, 13.0, 22.0])
+    N = 5
+    n = 8
+    nr = 4
+    D = np.zeros(n)
+    x = np.linspace(3,7,N)
+    bkf = [(x[i]*x[i], x[i]**0.5) for i in range(N)]
+    bkf_span = [2,1]
+    rd = ReactionDiffusion(
+        n,
+        [[i] for i in range(0,n,2)],
+        [[i] for i in range(1,n,2)],
+        k=k, N=N, D=D, bin_k_factor=bkf,
+        bin_k_factor_span=bkf_span,
+        logy=logy, logt=logt, geom=geom
+    )
+    y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N]).flatten()
+    t0, tend, nt = 1.0, 1.1, 42
+    tout = np.linspace(t0, tend, nt+1)
+
+    y = np.log(y0) if logy else y0
+    t = np.log(tout) if logt else tout
+    yout, info = run(rd, y, t)
+    if logy: yout = np.exp(yout)
+
+    def _get_bkf(bi, ri):
+        if ri < 2:
+            return x[bi]*x[bi]
+        elif ri < 3:
+            return x[bi]**0.5
+        else:
+            return 1.0
+
+    yref = np.hstack([
+        np.hstack([
+            np.array([
+                y0[i]*np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)),
+                y0[i+1]+y0[i]*(1-np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)))
+            ]).transpose() for i in range(0,n,2)
+        ]) for bi in range(N)])
+    assert np.allclose(yout, yref)
 
 
 @pytest.mark.parametrize("N", range(2,17))
