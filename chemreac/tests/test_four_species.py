@@ -24,6 +24,9 @@ tests:
 * chemreac.PyReactionDiffusion.dense_jac_rmaj
 * chemreac.PyReactionDiffusion.dense_jac_cmaj
 * chemreac.integrate.run
+* chemreac.chemistry.Reaction
+* chemreac.chemistry.Substance
+* chemreac.chemistry.ReactionSystem
 
 See:
 <four_species_f_jac.png>
@@ -151,3 +154,22 @@ def test_dense_jac_cmaj(log):
     sys.dense_jac_cmaj(t, y, Jout)
 
     assert np.allclose(Jout, ref_J)
+
+def test_chemistry():
+    from chemreac.chemistry import mk_sn_dict_from_names
+    A,B,C,D = mk_sn_dict_from_names('ABCD')
+    r1 = Reaction('A':1, 'B':1, k=0.05)
+    r2 = Reaction('C':2, 'B':1, k=3.0)
+    rsys = ReactionSystem([r1, r2])
+    rd = ReactionDiffusion_from_ReactionSystem(rsys) # make this a classmethod
+    # how to compare equality of say: json loaded sys?
+    # specie indices can be permuted in 4*3*2*1 = 24 ways
+    # ...solution: canonical representation is alphabetically sorted on
+    #              Substance.name
+    serialized_rd = load(JSON_PATH)
+    assert td.stoich_reac == serialized_rd.stoich_reac
+    assert td.stoich_prod == serialized_rd.stoich_prod
+    assert td.stoich_actv == serialized_rd.stoich_actv
+    assert rd.k == serialized_rd.k
+
+    assert rd.D == serialized_rd.D ## <=== TODO, add D to Substance
