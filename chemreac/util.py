@@ -36,7 +36,7 @@ def coloured_spy(A, cmap_name='gray', ax = None):
 
 def wrap(cls, **wrap_kwargs):
     """
-    Lazy overriding of keyword arguments to class initializing
+    Lazy overriding of keyword arguments to e.g. class initializing
     """
     def callback(*args, **kwargs):
         new_kwargs = kwargs.copy()
