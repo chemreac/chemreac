@@ -52,7 +52,8 @@ def main(tend=10.0, N=1, nt=50, plot=True, spy=False, mode=None):
 
     else:
 
-        tout, yout, info = run(sys, y0, t0, tend, nt)
+        tout = np.linspace(t0, tend, nt)
+        yout, info = run(sys, y0, tout)
         if plot:
             for i,l in enumerate('ABCD'):
                 plt.plot(tout, yout[:,i], label=l)
