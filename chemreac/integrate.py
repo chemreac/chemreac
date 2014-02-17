@@ -49,7 +49,7 @@ def run(sys, y0, tout, mode=None, log_time=False, **kwargs):
     if mode == DENSE:
         jout = np.zeros((sys.n*sys.N, sys.n*sys.N), order='F')
     elif mode == BANDED:
-        jout = np.zeros((sys.n*3+1, sys.n*sys.N), order='F')
+        jout = np.zeros((sys.n*3+1, sys.n*sys.N), order='F') # Currently SciPy need extra padding
     else:
         raise NotImplementedError
 
