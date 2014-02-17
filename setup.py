@@ -7,7 +7,7 @@ import sys
 from distutils.core import setup, Command
 
 name_ = 'chemreac'
-version_ = '0.0.4'
+version_ = '0.0.5'
 
 DEBUG=True
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
