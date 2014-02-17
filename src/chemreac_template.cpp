@@ -43,7 +43,7 @@ ReactionDiffusion::ReactionDiffusion(
     int N, 
     vector<double> D,
     vector<double> x, // separation
-    vector<vector<int> > stoich_actv_,
+    vector<vector<int> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
     vector<int> bin_k_factor_span, // modulation over reactions
     int geom_,
