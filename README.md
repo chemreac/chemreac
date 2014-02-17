@@ -31,7 +31,9 @@ Tests
 =====
 Run py.test
 ``py.test``
-(requires make, python-pytest)
+(requires make, python-pytest), eventually source distributions will
+include ``runtests.py`` which enables ``python setup.py test`` to work
+without having pytest installed.
 
 Prerequisites
 =============
