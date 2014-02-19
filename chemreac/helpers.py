@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from collections import defaultdict
+import weakref
 
 class WeakList(list):
     """
