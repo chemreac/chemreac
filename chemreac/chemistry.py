@@ -10,6 +10,7 @@ import numpy as np
 import quantities as pq
 
 from chemreac.helpers import InstanceReferenceStore
+from chemreac import ReactionDiffusion
 
 # TODO: somewhere: add check for massconservation and charge conservation
 
@@ -35,17 +36,19 @@ class Substance(object):
                  tex_name = None,
                  pKa      = None,
                  multiplicity = None,
+                 D = None,
                  ):
 
-        self.name              = name
-        self.charge            = charge
+        self.name = name
+        self.charge = charge
         if mass == None and hasattr(formula, 'mass'):
             mass = formula.mass
-        self.mass    = mass
+        self.mass = mass
         self.formula = formula
-        self.tex_name          = tex_name
-        self.pKa               = pKa
-        self.multiplicity      = multiplicity
+        self.tex_name = tex_name
+        self.pKa = pKa
+        self.multiplicity = multiplicity
+        self.D = D
 
         if name in self.__class__.all_substances:
             colliding_occurance = self.__class__.all_substances[name]
@@ -62,11 +65,11 @@ class Substance(object):
         return self.name
 
     def __repr__(self):
-        fmtstr =  "Substance('{}', {}, {}, {}, '{}', {})"
+        fmtstr =  "Substance('{}', {}, {}, {}, '{}', {}, {}, {})"
         return fmtstr.format(self.name, self.charge,
                              self.mass, repr(self.formula),
                              self.tex_name,
-                             self.pKa)
+                             self.pKa, self.multiplicity, self.D)
 
     def __hash__(self):
         return hash(repr(self))
@@ -85,12 +88,13 @@ class Substance(object):
         return self.name <  other.name
 
 
-def mk_sn_dict_from_names(names, name_is_formula=False):
-    return OrderedDict([(s, Substance(s, formula=s if name_is_formula else None)) for s in names])
 
-def ReactionDiffusion_from_ReactionSystem(rsys, **kwargs):
-    return ReactionDiffusion(rsys.ns, rsys.stoich_reac, rsys.stoich_prod, rsys.k,
-                             **kwargs)
+
+def mk_sn_dict_from_names(names, **kwargs):
+    kwargs_list = [{k: v[i]} for k,v in kwargs.items() for i in range(len(names))]
+    return OrderedDict([(s, Substance(s, **kwargs_list[i])) for \
+                        i,s in enumerate(names)])
+
 
 class Reaction(InstanceReferenceStore):
     """
@@ -135,19 +139,16 @@ class Reaction(InstanceReferenceStore):
         self._reactants.update(reactants)
         self._products  = defaultdict(int)
         self._products.update(products)
+        self._active_reac = defaultdict(int)
         if active_reac:
             assert inactive_reac == None
-            self._active_reac = defaultdict(int)
             self._active_reac.update(active_reac)
         else:
             if inactive_reac:
                 assert active_reac == None
-                self._active_reac = defaultdict(int)
                 self._active_reac.update(reactants)
                 for k, v in inactive_reac.items:
                     self._active_reac[k] -= v
-            else:
-                self._active_reac = None
 
         self._k     = k
         self._T     = T
@@ -162,7 +163,7 @@ class Reaction(InstanceReferenceStore):
 
 
     def __repr__(self):
-        attrs = ['active_reac', 'inactive_reac', 'k', 'T', 'E_a', 'A', 'ref', 'name']
+        attrs = ['active_reac', 'k', 'T', 'E_a', 'A', 'ref', 'name']
         pres_attrs = []
         for attr in attrs:
             if getattr(self, '_' + attr) != None:
@@ -177,7 +178,8 @@ class Reaction(InstanceReferenceStore):
 
     @property
     def species_names(self):
-        return set(self._reactants.keys() + self._products.keys() + self._active_reac.keys())
+        return set(self._reactants.keys() + self._products.keys() + \
+                   (self._active_reac or {}).keys())
 
 
     def reactant_stoich_coeffs(self, species_names):
@@ -210,38 +212,56 @@ class ReactionSystem(object):
         self._T = T
         self._name = name
 
+    def to_ReactionDiffusion(self, substances=None, ordered_names=None, **kwargs):
+        ordered_names = ordered_names or self.ordered_names()
+        if substances:
+            if not 'D' in kwargs:
+                kwargs['D'] = [substances[sn].D for sn in ordered_names]
+        assert 'stoich_actv' not in kwargs
+        return ReactionDiffusion(
+            self.ns, self.stoich_reac(ordered_names), 
+            self.stoich_prod(ordered_names), self.k, 
+            stoich_actv=self.stoich_actv(ordered_names), **kwargs)
+
+
     @property
     def species_names(self):
-        return set.union(rxn.species_names for rxn in self._rxns)
+        return set.union(*(rxn.species_names for rxn in self._rxns))
 
-    def _get_repeating_indices_list(self, attr):
+    def ordered_names(self):
+        return sorted(self.species_names)
+
+    def _get_repeating_indices_list(self, attr, ordered_names):
         result = []
         for rxn in self._rxns:
             l = []
-            for si, sn in enumerate(self.species_names):
+            for si, sn in enumerate(ordered_names):
                 l += [si]*getattr(rxn, attr, defaultdict(int))[sn]
             result.append(l)
         return result
 
-    @property
-    def stoich_reac(self):
-        return self._get_repeating_indices_list('_reactants')
 
-    @property
-    def stoich_prod(self):
-        return self._get_repeating_indices_list('_products')
+    def stoich_reac(self, ordered_names=None):
+        return self._get_repeating_indices_list('_reactants', ordered_names or self.ordered_names())
 
-    @property
-    def stoich_actv(self):
-        return self._get_repeating_indices_list('_active_reac')
+
+    def stoich_prod(self, ordered_names=None):
+        return self._get_repeating_indices_list('_products', ordered_names or self.ordered_names())
+
+
+    def stoich_actv(self, ordered_names=None):
+        return self._get_repeating_indices_list('_active_reac', ordered_names or self.ordered_names())
+
 
     @property
     def k(self):
         return [rxn._k for rxn in self._rxns]
 
+
     @property
     def ns(self):
         return len(self.species_names)
+
 
     @property
     def nr(self):
