@@ -10,6 +10,7 @@ import pytest
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.integrate import run
 from chemreac.serialization import load
+from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
 
 """
 Test chemical reaction system with 4 species.
@@ -25,7 +26,7 @@ tests:
 * chemreac.PyReactionDiffusion.dense_jac_cmaj
 * chemreac.integrate.run
 * chemreac.chemistry.Reaction
-* chemreac.chemistry.Substance
+* chemreac.chemistry.mk_sn_dict_from_names
 * chemreac.chemistry.ReactionSystem
 
 See:
@@ -155,21 +156,20 @@ def test_dense_jac_cmaj(log):
 
     assert np.allclose(Jout, ref_J)
 
+
 def test_chemistry():
-    from chemreac.chemistry import mk_sn_dict_from_names
-    A,B,C,D = mk_sn_dict_from_names('ABCD')
-    r1 = Reaction('A':1, 'B':1, k=0.05)
-    r2 = Reaction('C':2, 'B':1, k=3.0)
+    sbstncs = mk_sn_dict_from_names('ABCD', D=[0.1, 0.2, 0.3, 0.4])
+    r1 = Reaction({'A': 1}, {'B': 1}, k=0.05)
+    r2 = Reaction({'B': 1, 'C': 2}, {'D': 1, 'B': 1}, k=3.0)
     rsys = ReactionSystem([r1, r2])
-    rd = ReactionDiffusion_from_ReactionSystem(rsys) # make this a classmethod
+    rd = rsys.to_ReactionDiffusion(sbstncs)
     # how to compare equality of say: json loaded sys?
     # specie indices can be permuted in 4*3*2*1 = 24 ways
     # ...solution: canonical representation is alphabetically sorted on
     #              Substance.name
     serialized_rd = load(JSON_PATH)
-    assert td.stoich_reac == serialized_rd.stoich_reac
-    assert td.stoich_prod == serialized_rd.stoich_prod
-    assert td.stoich_actv == serialized_rd.stoich_actv
+    assert rd.stoich_reac == serialized_rd.stoich_reac
+    assert rd.stoich_prod == serialized_rd.stoich_prod
+    assert rd.stoich_actv == serialized_rd.stoich_actv
     assert rd.k == serialized_rd.k
-
     assert rd.D == serialized_rd.D ## <=== TODO, add D to Substance
