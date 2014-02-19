@@ -54,7 +54,7 @@ def ReactionDiffusion(
         assert n == len(D)
         _D = D
     else:
-        _D = list([0]*n)
+        _D = D or list([0]*n)
 
     if x == None: x = 1.0
 
