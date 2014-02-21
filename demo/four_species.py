@@ -19,7 +19,7 @@ Demo of chemical reaction diffusion system.
 # 2C + B -> D + B      k2=3.0
 
 
-def main(tend=10.0, N=1, nt=50, plot=False, jac_spy=False, mode=None, 
+def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
          logy=False, logt=False, show=False):
 
     sys = load('four_species.json', N=N, x=N, logy=logy, logt=logt)
@@ -61,7 +61,10 @@ def main(tend=10.0, N=1, nt=50, plot=False, jac_spy=False, mode=None,
             for i,l in enumerate('ABCD'):
                 plt.plot(tout, yout[:,i], label=l)
             plt.legend(loc='best')
-            plt.show()
+            if show:
+                plt.show()
+            else:
+                plt.savefig(__file__[:-2]+'png')
 
 
 if __name__ == '__main__':
