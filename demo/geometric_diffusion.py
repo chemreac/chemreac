@@ -29,20 +29,25 @@ def main(tend=10.0, N=25, nt=30):
 
     geoms = (FLAT, SPHERICAL, CYLINDRICAL)
     geom_name = {FLAT: 'Flat', SPHERICAL: 'Spherical', CYLINDRICAL: 'Cylindrical'}
+    
+    t0 = 1e-10
+    tout = np.linspace(t0, tend, nt)
 
     fig = plt.figure()
     res = []
 
+
     for G in geoms:
         sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=G)
-        res.append(run(sys, y0, t0=0, tend=tend, nt=nt))
+        yout, info = run(sys, y0, tout)
+        res.append(yout)
 
     for i, G in enumerate(geoms):
-        tout, yout, info = res[i]
+        yout = res[i]
         ax = fig.add_subplot(2,3,G+1, projection='3d')
 
         # create supporting points in polar coordinates
-        T,X = np.meshgrid(x[0]/2+x[1:], tout)
+        T,X = np.meshgrid(x[:-1]+np.diff(x)/2, tout)
         ax.plot_surface(T, X, yout, rstride=1, cstride=1, cmap=cm.YlGnBu_r)
         #ax.set_zlim3d(0, 1)
         if G == FLAT:
@@ -55,11 +60,11 @@ def main(tend=10.0, N=25, nt=30):
 
 
     for i, G in enumerate(geoms):
-        tout, yout, info = res[i]
+        yout = res[i]
         if i == 0:
             ax = fig.add_subplot(2,3,3+i+1)
             for j in range(3):
-                tout, yout, info =res[j]
+                yout =res[j]
                 if j == 0:
                     yprim = yout
                 elif j == 1:
@@ -71,7 +76,7 @@ def main(tend=10.0, N=25, nt=30):
             ax.legend(loc='best')
             ax.set_title('Mass conservation')
         else:
-            yout = yout - res[0][1] # difference
+            yout = yout - res[0] # difference
             ax = fig.add_subplot(2,3,3+G+1, projection='3d')
 
             # create supporting points in polar coordinates
