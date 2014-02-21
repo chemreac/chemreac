@@ -88,8 +88,6 @@ class Substance(object):
         return self.name <  other.name
 
 
-
-
 def mk_sn_dict_from_names(names, **kwargs):
     kwargs_list = [{k: v[i]} for k,v in kwargs.items() for i in range(len(names))]
     return OrderedDict([(s, Substance(s, **kwargs_list[i])) for \
@@ -120,6 +118,7 @@ class Reaction(InstanceReferenceStore):
     along the same lines `name` is possible to use if the reaction
     is known under a certain name, e.g. "H2O2 auto-decomposition"
     """
+
     def __init__(self,
                  reactants = defaultdict(int),
                  products  = defaultdict(int),
@@ -203,7 +202,7 @@ class Reaction(InstanceReferenceStore):
 class ReactionSystem(object):
 
     def __init__(self,
-                 rxns = None,   # Reactions in system
+                 rxns = None, # Reactions in system
                  T    = None, # Kelvin
                  name = None,
                  ):

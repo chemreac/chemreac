@@ -8,7 +8,7 @@
 .metadata_CompilerRunner
 
 
-demo/plot.png
+demo/*.png
 demo/profile.out
 
 # Files from compilation

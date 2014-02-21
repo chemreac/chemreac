@@ -15,18 +15,18 @@ from chemreac.util import coloured_spy
 Demo of chemical reaction diffusion system.
 """
 
-# A -> B               k1=0.05
+# A      -> B          k1=0.05
 # 2C + B -> D + B      k2=3.0
 
 
-def main(tend=10.0, N=1, nt=50, plot=True, spy=False, mode=None):
-    sys = load('four_species.json', N=N, x=N)
+def main(tend=10.0, N=1, nt=50, plot=False, jac_spy=False, mode=None, 
+         logy=False, logt=False, show=False):
+
+    sys = load('four_species.json', N=N, x=N, logy=logy, logt=logt)
 
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     y0 = np.concatenate([y0/(i+1)*(0.25*i**2+1) for i in range(N)])
-    #y0 = np.array([[float(x)]*4 for x in range(1,N+1)]).flatten()
-
-    t0 = 0.0
+    t0 = 1e-10
 
     if mode == None:
         if sys.N == 1:
@@ -36,7 +36,7 @@ def main(tend=10.0, N=1, nt=50, plot=True, spy=False, mode=None):
     else:
         mode = int(mode)
 
-    if spy:
+    if jac_spy:
         fout = np.empty(sys.n*sys.N)
         sys.f(t0, y0, fout)
         print(fout)
@@ -53,10 +53,14 @@ def main(tend=10.0, N=1, nt=50, plot=True, spy=False, mode=None):
     else:
 
         tout = np.linspace(t0, tend, nt)
-        yout, info = run(sys, y0, tout)
+        y = np.log(y0) if logy else y0
+        t = np.log(tout) if logt else tout
+        yout, info = run(sys, y, t)
+        if logy: yout = np.exp(yout)
         if plot:
             for i,l in enumerate('ABCD'):
                 plt.plot(tout, yout[:,i], label=l)
+            plt.legend(loc='best')
             plt.show()
 
 
