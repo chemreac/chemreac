@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # distutils: language = c++
 
+import numpy as np
+
 from libcpp cimport bool
 from libcpp.vector cimport vector
 
@@ -125,16 +127,20 @@ cdef class PyReactionDiffusion:
             self.thisptr.stoich_actv = stoich_actv
 
     property k:
-        def __get__(self): return self.thisptr.k
+        def __get__(self): return np.asarray(self.thisptr.k)
         def __set__(self, vector[double] k): self.thisptr.k = k
 
     property D:
-        def __get__(self): return self.thisptr.D
+        def __get__(self): return np.asarray(self.thisptr.D)
         def __set__(self, vector[double] D): self.thisptr.D = D
 
     property x:
-        def __get__(self): return self.thisptr.x
+        def __get__(self): return np.asarray(self.thisptr.x)
         def __set__(self, vector[double] x): self.thisptr.x = x
+
+    property bin_k_factor:
+        def __get__(self): return np.asarray(self.thisptr.bin_k_factor)
+        def __set__(self, vector[vector[double]] bin_k_factor): self.thisptr.bin_k_factor = bin_k_factor
 
     # Extra convenience property
     property ny:
