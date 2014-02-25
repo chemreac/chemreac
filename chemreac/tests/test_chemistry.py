@@ -27,5 +27,5 @@ def test_Substance():
     assert str(H2O) == 'H2O'
     assert str(OH_m) == 'OH-'
     print(repr(H2O))
-    assert repr(H2O) == "Substance('H2O', 0, {}, {}, '{}', 14, None, None)".format(
+    assert repr(H2O) == "Substance('H2O', 0, {}, {}, '{}', 14, None, 0)".format(
         formula_H2O.mass, repr(formula_H2O), '$\mathrm{H_{2}O}$')
