@@ -19,12 +19,19 @@ import numpy as np
 from scipy.optimize import curve_fit
 
 def fit_rd(rd, tdata, ydata, c0, param_guess):
+    pconv = []
     def fit_func(tout, k, tdelay):
-        print k
+        pconv.append((k, tdelay))
         rd.k = [k]
-        yout, info = run(rd, c0, tdelay+tout)
+        if tdelay > 0.0:
+            c1, info = run(rd, c0, [0, tdelay])
+            c1 = c1[1,:]
+        else:
+            c1 = c0
+        yout, info = run(rd, c1, tdelay+tout)
         return yout[:,2]
-    return curve_fit(fit_func, tdata, ydata, p0=param_guess)
+    popt, pcov = curve_fit(fit_func, tdata, ydata, p0=param_guess)
+    return popt, np.asarray(pconv)
 
 
 def _get_rd():
@@ -37,6 +44,7 @@ def _get_rd():
 
 def fit_binary_reaction_from_product(
         tdata, ydata, c0, plot_pseudo_guess=False, 
+        plot_convergence=False,
         head_frac=10, tail_frac=4, peak_frac=0.8):
     """
     A + B -> C               k=?
@@ -70,7 +78,13 @@ def fit_binary_reaction_from_product(
         plt.show()
 
     rd = _get_rd()
-    popt, pcov = fit_rd(rd, tdata, ydata, c0, [k_guess, d_guess])
+    popt, pconv = fit_rd(rd, tdata, ydata, c0, [k_guess, d_guess])
+
+    if plot_convergence:
+        plt.plot(pconv[:,0], label='k')
+        plt.plot(pconv[:,1], label='t_delay')
+        plt.legend()
+        plt.show()
     return popt
 
 def y_for_k(tdata, c0, k):
@@ -90,9 +104,9 @@ def main():
     # delay before meassurement
     tdelay = np.abs(np.random.normal(1.0))
     skip_nt = np.argwhere(ttrue > tdelay)[0]
-    yinp = ytrue[skip_nt:] + 0.003*np.random.normal(size=len(ttrue)-skip_nt)
+    yinp = ytrue[skip_nt:] + 0.0003*np.random.normal(size=len(ttrue)-skip_nt)
     kopt, dopt = fit_binary_reaction_from_product(
-        ttrue[:-skip_nt], yinp, c0, True)
+        ttrue[:-skip_nt], yinp, c0, True, True)
     yopt = y_for_k(ttrue, c0, kopt)
 
     # Plot
