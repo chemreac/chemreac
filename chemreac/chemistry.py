@@ -36,7 +36,7 @@ class Substance(object):
                  tex_name = None,
                  pKa      = None,
                  multiplicity = None,
-                 D = None,
+                 D = 0,
                  ):
 
         self.name = name
@@ -89,9 +89,14 @@ class Substance(object):
 
 
 def mk_sn_dict_from_names(names, **kwargs):
-    kwargs_list = [{k: v[i]} for k,v in kwargs.items() for i in range(len(names))]
+    kwargs_list = []
+    for i in range(len(names)):
+        d = {}
+        for k,v in kwargs.items():
+            d[k] = v[i]
+        kwargs_list.append(d)
     return OrderedDict([(s, Substance(s, **kwargs_list[i])) for \
-                        i,s in enumerate(names)])
+                        i, s in enumerate(names)])
 
 
 class Reaction(InstanceReferenceStore):
@@ -134,59 +139,59 @@ class Reaction(InstanceReferenceStore):
         # Initialize the parent:
         super(self.__class__, self).__init__()
 
-        self._reactants = defaultdict(int)
-        self._reactants.update(reactants)
-        self._products  = defaultdict(int)
-        self._products.update(products)
-        self._active_reac = defaultdict(int)
+        self.reactants = defaultdict(int)
+        self.reactants.update(reactants)
+        self.products  = defaultdict(int)
+        self.products.update(products)
+        self.active_reac = defaultdict(int)
         if active_reac:
             assert inactive_reac == None
-            self._active_reac.update(active_reac)
+            self.active_reac.update(active_reac)
         else:
             if inactive_reac:
                 assert active_reac == None
-                self._active_reac.update(reactants)
+                self.active_reac.update(reactants)
                 for k, v in inactive_reac.items:
                     self._active_reac[k] -= v
 
-        self._k     = k
-        self._T     = T
-        self._E_a   = E_a
-        self._A     = A
-        self._ref   = ref
-        self._name  = name
+        self.k     = k
+        self.T     = T
+        self.E_a   = E_a
+        self.A     = A
+        self.ref   = ref
+        self.name  = name
 
 
     def __str__(self):
-        return self._name if self._name else self.__repr__()
+        return self.name if self.name else self.__repr__()
 
 
     def __repr__(self):
         attrs = ['active_reac', 'k', 'T', 'E_a', 'A', 'ref', 'name']
         pres_attrs = []
         for attr in attrs:
-            if getattr(self, '_' + attr) != None:
+            if getattr(self, attr) != None:
                 pres_attrs.append(attr)
 
         fmtcore = ', '.join(['{}'] * (2 + len(pres_attrs)))
         fmtstr =  'Reaction(' +fmtcore+ ')'
         fmtargs = [self._reactants, self._products] + \
-            [attr +' = '+str(getattr(self, '_' + attr)) for attr in pres_attrs]
+            [attr +' = '+str(getattr(self, attr)) for attr in pres_attrs]
         return fmtstr.format(*fmtargs)
 
 
     @property
     def species_names(self):
-        return set(self._reactants.keys() + self._products.keys() + \
-                   (self._active_reac or {}).keys())
+        return set(self.reactants.keys() + self.products.keys() + \
+                   (self.active_reac or {}).keys())
 
 
     def reactant_stoich_coeffs(self, species_names):
-        return [self._reactants[n] for n in species_names]
+        return [self.reactants[n] for n in species_names]
 
 
     def product_stoich_coeffs(self, species_names):
-        return [self._products[n] for n in species_names]
+        return [self.products[n] for n in species_names]
 
 
     @classmethod
@@ -218,8 +223,8 @@ class ReactionSystem(object):
                 kwargs['D'] = [substances[sn].D for sn in ordered_names]
         assert 'stoich_actv' not in kwargs
         return ReactionDiffusion(
-            self.ns, self.stoich_reac(ordered_names), 
-            self.stoich_prod(ordered_names), self.k, 
+            self.ns, self.stoich_reac(ordered_names),
+            self.stoich_prod(ordered_names), self.k,
             stoich_actv=self.stoich_actv(ordered_names), **kwargs)
 
 
@@ -241,20 +246,20 @@ class ReactionSystem(object):
 
 
     def stoich_reac(self, ordered_names=None):
-        return self._get_repeating_indices_list('_reactants', ordered_names or self.ordered_names())
+        return self._get_repeating_indices_list('reactants', ordered_names or self.ordered_names())
 
 
     def stoich_prod(self, ordered_names=None):
-        return self._get_repeating_indices_list('_products', ordered_names or self.ordered_names())
+        return self._get_repeating_indices_list('products', ordered_names or self.ordered_names())
 
 
     def stoich_actv(self, ordered_names=None):
-        return self._get_repeating_indices_list('_active_reac', ordered_names or self.ordered_names())
+        return self._get_repeating_indices_list('active_reac', ordered_names or self.ordered_names())
 
 
     @property
     def k(self):
-        return [rxn._k for rxn in self._rxns]
+        return [rxn.k for rxn in self._rxns]
 
 
     @property
