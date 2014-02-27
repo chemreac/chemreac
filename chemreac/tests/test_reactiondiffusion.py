@@ -15,6 +15,18 @@ np.set_printoptions(precision=3, linewidth=120)
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
 
+def test_autobinary():
+    from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
+    sbstncs = mk_sn_dict_from_names('AB')
+    k = 3.0
+    r1 = Reaction({'A': 2}, {'B': 1}, k=k)
+    rsys = ReactionSystem([r1])
+    rd = rsys.to_ReactionDiffusion(sbstncs)
+
+    fout = np.empty((2,))
+    rd.f(0.0, np.asarray([1.0, 37.0]), fout)
+    assert np.allclose(fout, [-2*3.0, 3.0])
+
 @pytest.mark.xfail
 def test_ReactionDiffusion__f__wrong_fout_dimension():
     y0 = np.array([2.0, 3.0])

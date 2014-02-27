@@ -42,6 +42,22 @@ def test_decay(log):
     assert np.allclose(yout, yref)
 
 
+def test_autodimerization():
+    # A + A -> B 
+    from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
+    sbstncs = mk_sn_dict_from_names('AB')
+    k = 3.0
+    r1 = Reaction({'A': 2}, {'B': 1}, k=k)
+    rsys = ReactionSystem([r1])
+    rd = rsys.to_ReactionDiffusion(sbstncs)
+    t = np.linspace(0, 5, 3)
+    A0, B0 = 1.0, 0.0
+    yout, info = run(rd, [A0, B0], t)
+    Aref = 1/(1/A0+2*k*t)
+    yref = np.vstack((Aref, (A0-Aref)/2)).transpose()
+    assert np.allclose(yout, yref)
+
+
 @pytest.mark.parametrize("log_geom", product(LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
 def test_ReactionDiffusion__bin_k_factor(log_geom):
     # A -> B # mod1 (x**2)

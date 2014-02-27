@@ -3,7 +3,17 @@
 import quantities as pq
 from periodictable import formula
 
-from chemreac.chemistry import molar, Substance, Henry
+from chemreac.chemistry import molar, Substance, Henry, Reaction, ReactionSystem, mk_sn_dict_from_names
+
+
+def test_to_ReactionDiffusion():
+    sbstncs = mk_sn_dict_from_names('AB')
+    r1 = Reaction({'A': 2}, {'B': 1}, k=3.0)
+    rsys = ReactionSystem([r1])
+    rd = rsys.to_ReactionDiffusion(sbstncs)
+    assert rd.stoich_reac == [[0, 0]]
+    assert rd.stoich_prod == [[1]]
+    assert rd.k == [3.0]
 
 
 def test_Henry():
