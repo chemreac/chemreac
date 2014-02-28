@@ -46,16 +46,18 @@ def _get_rd():
 
 def fit_binary_reaction_from_product(
         tdata, ydata, c0, plot_info=False, 
-        transient_yfrac=0.3, tail_xrfrac=4, peak_yfrac=0.8):
+        transient_yfrac=0.3, tail_xrfrac=4, peak_yfrac=0.8,
+        pseudo_fo=None):
     """
     A + B -> C        k=?
 
-    Assumes C_A(t=0) > C_B(t=0) (pseduo first order guess).
+    Assumes C_A(t=0) > C_B(t=0) (pseudo first order guess).
     """
     concA, concB, concC = c0
-    assert concA >= concB # Could be supported by swaping concentrations...
-    pseudo_fo = concA > concB*2
-    
+    if pseudo_fo == None:
+        assert concA >= concB # Could be supported by swaping concentrations...
+        pseudo_fo = concA > concB*2
+
     # Guess plateau
     tf = len(ydata)//tail_xrfrac
     tf_avg = np.sum(ydata[-tf:])/tf
@@ -66,7 +68,7 @@ def fit_binary_reaction_from_product(
     d_guess = ydata[0]/d_p[0]
 
     # Catch transient
-    itransient = np.argwhere(ydata > tf_avg*peak_yfrac)[0]
+    itransient = np.argwhere(ydata > ydata[0]+(tf_avg-ydata[0])*peak_yfrac)[0]
 
     # Guess k
     Bdata = tf_avg-ydata[:itransient]
@@ -129,26 +131,46 @@ def y_for_k(tdata, c0, k):
     return yout[:,2]
 
 
-def main():
-    ktrue = 0.5
+def main(d_center=1.0, B0=0.6):
+    """
+    We need better estimate of tdelay - linear doesn't cut it..
+    Solution:
+      1. non-linear fit to:
+       A) equal conc
+       B) pseudo 1st order
+      2. Use as guess for guess and shoot.
+    """
+    ktrue = 3.5
     nt = 200
     ttrue = np.linspace(0,10,nt)
-    c0 = [1.0, 1.0-1e-9, 0.0]
+    c0 = [1.0, B0, 0.0]
     ytrue = y_for_k(ttrue, c0, ktrue)
     ypseudo = c0[1]*(1-np.exp(-ktrue*ttrue))
 
     # delay before meassurement
-    tdelay = np.abs(np.random.normal(1.0))
-    skip_nt = np.argwhere(ttrue > tdelay)[0]
-    yinp = ytrue[skip_nt:] + 0.0000003*np.random.normal(size=len(ttrue)-skip_nt)
+    tdelay = np.abs(np.random.normal(d_center))
+    skip_nt = np.argwhere(ttrue >= tdelay)[0]
+    yinp = ytrue[skip_nt:] + 0.0003*np.random.normal(size=len(ttrue)-skip_nt)
+    tinp = ttrue[:-skip_nt] if skip_nt > 0 else ttrue
     kopt, dopt = fit_binary_reaction_from_product(
-        ttrue[:-skip_nt], yinp, c0, True)
+        tinp, yinp, c0, True)
     yopt = y_for_k(ttrue, c0, kopt)
 
     # Plot
-    plt.plot(ttrue[:-skip_nt], yinp, label='Input data')
-    plt.plot(ttrue-tdelay, ypseudo, label='Pseudo-first order treatment')
+    plt.subplot(3,1,1)
+    plt.plot(tinp, yinp, label='Input data')
     plt.plot(ttrue-tdelay, yopt, label='Opt (k={})'.format(kopt))
+    plt.legend(loc='best')
+
+    plt.subplot(3,1,2)
+    plt.plot(tinp, yinp, label='Input data')
+    plt.plot(ttrue-tdelay, ypseudo, label='Pseudo-first order treatment')
+    plt.legend(loc='best')
+
+    plt.subplot(3,1,3)
+    plt.plot(tinp, yinp, label='Input data')
+    yquad = B0-1/(1/B0+kopt*ttrue)
+    plt.plot(ttrue-tdelay, yquad, label='Equal initial conc treatment')
     plt.legend(loc='best')
     plt.show()
 
