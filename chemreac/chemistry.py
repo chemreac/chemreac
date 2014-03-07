@@ -34,9 +34,9 @@ class Substance(object):
                  mass     = None,
                  formula  = None,
                  tex_name = None,
-                 pKa      = None,
                  multiplicity = None,
                  D = 0,
+                 **kwargs
                  ):
 
         self.name = name
@@ -46,9 +46,9 @@ class Substance(object):
         self.mass = mass
         self.formula = formula
         self.tex_name = tex_name
-        self.pKa = pKa
         self.multiplicity = multiplicity
         self.D = D
+        self.__dict__.update(kwargs)
 
         if name in self.__class__.all_substances:
             colliding_occurance = self.__class__.all_substances[name]
@@ -60,19 +60,6 @@ class Substance(object):
         else:
             self.__class__.all_substances[name] = self
 
-
-    def __str__(self):
-        return self.name
-
-    def __repr__(self):
-        fmtstr =  "Substance('{}', {}, {}, {}, '{}', {}, {}, {})"
-        return fmtstr.format(self.name, self.charge,
-                             self.mass, repr(self.formula),
-                             self.tex_name,
-                             self.pKa, self.multiplicity, self.D)
-
-    def __hash__(self):
-        return hash(repr(self))
 
     # Thanks to total_ordering it is sufficient to specify eq and lt
     def __eq__(self, other):
@@ -116,7 +103,7 @@ class Reaction(InstanceReferenceStore):
     as values
 
     rate constant i either given as k (T optional as validity info)
-    or as E_a and A for use in the Arrhenius equation
+    or as Ea and A for use in the Arrhenius equation
 
     and ref contains optional information on origin of data.
 
@@ -131,7 +118,7 @@ class Reaction(InstanceReferenceStore):
                  inactive_reac = None,
                  k         = None,
                  T         = None,
-                 E_a       = None,
+                 Ea       = None,
                  A         = None,
                  ref       = None,
                  name      = None,
@@ -151,12 +138,12 @@ class Reaction(InstanceReferenceStore):
             if inactive_reac:
                 assert active_reac == None
                 self.active_reac.update(reactants)
-                for k, v in inactive_reac.items:
-                    self._active_reac[k] -= v
+                for key, val in inactive_reac.items():
+                    self.active_reac[key] -= val
 
         self.k     = k
         self.T     = T
-        self.E_a   = E_a
+        self.Ea   = Ea
         self.A     = A
         self.ref   = ref
         self.name  = name
@@ -167,7 +154,7 @@ class Reaction(InstanceReferenceStore):
 
 
     def __repr__(self):
-        attrs = ['active_reac', 'k', 'T', 'E_a', 'A', 'ref', 'name']
+        attrs = ['active_reac', 'k', 'T', 'Ea', 'A', 'ref', 'name']
         pres_attrs = []
         for attr in attrs:
             if getattr(self, attr) != None:
@@ -208,13 +195,42 @@ class ReactionSystem(object):
 
     def __init__(self,
                  rxns = None, # Reactions in system
-                 T    = None, # Kelvin
                  name = None,
+                 substances = None,
                  ):
 
         self._rxns = rxns
-        self._T = T
         self._name = name
+        self._substances = substances
+
+        self._do_sanity_check()
+
+
+    @property
+    def rxns(self):
+        return self._rxns
+
+
+    @rxns.setter
+    def rxns(self, val):
+        self._rxns = val
+        self._do_sanity_check()
+
+
+    def _do_sanity_check(self):
+        if self._substances == None: return
+        for rxn in self._rxns:
+            net_chg  = 0
+            net_mass = 0.0
+            for reac, n in rxn.reactants.items():
+                net_chg -= self._substances[reac].charge
+                net_mass -= self._substances[reac].mass
+            for reac, n in rxn.products.items():
+                net_chg += self._substances[reac].charge
+                net_mass += self._substances[reac].mass
+            assert net_chg == 0
+            assert abs(net_mass) < 0.01
+
 
     def to_ReactionDiffusion(self, substances=None, ordered_names=None, **kwargs):
         ordered_names = ordered_names or self.ordered_names()
@@ -232,8 +248,10 @@ class ReactionSystem(object):
     def species_names(self):
         return set.union(*(rxn.species_names for rxn in self._rxns))
 
+
     def ordered_names(self):
         return sorted(self.species_names)
+
 
     def _get_repeating_indices_list(self, attr, ordered_names):
         result = []
@@ -291,15 +309,19 @@ class Henry(object):
         self._derivative = derivative
         self._ref = ref
 
+
     def get_k_H_at_T(self, T):
         return self._k_H0 * np.exp(self._derivative \
                                    * (1 / T - 1 / self.T0))
 
+
     def get_c_at_T_and_P(self, T, P):
         return P * self.get_k_H_at_T(T)
 
+
     def get_P_at_T_and_c(self, T, c):
         return c / self.get_k_H_at_T(T)
+
 
     def plot(self, T_start, T_end):
         T = np.linspace(T_start, T_end, 100)
