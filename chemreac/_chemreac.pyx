@@ -41,6 +41,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
 
 cdef class PyReactionDiffusion:
     cdef ReactionDiffusion *thisptr
+    cdef public vector[double] kerr
 
     def __cinit__(self,
                   int n,
@@ -140,7 +141,13 @@ cdef class PyReactionDiffusion:
 
     property bin_k_factor:
         def __get__(self): return np.asarray(self.thisptr.bin_k_factor)
-        def __set__(self, vector[vector[double]] bin_k_factor): self.thisptr.bin_k_factor = bin_k_factor
+        def __set__(self, vector[vector[double]] bin_k_factor):
+            self.thisptr.bin_k_factor = bin_k_factor
+
+    property bin_k_factor_span:
+        def __get__(self): return np.asarray(self.thisptr.bin_k_factor_span)
+        def __set__(self, vector[int] bin_k_factor_span):
+            self.thisptr.bin_k_factor_span = bin_k_factor_span
 
     # Extra convenience property
     property ny:

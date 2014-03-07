@@ -22,7 +22,7 @@ def ReactionDiffusion(
     -`n`: number of species
     -`stoich_reac`: list of reactant index lists per reaction.
     -`stoich_prod`: list of product index lists per reaction.
-    -`k`: array of reaction rate coefficients
+    -`k`: array of reaction rate coefficients (if 2-tuples, assumed (val, stddev) pairs)
     -`N`: number of compartments (default: 1 if x==None else len(x)-1)
     -`D`: diffusion coefficients (of length n)
     -`x`: compartment boundaries (of length N+1), default: linspace(1,2, N+1)
@@ -42,7 +42,21 @@ def ReactionDiffusion(
     banded_packed_jac_cmaj(t, y, Jout)
 
     some of which are used by chemreac.integrate.run
+
+    In addition error estimates (if provided by user) are stored as:
+    - kerr
     """
+
+    _k = []
+    kerr = []
+    for entry in k:
+        try:
+            val, err = entry
+        except TypeError:
+            assert isinstance(entry, float) or isinstance(entry, int)
+            val, err = entry, 0
+        _k.append(val)
+        kerr.append(err)
 
     if N == 0:
         if x == None:
@@ -80,15 +94,17 @@ def ReactionDiffusion(
 
     # Handle bin_k_factor
     if bin_k_factor == None:
-        assert bin_k_factor_span == None
+        if bin_k_factor_span == None:
+            bin_k_factor_span = []
         bin_k_factor = []
-        bin_k_factor_span = []
     else:
         assert bin_k_factor_span != None
         assert len(bin_k_factor) == N
         assert all([len(x) == len(bin_k_factor_span) for x in bin_k_factor])
         assert all([x >= 0 for x in bin_k_factor_span])
-    return PyReactionDiffusion(
-        n, stoich_reac, stoich_prod, k, N, _D, _x, _stoich_actv,
+    rd = PyReactionDiffusion(
+        n, stoich_reac, stoich_prod, _k, N, _D, _x, _stoich_actv,
         bin_k_factor, bin_k_factor_span, geom, logy, logt
     )
+    rd.kerr = kerr
+    return rd
