@@ -24,22 +24,3 @@ def coloured_spy(A, cmap_name='gray', ax = None):
     xa = ax.get_xaxis()
     xa.set_major_locator(MaxNLocator(integer=True))
     plt.colorbar()
-
-# def coloured_log_spy(sys, t, y, h, cmap_name='gray'):
-#     import matplotlib.cm
-#     from matplotlib import pyplot as plt
-#     J = np.zeros([sys.n*sys.N]*2)
-#     sys.dense_jac_rmaj(t, y, J, factor=h, sub_one=True)
-#     plt.imshow(np.log(J), cmap=matplotlib.cm.get_cmap(cmap_name), interpolation='none')
-#     plt.colorbar()
-#     plt.show()
-
-def wrap(cls, **wrap_kwargs):
-    """
-    Lazy overriding of keyword arguments to e.g. class initializing
-    """
-    def callback(*args, **kwargs):
-        new_kwargs = kwargs.copy()
-        new_kwargs.update(wrap_kwargs)
-        return cls(*args, **new_kwargs)
-    return callback
