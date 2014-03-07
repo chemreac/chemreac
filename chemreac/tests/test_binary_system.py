@@ -43,8 +43,8 @@ def test_serialization():
     assert rd.n == 3
     assert rd.stoich_reac == [[0, 1]]
     assert rd.stoich_prod == [[2]]
-    assert rd.k == [0.3]
-    assert rd.D == [0.1, 0.2, 0.3]
+    assert rd.k.tolist() == [0.3]
+    assert rd.D.tolist() == [0.1, 0.2, 0.3]
 
 
 combos = list(product([True, False], [True, False], range(1,4), [FLAT, SPHERICAL, CYLINDRICAL]))
@@ -90,7 +90,7 @@ def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
     A, B, C = y0
     if logy:
         f1, f2, f3 = _get_ref_f(rd, t0, y0, logy, logt)
-        if logt: 
+        if logt:
             A *= t0
             B *= t0
         ref_J = np.array(
@@ -172,5 +172,5 @@ def test_chemistry():
     assert rd.stoich_reac == serialized_rd.stoich_reac
     assert rd.stoich_prod == serialized_rd.stoich_prod
     assert rd.stoich_actv == serialized_rd.stoich_actv
-    assert rd.k == serialized_rd.k
-    assert rd.D == serialized_rd.D
+    assert np.allclose(rd.k, serialized_rd.k)
+    assert np.allclose(rd.D, serialized_rd.D)

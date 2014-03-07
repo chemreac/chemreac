@@ -27,6 +27,7 @@ def test_Henry():
     assert h.get_c_at_T_and_P(T, ref_P) - ref_c < 1e-6 * molar
     assert h.get_P_at_T_and_c(T, ref_c) - ref_P < 1 * pq.pascal
 
+
 def test_Substance():
     formula_H2O = formula('H2O')
     H2O = Substance(name = 'H2O',  charge = 0, formula = formula_H2O,
@@ -34,8 +35,3 @@ def test_Substance():
     OH_m = Substance(name = 'OH-',  charge =-1, formula = formula('OH'),
                      tex_name = r'$\mathrm{OH^{-}}$')
     assert sorted([OH_m, H2O]) == [H2O, OH_m]
-    assert str(H2O) == 'H2O'
-    assert str(OH_m) == 'OH-'
-    print(repr(H2O))
-    assert repr(H2O) == "Substance('H2O', 0, {}, {}, '{}', 14, None, 0)".format(
-        formula_H2O.mass, repr(formula_H2O), '$\mathrm{H_{2}O}$')

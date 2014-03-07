@@ -171,5 +171,5 @@ def test_chemistry():
     assert rd.stoich_reac == serialized_rd.stoich_reac
     assert rd.stoich_prod == serialized_rd.stoich_prod
     assert rd.stoich_actv == serialized_rd.stoich_actv
-    assert rd.k == serialized_rd.k
-    assert rd.D == serialized_rd.D ## <=== TODO, add D to Substance
+    assert np.allclose(rd.k, serialized_rd.k)
+    assert np.allclose(rd.D, serialized_rd.D)
