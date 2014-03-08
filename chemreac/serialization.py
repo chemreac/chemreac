@@ -2,6 +2,7 @@
 
 import json
 
+from . import ReactionDiffusion
 
 def dump(rd, path):
     """
@@ -21,8 +22,9 @@ def dump(rd, path):
         'stoich_actv': rd.stoich_actv,
         # 'bin_k_factor': rd.bin_k_factor.,
         'bin_k_factor_span': rd.bin_k_factor_span.tolist(),
-        'kerr': rd.kerr
     }
+    for attr in ReactionDiffusion.extra_attrs:
+        data[attr] = getattr(rd, attr)
     json.dump(data, fh)
 
 
@@ -37,7 +39,10 @@ def load(path, RD=None, **kwargs):
     fh = open(path, 'rt')
     data = json.load(fh)
     data.update(kwargs)
-    kerr = data.pop('kerr', None)
+    extra_data = {}
+    for attr in ReactionDiffusion.extra_attrs:
+        extra_data[attr] = data.pop(attr, None)
     rd = RD(**data)
-    if kerr: rd.kerr = kerr
+    for attr, val in extra_data.items():
+        if val != None: setattr(rd, attr, val)
     return rd

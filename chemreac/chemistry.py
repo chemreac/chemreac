@@ -237,6 +237,11 @@ class ReactionSystem(object):
         if substances:
             if not 'D' in kwargs:
                 kwargs['D'] = [substances[sn].D for sn in ordered_names]
+            if not 'names' in kwargs:
+                kwargs['names'] = [substances[sn].name for sn in ordered_names]
+            if not 'tex_names' in kwargs:
+                kwargs['tex_names'] = [substances[sn].tex_name for sn in ordered_names]
+
         assert 'stoich_actv' not in kwargs
         return ReactionDiffusion(
             self.ns, self.stoich_reac(ordered_names),

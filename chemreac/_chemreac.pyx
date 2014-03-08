@@ -41,7 +41,8 @@ cdef extern from "chemreac.h" namespace "chemreac":
 
 cdef class PyReactionDiffusion:
     cdef ReactionDiffusion *thisptr
-    cdef public vector[double] kerr
+    cdef public vector[double] k_err, D_err
+    cdef public list names, tex_names
 
     def __cinit__(self,
                   int n,
