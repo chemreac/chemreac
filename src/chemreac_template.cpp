@@ -137,7 +137,7 @@ ReactionDiffusion::~ReactionDiffusion()
 #define FACTOR(ri, bi) (((ri) < n_factor_affected_k) ? \
             bin_k_factor[bi][i_bin_k[ri]] : 1)
 void
-ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
+ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
                  double * const restrict local_r) const
 {
     // intent(out) :: local_r
@@ -151,16 +151,16 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict yi,
         for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
-        if (logy)
-            local_r[rxni] += yi[si];
-        else
-            local_r[rxni] *= yi[si];
+            if (logy)
+                local_r[rxni] += y[bi*n+si];
+            else
+                local_r[rxni] *= y[bi*n+si];
         }
 
-    if (logy)
-        local_r[rxni] = exp(local_r[rxni]);
+        if (logy)
+            local_r[rxni] = exp(local_r[rxni]);
 
-    local_r[rxni] *= FACTOR(rxni,bi)*k[rxni];
+        local_r[rxni] *= FACTOR(rxni,bi)*k[rxni];
     }
 }
 #undef FACTOR
@@ -267,8 +267,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 
         // Contributions from reactions
         // ----------------------------
-        const double * const yi = y+bi*n;
-        _fill_local_r(bi, yi, local_r);
+        _fill_local_r(bi, y, local_r);
         for (int rxni=0; rxni<nr; ++rxni){
             // reaction index rxni
             for (int si=0; si<n; ++si){
@@ -335,13 +334,11 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     ${'#pragma omp parallel for' if USE_OPENMP else ''}
     for (int bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
-        const double * const local_y = y + bi*n;
-
         ${'double * local_r = new double[nr];' if USE_OPENMP else ''}
     
         // Contributions from reactions
         // ----------------------------
-        _fill_local_r(bi, local_y, local_r);
+        _fill_local_r(bi, y, local_r);
         for (int si=0; si<n; ++si){
             // species si
             for (int dsi=0; dsi<n; ++dsi){
@@ -423,4 +420,16 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 }
 #undef JAC
 %endfor
+
+void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
+                                              int si, double * const restrict out) const
+{
+    double * local_r = new double[nr];
+    _fill_local_r(0, y, local_r);
+    for (int ri=0; ri<nr; ++ri){
+	out[ri] = coeff_totl[ri*n+si]*local_r[ri];
+    }
+    delete []local_r;
+}
+
 }; // namespace chemreac

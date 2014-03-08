@@ -38,6 +38,8 @@ cdef extern from "chemreac.h" namespace "chemreac":
         void banded_padded_jac_cmaj(double, const double * const, double * const, int)
         void banded_packed_jac_cmaj(double, const double * const, double * const, int)
 
+        void per_rxn_contrib_to_fi(double, const double * const, int, double * const)
+
 
 cdef class PyReactionDiffusion:
     cdef ReactionDiffusion *thisptr
@@ -150,6 +152,18 @@ cdef class PyReactionDiffusion:
         def __set__(self, vector[int] bin_k_factor_span):
             self.thisptr.bin_k_factor_span = bin_k_factor_span
 
-    # Extra convenience property
+    property logy:
+        def __get__(self): return self.thisptr.logy
+        def __set__(self, bool logy): self.thisptr.logy = logy
+
+    property logt:
+        def __get__(self): return self.thisptr.logt
+        def __set__(self, bool logt): self.thisptr.logt = logt
+
+
+    # Extra convenience
     property ny:
         def __get__(self): return self.N*self.n
+
+    def per_rxn_contrib_to_f(self, double t, double[::1] y, int si, double[::1] out):
+        self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
