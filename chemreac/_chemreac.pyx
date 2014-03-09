@@ -165,5 +165,5 @@ cdef class PyReactionDiffusion:
     property ny:
         def __get__(self): return self.N*self.n
 
-    def per_rxn_contrib_to_f(self, double t, double[::1] y, int si, double[::1] out):
+    def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
