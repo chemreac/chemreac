@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 from chemreac.serialization import load
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
-from chemreac.util import coloured_spy
+from chemreac.util.plotting import coloured_spy
+from chemreac.util.analysis import plot_jacobian, plot_per_reaction_contribution
 
 
 """
@@ -65,6 +66,30 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
                 plt.show()
             else:
                 plt.savefig(__file__[:-2]+'png')
+
+            plot_jacobian(
+                sys,
+                np.log(tout) if sys.logt else tout,
+                np.log(yout) if sys.logy else yout,
+                map(sys.names.index, 'ABCD'),
+                sys.names,
+            )
+            if show:
+                plt.show()
+            else:
+                plt.savefig(__file__[:-3]+'_jacobian.png')
+
+            plot_per_reaction_contribution(
+                sys,
+                np.log(tout) if sys.logt else tout,
+                np.log(yout) if sys.logy else yout,
+                map(sys.names.index, 'ABCD'),
+                sys.names,
+            )
+            if show:
+                plt.show()
+            else:
+                plt.savefig(__file__[:-3]+'_per_reaction.png')
 
 
 if __name__ == '__main__':
