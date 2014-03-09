@@ -112,8 +112,8 @@ class Reaction(InstanceReferenceStore):
     """
 
     def __init__(self,
-                 reactants = defaultdict(int),
-                 products  = defaultdict(int),
+                 reactants,
+                 products,
                  active_reac = None,
                  inactive_reac = None,
                  k         = None,
@@ -150,21 +150,16 @@ class Reaction(InstanceReferenceStore):
 
 
     def __str__(self):
-        return self.name if self.name else self.__repr__()
+        return self.render({})
 
-
-    def __repr__(self):
-        attrs = ['active_reac', 'k', 'T', 'Ea', 'A', 'ref', 'name']
-        pres_attrs = []
-        for attr in attrs:
-            if getattr(self, attr) != None:
-                pres_attrs.append(attr)
-
-        fmtcore = ', '.join(['{}'] * (2 + len(pres_attrs)))
-        fmtstr =  'Reaction(' +fmtcore+ ')'
-        fmtargs = [self._reactants, self._products] + \
-            [attr +' = '+str(getattr(self, attr)) for attr in pres_attrs]
-        return fmtstr.format(*fmtargs)
+    def render(self, tex_names):
+        reac = [str(v)+' '+tex_names.get(k, k) for k,v in self.reactants.items() if v>0]
+        prod = [str(v)+' '+tex_names.get(k, k) for k,v in self.products.items() if v>0]
+        if len(tex_names) > 0:
+            arrow = ' $\\rightarrow$ '
+        else:
+            arrow = ' -> '
+        return " + ".join(reac) + arrow + " + ".join(prod)
 
 
     @property
