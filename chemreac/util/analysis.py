@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 ls=['-',':','--', '-.']
 c='krgbycm'
 
-def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None, titles=None, limit=1e-10):
+def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None, titles=None,
+                   limit=1e-10, logx=True):
     if axes == None:
         axes = [plt.subplot(len(indices),1,i+1) for i in range(len(indices))]
     else:
@@ -14,10 +15,10 @@ def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None, titles=None,
 
     row_out = cb(sys, tout, yout, indices)
     for i, ax in enumerate(axes):
+        ax.set_yscale('symlog', linthreshy=limit)
+        if logx: ax.set_xscale('log')
         for j, lbl in enumerate(labels):
             if not np.any(np.abs(row_out[:,i,j]) > limit): continue
-            ax.set_xscale('log')
-            ax.set_yscale('symlog', linthreshy=limit)
             ax.plot(tout, row_out[:,i,j], label=lbl, c=c[j%len(c)], ls=ls[j%len(ls)])
         ax.legend(loc='best', prop={'size': 11})
         if titles: ax.set_title(titles[i])
@@ -41,20 +42,22 @@ def _get_per_func_out(sys, tout, yout, indices):
     return out
 
 
-def plot_jacobian(sys, tout, yout, substances, axes=None):
+def plot_jacobian(sys, tout, yout, substances, **kwargs):
     indices = [ri if isinstance(ri, int) else sys.names.index(ri) for ri in substances]
-    _plot_analysis(_get_jac_row, sys.tex_names, sys, tout,
-                   yout, indices, axes=None,
-                   titles=[sys.tex_names[i] for i in indices])
+    print_names = sys.tex_names or sys.names
+    _plot_analysis(_get_jac_row, print_names, sys, tout,
+                   yout, indices, axes=axes,
+                   titles=[print_names[i] for i in indices], **kwargs)
 
 
-def plot_per_reaction_contribution(sys, tout, yout, substances, axes=None):
+def plot_per_reaction_contribution(sys, tout, yout, substances, **kwargs):
     indices = [ri if isinstance(ri, int) else sys.names.index(ri)\
                for ri in substances]
+    print_names = sys.tex_names or sys.names
     _plot_analysis(
         _get_per_func_out,
         ['R'+str(i) + ': ' + sys.to_Reaction(i).render(
-            dict(zip(sys.names, sys.tex_names))) for \
+            dict(zip(sys.names, print_names))) for \
          i in range(sys.nr)],
-        sys, tout, yout, indices, axes=None,
-        titles=[sys.tex_names[i] for i in indices])
+        sys, tout, yout, indices, axes=axes,
+        titles=[print_names[i] for i in indices], **kwargs)
