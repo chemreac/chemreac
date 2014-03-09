@@ -124,3 +124,18 @@ class ReactionDiffusion(PyReactionDiffusion):
             if attr in kwargs:
                 setattr(rd, attr, kwargs[attr])
         return rd
+
+    def to_Reaction(self, ri):
+        """
+        Convenience method for making a Reaction instance
+        for reaction index ri
+        """
+        from .chemistry import Reaction
+        return Reaction(
+            {self.names[i]: self.stoich_reac[ri].count(i) for\
+             i in range(self.n)},
+            {self.names[i]: self.stoich_prod[ri].count(i) for\
+             i in range(self.n)},
+            {self.names[i]: self.stoich_actv[ri].count(i) for\
+             i in range(self.n)},
+            k=self.k[ri])
