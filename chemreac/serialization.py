@@ -33,9 +33,7 @@ def load(path, RD=None, **kwargs):
     Loads a ReactionDiffusion instance from implementation RD
     and overwrites with kwargs if passed
     """
-    if not RD:
-        from . import ReactionDiffusion
-        RD = ReactionDiffusion
+    RD = RD or ReactionDiffusion
     fh = open(path, 'rt')
     data = json.load(fh)
     data.update(kwargs)
