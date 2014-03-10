@@ -12,14 +12,12 @@ import numpy as np
 #project internal imports
 from chemreac.serialization import load
 from chemreac import ReactionDiffusion
-
 from chemreac.integrate import run
+from chemreac.util.analysis import plot_C_vs_t_in_bin
 
 """
 Demo of a large chemical reaction diffusion system.
 """
-
-YIELD_CONV = 1.0364e-07 # mol * eV / (J * molecules)
 
 name = 'aqueous_radiolysis'
 
@@ -31,7 +29,7 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024,
     mu = 1.0 # linear attenuation
     rho = 1.0 # kg/dm3
     sys = load(name+'.json', ReactionDiffusion, N=N, logy=logy, logt=logt,
-               bin_k_factor=[[doserate*rho*YIELD_CONV*exp(-mu*i/N)] for i in range(N)])
+               bin_k_factor=[[doserate*rho*exp(-mu*i/N)] for i in range(N)])
     y0_by_name = json.load(open(name+'.y0.json', 'rt'))
 
     # y0 with a H2 gradient
@@ -52,18 +50,14 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024,
 
     if plot:
         import matplotlib.pyplot as plt
-        for subs in ('H2', 'H2O2'):
-            plt.loglog(tout, yout[:,sys.names.index(subs)],
-                       label=subs+'(1)')
-            plt.loglog(tout, yout[:,sys.n*(sys.N-1)+sys.names.index(subs)],
-                       label=subs+'({0})'.format(sys.N))
-        xlabel = "t / s"
-        ylabel = "C / M"
-        plt.xlabel(xlabel)
-        plt.ylabel(ylabel)
-        plt.title(("{} s radiolysis,"+\
-                   " H2 gradient ({} bins)").format(tend, sys.N))
-        plt.legend(loc='best')
+        bt_fmtstr = "C(t) with local doserate {}"
+        ax = plt.subplot(2,1,1)
+        plot_C_vs_t_in_bin(sys, tout, yout, 0, ax, substances=('H2', 'H2O2'),
+                           basetitle=bt_fmtstr.format(sys.bin_k_factor[0][0]))
+        ax = plt.subplot(2,1,2)
+        plot_C_vs_t_in_bin(sys, tout, yout, N-1, ax, substances=('H2', 'H2O2'),
+                           basetitle=bt_fmtstr.format(sys.bin_k_factor[N-1][0]))
+        plt.tight_layout()
         if show:
             plt.show()
         else:
