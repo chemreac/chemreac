@@ -2,9 +2,10 @@
 
 from __future__ import print_function, division, absolute_import
 
-import weakref
 from collections import defaultdict, OrderedDict
 from functools import total_ordering
+from operator import itemgetter
+import weakref
 
 import numpy as np
 import quantities as pq
@@ -153,12 +154,15 @@ class Reaction(InstanceReferenceStore):
         return self.render({})
 
     def render(self, tex_names):
-        reac = [str(v)+' '+tex_names.get(k, k) for k,v in self.reactants.items() if v>0]
-        prod = [str(v)+' '+tex_names.get(k, k) for k,v in self.products.items() if v>0]
         if len(tex_names) > 0:
             arrow = ' $\\rightarrow$ '
         else:
             arrow = ' -> '
+
+        reac, prod = [[
+            ((str(v)+' ') if v > 1 else '') + tex_names.get(k, k) for\
+            k,v in filter(itemgetter(1), d.items()) \
+        ] for d in (self.reactants, self.products)]
         return " + ".join(reac) + arrow + " + ".join(prod)
 
 
