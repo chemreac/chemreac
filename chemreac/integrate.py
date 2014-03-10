@@ -8,7 +8,8 @@ from scipy.integrate import ode
 
 from chemreac import DENSE, BANDED, SPARSE
 
-def run(sys, y0, tout, mode=None, log_time=False, **kwargs):
+
+def run(sys, y0, tout, mode=None, **kwargs):
     """
     tout: at what times to report, e.g.:
         np.linspace(t0, tend, nt+1)
