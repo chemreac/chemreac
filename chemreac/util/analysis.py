@@ -61,3 +61,88 @@ def plot_per_reaction_contribution(sys, tout, yout, substances, **kwargs):
          i in range(sys.nr)],
         sys, tout, yout, indices, axes=axes,
         titles=[print_names[i] for i in indices], **kwargs)
+
+
+def _init_ax_substances_labels(sys, ax, substances, labels, xscale, yscale):
+    # helper func..
+    ax = ax or plt.subplot(1,1,1)
+    ax.set_xscale(xscale)
+    ax.set_yscale(yscale)
+    if substances == None:
+        substances = range(sys.n)
+    else:
+        substances = [s if isinstance(s, int) else sys.names.index(s) for s in substances]
+
+    if labels == None:
+        labels = sys.tex_names or sys.names
+        labels = [labels[i] for i in substances]
+    else:
+        assert len(labels) == len(substances)
+    return ax, substances, labels
+
+
+def plot_C_vs_t_in_bin(sys, tout, yout, bi, ax=None, labels=None, xscale='log',
+                       yscale='log', substances=None, basetitle="C(t)"):
+    ax, substances, labels = _init_ax_substances_labels(sys, ax, substances,
+                                                        labels, xscale, yscale)
+    for i, lbl in zip(substances, labels):
+        ax.plot(tout, yout[:, i+bi*sys.n], label=lbl, ls=ls[i%len(ls)], c=c[i%len(c)])
+    ax.set_xlabel("t / s")
+    ax.set_ylabel("C / M")
+    ax.set_title(basetitle+" in bin: {0:.3g} < x < {1:.3g}".format(sys.x[bi], sys.x[bi+1]))
+    ax.legend(loc='best', prop={'size': 11})
+    return ax
+
+
+def plot_C_vs_x(sys, tout, yout, substances, ti, ax=None, labels=None,
+                xscale='log', yscale='log', basetitle="C(x)"):
+    ax, substances, labels = _init_ax_substances_labels(sys, ax, substances,
+                                                        labels, xscale, yscale)
+    x_edges = np.repeat(sys.x, 2)[1:-1]
+    for i, lbl in zip(substances, labels):
+        y_edges = np.repeat(yout[ti, range(i, sys.n*sys.N, sys.n)], 2)
+        ax.plot(x_edges, y_edges, label=lbl)
+    ax.set_xlabel("x / m")
+    ax.set_ylabel("C / M")
+    ax.set_title(basetitle+" at t = {0:.3g} s".format(tout[ti]))
+    ax.legend(loc='best', prop={'size': 11})
+
+
+def plot_C_vs_t_and_x(sys, tout, yout, substance, ax=None, log10=False, **plot_kwargs):
+    # it would be nice to accpet kwargs xscale='log', yscale='log', zscale='log'
+    # but it's currently not supported by matplotlib:
+    # http://matplotlib.1069221.n5.nabble.com/plot-surface-fails-with-log-axes-td10206.html
+    substance = substance if isinstance(substance, int) else sys.names.index(substance)
+    from mpl_toolkits.mplot3d import Axes3D
+    from matplotlib import cm
+    ax = ax or plt.subplot(1,1,1, projection='3d')
+    assert isinstance(ax, Axes3D)
+
+    xty = [sys.x_centers, tout, yout]
+    x_, t_, y_ = map(np.log10, xty) if log10 else xty
+    X,T = np.meshgrid(x_, t_)
+    if not 'cmap' in plot_kwargs: plot_kwargs['cmap'] = cm.gist_earth
+    ax.plot_surface(X, T, y_[:, range(substance, sys.n*sys.N, sys.n)], **plot_kwargs)
+
+    # fmtstr = "$\\mathrm{{\\log_{{10}}({})}}$" if log10 else "$\\mathrm{{{}}}$"
+    fmtstr = "$log_{{10}}$({})" if log10 else "{}"
+    ax.set_xlabel(fmtstr.format('x / m'))
+    ax.set_ylabel(fmtstr.format('time / s'))
+    ax.set_zlabel(fmtstr.format('C / M'))
+    if sys.names:
+        if sys.tex_names:
+            name = sys.tex_names[substance]
+        else:
+            name = sys.names[substance]
+        ax.set_title('['+name+'] vs. t and x')
+
+    return ax
+
+def plot_bin_k_factors(sys, ax=None, indices=None):
+    ax = ax or plt.subplot(1,1,1)
+    indices = indices or range(len(sys.bin_k_factor_span))
+    factors = np.array(sys.bin_k_factor)
+    x_edges = np.repeat(sys.x, 2)[1:-1]
+    for i in indices:
+        y_edges = np.repeat(factors[:,i], 2)
+        ax.plot(x_edges, y_edges, label=i)
