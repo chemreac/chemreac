@@ -432,4 +432,14 @@ void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const res
     delete []local_r;
 }
 
+int ReactionDiffusion::get_geom_as_int() const
+{
+    switch(geom){
+    case Geom::FLAT :        return 0;
+    case Geom::SPHERICAL :   return 1;
+    case Geom::CYLINDRICAL : return 2;
+    }
+    return -1;
+}
+
 }; // namespace chemreac

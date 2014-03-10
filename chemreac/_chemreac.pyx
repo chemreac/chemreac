@@ -39,6 +39,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         void banded_packed_jac_cmaj(double, const double * const, double * const, int)
 
         void per_rxn_contrib_to_fi(double, const double * const, int, double * const)
+        int get_geom_as_int()
 
 
 cdef class PyReactionDiffusion:
@@ -115,41 +116,55 @@ cdef class PyReactionDiffusion:
     property nr:
         def __get__(self): return self.thisptr.nr
 
+    property geom:
+        def __get__(self): return self.thisptr.get_geom_as_int()
+
     property stoich_reac:
         def __get__(self): return self.thisptr.stoich_reac
-        def __set__(self, vector[vector[int]] stoich_reac):
-            self.thisptr.stoich_reac = stoich_reac
+        # We would need to re-initialize coeff_reac, coeff_*, ...
+        # def __set__(self, vector[vector[int]] stoich_reac):
+        #     self.thisptr.stoich_reac = stoich_reac
 
     property stoich_prod:
         def __get__(self): return self.thisptr.stoich_prod
-        def __set__(self, vector[vector[int]] stoich_prod):
-            self.thisptr.stoich_prod = stoich_prod
+        # We would need to re-initialize coeff_reac, coeff_*, ...
+        # def __set__(self, vector[vector[int]] stoich_prod):
+        #     self.thisptr.stoich_prod = stoich_prod
 
     property stoich_actv:
         def __get__(self): return self.thisptr.stoich_actv
-        def __set__(self, vector[vector[int]] stoich_actv):
-            self.thisptr.stoich_actv = stoich_actv
+        # We would need to re-initialize coeff_reac, coeff_*, ...
+        # def __set__(self, vector[vector[int]] stoich_actv):
+        #     self.thisptr.stoich_actv = stoich_actv
 
     property k:
         def __get__(self): return np.asarray(self.thisptr.k)
-        def __set__(self, vector[double] k): self.thisptr.k = k
+        def __set__(self, vector[double] k):
+            assert len(k) == self.nr
+            self.thisptr.k = k
 
     property D:
         def __get__(self): return np.asarray(self.thisptr.D)
-        def __set__(self, vector[double] D): self.thisptr.D = D
+        def __set__(self, vector[double] D):
+            assert len(D) == self.n
+            self.thisptr.D = D
 
     property x:
         def __get__(self): return np.asarray(self.thisptr.x)
-        def __set__(self, vector[double] x): self.thisptr.x = x
+        def __set__(self, vector[double] x):
+            assert len(x) == self.N+1
+            self.thisptr.x = x
 
     property bin_k_factor:
         def __get__(self): return np.asarray(self.thisptr.bin_k_factor)
         def __set__(self, vector[vector[double]] bin_k_factor):
+            assert len(bin_k_factor) == self.N
             self.thisptr.bin_k_factor = bin_k_factor
 
     property bin_k_factor_span:
-        def __get__(self): return np.asarray(self.thisptr.bin_k_factor_span)
+        def __get__(self): return np.asarray(self.thisptr.bin_k_factor_span, dtype=np.int32)
         def __set__(self, vector[int] bin_k_factor_span):
+            assert all([len(bin_k_factor_span) == len(x) for x in self.bin_k_factor])
             self.thisptr.bin_k_factor_span = bin_k_factor_span
 
     property logy:
