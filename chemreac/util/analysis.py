@@ -6,8 +6,8 @@ import matplotlib.pyplot as plt
 ls=['-',':','--', '-.']
 c='krgbycm'
 
-def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None, titles=None,
-                   limit=1e-10, logx=True, legend_kwargs=None):
+def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None,
+                   titles=None, limit=1e-10, logx=True, legend_kwargs=None):
     """
     pass legend_kwargs=False to supress legend
     """
@@ -23,9 +23,11 @@ def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None, titles=None,
         if logx: ax.set_xscale('log')
         for j, lbl in enumerate(labels):
             if np.all(np.abs(row_out[:,i,j]) < limit): continue
-            ax.plot(tout, row_out[:,i,j], label=lbl, c=c[j%len(c)], ls=ls[j%len(ls)])
+            ax.plot(tout, row_out[:,i,j], label=lbl, c=c[j%len(c)],
+                    ls=ls[j%len(ls)])
         if legend_kwargs: ax.legend(**legend_kwargs)
         if titles: ax.set_title(titles[i])
+        ax.set_xlabel("t / s")
     return axes
 
 
@@ -47,23 +49,30 @@ def _get_per_func_out(sys, tout, yout, indices):
 
 
 def plot_jacobian(sys, tout, yout, substances, **kwargs):
-    indices = [ri if isinstance(ri, int) else sys.names.index(ri) for ri in substances]
+    indices = [ri if isinstance(ri, int) else sys.names.index(ri) for\
+               ri in substances]
     print_names = sys.tex_names or sys.names
-    _plot_analysis(_get_jac_row, print_names, sys, tout,
-                   yout, indices, titles=[print_names[i] for i in indices], **kwargs)
+    axes = _plot_analysis(_get_jac_row, print_names, sys, tout,
+                   yout, indices, titles=[print_names[i] for i in indices],
+                          **kwargs)
+    [ax.set_ylabel(
+        "Jacobian element $\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")\
+     for ax in axes]
+
 
 
 def plot_per_reaction_contribution(sys, tout, yout, substances, **kwargs):
     indices = [ri if isinstance(ri, int) else sys.names.index(ri)\
                for ri in substances]
     print_names = sys.tex_names or sys.names
-    _plot_analysis(
+    axes = _plot_analysis(
         _get_per_func_out,
         [('*R' if i<np.sum(sys.bin_k_factor_span) else 'R')+str(i) + ': ' + \
          sys.to_Reaction(i).render(dict(zip(sys.names, print_names))) for \
          i in range(sys.nr)],
         sys, tout, yout, indices,
         titles=[print_names[i] for i in indices], **kwargs)
+    [ax.set_ylabel("Reaction rate / $M\cdot s^{-1}$") for ax in axes]
 
 
 def _init_ax_substances_labels(sys, ax, substances, labels, xscale, yscale):
@@ -74,7 +83,8 @@ def _init_ax_substances_labels(sys, ax, substances, labels, xscale, yscale):
     if substances == None:
         substances = range(sys.n)
     else:
-        substances = [s if isinstance(s, int) else sys.names.index(s) for s in substances]
+        substances = [s if isinstance(s, int) else sys.names.index(s) for \
+                      s in substances]
 
     if labels == None:
         labels = sys.tex_names or sys.names
@@ -84,24 +94,26 @@ def _init_ax_substances_labels(sys, ax, substances, labels, xscale, yscale):
     return ax, substances, labels
 
 
-def plot_C_vs_t_in_bin(sys, tout, yout, bi, ax=None, labels=None, xscale='log',
-                       yscale='log', substances=None,
-                       titlefmt="C(t) in bin: {0:.3g} < x < {1:.3g}"):
-    ax, substances, labels = _init_ax_substances_labels(sys, ax, substances,
-                                                        labels, xscale, yscale)
+def plot_C_vs_t_in_bin(
+        sys, tout, yout, bi, ax=None, labels=None,
+        xscale='log', yscale='log', substances=None,
+        ttlfmt=r"C(t) in bin: {0:.2g} m $\langle$ x $\langle$ {1:.2g} m"):
+    ax, substances, labels = _init_ax_substances_labels(
+        sys, ax, substances, labels, xscale, yscale)
     for i, lbl in zip(substances, labels):
-        ax.plot(tout, yout[:, i+bi*sys.n], label=lbl, ls=ls[i%len(ls)], c=c[i%len(c)])
+        ax.plot(tout, yout[:, i+bi*sys.n], label=lbl, ls=ls[i%len(ls)],
+                c=c[i%len(c)])
     ax.set_xlabel("t / s")
     ax.set_ylabel("C / M")
-    ax.set_title(titlefmt.format(sys.x[bi], sys.x[bi+1]))
+    ax.set_title(ttlfmt.format(sys.x[bi], sys.x[bi+1]))
     ax.legend(loc='best', prop={'size': 11})
     return ax
 
 
 def plot_C_vs_x(sys, tout, yout, substances, ti, ax=None, labels=None,
                 xscale='log', yscale='log', basetitle="C(x)"):
-    ax, substances, labels = _init_ax_substances_labels(sys, ax, substances,
-                                                        labels, xscale, yscale)
+    ax, substances, labels = _init_ax_substances_labels(
+        sys, ax, substances, labels, xscale, yscale)
     x_edges = np.repeat(sys.x, 2)[1:-1]
     for i, lbl in zip(substances, labels):
         y_edges = np.repeat(yout[ti, range(i, sys.n*sys.N, sys.n)], 2)
@@ -112,7 +124,8 @@ def plot_C_vs_x(sys, tout, yout, substances, ti, ax=None, labels=None,
     ax.legend(loc='best', prop={'size': 11})
 
 
-def plot_C_vs_t_and_x(sys, tout, yout, substance, ax=None, log10=False, **plot_kwargs):
+def plot_C_vs_t_and_x(sys, tout, yout, substance, ax=None, log10=False,
+                      **plot_kwargs):
     # it would be nice to accpet kwargs xscale='log', yscale='log', zscale='log'
     # but it's currently not supported by matplotlib:
     # http://matplotlib.1069221.n5.nabble.com/plot-surface-fails-with-log-axes-td10206.html
@@ -146,7 +159,7 @@ def plot_bin_k_factors(sys, ax=None, indices=None):
     ax = ax or plt.subplot(1,1,1)
     indices = indices or range(len(sys.bin_k_factor_span))
     factors = np.array(sys.bin_k_factor)
-    x_edges = np.repeat(sys.x, 2)[1:-1]
+    x_edges = np.repeat(sys.x, 2)[1:]
     for i in indices:
-        y_edges = np.repeat(factors[:,i], 2)
+        y_edges = np.pad(np.repeat(factors[:,i], 2), (0, 1), 'constant')
         ax.plot(x_edges, y_edges, label=i)
