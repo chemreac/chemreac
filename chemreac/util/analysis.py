@@ -97,16 +97,20 @@ def _init_ax_substances_labels(sys, ax, substances, labels, xscale, yscale):
 def plot_C_vs_t_in_bin(
         sys, tout, yout, bi, ax=None, labels=None,
         xscale='log', yscale='log', substances=None,
-        ttlfmt=r"C(t) in bin: {0:.2g} m $\langle$ x $\langle$ {1:.2g} m"):
+        ttlfmt=(r"C(t) in bin: {0:.2g} m $\langle$"+\
+                r" x $\langle$ {1:.2g} m"), legend_kwargs=None):
+    if legend_kwargs == None:
+        legend_kwargs = dict(loc='best', prop={'size': 11})
+
     ax, substances, labels = _init_ax_substances_labels(
         sys, ax, substances, labels, xscale, yscale)
     for i, lbl in zip(substances, labels):
-        ax.plot(tout, yout[:, i+bi*sys.n], label=lbl, ls=ls[i%len(ls)],
-                c=c[i%len(c)])
+        ax.plot(tout, yout[:, i+bi*sys.n], label=lbl,
+                ls=ls[i%len(ls)], c=c[i%len(c)])
     ax.set_xlabel("t / s")
     ax.set_ylabel("C / M")
     ax.set_title(ttlfmt.format(sys.x[bi], sys.x[bi+1]))
-    ax.legend(loc='best', prop={'size': 11})
+    ax.legend(**legend_kwargs)
     return ax
 
 
@@ -155,8 +159,8 @@ def plot_C_vs_t_and_x(sys, tout, yout, substance, ax=None, log10=False,
 
     return ax
 
-def plot_bin_k_factors(sys, ax=None, indices=None):
-    ax = ax or plt.subplot(1,1,1)
+def plot_bin_k_factors(sys, ax=None, indices=None, **kwargs):
+    ax = ax or plt.axes(**kwargs)
     indices = indices or range(len(sys.bin_k_factor_span))
     factors = np.array(sys.bin_k_factor)
     x_edges = np.repeat(sys.x, 2)[1:]
