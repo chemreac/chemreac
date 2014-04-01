@@ -34,6 +34,8 @@ using std::vector;
 using std::count;
 namespace chemreac {
 
+#DEFINE D_JAC(bi, j) D_jac[3*(bi) + j]
+#DEFINE D_WEIGHT(bi, j) D_weight[2*(bi) + j]
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     int n,
@@ -69,10 +71,32 @@ ReactionDiffusion::ReactionDiffusion(
                 "Number bin edges != number of compartments + 1.");
     }
 
-    switch(geom_) {
-    case 0: geom = Geom::FLAT; break;
-    case 1: geom = Geom::SPHERICAL; break;
-    case 2: geom = Geom::CYLINDRICAL; break;
+    D_weight = new double[2*N];
+    D_jac = new double[3*N];
+    switch(geom_) { // Precalc coeffs for Jacobian for current geom.
+  %for IDX, GEOMSTR in enumerate(['FLAT', 'CYLINDRICAL', 'SPHERICAL']):
+    case ${IDX}:
+        geom = Geom::${GEOMSTR};
+        {
+            int i = 1;
+            D_WEIGHT(0,0) = ${COEFF[GEOMSTR][-1]['bw']};
+            D_WEIGHT(0,1) = ${COEFF[GEOMSTR][-1]['fw']};
+            D_JAC(0,1) = ${COEFF[GEOMSTR][-1]['Jc']};
+            D_JAC(0,2) = ${COEFF[GEOMSTR][-1]['Jn']};           
+            do {
+                D_WEIGHT(i,0) = ${COEFF[GEOMSTR][0]['bw']};
+                D_WEIGHT(i,1) = ${COEFF[GEOMSTR][0]['fw']};
+                D_JAC(i,0) = ${COEFF[GEOMSTR][0]['Jp']};
+                D_JAC(i,1) = ${COEFF[GEOMSTR][0]['Jc']};           
+                D_JAC(i,2) = ${COEFF[GEOMSTR][0]['Jn']};           
+            } while (i++ < N-1);
+            D_WEIGHT(i+1,0) = ${COEFF[GEOMSTR][1]['bw']};
+            D_WEIGHT(i+1,1) = ${COEFF[GEOMSTR][1]['fw']};            
+            D_JAC(i+1, 0) = ${COEFF[GEOMSTR][1]['Jp']};
+            D_JAC(i+1, 1) = ${COEFF[GEOMSTR][1]['Jc']};           
+        }
+        break;
+  %endfor
     default: throw std::logic_error("Unknown geom.");
     }
 
@@ -91,9 +115,27 @@ ReactionDiffusion::ReactionDiffusion(
     }
 
     dx = new double[N-1];
-
-    for (int i=0; i<N-1; ++i)
-        dx[i] = (x[i+2]-x[i])/2;
+    // V =  new double[N];
+    // A = new double[N+1];
+    // L = new double[N];
+    
+    // L[0] = x[1]-x[0];
+    // for (int i=0; i<N-1; ++i){ // Separations and lengths
+    //     dx[i] = (x[i+2]-x[i])/2;
+    //     L[i+1] = x[i+1]-x[i];
+    // }
+    // for (int i=0; i<N; ++i){ // Volumes
+    //     if (geom == Geom::CYLINDRICAL)
+    //         V[i] = x[i+1]*x[i+1] - x[i]*x[i]; // without πh: πrₖ₊₁²*h - πrₖ²*h
+    //     else if (geom == Geom::SPHERICAL)
+    //         V[i] = x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i]; // wihtout 4π/3: 4πrₖ₊₁³/3 - 4πrₖ³/3
+    // }
+    // for (int i=0; i<N+1; ++i){ // Areas
+    //     if (geom == Geom::CYLINDRICAL)
+    //         A[i] = 2*x[i]; // without π: 2πrₖ*h
+    //     else if (geom == Geom::SPHERICAL)
+    //         A[i] = 3*x[i]*x[i]; // without 4π/3: 4πrₖ²
+    // }
 
     coeff_reac = new int[nr*n];
     coeff_prod = new int[nr*n];
@@ -127,6 +169,11 @@ ReactionDiffusion::ReactionDiffusion(
 
 ReactionDiffusion::~ReactionDiffusion()
 {
+    // delete []V;
+    // delete []A;
+    // delete []L;
+    delete []D_weight;
+    delete []D_jac;
     delete []dx;
     delete []coeff_reac;
     delete []coeff_prod;
@@ -169,92 +216,80 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 // <indices.png>
 
 
-#define Y(bi) y[(bi)*n+si]
-double
-ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
-{
-    // bi: bin index, si: species index
-    if (logy)
-        return -D[si]/dx[bi]*(exp(Y(bi+1)) - exp(Y(bi)));
-    else
-        return -D[si]/dx[bi]*(Y(bi+1) - Y(bi));
-}
-#undef Y
+// #define Y(bi) y[(bi)*n+si]
+// double
+// ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
+// {
+//     // bi: bin index, si: species index
+//     if (logy)
+//         return -D[si]/dx[bi]*(exp(Y(bi+1)) - exp(Y(bi)));
+//     else
+//         return -D[si]/dx[bi]*(Y(bi+1) - Y(bi));
+// }
+// #undef Y
 
 // Some common macros
-#define FLUXES(bi, si) fluxes[(bi)*(n)+(si)]
-#define L(i) (x[i+1]-x[i])
+// #define FLUXES(bi, si) fluxes[(bi)*(n)+(si)]
 
-// Sphere - coefficients rearranged for correct A/V (4π cancel)
-#define AS(i) (3*x[i]*x[i]) // 4πrₖ²
-#define VS(i) (x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i]) // 4πrₖ₊₁³/3 - 4πrₖ³/3
+// double
+// ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restrict fluxes) const
+// {
+//     // bi: bin index, si: species index, fluxes: e.g. mol/m2/s through right wall of bin
+//     double contrib = 0;
+//     switch(geom){
+//     case Geom::FLAT :
+//         if (bi > 0)   contrib += FLUXES(bi-1, si)/L(bi);
+//         if (bi < N-1) contrib -= FLUXES(bi, si)/L(bi);
+//         break;
+//     case Geom::CYLINDRICAL :
+//         if (bi > 0)   contrib += FLUXES(bi-1, si)*A[bi]/V[bi];
+//         if (bi < N-1) contrib -= FLUXES(bi, si)*A[bi+1]/V[bi];
+//         break;
+//     case Geom::SPHERICAL :
+//         if (bi > 0)   contrib += FLUXES(bi-1, si)*A[bi]/V[bi];
+//         if (bi < N-1) contrib -= FLUXES(bi, si)*A[bi+1]/V[bi];
+//         break;
+//     }
+//     return contrib;
+// }
 
-// Cylinder - coefficients rearranged for correct A/V (π cancel)
-#define AC(i) (2*x[i]) // 2πrₖ*h
-#define VC(i) (x[i+1]*x[i+1] - x[i]*x[i]) // πrₖ₊₁²*h - πrₖ²*h
+// double
+// ReactionDiffusion::diffusion_contrib_jac_prev(int bi) const
+// {
+//     switch(geom){
+//     case Geom::FLAT :        return 1.0/dx[bi-1]/L(bi);
+//     case Geom::CYLINDRICAL : return 1.0/dx[bi-1]*A[bi]/V[bi];
+//     case Geom::SPHERICAL :   return 1.0/dx[bi-1]*A[bi]/V[bi];
+//     }
+//     return 0.0/0.0; // NaN (shouldn't be possible to reach)
+// }
 
-double
-ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restrict fluxes) const
-{
-    // bi: bin index, si: species index, fluxes: e.g. mol/m2/s through right wall of bin
-    double contrib = 0;
-    switch(geom){
-    case Geom::FLAT :
-        if (bi > 0)   contrib += FLUXES(bi-1, si)/L(bi);
-        if (bi < N-1) contrib -= FLUXES(bi, si)/L(bi);
-        break;
-    case Geom::SPHERICAL :
-        if (bi > 0)   contrib += FLUXES(bi-1, si)*AS(bi)/VS(bi);
-        if (bi < N-1) contrib -= FLUXES(bi, si)*AS(bi+1)/VS(bi);
-        break;
-    case Geom::CYLINDRICAL :
-        if (bi > 0)   contrib += FLUXES(bi-1, si)*AC(bi)/VC(bi);
-        if (bi < N-1) contrib -= FLUXES(bi, si)*AC(bi+1)/VC(bi);
-        break;
-    }
-    return contrib;
-}
-
-double
-ReactionDiffusion::diffusion_contrib_jac_prev(int bi) const
-{
-    switch(geom){
-    case Geom::FLAT :        return 1.0/dx[bi-1]/L(bi);
-    case Geom::SPHERICAL :   return 1.0/dx[bi-1]*AS(bi)/VS(bi);
-    case Geom::CYLINDRICAL : return 1.0/dx[bi-1]*AC(bi)/VC(bi);
-    }
-    return 0.0/0.0; // NaN (shouldn't be possible to reach)
-}
-
-double
-ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
-{
-    switch(geom){
-    case Geom::FLAT :        return 1.0/dx[bi]/L(bi);
-    case Geom::SPHERICAL :   return 1.0/dx[bi]*AS(bi+1)/VS(bi);
-    case Geom::CYLINDRICAL : return 1.0/dx[bi]*AC(bi+1)/VC(bi);
-    }
-    return 0.0/0.0; // NaN (shouldn't be possible to reach)
-}
-#undef L
-#undef AS
-#undef VS
-#undef AC
-#undef VC
-// FLUXES still defined at this point.
+// double
+// ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
+// {
+//     switch(geom){
+//     case Geom::FLAT :        return 1.0/dx[bi]/L(bi);
+//     case Geom::CYLINDRICAL : return 1.0/dx[bi]*A[bi+1]/V[bi];
+//     case Geom::SPHERICAL :   return 1.0/dx[bi]*A[bi+1]/V[bi];
+//     }
+//     return 0.0/0.0; // NaN (shouldn't be possible to reach)
+// }
 
 
 #define Y(bi, si) y[(bi)*n+(si)]
-#define DCDT(bi, si) dydt[(bi)*(n)+(si)]
+#define C(bi, si) ( (logy) ? exp(Y(bi, si)) : Y(bi, si) )
+#define DCB(bi, si) ((bi>0) ? (C(bi,si) - C(bi-1,si)) : 0)
+#define DCF(bi, si) ((bi<N-1) ? (C(bi,si+1) - C(bi,si)) : 0)
+#define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
-    // initialize fluxes
-    double * const fluxes = new double[(N-1)*n];
-    ${"#pragma omp parallel for" if USE_OPENMP else ""}
-    for (int bi=0; bi<N-1; ++bi)
-        for (int si=0; si<n; ++si)
-            FLUXES(bi, si) = flux(bi, si, y);
+    // // initialize fluxes
+    // double * const fluxes = new double[(N-1)*n];
+    // ${"#pragma omp parallel for" if USE_OPENMP else ""}
+    // for (int bi=0; bi<N-1; ++bi)
+    //     for (int si=0; si<n; ++si)
+    //         FLUXES(bi, si) = flux(bi, si, y);
 
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for" if USE_OPENMP else ""}
@@ -263,7 +298,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         ${"double * local_r = new double[nr];" if USE_OPENMP else ""}
 
         for (int si=0; si<n; ++si)
-            DCDT(bi, si) = 0.0; // zero out
+            DYDT(bi, si) = 0.0; // zero out
 
         // Contributions from reactions
         // ----------------------------
@@ -274,7 +309,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                 // species index si
                 int overall = coeff_totl[rxni*n + si];
                 if (overall != 0)
-                    DCDT(bi, si) += overall*local_r[rxni];
+                    DYDT(bi, si) += overall*local_r[rxni];
             }
         }
         if (N>1){
@@ -282,20 +317,21 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
             // ----------------------------
             for (int si=0; si<n; ++si){ // species index si
                 if (D[si] != 0.0)
-                    DCDT(bi, si) += diffusion_contrib(bi, si, fluxes);
+                    DYDT(bi, si) += D[si]*(D_WEIGHT(bi, 0)*DCB(bi, si)+\
+                                           D_WEIGHT(bi, 1)*DCF(bi, si));
             }
         }
         if (logy){
             if (logt)
                 for (int si=0; si<n; ++si)
-                    DCDT(bi, si) *= exp(t-Y(bi,si));
+                    DYDT(bi, si) *= exp(t-Y(bi,si));
             else
                 for (int si=0; si<n; ++si)
-                    DCDT(bi, si) *= exp(-Y(bi,si));
+                    DYDT(bi, si) *= exp(-Y(bi,si));
         } else {
             if (logt)
                 for (int si=0; si<n; ++si)
-                    DCDT(bi, si) *= exp(t);
+                    DYDT(bi, si) *= exp(t);
         }
 
         ${"delete []local_r;" if USE_OPENMP else ""}
@@ -305,8 +341,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     ${"delete []local_r;" if not USE_OPENMP else ""}
     delete []fluxes;
 }
+#undef DCB
+#undef DCF
 #undef DCDT // Y(bi, si) still defined.
-#undef FLUXES
+#undef D_WEIGHT
+// #undef FLUXES
 
 
 %for token, imaj, imin in [\
@@ -366,15 +405,14 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // ----------------------------
         if (bi > 0){
             // Diffusion over left boundary
-            double tmp = diffusion_contrib_jac_prev(bi);
             for (int si=0; si<n; ++si){
                 // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi,   si, si) -= D[si]*tmp;
+                JAC(bi, bi,   si, si) += D[si]*D_JAC(bi, 1);
                 if (logy)
-                    JAC(bi, bi-1, si, si)  = D[si]*tmp*exp(Y(bi-1,si)-Y(bi,si));
+                    JAC(bi, bi-1, si, si)  = D[si]*D_JAC(bi, 0)*exp(Y(bi-1,si)-Y(bi,si));
                 else
-                    JAC(bi, bi-1, si, si)  = D[si]*tmp;
+                    JAC(bi, bi-1, si, si)  = D[si]*D_JAC(bi, 0);
             }
         }
         if (bi < N-1){
@@ -383,11 +421,11 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
             for (int si=0; si<n; ++si){
                 // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi,   si, si) -= D[si]*tmp;
+                JAC(bi, bi,   si, si) += D[si]*D_JAC(bi, 1);
                 if (logy)
-                    JAC(bi, bi+1, si, si)  = D[si]*tmp*exp(Y(bi+1,si)-Y(bi,si));
+                    JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2)*exp(Y(bi+1,si)-Y(bi,si));
                 else
-                    JAC(bi, bi+1, si, si)  = D[si]*tmp;
+                    JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2);
             }
         }
 
@@ -419,6 +457,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         delete []fout;
 }
 #undef JAC
+#undef D_JAC
 %endfor
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
@@ -436,8 +475,8 @@ int ReactionDiffusion::get_geom_as_int() const
 {
     switch(geom){
     case Geom::FLAT :        return 0;
-    case Geom::SPHERICAL :   return 1;
-    case Geom::CYLINDRICAL : return 2;
+    case Geom::CYLINDRICAL : return 1;
+    case Geom::SPHERICAL :   return 2;
     }
     return -1;
 }

@@ -6,12 +6,12 @@
 
 using std::vector;
 
-enum class Geom {FLAT, SPHERICAL, CYLINDRICAL}; // Geom:: -> GEOM_
+enum class Geom {FLAT, CYLINDRICAL, SPHERICAL}; // Geom:: -> GEOM_
 
 /* #define Geom int */
 /* #define GEOM_FLAT 0 */
-/* #define GEOM_SPHERICAL 1 */
-/* #define GEOM_CYLINDRICAL 2 */
+/* #define GEOM_CYLINDRICAL 1 */
+/* #define GEOM_SPHERICAL 2 */
 
 namespace chemreac {
 
@@ -22,7 +22,9 @@ private:
     int * coeff_prod;
     int * coeff_totl;
     int * coeff_actv;
-    double * dx; // bin separations (from center) (length = N)
+    double * dx; // bin separations (from center) (length = N-1)
+    double * D_weight; // diffusion weights 
+    double * D_jac; // diffusion contrib to jac
     vector<int> i_bin_k;
     int n_factor_affected_k;
 
@@ -33,18 +35,18 @@ private:
     double diffusion_contrib_jac_next(int bi) const;
 
 public:
-    int n; // number of species
-    int N; // number of compartments
-    int nr; // number of reactions
-    Geom geom; // Geometry: 0: 1D flat, 1: 1D Spherical, 2: 1D Cylind.
-    bool logy; // use logarithmic concenctraction
-    bool logt; // use logarithmic time
-    vector<vector<int> > stoich_reac; // Reactants per reaction
+    const int n; // number of species
+    const int N; // number of compartments
+    const int nr; // number of reactions
+    const Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
+    const bool logy; // use logarithmic concenctraction
+    const bool logt; // use logarithmic time
+    const vector<vector<int> > stoich_reac; // Reactants per reaction
     vector<vector<int> > stoich_actv; // Active reactants per reaction
-    vector<vector<int> > stoich_prod; // Products per reaction
+    const vector<vector<int> > stoich_prod; // Products per reaction
     vector<double> k; // Rate coefficients (law of mass action)
     vector<double> D; // Diffusion coefficients
-    vector<double> x; // Bin edges (length = N+1)
+    const vector<double> x; // Bin edges (length = N+1)
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
     vector<int> bin_k_factor_span; // 
 

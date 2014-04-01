@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 from chemreac.serialization import load
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
-from chemreac.util import coloured_spy
+from chemreac.util.plotting import coloured_spy
 
 
 """
@@ -25,7 +25,7 @@ Demo of chemical reaction diffusion system.
 # 2C + B -> D + B      k2=3.0
 
 
-def main(tend=3.0, N=30, nt=30, plot=False, mode=None, 
+def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
          logy=False, logt=False, show=False):
     mod1 = lambda x: x/(x**2+1)
     sys = load('four_species.json', N=N,

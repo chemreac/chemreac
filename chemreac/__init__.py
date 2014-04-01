@@ -7,7 +7,8 @@ from ._chemreac import PyReactionDiffusion
 import numpy as np
 
 DENSE, BANDED, SPARSE = range(3)
-FLAT, SPHERICAL, CYLINDRICAL = range(3)
+FLAT, CYLINDRICAL, SPHERICAL = range(3)
+Geom_names = {FLAT: 'Flat', CYLINDRICAL: 'Cylindrical', SPHERICAL: 'Spherical'}
 
 # Having a Python side wrapper for our Cython Extension (PyReactionDiffusion)
 # allows e.g. Jedi (Python IDE capabilities) to inspect and give help strings
@@ -97,7 +98,7 @@ class ReactionDiffusion(PyReactionDiffusion):
         assert len(_stoich_actv) == len(stoich_reac)
 
         assert len(stoich_reac) == len(stoich_prod) == len(k)
-        assert geom in (FLAT, SPHERICAL, CYLINDRICAL)
+        assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
         if geom == SPHERICAL or geom == CYLINDRICAL:
             assert _x[0] != 0.0
