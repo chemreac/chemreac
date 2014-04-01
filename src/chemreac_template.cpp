@@ -34,8 +34,8 @@ using std::vector;
 using std::count;
 namespace chemreac {
 
-#DEFINE D_JAC(bi, j) D_jac[3*(bi) + j]
-#DEFINE D_WEIGHT(bi, j) D_weight[2*(bi) + j]
+#define D_JAC(bi, j) D_jac[3*(bi) + j]
+#define D_WEIGHT(bi, j) D_weight[2*(bi) + j]
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     int n,
@@ -54,8 +54,9 @@ ReactionDiffusion::ReactionDiffusion(
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
-    bin_k_factor_span(bin_k_factor_span), logy(logy), logt(logt)
+    bin_k_factor_span(bin_k_factor_span), logy(logy), logt(logt), nr(stoich_reac.size())
 {
+    if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
             "stoich_reac and stoich_prod of different sizes.");
@@ -77,30 +78,35 @@ ReactionDiffusion::ReactionDiffusion(
   %for IDX, GEOMSTR in enumerate(['FLAT', 'CYLINDRICAL', 'SPHERICAL']):
     case ${IDX}:
         geom = Geom::${GEOMSTR};
+        if (N == 1) break;
         {
             int i = 1;
-            D_WEIGHT(0,0) = ${COEFF[GEOMSTR][-1]['bw']};
-            D_WEIGHT(0,1) = ${COEFF[GEOMSTR][-1]['fw']};
-            D_JAC(0,1) = ${COEFF[GEOMSTR][-1]['Jc']};
-            D_JAC(0,2) = ${COEFF[GEOMSTR][-1]['Jn']};           
+            D_WEIGHT(0,0) = ${COEFF[GEOMSTR,-1,'bw']};
+            D_WEIGHT(0,1) = ${COEFF[GEOMSTR,-1,'fw']};
+            D_JAC(0,1) = ${COEFF[GEOMSTR,-1,'Jc']};
+            D_JAC(0,2) = ${COEFF[GEOMSTR,-1,'Jn']};           
             do {
-                D_WEIGHT(i,0) = ${COEFF[GEOMSTR][0]['bw']};
-                D_WEIGHT(i,1) = ${COEFF[GEOMSTR][0]['fw']};
-                D_JAC(i,0) = ${COEFF[GEOMSTR][0]['Jp']};
-                D_JAC(i,1) = ${COEFF[GEOMSTR][0]['Jc']};           
-                D_JAC(i,2) = ${COEFF[GEOMSTR][0]['Jn']};           
-            } while (i++ < N-1);
-            D_WEIGHT(i+1,0) = ${COEFF[GEOMSTR][1]['bw']};
-            D_WEIGHT(i+1,1) = ${COEFF[GEOMSTR][1]['fw']};            
-            D_JAC(i+1, 0) = ${COEFF[GEOMSTR][1]['Jp']};
-            D_JAC(i+1, 1) = ${COEFF[GEOMSTR][1]['Jc']};           
+                D_WEIGHT(i,0) = ${COEFF[GEOMSTR,0,'bw']};
+                D_WEIGHT(i,1) = ${COEFF[GEOMSTR,0,'fw']};
+                D_JAC(i,0) = ${COEFF[GEOMSTR,0,'Jp']};
+                D_JAC(i,1) = ${COEFF[GEOMSTR,0,'Jc']};           
+                D_JAC(i,2) = ${COEFF[GEOMSTR,0,'Jn']};           
+            } while (i++ < N-2);
+            i--;
+            #ifdef DEBUG
+            printf("i=%d, N=%d\n", i, N);
+            #endif
+            D_WEIGHT(i+1,0) = ${COEFF[GEOMSTR,1,'bw']};
+            D_WEIGHT(i+1,1) = ${COEFF[GEOMSTR,1,'fw']};            
+            D_JAC(i+1, 0) = ${COEFF[GEOMSTR,1,'Jp']};
+            D_JAC(i+1, 1) = ${COEFF[GEOMSTR,1,'Jc']};           
         }
         break;
   %endfor
     default: throw std::logic_error("Unknown geom.");
     }
 
-    nr = stoich_reac.size();
+    //    nr = stoich_reac.size();
 
     for (int ri=0; ri<nr; ++ri){
         for (vector<int>::iterator si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
@@ -113,29 +119,6 @@ ReactionDiffusion::ReactionDiffusion(
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_actv > (n-1)");
     }
-
-    dx = new double[N-1];
-    // V =  new double[N];
-    // A = new double[N+1];
-    // L = new double[N];
-    
-    // L[0] = x[1]-x[0];
-    // for (int i=0; i<N-1; ++i){ // Separations and lengths
-    //     dx[i] = (x[i+2]-x[i])/2;
-    //     L[i+1] = x[i+1]-x[i];
-    // }
-    // for (int i=0; i<N; ++i){ // Volumes
-    //     if (geom == Geom::CYLINDRICAL)
-    //         V[i] = x[i+1]*x[i+1] - x[i]*x[i]; // without πh: πrₖ₊₁²*h - πrₖ²*h
-    //     else if (geom == Geom::SPHERICAL)
-    //         V[i] = x[i+1]*x[i+1]*x[i+1] - x[i]*x[i]*x[i]; // wihtout 4π/3: 4πrₖ₊₁³/3 - 4πrₖ³/3
-    // }
-    // for (int i=0; i<N+1; ++i){ // Areas
-    //     if (geom == Geom::CYLINDRICAL)
-    //         A[i] = 2*x[i]; // without π: 2πrₖ*h
-    //     else if (geom == Geom::SPHERICAL)
-    //         A[i] = 3*x[i]*x[i]; // without 4π/3: 4πrₖ²
-    // }
 
     coeff_reac = new int[nr*n];
     coeff_prod = new int[nr*n];
@@ -169,12 +152,8 @@ ReactionDiffusion::ReactionDiffusion(
 
 ReactionDiffusion::~ReactionDiffusion()
 {
-    // delete []V;
-    // delete []A;
-    // delete []L;
     delete []D_weight;
     delete []D_jac;
-    delete []dx;
     delete []coeff_reac;
     delete []coeff_prod;
     delete []coeff_totl;
@@ -215,67 +194,6 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 // The indices of x, fluxes and bins
 // <indices.png>
 
-
-// #define Y(bi) y[(bi)*n+si]
-// double
-// ReactionDiffusion::flux(int bi, int si, const double * const restrict y) const
-// {
-//     // bi: bin index, si: species index
-//     if (logy)
-//         return -D[si]/dx[bi]*(exp(Y(bi+1)) - exp(Y(bi)));
-//     else
-//         return -D[si]/dx[bi]*(Y(bi+1) - Y(bi));
-// }
-// #undef Y
-
-// Some common macros
-// #define FLUXES(bi, si) fluxes[(bi)*(n)+(si)]
-
-// double
-// ReactionDiffusion::diffusion_contrib(int bi, int si, const double * const restrict fluxes) const
-// {
-//     // bi: bin index, si: species index, fluxes: e.g. mol/m2/s through right wall of bin
-//     double contrib = 0;
-//     switch(geom){
-//     case Geom::FLAT :
-//         if (bi > 0)   contrib += FLUXES(bi-1, si)/L(bi);
-//         if (bi < N-1) contrib -= FLUXES(bi, si)/L(bi);
-//         break;
-//     case Geom::CYLINDRICAL :
-//         if (bi > 0)   contrib += FLUXES(bi-1, si)*A[bi]/V[bi];
-//         if (bi < N-1) contrib -= FLUXES(bi, si)*A[bi+1]/V[bi];
-//         break;
-//     case Geom::SPHERICAL :
-//         if (bi > 0)   contrib += FLUXES(bi-1, si)*A[bi]/V[bi];
-//         if (bi < N-1) contrib -= FLUXES(bi, si)*A[bi+1]/V[bi];
-//         break;
-//     }
-//     return contrib;
-// }
-
-// double
-// ReactionDiffusion::diffusion_contrib_jac_prev(int bi) const
-// {
-//     switch(geom){
-//     case Geom::FLAT :        return 1.0/dx[bi-1]/L(bi);
-//     case Geom::CYLINDRICAL : return 1.0/dx[bi-1]*A[bi]/V[bi];
-//     case Geom::SPHERICAL :   return 1.0/dx[bi-1]*A[bi]/V[bi];
-//     }
-//     return 0.0/0.0; // NaN (shouldn't be possible to reach)
-// }
-
-// double
-// ReactionDiffusion::diffusion_contrib_jac_next(int bi) const
-// {
-//     switch(geom){
-//     case Geom::FLAT :        return 1.0/dx[bi]/L(bi);
-//     case Geom::CYLINDRICAL : return 1.0/dx[bi]*A[bi+1]/V[bi];
-//     case Geom::SPHERICAL :   return 1.0/dx[bi]*A[bi+1]/V[bi];
-//     }
-//     return 0.0/0.0; // NaN (shouldn't be possible to reach)
-// }
-
-
 #define Y(bi, si) y[(bi)*n+(si)]
 #define C(bi, si) ( (logy) ? exp(Y(bi, si)) : Y(bi, si) )
 #define DCB(bi, si) ((bi>0) ? (C(bi,si) - C(bi-1,si)) : 0)
@@ -284,13 +202,6 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
-    // // initialize fluxes
-    // double * const fluxes = new double[(N-1)*n];
-    // ${"#pragma omp parallel for" if USE_OPENMP else ""}
-    // for (int bi=0; bi<N-1; ++bi)
-    //     for (int si=0; si<n; ++si)
-    //         FLUXES(bi, si) = flux(bi, si, y);
-
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for" if USE_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
@@ -339,13 +250,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     }
 
     ${"delete []local_r;" if not USE_OPENMP else ""}
-    delete []fluxes;
 }
 #undef DCB
 #undef DCF
 #undef DCDT // Y(bi, si) still defined.
 #undef D_WEIGHT
-// #undef FLUXES
 
 
 %for token, imaj, imin in [\
@@ -408,7 +317,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
             for (int si=0; si<n; ++si){
                 // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi,   si, si) += D[si]*D_JAC(bi, 1);
+                JAC(bi, bi, si, si) += D[si]*D_JAC(bi, 1);
                 if (logy)
                     JAC(bi, bi-1, si, si)  = D[si]*D_JAC(bi, 0)*exp(Y(bi-1,si)-Y(bi,si));
                 else
@@ -417,11 +326,10 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         }
         if (bi < N-1){
             // Diffusion over right boundary
-            double tmp = diffusion_contrib_jac_next(bi);
             for (int si=0; si<n; ++si){
                 // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi,   si, si) += D[si]*D_JAC(bi, 1);
+                JAC(bi, bi, si, si) += D[si]*D_JAC(bi, 1);
                 if (logy)
                     JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2)*exp(Y(bi+1,si)-Y(bi,si));
                 else
@@ -457,8 +365,9 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         delete []fout;
 }
 #undef JAC
-#undef D_JAC
 %endfor
+#undef D_JAC
+#undef Y
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
                                               int si, double * const restrict out) const
@@ -477,8 +386,8 @@ int ReactionDiffusion::get_geom_as_int() const
     case Geom::FLAT :        return 0;
     case Geom::CYLINDRICAL : return 1;
     case Geom::SPHERICAL :   return 2;
+    default:                 return -1;
     }
-    return -1;
 }
 
 }; // namespace chemreac

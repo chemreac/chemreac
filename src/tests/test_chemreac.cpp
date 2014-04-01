@@ -80,7 +80,7 @@ int test_dense_jac(){
     rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 8);
     for (int i=0; i<8*8; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-15)
-	    return 1;
+	    return 2;
 
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
     rd.banded_packed_jac_cmaj(0.0, &y[0], bnd_jac, (2*rd.n+1));
@@ -98,13 +98,14 @@ int test_dense_jac(){
 #undef RJ
 
 int test_f(){
-    ReactionDiffusion rd = get_four_species_system(2);
-    vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
+    ReactionDiffusion rd = get_four_species_system(3);
+    vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
     vector<double> ref_f {-0.05*y[0], 0.05*y[0], -2*3.0*y[2]*y[2]*y[1], 3.0*y[2]*y[2]*y[1],\
-	    -0.05*y[4], 0.05*y[4], -2*3.0*y[6]*y[6]*y[5], 3.0*y[6]*y[6]*y[5]};
-    double f[8];
+	    -0.05*y[4], 0.05*y[4], -2*3.0*y[6]*y[6]*y[5], 3.0*y[6]*y[6]*y[5],\
+            -0.05*y[8], 0.05*y[8], -2*3.0*y[10]*y[10]*y[9], 3.0*y[10]*y[10]*y[9]};
+    double f[12];
     rd.f(0.0, &y[0], f);
-    for (int i=0; i<8; ++i)
+    for (int i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-15)
 	    return 1;
     return 0;
@@ -168,8 +169,15 @@ void bench_f(){
 
 int main(){
     int status = 0;
-    status += test_f();
-    status += test_dense_jac();
-    bench_f();
+    try {
+        std::cout << "test_f...";
+        status += test_f();
+        std::cout << std::endl <<"test_dense_jac...";
+        status += test_dense_jac();
+        std::cout << std::endl << "bench_f...";
+        bench_f();
+    } catch (std::exception& e){
+        std::cout << e.what() << std::endl;
+    }
     return status;
 }

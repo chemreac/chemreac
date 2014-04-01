@@ -8,11 +8,6 @@ using std::vector;
 
 enum class Geom {FLAT, CYLINDRICAL, SPHERICAL}; // Geom:: -> GEOM_
 
-/* #define Geom int */
-/* #define GEOM_FLAT 0 */
-/* #define GEOM_CYLINDRICAL 1 */
-/* #define GEOM_SPHERICAL 2 */
-
 namespace chemreac {
 
 class ReactionDiffusion
@@ -27,6 +22,7 @@ private:
     double * D_jac; // diffusion contrib to jac
     vector<int> i_bin_k;
     int n_factor_affected_k;
+    Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
 
     void _fill_local_r(int, const double * const restrict, double * const restrict) const;
     double flux(int i, int si, const double * const restrict y) const;
@@ -37,8 +33,7 @@ private:
 public:
     const int n; // number of species
     const int N; // number of compartments
-    const int nr; // number of reactions
-    const Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
+    int nr; // number of reactions
     const bool logy; // use logarithmic concenctraction
     const bool logt; // use logarithmic time
     const vector<vector<int> > stoich_reac; // Reactants per reaction

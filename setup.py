@@ -9,7 +9,7 @@ from distutils.core import setup, Command
 name_ = 'chemreac'
 version_ = '0.0.5'
 
-DEBUG=True
+DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 
 # Make `python setup.py test` work without depending on py.test being installed
@@ -33,8 +33,12 @@ if '--help'in sys.argv[1:] or sys.argv[1] in (
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
 else:
+    import pickle
     from pycompilation.dist import clever_build_ext, CleverExtension
     cmdclass_['build_ext'] = clever_build_ext
+    subsd = {'USE_OPENMP': USE_OPENMP}
+    subsd.update(pickle.load(open(os.path.join(
+        os.path.dirname(__file__),'src','exprs.pkl'), 'rb')))
     ext_modules_ = [
         CleverExtension(
             "chemreac._chemreac",
@@ -43,7 +47,7 @@ else:
                 'chemreac/_chemreac.pyx',
             ],
             template_regexps=[
-                (r'^(\w+)_template.(\w+)$', r'\1.\2', {'USE_OPENMP': USE_OPENMP}),
+                (r'^(\w+)_template.(\w+)$', r'\1.\2', subsd),
             ],
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {

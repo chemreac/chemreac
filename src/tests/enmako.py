@@ -91,22 +91,22 @@ def enmako(template_path, gen_subsd_eval=None, shell_cmd_subs=None, json_subs=No
     if outpath == None:
         assert template_path.endswith('.mako')
         outpath = template_path[:-5]
-    assert sum([0 if x==None else 1 for x in [gen_subsd_eval, shell_cmd_subs, json_subs, pickle_subs]]) == 1
+    subsd = {}
     if gen_subsd_eval:
-        subsd = eval(gen_subsd_eval)
+        subsd.update(eval(gen_subsd_eval))
     if json_subs:
         import json
-        subsd = json.load(open(json_subs, 'rt'))
+        subsd.update(json.load(open(json_subs, 'rt')))
     if pickle_subs:
         try:
             import cPickle as pickle
         except ImportError:
             import pickle
-        subsd = pickle.load(open(pickle_subs, 'rt'))
+        subsd.update(pickle.load(open(pickle_subs, 'rt')))
     if shell_cmd_subs:
         import subprocess
         outp = subprocess.check_output(shell_cmd_subs.split())
-        subsd = dict([x.split('=') for x in outp.split('\n')[:-1]])
+        subsd.update(dict([x.split('=') for x in outp.split('\n')[:-1]]))
     render_mako_template_to(template_path, outpath, subsd)
 
 if __name__ == '__main__':

@@ -9,7 +9,7 @@ ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
   FLAGS=-Wall
   PROFFLAGS=-prof-gen -prof-dir=./profdata
   PERFFLAGS=-fast
-  CXXFLAGS=-std=c++0x
+  CXXFLAGS=-std=c++0x -DDEBUG
   OPENMPLIBS=-liomp5
   OPENMPFLAG=-openmp
   C99=-std=c99
@@ -24,7 +24,7 @@ ifeq ($(COMPILER_VENDOR),cray-pgi)
   FORTFLAGS=
   PERFFLAGS=-O2
   FLAGS=-DCRAY
-  CXXFLAGS=
+  CXXFLAGS= -DDEBUG
 
   C99=-c99
   OPENMPLIBS=
@@ -41,7 +41,7 @@ ifeq ($(COMPILER_VENDOR),cray-gnu)
   FORTFLAGS=-std=f2008 
   PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
   FLAGS=-Wall -Wextra -pedantic -DCRAY
-  CXXFLAGS=-std=c++0x
+  CXXFLAGS=-std=c++0x -DDEBUG
   C99=-std=c99
   OPENMPLIBS=#-lgomp
   OPENMPFLAG=-fopenmp
@@ -55,10 +55,11 @@ else
   FORTFLAGS=-std=f2008 
   PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
   FLAGS=-Wall -Wextra -pedantic
-  CXXFLAGS=-std=c++0x
-  C99=-std=c99
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
+  CXXFLAGS=-std=c++0x -g -DDEBUG # $(OPENMPFLAG) $(PERFFLAGS)
+  LIBS=-lrt # $(OPENMPLIBS)
+  C99=-std=c99
 endif
 endif
 endif
@@ -67,7 +68,7 @@ ifeq ($(OPTIMIZE),1)
   FLAGS += $(PERFFLAGS)
   FORTFLAGS += $(PERFFLAGS)
 else
-  FLAGS +=-g #-DDEBUG 
+  FLAGS +=-g -DDEBUG 
   FORTFLAGS +=-g #-DDEBUG
   ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
     FLAGS +=-debug all
@@ -94,16 +95,17 @@ all: test_chemreac.out
 
 .PHONY: clean all
 
+GENERATED=chemreac.cpp test_chemreac test_chemreac.out
+
 clean:
 	rm $(GENERATED)
-	rm $(OBJS)
 
 chemreac.cpp: ../chemreac_template.cpp
-	python enmako.py -g '{"USE_OPENMP": True}' -o $@ $<
+	python enmako.py -p ../exprs.pkl -g '{"USE_OPENMP": False}' -o $@ $<
 
 test_chemreac: chemreac.cpp test_chemreac.cpp
-	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) $(OPENMPFLAG) -I.. -Drestrict=__restrict__\
-	 -o $@ $^ $(OPENMPLIBS) # -lrt  only needed if we're not using OpenMP
+	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -Drestrict=__restrict__\
+	 -o $@ $^ $(LIBS) # only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac
 	./$< >$@

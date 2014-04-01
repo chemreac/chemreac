@@ -1,15 +1,18 @@
 # Lockfiles and auto-save files
-#*#
-*/#*#
-.#*
-*/.#*
+\#*\#
+*/\#*\#
+.\#*
+*/.\#*
 *~
 */*~
 .metadata_CompilerRunner
 
-
+# Output files from demos
 demo/*.png
 demo/profile.out
+
+# Rendered sources
+src/tests/chemreac.cpp
 
 # Files from compilation
 build/
@@ -20,10 +23,11 @@ build/
 */*.o
 */*.mod
 */*.so
-
-src/tests/*.out
 src/tests/test_chemreac
-src/tests/chemreac.cpp
+
+# Output files
+src/tests/*.out
 
 # Generated files for source distribution
 runtests.py
+src/exprs.pkl
