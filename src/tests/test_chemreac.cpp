@@ -44,10 +44,10 @@ ReactionDiffusion get_four_species_system(int N){
 
 #define RJ(i, j) ref_jac[(i)*8+j]
 int test_dense_jac(){
-    ReactionDiffusion rd = get_four_species_system(2);
-    vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
-    double ref_jac[8*8];
-    for (int i=0; i<8*8; ++i)
+    ReactionDiffusion rd = get_four_species_system(3);
+    vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
+    double ref_jac[12*12];
+    for (int i=0; i<12*12; ++i)
         ref_jac[i] = 0.0;
     // First block
     RJ(0,0) = -0.05 -rd.D[0];
@@ -76,10 +76,24 @@ int test_dense_jac(){
     RJ(7,6) =  2*3.0*y[6]*y[5];
     RJ(7,7) = -rd.D[3];
 
-    double dense_jac[8*8];
-    rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 8);
-    for (int i=0; i<8*8; ++i)
+    RJ(8,4) = rd.D[0];
+    RJ(8,8) = -0.05 - rd.D[0];
+    RJ(9,5) = rd.D[1];
+    RJ(9,9) =  0.05;
+    RJ(9,9) = -rd.D[1];
+    RJ(10,6) = rd.D[2];
+    RJ(10,9) = -2*3.0*y[10]*y[10];
+    RJ(10,10) = -2*2*3.0*y[10]*y[9]-rd.D[2];
+    RJ(11,7) = rd.D[3];
+    RJ(11,9) =  3.0*y[10]*y[10];
+    RJ(11,10) =  2*3.0*y[9]*y[9];
+    RJ(11,11) = -rd.D[3];
+
+    double dense_jac[12*12];
+    rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 12);
+    for (int i=0; i<12*12; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-15)
+            printf("i=%d, dense_jac[i]=%.3f, ref_jac[i]=%.3f\n", i, dense_jac[i], ref_jac[i]);
 	    return 2;
 
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];

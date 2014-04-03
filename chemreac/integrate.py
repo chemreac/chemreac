@@ -63,7 +63,7 @@ def run(sys, y0, tout, mode=None, **kwargs):
         return jout
     jac.neval = 0
 
-    runner = ode(f, jac=jac)
+    runner = ode(f, jac=jac if kwargs['with_jacobian'] else None)
     runner.set_integrator(**kwargs)
     runner.set_initial_value(y0.flatten(), tout[0])
     yout = np.empty((len(tout), sys.n*sys.N))

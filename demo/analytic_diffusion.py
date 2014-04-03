@@ -19,8 +19,9 @@ def spherical_analytic(x, t, D, mu):
 def cylindrical_analytic(x, t, D, mu):
     return (4*np.pi*D*t)**-1 * np.exp(-(x-mu)**2/(4*D*t))
 
-def main(D=2e-3, t0=1., tend=2., x0=1., xend=2., mu=None, N=1e5, nt=30, geom='f'):
-    mu = mu or .5*(x0+xend)
+def main(D=2e-3, t0=1., tend=2., x0=1., xend=2., mu=None, N=2048, nt=30, geom='f',
+         logt=False, logy=False):
+    mu = float(mu or .5*(x0+xend))
     tout = np.linspace(t0, tend, nt)
 
     assert geom in 'fcs'
@@ -33,15 +34,15 @@ def main(D=2e-3, t0=1., tend=2., x0=1., xend=2., mu=None, N=1e5, nt=30, geom='f'
     }[geom]
 
     sys = ReactionDiffusion(
-        1, [], [], [], N, D=[D], x=np.linspace(x0, xend, N+1), geom=geom)
-    y0 = analytic(sys.x_centers, t0, D, mu)
+        1, [], [], [], N, D=[D], x=np.linspace(x0, xend, N+1), geom=geom, logy=logy, logt=logt)
+    y0 = analytic(sys.xc, t0, D, mu)
     t = tout.copy().reshape((nt,1))
-    yref = analytic(sys.x_centers, t, D, mu)
-    yout, info = run(sys, y0, tout, atol=1e-6, rtol=1e-6)
-
+    yref = analytic(sys.xc, t, D, mu)
+    yout, info = run(sys, y0, tout, atol=1e-6, rtol=1e-6, with_jacobian=True, method='bdf')
+    print(info)
     # Plot results
     def plot(y, c, ttl=None):
-        plt.plot(sys.x_centers, y, c=c)
+        plt.plot(sys.xc, y, c=c)
         plt.xlabel('x / m')
         plt.ylabel('C / M')
         if ttl: plt.title(ttl)

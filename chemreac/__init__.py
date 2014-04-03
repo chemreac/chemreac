@@ -140,7 +140,3 @@ class ReactionDiffusion(PyReactionDiffusion):
             {self.names[i]: self.stoich_actv[ri].count(i) for\
              i in range(self.n)},
             k=self.k[ri])
-
-    @property
-    def x_centers(self):
-        return self.x[:-1]+np.diff(self.x)/2

@@ -139,7 +139,7 @@ def plot_C_vs_t_and_x(sys, tout, yout, substance, ax=None, log10=False,
     ax = ax or plt.subplot(1,1,1, projection='3d')
     assert isinstance(ax, Axes3D)
 
-    xty = [sys.x_centers, tout, yout]
+    xty = [sys.xc, tout, yout]
     x_, t_, y_ = map(np.log10, xty) if log10 else xty
     X,T = np.meshgrid(x_, t_)
     if not 'cmap' in plot_kwargs: plot_kwargs['cmap'] = cm.gist_earth

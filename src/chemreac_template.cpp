@@ -72,6 +72,8 @@ ReactionDiffusion::ReactionDiffusion(
                 "Number bin edges != number of compartments + 1.");
     }
 
+    xc = new double[N];
+    for (int i=0; i<N; ++i) xc[i] = (x[i+1] + x[i])/2;
     D_weight = new double[2*N];
     D_jac = new double[3*N];
     switch(geom_) { // Precalc coeffs for Jacobian for current geom.
@@ -152,6 +154,7 @@ ReactionDiffusion::ReactionDiffusion(
 
 ReactionDiffusion::~ReactionDiffusion()
 {
+    delete []xc;
     delete []D_weight;
     delete []D_jac;
     delete []coeff_reac;
@@ -196,8 +199,8 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 
 #define Y(bi, si) y[(bi)*n+(si)]
 #define C(bi, si) ( (logy) ? exp(Y(bi, si)) : Y(bi, si) )
-#define DCB(bi, si) ((bi>0) ? (C(bi,si) - C(bi-1,si)) : 0)
-#define DCF(bi, si) ((bi<N-1) ? (C(bi,si+1) - C(bi,si)) : 0)
+#define DCB(bi, si) ( (bi>0) ? (C(bi,si) - C(bi-1,si)) : 0 )
+#define DCF(bi, si) ( (bi<N-1) ? (C(bi,si+1) - C(bi,si)) : 0 )
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
@@ -253,7 +256,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 }
 #undef DCB
 #undef DCF
-#undef DCDT // Y(bi, si) still defined.
+#undef DCDT // Y(bi, si), C(bi, si) still defined.
 #undef D_WEIGHT
 
 
@@ -312,28 +315,12 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 
         // Contributions from diffusion
         // ----------------------------
-        if (bi > 0){
-            // Diffusion over left boundary
-            for (int si=0; si<n; ++si){
-                // species index si
+        if (N > 1) {
+            for (int si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi, si, si) += D[si]*D_JAC(bi, 1);
-                if (logy)
-                    JAC(bi, bi-1, si, si)  = D[si]*D_JAC(bi, 0)*exp(Y(bi-1,si)-Y(bi,si));
-                else
-                    JAC(bi, bi-1, si, si)  = D[si]*D_JAC(bi, 0);
-            }
-        }
-        if (bi < N-1){
-            // Diffusion over right boundary
-            for (int si=0; si<n; ++si){
-                // species index si
-                if (D[si] == 0.0) continue;
-                JAC(bi, bi, si, si) += D[si]*D_JAC(bi, 1);
-                if (logy)
-                    JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2)*exp(Y(bi+1,si)-Y(bi,si));
-                else
-                    JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2);
+                JAC(bi, bi, si, si) += D[si]*D_JAC(bi, 1)*( (logy) ? exp(Y(bi, si)) : 1 );
+                if (bi > 0) JAC(bi, bi-1, si, si) = D[si]*D_JAC(bi, 0)*( (logy) ? exp(Y(bi-1,si)-Y(bi,si)) : 1 );
+                if (bi < N-1) JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2)*( (logy) ? exp(Y(bi+1,si)-Y(bi,si)) : 1 );
             }
         }
 
@@ -367,6 +354,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 #undef JAC
 %endfor
 #undef D_JAC
+#undef C
 #undef Y
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,

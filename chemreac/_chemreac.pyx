@@ -18,6 +18,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         vector[double] x
         vector[vector[double]] bin_k_factor
         vector[int] bin_k_factor_span
+        double * xc
 
         ReactionDiffusion(int,
                           vector[vector[int]],
@@ -40,6 +41,24 @@ cdef extern from "chemreac.h" namespace "chemreac":
 
         void per_rxn_contrib_to_fi(double, const double * const, int, double * const)
         int get_geom_as_int()
+
+
+cdef class ArrayWrapper(object):
+    cdef public dict __array_interface__
+    def __init__(self, **kwargs):
+        self.__array_interface__ = kwargs
+
+
+cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
+    dtype = np.dtype(dtype)
+    return np.asarray(ArrayWrapper(
+        data = (address, ro),
+        typestr = dtype.str,
+        descr = dtype.descr,
+        shape = shape,
+        strides = strides,
+        version = 3,
+    ))
 
 
 cdef class PyReactionDiffusion:
@@ -151,9 +170,6 @@ cdef class PyReactionDiffusion:
 
     property x:
         def __get__(self): return np.asarray(self.thisptr.x)
-        def __set__(self, vector[double] x):
-            assert len(x) == self.N+1
-            self.thisptr.x = x
 
     property bin_k_factor:
         def __get__(self): return np.asarray(self.thisptr.bin_k_factor)
@@ -182,3 +198,6 @@ cdef class PyReactionDiffusion:
 
     def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
+
+    property xc:
+        def __get__(self): return fromaddress(<long>self.thisptr.xc, (self.N,))

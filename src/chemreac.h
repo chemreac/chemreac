@@ -17,7 +17,6 @@ private:
     int * coeff_prod;
     int * coeff_totl;
     int * coeff_actv;
-    double * dx; // bin separations (from center) (length = N-1)
     double * D_weight; // diffusion weights 
     double * D_jac; // diffusion contrib to jac
     vector<int> i_bin_k;
@@ -34,8 +33,8 @@ public:
     const int n; // number of species
     const int N; // number of compartments
     int nr; // number of reactions
-    const bool logy; // use logarithmic concenctraction
-    const bool logt; // use logarithmic time
+    bool logy; // use logarithmic concenctraction
+    bool logt; // use logarithmic time
     const vector<vector<int> > stoich_reac; // Reactants per reaction
     vector<vector<int> > stoich_actv; // Active reactants per reaction
     const vector<vector<int> > stoich_prod; // Products per reaction
@@ -44,6 +43,7 @@ public:
     const vector<double> x; // Bin edges (length = N+1)
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
     vector<int> bin_k_factor_span; // 
+    double * xc; // bin centers (length = N-1)
 
     ReactionDiffusion(int, 
 		      vector<vector<int> >, 
