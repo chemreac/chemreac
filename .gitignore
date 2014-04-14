@@ -1,0 +1,16 @@
+TAGS
+*~
+.*~
+.#*
+\#*#
+*/*~
+*/.*~
+*/.#*
+*/#*#
+*.pyc
+*/*.pyc
+finitediff/*.so
+finitediff/*.mod
+finitediff/tests/*.mod
+finitediff/tests/test_fornberg
+build/
