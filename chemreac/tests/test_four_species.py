@@ -41,7 +41,8 @@ JSON_PATH, BLESSED_PATH = map(
 )
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
-combos = list(product([True, False], [True, False], range(1,4), [FLAT, SPHERICAL, CYLINDRICAL]))
+Ns = [1] # change to [1, 3, 7]
+combos = list(product([True, False], [True, False], [1], [FLAT, SPHERICAL, CYLINDRICAL]))
 @pytest.mark.parametrize("combo", combos)
 def test_integrate(combo):
     logy, logt, N, geom = combo

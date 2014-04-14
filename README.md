@@ -40,6 +40,12 @@ Prerequisites
 In addition to Python packages listed in ``requirements.txt`` you also need:
 C++11 compliant compiler
 
+TODO
+======
+- Jacobian generated for diffusion incorrect (with_jacobian=False performs MUCH better).
+    * Need to derive test cases by hand.
+
+
 License
 =======
 Open Source. Released under the very permissive "simplified
@@ -48,3 +54,5 @@ Open Source. Released under the very permissive "simplified
 Author
 ======
 Björn Dahlgren, contact (gmail adress): bjodah
+python analytic_diffusion.py -g s -N 3 --t0 10 --tend 100
+python analytic_diffusion.py -g s --t0 10 --tend 100

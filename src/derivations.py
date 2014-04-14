@@ -55,9 +55,6 @@ delta_ = lambda idx: dx[idx]
 
 def write_code(offset, kind, dct):
     Dy_, DDy_ = finite_diff(x, y, i, offset, delta_, gamma_)
-    # xsymb = Symbol('x')
-    # yfunc = Function('y')(xsymb)
-    # Dy, DDy = yfunc.diff(xsymb), yfunc.diff(xsymb,2)
     Delta, Delta_ = IndexedBase('Delta'), lambda idx: dx[i-1]+dx[i] #x[i+1]-x[i-1]
     yd = y_m, y_n, y_p = symbols('y_m y_n y_p')
     ys, dummies = (y[i-1], y[i], y[i+1]), yd
@@ -71,7 +68,7 @@ def write_code(offset, kind, dct):
     expr = Eq(expr.lhs/D, expr.rhs/D)
     fexpr = expr.subs({gamma_(i): gamma[i], gamma_(i-1): gamma[i-1]})
     fexpr = fexpr.collect([gamma[i], gamma[i-1]])
-    #display(fexpr)#,gamma[i-1]]))
+
     f_in_gamma = {
         gamma[i]: fexpr.rhs.expand().coeff(gamma[i]),
         gamma[i-1]: fexpr.rhs.expand().coeff(gamma[i-1])
@@ -84,7 +81,7 @@ def write_code(offset, kind, dct):
     assert (fexpr.rhs - reduce(add_, [k*v for k,v in f_in_gamma.items()])).simplify() == 0
     jac=[]
     for j, dy in enumerate(yd):
-        Jexpr=expr.rhs.subs(fw_subs).diff(dy).simplify().subs(bw_subs)#.subs(canonical)
+        Jexpr=expr.rhs.subs(fw_subs).diff(dy).simplify().subs(bw_subs)
         canonical_Jexpr = Jexpr.subs(canonical)
         code = ccode(canonical_Jexpr, contract=False)
         dct[kind, offset, ('Jp','Jc','Jn')[j]] = code

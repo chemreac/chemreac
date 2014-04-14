@@ -46,7 +46,7 @@ def test_ReactionDiffusion__to_few_species():
     rd = ReactionDiffusion(1, [[0]], [[1]], [k])
 
 
-@pytest.mark.parametrize("N", range(1,5))
+@pytest.mark.parametrize("N", [1,3,4])
 def test_ReactionDiffusion__only_1_reaction(N):
     t0 = 3.0
     y0 = np.array([2.0, 3.0]*N)

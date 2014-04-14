@@ -100,9 +100,6 @@ class ReactionDiffusion(PyReactionDiffusion):
         assert len(stoich_reac) == len(stoich_prod) == len(k)
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
-        if geom == SPHERICAL or geom == CYLINDRICAL:
-            assert _x[0] != 0.0
-
         # Handle bin_k_factor
         if bin_k_factor == None:
             if bin_k_factor_span == None:

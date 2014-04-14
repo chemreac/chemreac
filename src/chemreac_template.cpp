@@ -163,8 +163,8 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []coeff_actv;
 }
 
-#define FACTOR(ri, bi) (((ri) < n_factor_affected_k) ? \
-            bin_k_factor[bi][i_bin_k[ri]] : 1)
+#define FACTOR(ri, bi) ( ((ri) < n_factor_affected_k) ? \
+            bin_k_factor[bi][i_bin_k[ri]] : 1 )
 void
 ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
                  double * const restrict local_r) const
