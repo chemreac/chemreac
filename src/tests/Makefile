@@ -88,14 +88,12 @@ FLAGS += $(EXTRA_FLAGS)
 %.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) -c -o $@ $<
 
-%.o: %.f90
-	$(FC) -fPIC $(FORTFLAGS) $(FLAGS) -c -o $@ $<
 
 all: test_chemreac.out
 
 .PHONY: clean all
 
-GENERATED=chemreac.cpp test_chemreac test_chemreac.out
+GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o
 
 clean:
 	rm $(GENERATED)
@@ -103,9 +101,16 @@ clean:
 chemreac.cpp: ../chemreac_template.cpp
 	python enmako.py -p ../exprs.pkl -g '{"USE_OPENMP": False}' -o $@ $<
 
-test_chemreac: chemreac.cpp test_chemreac.cpp
-	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -Drestrict=__restrict__\
-	 -o $@ $^ $(LIBS) # only needed if we're not using OpenMP
+fornberg.o: ../finitediff/finitediff/fornberg.f90
+	$(FC) $(FORTFLAGS) -c -o $@ $^
+
+c_fornberg.o: ../finitediff/finitediff/c_fornberg.f90
+	$(FC) $(FORTFLAGS) -c -o $@ $^
+
+
+test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o
+	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff -Drestrict=__restrict__\
+	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac
 	./$< >$@

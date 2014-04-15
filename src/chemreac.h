@@ -10,6 +10,10 @@ enum class Geom {FLAT, CYLINDRICAL, SPHERICAL}; // Geom:: -> GEOM_
 
 namespace chemreac {
 
+#define ALIGNED16 __attribute__((aligned(16)))
+
+#ifdef 
+
 class ReactionDiffusion
 {
 private:
@@ -18,7 +22,6 @@ private:
     int * coeff_totl;
     int * coeff_actv;
     double * D_weight; // diffusion weights 
-    double * D_jac; // diffusion contrib to jac
     vector<int> i_bin_k;
     int n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
@@ -28,10 +31,14 @@ private:
     double diffusion_contrib(int bi, int si, const double * const restrict fluxes) const;
     double diffusion_contrib_jac_prev(int bi) const;
     double diffusion_contrib_jac_next(int bi) const;
-
+    void _apply_fd(int, int);
+    const double * const restrict liny ALIGNED16;
+    const int nliny;
+    
 public:
     const int n; // number of species
     const int N; // number of compartments
+    const int nstencil; // number of points used in finite difference stencil
     int nr; // number of reactions
     bool logy; // use logarithmic concenctraction
     bool logt; // use logarithmic time
@@ -46,18 +53,19 @@ public:
     double * xc; // bin centers (length = N-1)
 
     ReactionDiffusion(int, 
-		      vector<vector<int> >, 
-		      vector<vector<int> >, 
+		      const vector<vector<int> >, 
+		      const vector<vector<int> >, 
 		      vector<double>, 
 		      int,
 		      vector<double>, 
-		      vector<double>,
+		      const vector<double>,
 		      vector<vector<int> >, 
 		      vector<vector<double> >,
 		      vector<int>,
 		      int,
 		      bool,
-		      bool);
+		      bool,
+                      int nstencil = 3);
     ~ReactionDiffusion();
     void f(double, const double * const restrict, double * const restrict) const;
     void dense_jac_rmaj(double, const double * const restrict, double * const restrict, int) const;

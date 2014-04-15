@@ -4,9 +4,12 @@
 // This is a templated source file.
 // Render template using Mako (Python templating engine)
 </%doc>
-#include <algorithm> // count
-#include <vector>
+#include <algorithm> // std::count
+#include <vector>    // std::vector
+#include <algorithm> // std::max, std::min
+#include <cstdlib> // free,  C++11 aligned_alloc
 #include "chemreac.h"
+#include "c_fornberg.h"
 
 #ifdef DEBUG
 #include <cstdio>
@@ -32,29 +35,34 @@
 
 using std::vector;
 using std::count;
+using std::min;
+using std::max;
+
 namespace chemreac {
 
-#define D_JAC(bi, j) D_jac[3*(bi) + j]
-#define D_WEIGHT(bi, j) D_weight[2*(bi) + j]
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     int n,
-    vector<vector<int> > stoich_reac,
-    vector<vector<int> > stoich_prod,
+    const vector<vector<int> > stoich_reac,
+    const vector<vector<int> > stoich_prod,
     vector<double> k,
     int N, 
     vector<double> D,
-    vector<double> x, // separation
+    const vector<double> x, // separation
     vector<vector<int> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
     vector<int> bin_k_factor_span, // modulation over reactions
     int geom_,
     bool logy,
-    bool logt
+    bool logt,
+    int nstencil
     ):
     n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
-    bin_k_factor_span(bin_k_factor_span), logy(logy), logt(logt), nr(stoich_reac.size())
+    bin_k_factor_span(bin_k_factor_span), logy(logy), logt(logt), 
+    nstencil(nstencil), nr(stoich_reac.size()),
+    liny(aligned_alloc(16, 16*int(ceil(sizeof(double)*n*N / 16.0)))),
+    nliny(16*int(ceil(sizeof(double)*n*N / 16.0))/sizeof(double))
 {
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
     if (stoich_reac.size() != stoich_prod.size())
@@ -72,40 +80,28 @@ ReactionDiffusion::ReactionDiffusion(
                 "Number bin edges != number of compartments + 1.");
     }
 
+    switch(geom_) { // Precalc coeffs for Jacobian for current geom.
+    case 0:
+        geom = Geom::FLAT;
+        break;
+    case 0:
+        geom = Geom::CYLINDRICAL;
+        break;
+    case 0:
+        geom = Geom::SPHERICAL;
+        break;
+    default:
+        throw std::logic_error("Unknown geom.");
+    }
+
+    // Finite difference scheme
     xc = new double[N];
     for (int i=0; i<N; ++i) xc[i] = (x[i+1] + x[i])/2;
-    D_weight = new double[2*N];
-    D_jac = new double[3*N];
-    switch(geom_) { // Precalc coeffs for Jacobian for current geom.
-  %for IDX, GEOMSTR in enumerate(['FLAT', 'CYLINDRICAL', 'SPHERICAL']):
-    case ${IDX}:
-        geom = Geom::${GEOMSTR};
-        if (N == 1) break;
-        {
-            int i = 1;
-            D_WEIGHT(0,0) = ${COEFF[GEOMSTR,-1,'bw']};
-            D_WEIGHT(0,1) = ${COEFF[GEOMSTR,-1,'fw']};
-            D_JAC(0,1) = ${COEFF[GEOMSTR,-1,'Jc']};
-            D_JAC(0,2) = ${COEFF[GEOMSTR,-1,'Jn']};           
-            do {
-                D_WEIGHT(i,0) = ${COEFF[GEOMSTR,0,'bw']};
-                D_WEIGHT(i,1) = ${COEFF[GEOMSTR,0,'fw']};
-                D_JAC(i,0) = ${COEFF[GEOMSTR,0,'Jp']};
-                D_JAC(i,1) = ${COEFF[GEOMSTR,0,'Jc']};           
-                D_JAC(i,2) = ${COEFF[GEOMSTR,0,'Jn']};           
-            } while (i++ < N-2);
-            i--;
-            #ifdef DEBUG
-            printf("i=%d, N=%d\n", i, N);
-            #endif
-            D_WEIGHT(i+1,0) = ${COEFF[GEOMSTR,1,'bw']};
-            D_WEIGHT(i+1,1) = ${COEFF[GEOMSTR,1,'fw']};            
-            D_JAC(i+1, 0) = ${COEFF[GEOMSTR,1,'Jp']};
-            D_JAC(i+1, 1) = ${COEFF[GEOMSTR,1,'Jc']};           
-        }
-        break;
-  %endfor
-    default: throw std::logic_error("Unknown geom.");
+    D_weight = new double[nstencil*N];
+
+    for (int bi=0; bi<N; bi++){
+        // not centered diffs close to boundaries
+        _apply_fd(bi, max(0, min(N-nstencil, bi-(nstencil-1)/2)));
     }
 
     //    nr = stoich_reac.size();
@@ -154,14 +150,42 @@ ReactionDiffusion::ReactionDiffusion(
 
 ReactionDiffusion::~ReactionDiffusion()
 {
+    free(liny);
     delete []xc;
     delete []D_weight;
-    delete []D_jac;
     delete []coeff_reac;
     delete []coeff_prod;
     delete []coeff_totl;
     delete []coeff_actv;
 }
+
+
+#define D_JAC(bi, j) D_jac[nstencil*(bi) + j]
+#define D_WEIGHT(bi, j) D_weight[nstencil*(bi) + j]
+#define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
+void ReactionDiffusion::_apply_fd(int around, int start){
+    double * c = new double[3*nstencil];
+    double * lxc = new double[nstencil]; // local shifted x-centers
+    for (int li=0; li<nstencil; ++li) // li: local index
+        lxc[li] = xc[start+li]-xc[around];
+    fornberg_populate_weights(0, lxc, nstencil-1, 2, c);
+    delete []lxc;
+
+    for (int li=0; li<nstencil; ++li){ // li: local index
+        D_WEIGHT(around, li) = FDWEIGHT(2, li);
+        switch(geom){
+        case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
+            D_WEIGHT(around, li) += FDWEIGHT(1, li)*1/xc[around];
+            break;
+        case Geom::SPHERICAL: // Laplace operator in sph coords.
+            D_WEIGHT(around, li) += FDWEIGHT(1, li)*2/xc[around];
+            break;
+        default:
+            break;
+    }
+    delete []c;
+}
+#undef FDWEIGHT
 
 #define FACTOR(ri, bi) ( ((ri) < n_factor_affected_k) ? \
             bin_k_factor[bi][i_bin_k[ri]] : 1 )
@@ -198,15 +222,21 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 // <indices.png>
 
 #define Y(bi, si) y[(bi)*n+(si)]
-#define C(bi, si) ( (logy) ? exp(Y(bi, si)) : Y(bi, si) )
-#define DCB(bi, si) ( (bi>0) ? (C(bi,si) - C(bi-1,si)) : 0 )
-#define DCF(bi, si) ( (bi<N-1) ? (C(bi,si+1) - C(bi,si)) : 0 )
+#define LC(bi, si) liny[(bi)*n+(si)]
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
+    if (N > 1){
+        if (logy){
+            ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
+            for (int bi=0; bi<N; ++bi)
+                for (int si=0; si<n; ++si)
+                    LC(bi, si) = exp(Y(bi, si));
+    }
+
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
-    ${"#pragma omp parallel for" if USE_OPENMP else ""}
+    ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
         // compartment bi
         ${"double * local_r = new double[nr];" if USE_OPENMP else ""}
@@ -230,9 +260,13 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
             // Contributions from diffusion
             // ----------------------------
             for (int si=0; si<n; ++si){ // species index si
-                if (D[si] != 0.0)
-                    DYDT(bi, si) += D[si]*(D_WEIGHT(bi, 0)*DCB(bi, si)+\
-                                           D_WEIGHT(bi, 1)*DCF(bi, si));
+                if (D[si] == 0.0) continue;
+                double tmp = 0;
+                for (int xi; xi<nstencil; ++xi){
+                    int start = max(0, min(N-nstencil, bi-(nstencil-1)/2));
+                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(start+xi, si) : Y(start+xi, si));
+                }
+                DYDT(bi, si) += D[si]*tmp;
             }
         }
         if (logy){
@@ -251,13 +285,10 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         ${"delete []local_r;" if USE_OPENMP else ""}
 
     }
-
     ${"delete []local_r;" if not USE_OPENMP else ""}
 }
-#undef DCB
-#undef DCF
-#undef DCDT // Y(bi, si), C(bi, si) still defined.
-#undef D_WEIGHT
+#undef DCDT 
+#undef LC // Y(bi, si), still defined.
 
 
 %for token, imaj, imin in [\
@@ -353,9 +384,8 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 }
 #undef JAC
 %endfor
-#undef D_JAC
-#undef C
 #undef Y
+#undef D_WEIGHT
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
                                               int si, double * const restrict out) const

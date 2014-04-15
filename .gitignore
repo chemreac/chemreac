@@ -24,6 +24,9 @@ build/
 */*.mod
 */*.so
 src/tests/test_chemreac
+src/tests/*.mod
+src/tests/*.o
+
 
 # Output files
 src/tests/*.out
