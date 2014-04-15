@@ -5,7 +5,7 @@ import sys
 
 from distutils.core import setup
 
-version_ = '0.1.8'
+version_ = '0.1.9'
 name_ = 'finitediff'
 
 if '--help'in sys.argv[1:] or sys.argv[1] in ('--help-commands', 'egg_info', 'clean', '--version'):
@@ -24,6 +24,7 @@ else:
             "finitediff._finitediff",
             sources=[
                 './finitediff/fornberg.f90',
+                './finitediff/c_fornberg.f90',
                 './finitediff/newton_interval/src/newton_interval.c',
                 './finitediff/_finitediff.pyx'
             ],
@@ -32,7 +33,12 @@ else:
                     ArbitraryDepthGlob('*.c'): {'std': 'c99'}
                 }
             },
-            include_dirs=['./finitediff/newton_interval/include', numpy.get_include()])
+            include_dirs=[
+                './finitediff',
+                './finitediff/newton_interval/include',
+                numpy.get_include()
+            ]
+        )
     ]
 
 setup(
