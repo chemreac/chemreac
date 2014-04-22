@@ -44,6 +44,8 @@ else:
             "chemreac._chemreac",
             sources=[
                 'src/chemreac_template.cpp',
+                'src/finitediff/finitediff/fornberg.f90',
+                'src/finitediff/finitediff/c_fornberg.f90',
                 'chemreac/_chemreac.pyx',
             ],
             template_regexps=[
@@ -63,8 +65,9 @@ else:
             },
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
+                'std': 'c++11',
             },
-            include_dirs=['src/'],
+            include_dirs=['src/', 'src/finitediff/finitediff/'],
             logger=True,
         )
     ]

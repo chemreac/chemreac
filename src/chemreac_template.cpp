@@ -29,10 +29,6 @@
 #define omp_get_thread_num() 0
 %endif
 
-#ifndef NULL
-#define NULL 0
-#endif // NULL not part of C++ standard
-
 using std::vector;
 using std::count;
 using std::min;
@@ -42,27 +38,27 @@ namespace chemreac {
 
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
-    int n,
-    const vector<vector<int> > stoich_reac,
-    const vector<vector<int> > stoich_prod,
+    uint n,
+    const vector<vector<uint> > stoich_reac,
+    const vector<vector<uint> > stoich_prod,
     vector<double> k,
-    int N, 
+    uint N, 
     vector<double> D,
     const vector<double> x, // separation
-    vector<vector<int> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
+    vector<vector<uint> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
-    vector<int> bin_k_factor_span, // modulation over reactions
+    vector<uint> bin_k_factor_span, // modulation over reactions
     int geom_,
     bool logy,
     bool logt,
-    int nstencil
+    uint nstencil
     ):
-    n(n), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
-    k(k), N(N), D(D), x(x), bin_k_factor(bin_k_factor), 
-    bin_k_factor_span(bin_k_factor_span), logy(logy), logt(logt), 
-    nstencil(nstencil), nr(stoich_reac.size()),
-    liny(aligned_alloc(16, 16*int(ceil(sizeof(double)*n*N / 16.0)))),
-    nliny(16*int(ceil(sizeof(double)*n*N / 16.0))/sizeof(double))
+    liny((double * const)(aligned_alloc(16, 16*int(ceil(sizeof(double)*n*N / 16.0))))),
+    nliny(16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0))),
+    n(n), N(N), nstencil(nstencil), nr(stoich_reac.size()),
+    logy(logy), logt(logt), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
+    k(k),  D(D), x(x), bin_k_factor(bin_k_factor), 
+    bin_k_factor_span(bin_k_factor_span)
 {
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
     if (stoich_reac.size() != stoich_prod.size())
@@ -84,10 +80,10 @@ ReactionDiffusion::ReactionDiffusion(
     case 0:
         geom = Geom::FLAT;
         break;
-    case 0:
+    case 1:
         geom = Geom::CYLINDRICAL;
         break;
-    case 0:
+    case 2:
         geom = Geom::SPHERICAL;
         break;
     default:
@@ -96,24 +92,24 @@ ReactionDiffusion::ReactionDiffusion(
 
     // Finite difference scheme
     xc = new double[N];
-    for (int i=0; i<N; ++i) xc[i] = (x[i+1] + x[i])/2;
+    for (uint i=0; i<N; ++i) xc[i] = (x[i+1] + x[i])/2;
     D_weight = new double[nstencil*N];
 
-    for (int bi=0; bi<N; bi++){
+    for (uint bi=0; bi<N; bi++){
         // not centered diffs close to boundaries
-        _apply_fd(bi, max(0, min(N-nstencil, bi-(nstencil-1)/2)));
+        _apply_fd(bi, max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2)));
     }
 
     //    nr = stoich_reac.size();
 
-    for (int ri=0; ri<nr; ++ri){
-        for (vector<int>::iterator si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
+    for (uint ri=0; ri<nr; ++ri){
+        for (auto si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_reac > (n-1)");
-        for (vector<int>::iterator si=stoich_prod[ri].begin(); si != stoich_prod[ri].end(); ++si)
+        for (auto si=stoich_prod[ri].begin(); si != stoich_prod[ri].end(); ++si)
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_prod > (n-1)");
-        for (vector<int>::iterator si=stoich_actv_[ri].begin(); si != stoich_actv_[ri].end(); ++si)
+        for (auto si=stoich_actv_[ri].begin(); si != stoich_actv_[ri].end(); ++si)
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_actv > (n-1)");
     }
@@ -124,12 +120,12 @@ ReactionDiffusion::ReactionDiffusion(
     coeff_actv = new int[nr*n];
 
     stoich_actv.reserve(nr);
-    for (int rxni=0; rxni<nr; ++rxni){ // reaction index 
+    for (uint rxni=0; rxni<nr; ++rxni){ // reaction index 
         if (stoich_actv_[rxni].size() == 0)
             stoich_actv.push_back(stoich_reac[rxni]); // massaction
     else
         stoich_actv.push_back(stoich_actv_[rxni]);
-        for (int si=0; si<n; ++si){ // species index
+        for (uint si=0; si<n; ++si){ // species index
             coeff_reac[rxni*n+si] = count(stoich_reac[rxni].begin(), 
                                         stoich_reac[rxni].end(), si);
             coeff_actv[rxni*n+si] = count(stoich_actv[rxni].begin(), 
@@ -142,15 +138,15 @@ ReactionDiffusion::ReactionDiffusion(
     }
 
     // Handle bin_k_factors:
-    for (int i=0; i<bin_k_factor_span.size(); ++i)
-        for (int j=0; j<bin_k_factor_span[i]; ++j)
+    for (uint i=0; i<bin_k_factor_span.size(); ++i)
+        for (uint j=0; j<bin_k_factor_span[i]; ++j)
             i_bin_k.push_back(i);
     n_factor_affected_k = i_bin_k.size();
 }
 
 ReactionDiffusion::~ReactionDiffusion()
 {
-    free(liny);
+    free((void*)liny);
     delete []xc;
     delete []D_weight;
     delete []coeff_reac;
@@ -160,18 +156,17 @@ ReactionDiffusion::~ReactionDiffusion()
 }
 
 
-#define D_JAC(bi, j) D_jac[nstencil*(bi) + j]
 #define D_WEIGHT(bi, j) D_weight[nstencil*(bi) + j]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
 void ReactionDiffusion::_apply_fd(int around, int start){
     double * c = new double[3*nstencil];
     double * lxc = new double[nstencil]; // local shifted x-centers
-    for (int li=0; li<nstencil; ++li) // li: local index
+    for (uint li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start+li]-xc[around];
     fornberg_populate_weights(0, lxc, nstencil-1, 2, c);
     delete []lxc;
 
-    for (int li=0; li<nstencil; ++li){ // li: local index
+    for (uint li=0; li<nstencil; ++li){ // li: local index
         D_WEIGHT(around, li) = FDWEIGHT(2, li);
         switch(geom){
         case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
@@ -182,6 +177,7 @@ void ReactionDiffusion::_apply_fd(int around, int start){
             break;
         default:
             break;
+        }
     }
     delete []c;
 }
@@ -194,14 +190,14 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
                  double * const restrict local_r) const
 {
     // intent(out) :: local_r
-    for (int rxni=0; rxni<nr; ++rxni){
+    for (uint rxni=0; rxni<nr; ++rxni){
         // reaction rxni
         if (logy)
             local_r[rxni] = 0;
         else
             local_r[rxni] = 1;
 
-        for (int rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
+        for (uint rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
             if (logy)
@@ -230,26 +226,27 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     if (N > 1){
         if (logy){
             ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
-            for (int bi=0; bi<N; ++bi)
-                for (int si=0; si<n; ++si)
+            for (uint bi=0; bi<N; ++bi)
+                for (uint si=0; si<n; ++si)
                     LC(bi, si) = exp(Y(bi, si));
+        }
     }
 
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
-    for (int bi=0; bi<N; ++bi){
+    for (uint bi=0; bi<N; ++bi){
         // compartment bi
         ${"double * local_r = new double[nr];" if USE_OPENMP else ""}
 
-        for (int si=0; si<n; ++si)
+        for (uint si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
 
         // Contributions from reactions
         // ----------------------------
         _fill_local_r(bi, y, local_r);
-        for (int rxni=0; rxni<nr; ++rxni){
+        for (uint rxni=0; rxni<nr; ++rxni){
             // reaction index rxni
-            for (int si=0; si<n; ++si){
+            for (uint si=0; si<n; ++si){
                 // species index si
                 int overall = coeff_totl[rxni*n + si];
                 if (overall != 0)
@@ -259,11 +256,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
-            for (int si=0; si<n; ++si){ // species index si
+            for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
                 double tmp = 0;
-                for (int xi; xi<nstencil; ++xi){
-                    int start = max(0, min(N-nstencil, bi-(nstencil-1)/2));
+                for (uint xi=0; xi<nstencil; ++xi){
+                    int start = max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2));
                     tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(start+xi, si) : Y(start+xi, si));
                 }
                 DYDT(bi, si) += D[si]*tmp;
@@ -271,14 +268,14 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         }
         if (logy){
             if (logt)
-                for (int si=0; si<n; ++si)
+                for (uint si=0; si<n; ++si)
                     DYDT(bi, si) *= exp(t-Y(bi,si));
             else
-                for (int si=0; si<n; ++si)
+                for (uint si=0; si<n; ++si)
                     DYDT(bi, si) *= exp(-Y(bi,si));
         } else {
             if (logt)
-                for (int si=0; si<n; ++si)
+                for (uint si=0; si<n; ++si)
                     DYDT(bi, si) *= exp(t);
         }
 
@@ -306,7 +303,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding)
-    double * restrict fout = NULL;
+    double * restrict fout = nullptr;
     if (logy){
         fout = new double[n*N];
         f(t, y, fout);
@@ -314,20 +311,20 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 
     ${'double * local_r = new double[nr];' if not USE_OPENMP else ''}
     ${'#pragma omp parallel for' if USE_OPENMP else ''}
-    for (int bi=0; bi<N; ++bi){
+    for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
         ${'double * local_r = new double[nr];' if USE_OPENMP else ''}
     
         // Contributions from reactions
         // ----------------------------
         _fill_local_r(bi, y, local_r);
-        for (int si=0; si<n; ++si){
+        for (uint si=0; si<n; ++si){
             // species si
-            for (int dsi=0; dsi<n; ++dsi){
+            for (uint dsi=0; dsi<n; ++dsi){
                 // derivative wrt species dsi
                 // j_i[si, dsi] = Sum_l(n_lj*Derivative(r[l], local_y[dsi]))
                 JAC(bi,bi,si,dsi) = 0.0;
-                for (int rxni=0; rxni<nr; ++rxni){
+                for (uint rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
                     if (coeff_totl[rxni*n + si] == 0)
                         continue; // si unaffected by reaction
@@ -347,19 +344,19 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
-            for (int si=0; si<n; ++si){ // species index si
+            for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi, si, si) += D[si]*D_JAC(bi, 1)*( (logy) ? exp(Y(bi, si)) : 1 );
-                if (bi > 0) JAC(bi, bi-1, si, si) = D[si]*D_JAC(bi, 0)*( (logy) ? exp(Y(bi-1,si)-Y(bi,si)) : 1 );
-                if (bi < N-1) JAC(bi, bi+1, si, si)  = D[si]*D_JAC(bi, 2)*( (logy) ? exp(Y(bi+1,si)-Y(bi,si)) : 1 );
+                JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, (nstencil-1)/2)*( (logy) ? exp(Y(bi, si)) : 1 );
+                if (bi > 0) JAC(bi, bi-1, si, si) = D[si]*D_WEIGHT(bi, (nstencil-1)/2-1)*( (logy) ? exp(Y(bi-1,si)-Y(bi,si)) : 1 );
+                if (bi < N-1) JAC(bi, bi+1, si, si)  = D[si]*D_WEIGHT(bi, (nstencil-1)/2+1)*( (logy) ? exp(Y(bi+1,si)-Y(bi,si)) : 1 );
             }
         }
 
         // Logartihmic time
         // ----------------------------
         if (logt){
-            for (int si=0; si<n; ++si){
-                for (int dsi=0; dsi<n; ++dsi){
+            for (uint si=0; si<n; ++si){
+                for (uint dsi=0; dsi<n; ++dsi){
                     JAC(bi, bi, si, dsi) *= exp(t);
                 }
                 if (bi>0)
@@ -372,7 +369,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // Logrithmic concentrations
         // ----------------------------
         if (logy){
-            for (int si=0; si<n; ++si)
+            for (uint si=0; si<n; ++si)
                 JAC(bi, bi, si, si) -= fout[bi*n+si];
         }
 
@@ -388,11 +385,11 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 #undef D_WEIGHT
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
-                                              int si, double * const restrict out) const
+                                              uint si, double * const restrict out) const
 {
     double * local_r = new double[nr];
     _fill_local_r(0, y, local_r);
-    for (int ri=0; ri<nr; ++ri){
+    for (uint ri=0; ri<nr; ++ri){
 	out[ri] = coeff_totl[ri*n+si]*local_r[ri];
     }
     delete []local_r;

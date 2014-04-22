@@ -6,40 +6,44 @@ import numpy as np
 from libcpp cimport bool
 from libcpp.vector cimport vector
 
+cdef extern from *:
+    ctypedef unsigned int uint
+
 cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
-        int n, N, nr, geom
+        const uint n, N, nr, nstencil
         bool logy, logt
-        vector[vector[int]] stoich_reac
-        vector[vector[int]] stoich_actv
-        vector[vector[int]] stoich_prod
+        const vector[vector[uint]] stoich_reac
+        vector[vector[uint]] stoich_actv
+        const vector[vector[uint]] stoich_prod
         vector[double] k
         vector[double] D
-        vector[double] x
+        const vector[double] x
         vector[vector[double]] bin_k_factor
-        vector[int] bin_k_factor_span
+        vector[uint] bin_k_factor_span
         double * xc
 
-        ReactionDiffusion(int,
-                          vector[vector[int]],
-                          vector[vector[int]],
+        ReactionDiffusion(uint,
+                          const vector[vector[uint]],
+                          const vector[vector[uint]],
                           vector[double],
-                          int,
+                          uint,
                           vector[double],
-                          vector[double],
-                          vector[vector[int]],
+                          const vector[double],
+                          vector[vector[uint]],
                           vector[vector[double]],
-                          vector[int],
+                          vector[uint],
                           int,
                           bool,
-                          bool) except +
+                          bool,
+                          uint) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
         void dense_jac_cmaj(double, const double * const, double * const, int)
         void banded_padded_jac_cmaj(double, const double * const, double * const, int)
         void banded_packed_jac_cmaj(double, const double * const, double * const, int)
 
-        void per_rxn_contrib_to_fi(double, const double * const, int, double * const)
+        void per_rxn_contrib_to_fi(double, const double * const, uint, double * const)
         int get_geom_as_int()
 
 
@@ -67,24 +71,25 @@ cdef class PyReactionDiffusion:
     cdef public list names, tex_names
 
     def __cinit__(self,
-                  int n,
-                  vector[vector[int]] stoich_reac,
-                  vector[vector[int]] stoich_prod,
+                  uint n,
+                  vector[vector[uint]] stoich_reac,
+                  vector[vector[uint]] stoich_prod,
                   vector[double] k,
-                  int N,
+                  uint N,
                   vector[double] D,
                   vector[double] x,
-                  vector[vector[int]] stoich_actv,
+                  vector[vector[uint]] stoich_actv,
                   vector[vector[double]] bin_k_factor,
-                  vector[int] bin_k_factor_span,
+                  vector[uint] bin_k_factor_span,
                   int geom,
                   bint logy,
                   bint logt,
+                  uint nstencil=3
               ):
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
             D, x, stoich_actv, bin_k_factor,
-            bin_k_factor_span, geom, logy, logt)
+            bin_k_factor_span, geom, logy, logt, nstencil)
 
     def __dealloc__(self):
         del self.thisptr
@@ -140,21 +145,12 @@ cdef class PyReactionDiffusion:
 
     property stoich_reac:
         def __get__(self): return self.thisptr.stoich_reac
-        # We would need to re-initialize coeff_reac, coeff_*, ...
-        # def __set__(self, vector[vector[int]] stoich_reac):
-        #     self.thisptr.stoich_reac = stoich_reac
 
     property stoich_prod:
         def __get__(self): return self.thisptr.stoich_prod
-        # We would need to re-initialize coeff_reac, coeff_*, ...
-        # def __set__(self, vector[vector[int]] stoich_prod):
-        #     self.thisptr.stoich_prod = stoich_prod
 
     property stoich_actv:
         def __get__(self): return self.thisptr.stoich_actv
-        # We would need to re-initialize coeff_reac, coeff_*, ...
-        # def __set__(self, vector[vector[int]] stoich_actv):
-        #     self.thisptr.stoich_actv = stoich_actv
 
     property k:
         def __get__(self): return np.asarray(self.thisptr.k)
@@ -179,7 +175,7 @@ cdef class PyReactionDiffusion:
 
     property bin_k_factor_span:
         def __get__(self): return np.asarray(self.thisptr.bin_k_factor_span, dtype=np.int32)
-        def __set__(self, vector[int] bin_k_factor_span):
+        def __set__(self, vector[uint] bin_k_factor_span):
             assert all([len(bin_k_factor_span) == len(x) for x in self.bin_k_factor])
             self.thisptr.bin_k_factor_span = bin_k_factor_span
 
