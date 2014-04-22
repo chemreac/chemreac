@@ -76,7 +76,7 @@ ReactionDiffusion::ReactionDiffusion(
                 "Number bin edges != number of compartments + 1.");
     }
 
-    switch(geom_) { // Precalc coeffs for Jacobian for current geom.
+    switch(geom_) {
     case 0:
         geom = Geom::FLAT;
         break;
@@ -96,6 +96,7 @@ ReactionDiffusion::ReactionDiffusion(
     D_weight = new double[nstencil*N];
 
     for (uint bi=0; bi<N; bi++){
+        // Precalc coeffs for Jacobian for current geom.
         // not centered diffs close to boundaries
         _apply_fd(bi, max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2)));
     }

@@ -15,7 +15,8 @@ namespace chemreac {
 
 class ReactionDiffusion
 {
-private:
+//private:
+public:
     int * coeff_reac;
     int * coeff_prod;
     int * coeff_totl;

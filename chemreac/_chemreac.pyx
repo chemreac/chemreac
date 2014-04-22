@@ -11,6 +11,9 @@ cdef extern from *:
 
 cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
+        # (Private)
+        double * D_weight
+
         const uint n, N, nr, nstencil
         bool logy, logt
         const vector[vector[uint]] stoich_reac
@@ -197,3 +200,7 @@ cdef class PyReactionDiffusion:
 
     property xc:
         def __get__(self): return fromaddress(<long>self.thisptr.xc, (self.N,))
+
+    # (Private)
+    property D_weight:
+        def __get__(self): return fromaddress(<long>self.thisptr.D_weight, (self.N*self.thisptr.nstencil,))
