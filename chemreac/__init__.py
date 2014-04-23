@@ -20,7 +20,7 @@ class ReactionDiffusion(PyReactionDiffusion):
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
                 stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
-                geom=FLAT, logy=False, logt=False, **kwargs):
+                geom=FLAT, logy=False, logt=False, nstencil=3, **kwargs):
         """
         Arguments:
         -`n`: number of species
@@ -36,6 +36,7 @@ class ReactionDiffusion(PyReactionDiffusion):
         -`geom`: any of (FLAT, SPHERICAL, CYLINDRICAL)
         -`logy`: f and *_jac_* routines operate on log(concentration)
         -`logt`: f and *_jac_* routines operate on log(time)
+        -`nstencil`: number of points used in finite difference scheme
 
         The instance provides methods:
 
@@ -112,15 +113,18 @@ class ReactionDiffusion(PyReactionDiffusion):
             assert all([x >= 0 for x in bin_k_factor_span])
 
         rd = super(ReactionDiffusion, cls).__new__(
-            cls, n, stoich_reac, stoich_prod, k_val, N, D_val, _x
-            , _stoich_actv, bin_k_factor, bin_k_factor_span, geom, logy, logt
+            cls, n, stoich_reac, stoich_prod, k_val, N, D_val, _x,
+            _stoich_actv, bin_k_factor, bin_k_factor_span, geom, logy,
+            logt, nstencil
         )
         rd.k_err = k_err
         rd.D_err = D_err
 
         for attr in cls.kwarg_attrs:
             if attr in kwargs:
-                setattr(rd, attr, kwargs[attr])
+                setattr(rd, attr, kwargs.pop(attr))
+        if kwargs:
+            raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd
 
     def to_Reaction(self, ri):

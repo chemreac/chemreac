@@ -203,4 +203,5 @@ cdef class PyReactionDiffusion:
 
     # (Private)
     property D_weight:
-        def __get__(self): return fromaddress(<long>self.thisptr.D_weight, (self.N*self.thisptr.nstencil,))
+        def __get__(self): return fromaddress(<long>self.thisptr.D_weight,
+                                              (self.thisptr.N*self.thisptr.nstencil,))

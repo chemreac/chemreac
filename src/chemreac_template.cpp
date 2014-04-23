@@ -53,13 +53,12 @@ ReactionDiffusion::ReactionDiffusion(
     bool logt,
     uint nstencil
     ):
-    liny((double * const)(aligned_alloc(16, 16*int(ceil(sizeof(double)*n*N / 16.0))))),
-    nliny(16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0))),
     n(n), N(N), nstencil(nstencil), nr(stoich_reac.size()),
     logy(logy), logt(logt), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), x(x), bin_k_factor(bin_k_factor), 
     bin_k_factor_span(bin_k_factor_span)
 {
+    if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
@@ -147,7 +146,6 @@ ReactionDiffusion::ReactionDiffusion(
 
 ReactionDiffusion::~ReactionDiffusion()
 {
-    free((void*)liny);
     delete []xc;
     delete []D_weight;
     delete []coeff_reac;
@@ -207,10 +205,9 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
                 local_r[rxni] *= y[bi*n+si];
         }
 
+        local_r[rxni] *= FACTOR(rxni,bi)*k[rxni];
         if (logy)
             local_r[rxni] = exp(local_r[rxni]);
-
-        local_r[rxni] *= FACTOR(rxni,bi)*k[rxni];
     }
 }
 #undef FACTOR
@@ -224,13 +221,15 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
-    if (N > 1){
-        if (logy){
-            ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
-            for (uint bi=0; bi<N; ++bi)
-                for (uint si=0; si<n; ++si)
-                    LC(bi, si) = exp(Y(bi, si));
-        }
+    double * liny __attribute__((aligned(16))) = nullptr;
+    if ((N > 1) && logy){
+        int nliny = 16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0));
+        liny = (double * const)(aligned_alloc(16,nliny*sizeof(double)));
+
+        ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
+        for (uint bi=0; bi<N; ++bi)
+            for (uint si=0; si<n; ++si)
+                LC(bi, si) = exp(Y(bi, si));
     }
 
     ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
@@ -257,14 +256,14 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
+            int starti = max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2));
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
                 double tmp = 0;
                 for (uint xi=0; xi<nstencil; ++xi){
-                    int start = max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2));
-                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(start+xi, si) : Y(start+xi, si));
+                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(starti+xi, si) : Y(starti+xi, si));
                 }
-                DYDT(bi, si) += D[si]*tmp;
+                DYDT(bi, si) -= D[si]*tmp;
             }
         }
         if (logy){
@@ -284,9 +283,12 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
 
     }
     ${"delete []local_r;" if not USE_OPENMP else ""}
+
+    if ((N > 2) && logy)
+        free((void*)liny);
 }
 #undef DCDT 
-#undef LC // Y(bi, si), still defined.
+// Y(bi, si) and LC(bi, si) still defined.
 
 
 %for token, imaj, imin in [\
@@ -300,6 +302,7 @@ void
 ReactionDiffusion::${token}(double t, const double * const restrict y,
                             double * const restrict ja, int ldj) const
 {
+    // Note: does not return a strictly correct Jacobian, only 1 pair of bands.
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
@@ -345,11 +348,20 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
+            int centerli = min((int)bi, max(((int)nstencil - 1)/2, (int)bi-(int)N+(int)nstencil));
+                //max(0, min((int)N - (int)nstencil, (int)bi - ((int)nstencil - 1)/2));
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
-                JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, (nstencil-1)/2)*( (logy) ? exp(Y(bi, si)) : 1 );
-                if (bi > 0) JAC(bi, bi-1, si, si) = D[si]*D_WEIGHT(bi, (nstencil-1)/2-1)*( (logy) ? exp(Y(bi-1,si)-Y(bi,si)) : 1 );
-                if (bi < N-1) JAC(bi, bi+1, si, si)  = D[si]*D_WEIGHT(bi, (nstencil-1)/2+1)*( (logy) ? exp(Y(bi+1,si)-Y(bi,si)) : 1 );
+                // Not a strict Jacobian only diagonal plus closest bands...
+                if (!logy)
+                    JAC(bi, bi, si, si) -= D[si]*D_WEIGHT(bi, centerli);
+                //*( (logy) ? exp(Y(bi, si)) : 1 );
+                if (bi > 0)
+                    JAC(bi, bi-1, si, si) = -D[si]*D_WEIGHT(bi, centerli - 1)*\
+                        ( (logy) ? exp(Y(bi-1, si) - Y(bi, si)) : 1 );
+                if (bi < N-1)
+                    JAC(bi, bi+1, si, si)  = -D[si]*D_WEIGHT(bi, centerli + 1)*\
+                        ( (logy) ? exp(Y(bi+1, si) - Y(bi, si)) : 1 );
             }
         }
 
@@ -366,14 +378,6 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
                     JAC(bi, bi+1, si, si) *= exp(t);
             }
         }
-
-        // Logrithmic concentrations
-        // ----------------------------
-        if (logy){
-            for (uint si=0; si<n; ++si)
-                JAC(bi, bi, si, si) -= fout[bi*n+si];
-        }
-
         ${'delete []local_r;' if USE_OPENMP else ''}
     }
     ${'delete []local_r;' if not USE_OPENMP else ''}
@@ -382,6 +386,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 }
 #undef JAC
 %endfor
+#undef LC 
 #undef Y
 #undef D_WEIGHT
 

@@ -10,7 +10,7 @@ enum class Geom {FLAT, CYLINDRICAL, SPHERICAL}; // Geom:: -> GEOM_
 
 namespace chemreac {
 
-#define ALIGNED16 __attribute__((aligned(16)))
+#define ALIGNED16 
 
 
 class ReactionDiffusion
@@ -32,8 +32,6 @@ public:
     double diffusion_contrib_jac_prev(int bi) const;
     double diffusion_contrib_jac_next(int bi) const;
     void _apply_fd(int, int);
-    double * const restrict liny ALIGNED16;
-    const int nliny;
     
 public:
     const uint n; // number of species
