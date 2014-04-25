@@ -168,21 +168,15 @@ void ReactionDiffusion::_apply_fd(uint bi){
     double * c = new double[3*nstencil];
     double * lxc = new double[nstencil]; // local shifted x-centers
     uint nsidep = (nstencil-1)/2;
-    std::cout << "nsidep " << nsidep << std::endl; // DEBUG
-    std::cout << "lrefl " << lrefl << std::endl; // DEBUG
-    std::cout << "rrefl " << rrefl << std::endl; // DEBUG
     uint around = bi + nsidep;
     uint start  = bi;
-    std::cout << "bi " << bi << std::endl; // DEBUG
     if (!lrefl) // shifted finite diff
         start = max(nsidep, start);
     if (!rrefl) // shifted finite diff
         start = min(N-nstencil+nsidep, bi);
-    std::cout << "start " << start << std::endl; // DEBUG
 
     for (uint li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
-    PRINT_ARR(lxc, nstencil) // DEBUG
     fornberg_populate_weights(0, lxc, nstencil-1, 2, c);
     delete []lxc;
 

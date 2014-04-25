@@ -122,7 +122,7 @@ def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom=
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt,1))
-    yref = analytic(sys.xcenters, t, D, mu)
+    yref = (xend-x0)**2*analytic(sys.xcenters, t, D, mu)
     if decay: yref = interleave((yref*np.exp(-k*t), yref*(1-np.exp(-k*t))), axis=1)
     y0 = yref[0,:]
 
@@ -160,9 +160,9 @@ def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom=
         if decay: plot((yref[i,1::stride]-yout[i,1::stride])/info['atol'], c[::-1])
 
     plt.subplot(4,1,4)
-    plt.plot(tout, np.sum((yref[:,::stride]-yout[:,::stride])**2/N, axis=1)**0.5/info['atol'])
+    plt.plot(tout, np.sum((yref[:,::stride]-yout[:,::stride])**2/N, axis=1)**0.5/info['atol'], 'r')
     if decay: plt.plot(tout, np.sum((yref[:,::stride]-yout[:,1::stride])**2/N,
-                                    axis=1)**0.5/info['atol'])
+                                    axis=1)**0.5/info['atol'], 'b')
     plt.xlabel('Time / s')
     plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
     plt.tight_layout()
