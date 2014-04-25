@@ -57,7 +57,7 @@ else:
                         'std': 'c++11',
                         'options': ['pic', 'warn', 'fast'] +\
                         (['openmp'] if USE_OPENMP else []),
-                        'defmacros': ['restrict=__restrict__']+\
+                        'defmacros': ['restrict=__restrict__', 'DEBUG']+\
                         (['DEBUG'] if DEBUG else []),
                     },
                 },

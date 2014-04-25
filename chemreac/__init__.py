@@ -20,7 +20,8 @@ class ReactionDiffusion(PyReactionDiffusion):
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
                 stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
-                geom=FLAT, logy=False, logt=False, nstencil=3, **kwargs):
+                geom=FLAT, logy=False, logt=False, nstencil=3, lrefl=False,
+                rrefl=False, **kwargs):
         """
         Arguments:
         -`n`: number of species
@@ -115,7 +116,7 @@ class ReactionDiffusion(PyReactionDiffusion):
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N, D_val, _x,
             _stoich_actv, bin_k_factor, bin_k_factor_span, geom, logy,
-            logt, nstencil
+            logt, nstencil, lrefl, rrefl
         )
         rd.k_err = k_err
         rd.D_err = D_err

@@ -23,7 +23,7 @@ Demo of chemical reaction diffusion system.
 
 # <geometric_diffusion.png>
 
-def main(tend=10.0, N=25, nt=30):
+def main(tend=10.0, N=25, nt=30, nstencil=3, lrefl=False, rrefl=False):
     x = np.linspace(0.1, 1.0, N+1)
     y0 = (x[0]/2+x[1:])**2
 
@@ -37,7 +37,8 @@ def main(tend=10.0, N=25, nt=30):
     res = []
 
     for G in geoms:
-        sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=G)
+        sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x,
+                                geom=G, nstencil=nstencil, lrefl=lrefl, rrefl=rrefl)
         yout, info = run(sys, y0, tout)
         res.append(yout)
 

@@ -9,12 +9,12 @@
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include "chemreac.h"
-#include "c_fornberg.h"
+#include "c_fornberg.h" // fintie differences
 
 #ifdef DEBUG
 #include <cstdio>
 #include <iostream>
-#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " " << std::endl;};
+#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
 #endif
 
 %if USE_OPENMP:
@@ -51,15 +51,19 @@ ReactionDiffusion::ReactionDiffusion(
     int geom_,
     bool logy,
     bool logt,
-    uint nstencil
+    uint nstencil,
+    bool lrefl,
+    bool rrefl
     ):
     n(n), N(N), nstencil(nstencil), nr(stoich_reac.size()),
     logy(logy), logt(logt), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), x(x), bin_k_factor(bin_k_factor), 
-    bin_k_factor_span(bin_k_factor_span)
+    bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl)
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
+    if (nstencil % 2 == 0) throw std::logic_error("Only odd number of stencil points supported");
+    if ((N == 1) && (nstencil != 1)) throw std::logic_error("You must set nstencil=1 for N=1");
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
             "stoich_reac and stoich_prod of different sizes.");
@@ -90,17 +94,20 @@ ReactionDiffusion::ReactionDiffusion(
     }
 
     // Finite difference scheme
-    xc = new double[N];
-    for (uint i=0; i<N; ++i) xc[i] = (x[i+1] + x[i])/2;
+    xc = new double[N+nstencil-1];
+    for (uint i=0; i<N; ++i) xc[i+(nstencil-1)/2] = (x[i+1] + x[i])/2;
+    for (uint i=0; i<(nstencil-1)/2; ++i){
+        // reflection
+        int nsidep = (nstencil-1)/2;
+        xc[nsidep-i-1] = xc[nsidep-i] - (xc[nsidep-i+1] - xc[nsidep-i]);
+        xc[N+nsidep+i] = xc[N+nsidep+i-1] + (xc[N+nsidep+i-1] - xc[N+nsidep+i-2]);
+    }
     D_weight = new double[nstencil*N];
 
-    for (uint bi=0; bi<N; bi++){
-        // Precalc coeffs for Jacobian for current geom.
-        // not centered diffs close to boundaries
-        _apply_fd(bi, max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2)));
-    }
-
-    //    nr = stoich_reac.size();
+    // Precalc coeffs for Jacobian for current geom.
+    // not centered diffs close to boundaries
+    for (uint bi=0; bi<N; bi++)
+        _apply_fd(bi);
 
     for (uint ri=0; ri<nr; ++ri){
         for (auto si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
@@ -157,22 +164,36 @@ ReactionDiffusion::~ReactionDiffusion()
 
 #define D_WEIGHT(bi, j) D_weight[nstencil*(bi) + j]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
-void ReactionDiffusion::_apply_fd(int around, int start){
+void ReactionDiffusion::_apply_fd(uint bi){
     double * c = new double[3*nstencil];
     double * lxc = new double[nstencil]; // local shifted x-centers
+    uint nsidep = (nstencil-1)/2;
+    std::cout << "nsidep " << nsidep << std::endl; // DEBUG
+    std::cout << "lrefl " << lrefl << std::endl; // DEBUG
+    std::cout << "rrefl " << rrefl << std::endl; // DEBUG
+    uint around = bi + nsidep;
+    uint start  = bi;
+    std::cout << "bi " << bi << std::endl; // DEBUG
+    if (!lrefl) // shifted finite diff
+        start = max(nsidep, start);
+    if (!rrefl) // shifted finite diff
+        start = min(N-nstencil+nsidep, bi);
+    std::cout << "start " << start << std::endl; // DEBUG
+
     for (uint li=0; li<nstencil; ++li) // li: local index
-        lxc[li] = xc[start+li]-xc[around];
+        lxc[li] = xc[start + li] - xc[around];
+    PRINT_ARR(lxc, nstencil) // DEBUG
     fornberg_populate_weights(0, lxc, nstencil-1, 2, c);
     delete []lxc;
 
     for (uint li=0; li<nstencil; ++li){ // li: local index
-        D_WEIGHT(around, li) = FDWEIGHT(2, li);
+        D_WEIGHT(bi, li) = FDWEIGHT(2, li);
         switch(geom){
         case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
-            D_WEIGHT(around, li) += FDWEIGHT(1, li)*1/xc[around];
+            D_WEIGHT(bi, li) += FDWEIGHT(1, li)*1/xc[around];
             break;
         case Geom::SPHERICAL: // Laplace operator in sph coords.
-            D_WEIGHT(around, li) += FDWEIGHT(1, li)*2/xc[around];
+            D_WEIGHT(bi, li) += FDWEIGHT(1, li)*2/xc[around];
             break;
         default:
             break;
@@ -256,14 +277,29 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
-            int starti = max(0, min((int)N-(int)nstencil, (int)bi-((int)nstencil-1)/2));
+            uint nsidep = (nstencil-1)/2;
+            int starti;
+            if ((bi < nsidep) && (!lrefl)){
+                starti = 0;
+            } else if ((bi >= N-nsidep) && (!rrefl)){
+                starti = N-nstencil;
+            } else{
+                starti = bi-nsidep;
+            }
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
                 double tmp = 0;
                 for (uint xi=0; xi<nstencil; ++xi){
-                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(starti+xi, si) : Y(starti+xi, si));
+                    int biw = starti + xi;
+                    // reflective logic:
+                    if (starti < 0)
+                        biw = abs(biw); // lrefl==true
+                    else if (starti >= N-nsidep)
+                        biw = N - 1 - abs(N-1-biw); // rrefl==true
+
+                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(biw, si) : Y(biw, si));
                 }
-                DYDT(bi, si) -= D[si]*tmp;
+                DYDT(bi, si) += D[si]*tmp;
             }
         }
         if (logy){
@@ -348,19 +384,18 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
+            // reflctive logic goes into centerli...
             int centerli = min((int)bi, max(((int)nstencil - 1)/2, (int)bi-(int)N+(int)nstencil));
-                //max(0, min((int)N - (int)nstencil, (int)bi - ((int)nstencil - 1)/2));
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
                 // Not a strict Jacobian only diagonal plus closest bands...
                 if (!logy)
-                    JAC(bi, bi, si, si) -= D[si]*D_WEIGHT(bi, centerli);
-                //*( (logy) ? exp(Y(bi, si)) : 1 );
+                    JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli);
                 if (bi > 0)
-                    JAC(bi, bi-1, si, si) = -D[si]*D_WEIGHT(bi, centerli - 1)*\
+                    JAC(bi, bi-1, si, si) = D[si]*D_WEIGHT(bi, centerli - 1)*\
                         ( (logy) ? exp(Y(bi-1, si) - Y(bi, si)) : 1 );
                 if (bi < N-1)
-                    JAC(bi, bi+1, si, si)  = -D[si]*D_WEIGHT(bi, centerli + 1)*\
+                    JAC(bi, bi+1, si, si)  = D[si]*D_WEIGHT(bi, centerli + 1)*\
                         ( (logy) ? exp(Y(bi+1, si) - Y(bi, si)) : 1 );
             }
         }

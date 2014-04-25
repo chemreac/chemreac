@@ -31,7 +31,7 @@ public:
     double diffusion_contrib(int bi, int si, const double * const restrict fluxes) const;
     double diffusion_contrib_jac_prev(int bi) const;
     double diffusion_contrib_jac_next(int bi) const;
-    void _apply_fd(int, int);
+    void _apply_fd(uint);
     
 public:
     const uint n; // number of species
@@ -48,7 +48,8 @@ public:
     const vector<double> x; // Bin edges (length = N+1)
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
     vector<uint> bin_k_factor_span; // 
-    double * xc; // bin centers (length = N-1)
+    bool lrefl, rrefl;
+    double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
 
     ReactionDiffusion(uint, 
 		      const vector<vector<uint> >, 
@@ -63,7 +64,9 @@ public:
 		      int,
 		      bool,
 		      bool,
-                      uint nstencil = 3);
+                      uint nstencil = 3,
+                      bool lrefl=false,
+                      bool rrefl=false);
     ~ReactionDiffusion();
     void f(double, const double * const restrict, double * const restrict) const;
     void dense_jac_rmaj(double, const double * const restrict, double * const restrict, int) const;

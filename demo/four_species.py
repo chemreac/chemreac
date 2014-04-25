@@ -5,8 +5,8 @@ import argh
 import numpy as np
 import matplotlib.pyplot as plt
 
-from chemreac.serialization import load
 from chemreac import DENSE, BANDED, SPARSE
+from chemreac.serialization import load
 from chemreac.integrate import run
 from chemreac.util.plotting import coloured_spy
 from chemreac.util.analysis import plot_jacobian, plot_per_reaction_contribution
@@ -44,20 +44,21 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
         if mode == DENSE:
             jout = np.zeros((sys.n*sys.N, sys.n*sys.N), order='F')
             sys.dense_jac_cmaj(t0, y0, jout)
-            coloured_spy(np.log(jout))
+            coloured_spy(np.log(np.abs(jout)))
         elif mode == BANDED:
-            jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F') # note sys.n*3 needed in actual call
+            # note sys.n*3 needed in call from scipy.integrate.ode
+            jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F')
             sys.banded_packed_jac_cmaj(t0, y0, jout)
-            coloured_spy(np.log(jout))
+            coloured_spy(np.log(np.abs(jout)))
+        print(jout)
         plt.show()
-
     else:
-
         tout = np.linspace(t0, tend, nt)
         y = np.log(y0) if logy else y0
         t = np.log(tout) if logt else tout
         yout, info = run(sys, y, t)
-        if logy: yout = np.exp(yout)
+        if logy:
+            yout = np.exp(yout)
         if plot:
             for i,l in enumerate('ABCD'):
                 plt.plot(tout, yout[:,i], label=l)
@@ -67,25 +68,28 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
             else:
                 plt.savefig(__file__[:-2]+'png')
 
+            plt.figure(figsize=(8,10))
             plot_jacobian(
                 sys,
                 np.log(tout) if sys.logt else tout,
                 np.log(yout) if sys.logy else yout,
-                map(sys.names.index, 'ABCD'),
-                sys.names,
+                'ABCD',
+                limit=1e-10
             )
+            plt.tight_layout()
             if show:
                 plt.show()
             else:
                 plt.savefig(__file__[:-3]+'_jacobian.png')
 
+            plt.figure(figsize=(8,10))
             plot_per_reaction_contribution(
                 sys,
                 np.log(tout) if sys.logt else tout,
                 np.log(yout) if sys.logy else yout,
-                map(sys.names.index, 'ABCD'),
-                sys.names,
+                'ABCD'
             )
+            plt.tight_layout()
             if show:
                 plt.show()
             else:

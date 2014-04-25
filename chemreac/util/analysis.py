@@ -3,6 +3,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+from chemreac.util.banded import get_jac_row_from_banded
+
 ls=['-',':','--', '-.']
 c='krgbycm'
 
@@ -31,12 +33,13 @@ def _plot_analysis(cb, labels, sys, tout, yout, indices, axes=None,
     return axes
 
 
-def _get_jac_row(sys, tout, yout, indices):
-    Jtmp = np.zeros((sys.n*2+1, sys.n*sys.N), order='F')
+def _get_jac_row_over_t(sys, tout, yout, indices, bi=0):
+    Jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F')
     row_out = np.zeros((yout.shape[0], len(indices), sys.n))
     for i, y in enumerate(yout):
-        sys.banded_packed_jac_cmaj(tout[i], y, Jtmp)
-        row_out[i,:,:] = Jtmp[indices,:]
+        sys.banded_packed_jac_cmaj(tout[i], y, Jout)
+        Jtmp = Jout[:, bi*sys.n:(bi + 1)*sys.n]
+        row_out[i,:,:] = get_jac_row_from_banded(Jtmp, indices, sys.n)
     return row_out
 
 
@@ -52,11 +55,11 @@ def plot_jacobian(sys, tout, yout, substances, **kwargs):
     indices = [ri if isinstance(ri, int) else sys.names.index(ri) for\
                ri in substances]
     print_names = sys.tex_names or sys.names
-    axes = _plot_analysis(_get_jac_row, print_names, sys, tout,
+    axes = _plot_analysis(_get_jac_row_over_t, print_names, sys, tout,
                    yout, indices, titles=[print_names[i] for i in indices],
                           **kwargs)
     [ax.set_ylabel(
-        "Jacobian element $\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")\
+        "$\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")
      for ax in axes]
 
 
@@ -68,7 +71,7 @@ def plot_per_reaction_contribution(sys, tout, yout, substances, **kwargs):
     axes = _plot_analysis(
         _get_per_func_out,
         [('*R' if i<np.sum(sys.bin_k_factor_span) else 'R')+str(i) + ': ' + \
-         sys.to_Reaction(i).render(dict(zip(sys.names, print_names))) for \
+         sys.to_Reaction(i).render(dict(zip(sys.names, print_names))) for
          i in range(sys.nr)],
         sys, tout, yout, indices,
         titles=[print_names[i] for i in indices], **kwargs)
@@ -139,7 +142,7 @@ def plot_C_vs_t_and_x(sys, tout, yout, substance, ax=None, log10=False,
     ax = ax or plt.subplot(1,1,1, projection='3d')
     assert isinstance(ax, Axes3D)
 
-    xty = [sys.xc, tout, yout]
+    xty = [sys.xcenters, tout, yout]
     x_, t_, y_ = map(np.log10, xty) if log10 else xty
     X,T = np.meshgrid(x_, t_)
     if not 'cmap' in plot_kwargs: plot_kwargs['cmap'] = cm.gist_earth

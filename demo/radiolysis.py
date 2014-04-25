@@ -50,13 +50,13 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024,
 
     if plot:
         import matplotlib.pyplot as plt
-        bt_fmtstr = "C(t) with local doserate {}"
+        bt_fmtstr = "C(t) in bin {{0:.2g}}-{{1:.2g}} with local doserate {}"
         ax = plt.subplot(2,1,1)
         plot_C_vs_t_in_bin(sys, tout, yout, 0, ax, substances=('H2', 'H2O2'),
-                           basetitle=bt_fmtstr.format(sys.bin_k_factor[0][0]))
+                           ttlfmt=bt_fmtstr.format(sys.bin_k_factor[0][0]))
         ax = plt.subplot(2,1,2)
         plot_C_vs_t_in_bin(sys, tout, yout, N-1, ax, substances=('H2', 'H2O2'),
-                           basetitle=bt_fmtstr.format(sys.bin_k_factor[N-1][0]))
+                           ttlfmt=bt_fmtstr.format(sys.bin_k_factor[N-1][0]))
         plt.tight_layout()
         if show:
             plt.show()
