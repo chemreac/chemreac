@@ -47,33 +47,6 @@ def test_serialization():
     assert rd.D.tolist() == [0.1, 0.2, 0.3]
 
 
-combos = list(product([True, False], [True, False], range(1,4), [FLAT, SPHERICAL, CYLINDRICAL]))
-@pytest.mark.parametrize("combo", combos)
-def test_integrate(combo):
-    logy, logt, N, geom = combo
-    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
-
-    y0 = np.array(C0*N)
-
-    ref = np.genfromtxt(BLESSED_PATH)
-    ref_t = ref[:,0]
-    ref_y = ref[:,1:rd.n+1]
-
-    t0 = 3.0
-    tend=5.0+t0
-    nt=137
-    tout = np.linspace(t0, tend, nt+1)
-    assert np.allclose(tout-t0, ref_t)
-
-    y = np.log(y0) if logy else y0
-    if logt:
-        tout = np.log(tout)
-    yout, info = run(rd, y, tout)
-    if logy: yout = np.exp(yout)
-
-    assert np.allclose(yout[:,:rd.n], ref_y, atol=1e-5)
-
-
 def _get_ref_f(rd, t0, y0, logy, logt):
     k = rd.k[0]
     A, B, C = y0
@@ -84,6 +57,7 @@ def _get_ref_f(rd, t0, y0, logy, logt):
     if logt:
         ref_f *= t0
     return ref_f
+
 
 def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
     k = rd.k[0]
@@ -174,3 +148,30 @@ def test_chemistry():
     assert rd.stoich_actv == serialized_rd.stoich_actv
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
+
+
+combos = list(product([True, False], [True, False], [1, 3, 4], [FLAT, SPHERICAL, CYLINDRICAL]))
+@pytest.mark.parametrize("combo", combos)
+def test_integrate(combo):
+    logy, logt, N, geom = combo
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
+
+    y0 = np.array(C0*N)
+
+    ref = np.genfromtxt(BLESSED_PATH)
+    ref_t = ref[:,0]
+    ref_y = ref[:,1:rd.n+1]
+
+    t0 = 3.0
+    tend=5.0+t0
+    nt=137
+    tout = np.linspace(t0, tend, nt+1)
+    assert np.allclose(tout-t0, ref_t)
+
+    y = np.log(y0) if logy else y0
+    if logt:
+        tout = np.log(tout)
+    yout, info = run(rd, y, tout)
+    if logy: yout = np.exp(yout)
+
+    assert np.allclose(yout[:,:rd.n], ref_y, atol=1e-5)

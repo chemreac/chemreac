@@ -43,7 +43,7 @@ def test_decay(log):
 
 
 def test_autodimerization():
-    # A + A -> B 
+    # A + A -> B
     from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
     sbstncs = mk_sn_dict_from_names('AB')
     k = 3.0
@@ -70,8 +70,9 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     n = 8
     nr = 4
     D = np.zeros(n)
-    x = np.linspace(3,7,N)
-    bkf = [(x[i]*x[i], x[i]**0.5) for i in range(N)]
+    x = np.linspace(3,7,N+1)
+    xc = x[:-1] + np.diff(x)/2
+    bkf = [(xc[i]*xc[i], xc[i]**0.5) for i in range(N)]
     bkf_span = [2,1]
     rd = ReactionDiffusion(
         n,
@@ -87,14 +88,14 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
 
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(rd, y, t)
+    yout, info = run(rd, y, t, atol=1e-11, rtol=1e-11)
     if logy: yout = np.exp(yout)
 
     def _get_bkf(bi, ri):
         if ri < 2:
-            return x[bi]*x[bi]
+            return xc[bi]*xc[bi]
         elif ri < 3:
-            return x[bi]**0.5
+            return xc[bi]**0.5
         else:
             return 1.0
 
@@ -103,30 +104,32 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
             np.array([
                 y0[i]*np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)),
                 y0[i+1]+y0[i]*(1-np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)))
-            ]).transpose() for i in range(0,n,2)
+            ]).transpose() for i in range(0, n, 2)
         ]) for bi in range(N)])
     assert np.allclose(yout, yref)
 
 
-@pytest.mark.parametrize("N", range(2,17))
-def test_integrate__only_1_species_diffusion__mass_conservation(N):
+@pytest.mark.parametrize("N_geom", product(range(5,13), (FLAT, CYLINDRICAL, SPHERICAL)))
+def test_integrate__only_1_species_diffusion__mass_conservation(N_geom):
+    N, geom = N_geom
     # Test that mass convervation is fulfilled wrt diffusion.
-    x = np.linspace(0.1, 1.0, N+1)
+    x = np.linspace(0.01, 1.0, N+1)
     y0 = (x[0]/2+x[1:])**2
 
-    geoms = (FLAT, SPHERICAL, CYLINDRICAL)
+    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=geom, nstencil=3)
+    tout = np.linspace(0, 10.0, 50)
+    yout, info = run(sys, y0, tout, atol=1e-12, rtol=1e-13)
+    if geom == FLAT:
+        yprim = yout
+    elif geom == CYLINDRICAL:
+        yprim = yout*(x[1:]**2 - x[:-1]**2)
+    elif geom == SPHERICAL:
+        yprim = yout*(x[1:]**3 - x[:-1]**3)
+    else:
+        raise
 
-    for i, G in enumerate(geoms):
-        sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=G)
-        tout = np.linspace(0, 10.0, 50)
-        yout, info = run(sys, y0, tout)
-        if i == 0:
-            yprim = yout
-        elif i == 1:
-            yprim = yout*(x[1:]**3-x[:-1]**3)
-        else:
-            yprim = yout*(x[1:]**2-x[:-1]**2)
+    ybis = np.sum(yprim, axis=1)
 
-        ybis = np.sum(yprim, axis=1)
-
-        assert np.allclose(np.average(ybis), ybis)
+    print(y0)
+    print(np.average(ybis) - ybis)
+    assert np.allclose(np.average(ybis), ybis)

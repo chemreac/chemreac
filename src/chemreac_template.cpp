@@ -9,7 +9,7 @@
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include "chemreac.h"
-#include "c_fornberg.h" // fintie differences
+#include "c_fornberg.h" // fintie differences (remember to link fortran object fornberg.o)
 
 #ifdef DEBUG
 #include <cstdio>
@@ -19,12 +19,12 @@
 
 %if USE_OPENMP:
 #ifndef _OPENMP
-  #error
+  #error "Have you forgotten -fopenmp flag?"
 #endif
 #include <omp.h>
 %else:
 #ifdef _OPENMP
-  #error
+  #error "You should render OpenMP enabled sources"
 #endif
 #define omp_get_thread_num() 0
 %endif
@@ -42,7 +42,7 @@ ReactionDiffusion::ReactionDiffusion(
     const vector<vector<uint> > stoich_reac,
     const vector<vector<uint> > stoich_prod,
     vector<double> k,
-    uint N, 
+    uint N,
     vector<double> D,
     const vector<double> x, // separation
     vector<vector<uint> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
@@ -55,9 +55,9 @@ ReactionDiffusion::ReactionDiffusion(
     bool lrefl,
     bool rrefl
     ):
-    n(n), N(N), nstencil(nstencil), nr(stoich_reac.size()),
+    n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
-    k(k),  D(D), x(x), bin_k_factor(bin_k_factor), 
+    k(k),  D(D), x(x), bin_k_factor(bin_k_factor),
     bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl)
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
@@ -93,22 +93,26 @@ ReactionDiffusion::ReactionDiffusion(
         throw std::logic_error("Unknown geom.");
     }
 
+
     // Finite difference scheme
-    xc = new double[N+nstencil-1];
-    for (uint i=0; i<N; ++i) xc[i+(nstencil-1)/2] = (x[i+1] + x[i])/2;
-    for (uint i=0; i<(nstencil-1)/2; ++i){
-        // reflection
-        int nsidep = (nstencil-1)/2;
-        xc[nsidep-i-1] = xc[nsidep-i] - (xc[nsidep-i+1] - xc[nsidep-i]);
-        xc[N+nsidep+i] = xc[N+nsidep+i-1] + (xc[N+nsidep+i-1] - xc[N+nsidep+i-2]);
-    }
     D_weight = new double[nstencil*N];
+    xc = new double[nsidep + N + nsidep]; // xc padded with virtual bins
+    for (uint i=0; i<N; ++i)
+        xc[nsidep + i] = (x[i] + x[i + 1])/2;
+
+    for (uint i=0; i<nsidep; ++i){
+        // reflection
+        xc[nsidep - i - 1] = 2*x[0] - xc[nsidep + i];
+        xc[nsidep + i + N] = 2*x[N] - xc[nsidep + N - i - 1];
+    }
 
     // Precalc coeffs for Jacobian for current geom.
     // not centered diffs close to boundaries
     for (uint bi=0; bi<N; bi++)
         _apply_fd(bi);
 
+
+    // Stoichiometry
     for (uint ri=0; ri<nr; ++ri){
         for (auto si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
             if (*si > n-1)
@@ -127,17 +131,17 @@ ReactionDiffusion::ReactionDiffusion(
     coeff_actv = new int[nr*n];
 
     stoich_actv.reserve(nr);
-    for (uint rxni=0; rxni<nr; ++rxni){ // reaction index 
+    for (uint rxni=0; rxni<nr; ++rxni){ // reaction index
         if (stoich_actv_[rxni].size() == 0)
             stoich_actv.push_back(stoich_reac[rxni]); // massaction
     else
         stoich_actv.push_back(stoich_actv_[rxni]);
         for (uint si=0; si<n; ++si){ // species index
-            coeff_reac[rxni*n+si] = count(stoich_reac[rxni].begin(), 
+            coeff_reac[rxni*n+si] = count(stoich_reac[rxni].begin(),
                                         stoich_reac[rxni].end(), si);
-            coeff_actv[rxni*n+si] = count(stoich_actv[rxni].begin(), 
+            coeff_actv[rxni*n+si] = count(stoich_actv[rxni].begin(),
                                         stoich_actv[rxni].end(), si);
-            coeff_prod[rxni*n+si] = count(stoich_prod[rxni].begin(), 
+            coeff_prod[rxni*n+si] = count(stoich_prod[rxni].begin(),
                                         stoich_prod[rxni].end(), si);
             coeff_totl[rxni*n+si] = coeff_prod[rxni*n+si] -\
                 coeff_reac[rxni*n+si];
@@ -162,19 +166,17 @@ ReactionDiffusion::~ReactionDiffusion()
 }
 
 
-#define D_WEIGHT(bi, j) D_weight[nstencil*(bi) + j]
+#define D_WEIGHT(bi, li) D_weight[nstencil*(bi) + li]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
 void ReactionDiffusion::_apply_fd(uint bi){
-    double * c = new double[3*nstencil];
-    double * lxc = new double[nstencil]; // local shifted x-centers
-    uint nsidep = (nstencil-1)/2;
+    double * const c = new double[3*nstencil];
+    double * const lxc = new double[nstencil]; // local shifted x-centers
     uint around = bi + nsidep;
     uint start  = bi;
     if (!lrefl) // shifted finite diff
         start = max(nsidep, start);
     if (!rrefl) // shifted finite diff
-        start = min(N-nstencil+nsidep, bi);
-
+        start = min(N - nstencil + nsidep, start);
     for (uint li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
     fornberg_populate_weights(0, lxc, nstencil-1, 2, c);
@@ -196,6 +198,7 @@ void ReactionDiffusion::_apply_fd(uint bi){
     delete []c;
 }
 #undef FDWEIGHT
+// D_WEIGHT still defined
 
 #define FACTOR(ri, bi) ( ((ri) < n_factor_affected_k) ? \
             bin_k_factor[bi][i_bin_k[ri]] : 1 )
@@ -219,39 +222,50 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
             else
                 local_r[rxni] *= y[bi*n+si];
         }
-
-        local_r[rxni] *= FACTOR(rxni,bi)*k[rxni];
         if (logy)
             local_r[rxni] = exp(local_r[rxni]);
+
+        local_r[rxni] *= FACTOR(rxni, bi)*k[rxni];
     }
 }
 #undef FACTOR
+// D_WEIGHT still defined
 
 // The indices of x, fluxes and bins
 // <indices.png>
 
 #define Y(bi, si) y[(bi)*n+(si)]
-#define LC(bi, si) liny[(bi)*n+(si)]
+#define LINC(bi, si) linC[(bi)*n+(si)]
+const double *
+ReactionDiffusion::_alloc_and_populate_linC16(const double * const restrict y) const
+{
+    if (!logy)
+        return nullptr;
+    // logy == True ...
+    int nlinC = 16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0));
+    double * const linC __attribute__((aligned(16))) = (double * const)\
+        (aligned_alloc(16, nlinC*sizeof(double)));
+
+    // TODO: Tune 42...
+    ${"#pragma omp parallel for if (N > 42)" if USE_OPENMP else ""}
+    for (uint bi=0; bi<N; ++bi)
+        for (uint si=0; si<n; ++si)
+            LINC(bi, si) = exp(Y(bi, si));
+    return linC;
+}
+// Y, LINC, D_WEIGHT(bi, li) still defined
+
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
-    double * liny __attribute__((aligned(16))) = nullptr;
-    if ((N > 1) && logy){
-        int nliny = 16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0));
-        liny = (double * const)(aligned_alloc(16,nliny*sizeof(double)));
+    const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC16(y);
 
-        ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
-        for (uint bi=0; bi<N; ++bi)
-            for (uint si=0; si<n; ++si)
-                LC(bi, si) = exp(Y(bi, si));
-    }
-
-    ${"double * local_r = new double[nr];" if not USE_OPENMP else ""}
+    ${"double * const local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         // compartment bi
-        ${"double * local_r = new double[nr];" if USE_OPENMP else ""}
+        ${"double * const local_r = new double[nr];" if USE_OPENMP else ""}
 
         for (uint si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
@@ -271,14 +285,13 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         if (N>1){
             // Contributions from diffusion
             // ----------------------------
-            uint nsidep = (nstencil-1)/2;
             int starti;
             if ((bi < nsidep) && (!lrefl)){
                 starti = 0;
             } else if ((bi >= N-nsidep) && (!rrefl)){
-                starti = N-nstencil;
+                starti = N - nstencil;
             } else{
-                starti = bi-nsidep;
+                starti = bi - nsidep;
             }
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
@@ -286,12 +299,12 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                 for (uint xi=0; xi<nstencil; ++xi){
                     int biw = starti + xi;
                     // reflective logic:
-                    if (starti < 0)
-                        biw = abs(biw); // lrefl==true
-                    else if (starti >= N-nsidep)
-                        biw = N - 1 - abs(N-1-biw); // rrefl==true
-
-                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LC(biw, si) : Y(biw, si));
+                    if (starti < 0){
+                        biw = (biw < 0) ? (-1 - biw) : biw; // lrefl==true
+                    } else if (starti >= (int)N - (int)nstencil + 1){
+                        biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
+                    }
+                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
                 }
                 DYDT(bi, si) += D[si]*tmp;
             }
@@ -299,10 +312,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
         if (logy){
             if (logt)
                 for (uint si=0; si<n; ++si)
-                    DYDT(bi, si) *= exp(t-Y(bi,si));
+                    DYDT(bi, si) *= exp(t-Y(bi, si));
             else
                 for (uint si=0; si<n; ++si)
-                    DYDT(bi, si) *= exp(-Y(bi,si));
+                    //DYDT(bi, si) *= exp(-Y(bi, si));
+                    DYDT(bi, si) /= LINC(bi, si);
         } else {
             if (logt)
                 for (uint si=0; si<n; ++si)
@@ -315,12 +329,12 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     ${"delete []local_r;" if not USE_OPENMP else ""}
 
     if ((N > 2) && logy)
-        free((void*)liny);
+        free((void*)linC);
 }
-#undef DCDT 
-// Y(bi, si) and LC(bi, si) still defined.
+#undef DYDT
+// D_WEIGHT(bi, li), Y(bi, si) and LINC(bi, si) still defined.
 
-
+#define FOUT(bi, si) fout[(bi)*n+si]
 %for token, imaj, imin in [\
     ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
     ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
@@ -337,18 +351,17 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding)
-    double * restrict fout = nullptr;
-    if (logy){
-        fout = new double[n*N];
-        f(t, y, fout);
-    }
+    double * const restrict fout = (logy) ? new double[n*N] : nullptr;
+    if (fout != nullptr) f(t, y, fout);
 
-    ${'double * local_r = new double[nr];' if not USE_OPENMP else ''}
+    const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC16(y);
+
+    ${'double * const local_r = new double[nr];' if not USE_OPENMP else ''}
     ${'#pragma omp parallel for' if USE_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
-        ${'double * local_r = new double[nr];' if USE_OPENMP else ''}
-    
+        ${'double * const local_r = new double[nr];' if USE_OPENMP else ''}
+
         // Contributions from reactions
         // ----------------------------
         _fill_local_r(bi, y, local_r);
@@ -357,54 +370,92 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
             for (uint dsi=0; dsi<n; ++dsi){
                 // derivative wrt species dsi
                 // j_i[si, dsi] = Sum_l(n_lj*Derivative(r[l], local_y[dsi]))
-                JAC(bi,bi,si,dsi) = 0.0;
+                JAC(bi, bi, si, dsi) = 0.0;
                 for (uint rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
                     if (coeff_totl[rxni*n + si] == 0)
-                        continue; // si unaffected by reaction
+                        continue; // species si unaffected by reaction
                     if (coeff_actv[rxni*n + dsi] == 0)
-                        continue; // rate of reaction unaffected by dsi
+                        continue; // rate of reaction unaffected by species dsi
                     double tmp = coeff_totl[rxni*n + si]*\
                     coeff_actv[rxni*n + dsi]*local_r[rxni];
                     if (!logy)
-                        tmp /= Y(bi,dsi);
-                    JAC(bi,bi,si,dsi) += tmp;
+                        tmp /= Y(bi, dsi);
+                    JAC(bi, bi, si, dsi) += tmp;
                 }
                 if (logy)
-                    JAC(bi,bi,si,dsi) *= exp(-Y(bi,si));
+                    //JAC(bi, bi, si, dsi) *= exp(-Y(bi, si));
+                    JAC(bi, bi, si, dsi) /= LINC(bi, si);
             }
         }
 
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
-            // reflctive logic goes into centerli...
-            int centerli = min((int)bi, max(((int)nstencil - 1)/2, (int)bi-(int)N+(int)nstencil));
+            // reflective logic goes into centerli...
+            int centerli = nsidep;
+            if (bi < nsidep && !lrefl)
+                centerli = bi;
+            if (bi > N - 1 - nsidep && !rrefl)
+                centerli = bi - N + nstencil;
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
-                // Not a strict Jacobian only diagonal plus closest bands...
-                if (!logy)
+                // Not a strict Jacobian only block diagonal plus closest bands...
+                if (logy){
+                    // // Diagonal
+                    // if (bi > 0 || !lrefl){
+                    //     JAC(bi, bi, si, si) -= D[si]*D_WEIGHT(bi, centerli-1)*\
+                    //         LINC(bi-1, si)/LINC(bi, si);
+                    //     std::cout << bi << " " << JAC(bi, bi, si, si) << std::endl;
+                    // }
+                    // if (bi < N-1 || !rrefl){
+                    //     JAC(bi, bi, si, si) -= D[si]*D_WEIGHT(bi, centerli+1)*\
+                    //         LINC(bi+1, si)/LINC(bi, si);
+                    //     std::cout << bi << " " << JAC(bi, bi, si, si) << std::endl;
+                    // }
+                    JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli); // -FOUT later..
+                    if (bi == 0 && lrefl)
+                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli - 1); // -FOUT later..
+                    if (bi == N-1 && rrefl)
+                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli + 1); // -FOUT later..
+
+                    // Off diagonal
+                    if (bi > 0)
+                        JAC(bi, bi - 1, si, si) = D[si]*D_WEIGHT(bi, centerli - 1)* \
+                            LINC(bi-1, si)/LINC(bi, si);
+                    if (bi < N-1)
+                        JAC(bi, bi + 1, si, si) = D[si]*D_WEIGHT(bi, centerli + 1)* \
+                            LINC(bi+1, si)/LINC(bi, si);
+                } else {
+                    // Diagonal
                     JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli);
-                if (bi > 0)
-                    JAC(bi, bi-1, si, si) = D[si]*D_WEIGHT(bi, centerli - 1)*\
-                        ( (logy) ? exp(Y(bi-1, si) - Y(bi, si)) : 1 );
-                if (bi < N-1)
-                    JAC(bi, bi+1, si, si)  = D[si]*D_WEIGHT(bi, centerli + 1)*\
-                        ( (logy) ? exp(Y(bi+1, si) - Y(bi, si)) : 1 );
+                    if (bi == 0 && lrefl)
+                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli - 1);
+                    if (bi == N-1 && rrefl)
+                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli + 1);
+                    // Off diagonal
+                    if (bi > 0)
+                        JAC(bi, bi-1, si, si) = D[si]*D_WEIGHT(bi, centerli - 1);
+                    if (bi < N-1)
+                        JAC(bi, bi+1, si, si) = D[si]*D_WEIGHT(bi, centerli + 1);
+                }
             }
         }
 
         // Logartihmic time
         // ----------------------------
-        if (logt){
+        if (logt || logy){
             for (uint si=0; si<n; ++si){
-                for (uint dsi=0; dsi<n; ++dsi){
-                    JAC(bi, bi, si, dsi) *= exp(t);
+                if (logt){
+                    for (uint dsi=0; dsi<n; ++dsi)
+                        JAC(bi, bi, si, dsi) *= exp(t);
+                    if (bi>0)
+                        JAC(bi, bi - 1, si, si) *= exp(t);
+                    if (bi<N-1)
+                        JAC(bi, bi + 1, si, si) *= exp(t);
                 }
-                if (bi>0)
-                    JAC(bi, bi-1, si, si) *= exp(t);
-                if (bi<N-1)
-                    JAC(bi, bi+1, si, si) *= exp(t);
+                if (logy)
+                    JAC(bi, bi, si, si) -= FOUT(bi, si);
             }
         }
         ${'delete []local_r;' if USE_OPENMP else ''}
@@ -415,14 +466,16 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 }
 #undef JAC
 %endfor
-#undef LC 
+
+#undef FOUT
+#undef LINC
 #undef Y
 #undef D_WEIGHT
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
                                               uint si, double * const restrict out) const
 {
-    double * local_r = new double[nr];
+    double * const local_r = new double[nr];
     _fill_local_r(0, y, local_r);
     for (uint ri=0; ri<nr; ++ri){
 	out[ri] = coeff_totl[ri*n+si]*local_r[ri];

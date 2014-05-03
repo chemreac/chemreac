@@ -32,11 +32,13 @@ public:
     double diffusion_contrib_jac_prev(int bi) const;
     double diffusion_contrib_jac_next(int bi) const;
     void _apply_fd(uint);
-    
+    const double * _alloc_and_populate_linC16(const double * const restrict) const;
+
 public:
     const uint n; // number of species
     const uint N; // number of compartments
     const uint nstencil; // number of points used in finite difference stencil
+    const uint nsidep; // (nstencil-1)/2
     const uint nr; // number of reactions
     bool logy; // use logarithmic concenctraction
     bool logt; // use logarithmic time

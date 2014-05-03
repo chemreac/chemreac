@@ -7,7 +7,7 @@ import sys
 from distutils.core import setup, Command
 
 name_ = 'chemreac'
-version_ = '0.0.5'
+version_ = '0.2.0-dev'
 
 DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
@@ -37,8 +37,6 @@ else:
     from pycompilation.dist import clever_build_ext, CleverExtension
     cmdclass_['build_ext'] = clever_build_ext
     subsd = {'USE_OPENMP': USE_OPENMP}
-    subsd.update(pickle.load(open(os.path.join(
-        os.path.dirname(__file__),'src','exprs.pkl'), 'rb')))
     ext_modules_ = [
         CleverExtension(
             "chemreac._chemreac",

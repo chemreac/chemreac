@@ -17,7 +17,9 @@ TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
 
 def test_autobinary():
-    from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
+    from chemreac.chemistry import (
+        Reaction, ReactionSystem, mk_sn_dict_from_names
+    )
     sbstncs = mk_sn_dict_from_names('AB')
     k = 3.0
     r1 = Reaction({'A': 2}, {'B': 1}, k=k)
@@ -35,21 +37,20 @@ def test_ReactionDiffusion__f__wrong_fout_dimension():
     k = 5.0
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k])
-    fout = np.ones((1,))*99 # fout too small
+    fout = np.ones((1,))*99  # fout too small
     rd.f(0.0, y0, fout)
 
 
 @pytest.mark.xfail
 def test_ReactionDiffusion__too_few_species():
     # Ensure exception raised when referencing species indices > (n-1)
-    y0 = np.array([2.0, 3.0])
-    k = 5.0
     # A -> B
-    n = 1 # wrong: A, B makes 2
-    rd = ReactionDiffusion(1, [[0]], [[1]], [k])
+    n = 1  # wrong: A, B makes 2
+    with pytest.raises(RuntimeError):
+        ReactionDiffusion(n, [[0]], [[1]], [k])
 
 
-@pytest.mark.parametrize("N", [1,3,4])
+@pytest.mark.parametrize("N", [1, 3, 4])
 def test_ReactionDiffusion__only_1_reaction(N):
     t0 = 3.0
     y0 = np.array([2.0, 3.0]*N)
@@ -62,11 +63,11 @@ def test_ReactionDiffusion__only_1_reaction(N):
     for i in range(N):
         assert np.allclose(fout[i*2:(i+1)*2], np.array([-10.0, 10.0]))
 
-    jout = np.zeros((2*N,2*N))
-    jref = np.zeros((2*N,2*N))
+    jout = np.zeros((2*N, 2*N))
+    jref = np.zeros((2*N, 2*N))
     for i in range(N):
-        jref[i*2,  i*2] = -k
-        jref[i*2+1,i*2] =  k
+        jref[i*2,   i*2] = -k
+        jref[i*2+1, i*2] = k
     rd.dense_jac_rmaj(t0, y0, jout)
     assert np.allclose(jout, jref)
 
@@ -75,7 +76,7 @@ def test_ReactionDiffusion__actv_1():
     y0 = np.array([2.0, 3.0, 7.0])
     k = 5.0
     # A + C -(+A)-> B + C
-    rd = ReactionDiffusion(3, [[0,0,2]], [[1,2]], [k], stoich_actv=[[0,2]])
+    rd = ReactionDiffusion(3, [[0, 0, 2]], [[1, 2]], [k], stoich_actv=[[0, 2]])
     fout = np.empty((3,))
     rd.f(0.0, y0, fout)
     r = k*y0[0]*y0[2]
@@ -86,14 +87,16 @@ def test_ReactionDiffusion__actv_2():
     y0 = np.array([2.0, 3.0, 9.0])
     k = 5.0
     # A + C --(+A+5*C)--> B
-    rd = ReactionDiffusion(3, [[0,0,2,2,2,2,2,2]], [[1]], [k], stoich_actv=[[0,2]])
+    rd = ReactionDiffusion(3, [[0, 0, 2, 2, 2, 2, 2, 2]], [[1]], [k],
+                           stoich_actv=[[0, 2]])
     fout = np.empty((3,))
     rd.f(0.0, y0, fout)
     r = k*y0[0]*y0[2]
     assert np.allclose(fout, [-2*r, r, -6*r])
 
+
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
-def test_ReactionDiffusion__refl_3(log):
+def test_ReactionDiffusion__lrefl_3(log):
     # Diffusion without reaction
     # 3 bins
     t0 = 3.0
@@ -101,10 +104,13 @@ def test_ReactionDiffusion__refl_3(log):
     D = 17.0
     y0 = np.array([23.0, 27.0, 37.0])
     x = [5.0, 9.0, 13.0, 15.0]
-    xc = [7.0, 11.0, 14.0]
+    nstencil = 3
+    xc = [3.0, 7.0, 11.0, 14.0, 16.0]
 
-    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt, lrefl=True)
-    assert np.allclose(rd._xc, [3, 7, 11, 14, 17])
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
+                           nstencil=nstencil, logt=logt,
+                           lrefl=True, rrefl=False)
+    assert np.allclose(rd._xc, [3, 7, 11, 14, 16])
     fout = np.ones((3,))*99
 
     y = np.log(y0) if logy else y0
@@ -121,15 +127,14 @@ def test_ReactionDiffusion__refl_3(log):
     # In [10]: print(finite_diff_weights(2, xlst[2:5], x0=xlst[4])[-1][-1])
     # [1/14, -1/6, 2/21]
 
-    D_weight_ref = np.array([1/16, -1/8, 1/16, 1/14, -1/6, 2/21, 1/14, -1/6, 2/21])
-    print(rd.D_weight-D_weight_ref)
-    print(D_weight_ref)
+    D_weight_ref = np.array([1/16, -1/8, 1/16, 1/14, -1/6,
+                             2/21, 1/14, -1/6, 2/21])
     assert np.allclose(rd.D_weight, D_weight_ref)
 
     fref = np.array([
-        1/16*y0[1] - 1/8*y0[0] + 1/16*y0[1],  # lrefl=True
+        1/16*y0[0] - 1/8*y0[0] + 1/16*y0[1],  # lrefl=True
         1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],
-        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2], # rrefl=False
+        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],  # rrefl=False
     ])*D
 
     if logy:
@@ -139,45 +144,85 @@ def test_ReactionDiffusion__refl_3(log):
 
     assert np.allclose(fout, fref)
 
+    if logy:
+        Jref = D*np.array([
+            [
+                -1/16*y0[1]/y0[0],
+                1/16*y0[1]/y0[0],
+                0
+            ],
+            [
+                1/14*y0[0]/y0[1],
+                -1/14*y0[0]/y0[1] - 2/21*y0[2]/y0[1],
+                2/21*y0[2]/y0[1]
+            ],
+            [
+                1/14*y0[0]/y0[2],
+                -1/6*y0[1]/y0[2],
+                -1/14*y0[0]/y0[2] + 1/6*y0[1]/y0[2]
+            ]
+        ])
+    else:
+        Jref = D*np.array([
+            [1/16-1/8, 1/16, 0],
+            [1/14, -1/6, 2/21],
+            [1/14, -1/6, 2/21],
+        ])
+
+    if logt:
+        Jref *= t0
+
+    Jref[0,2] = 0  # Not perfect Jacobian
+    Jref[2,0] = 0  # only nearest neighbour
+    Jout = np.zeros_like(Jref)
+
+    y = np.log(y0) if logy else y0
+    t = np.log(t0) if logt else t0
+    rd.dense_jac_rmaj(t, y, Jout)
+
+    assert np.allclose(Jout, Jref)
+
 
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
-def test_ReactionDiffusion__refl_7(log):
+def test_ReactionDiffusion__rrefl_3(log):
     # Diffusion without reaction
     # 3 bins
     t0 = 3.0
     logy, logt = log
     D = 17.0
-    nstencil = 5
-    x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
-    bounds = lambda _nstencil, _N: [(
-        max(0, min(_N-_nstencil, i - (_nstencil-1)//2)),
-        min(_N, max(  _nstencil, i + (_nstencil+1)//2))
-    ) for i in range(_N)]
-    b = bounds(5, nstencil)
+    y0 = np.array([23.0, 27.0, 37.0])
+    x = [5.0, 9.0, 13.0, 15.0]
+    nstencil = 3
+    xc = [3.0, 7.0, 11.0, 14.0, 16.0]
 
-    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt,
-                           nstencil=nstencil, lrefl=True)
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
+                           nstencil=nstencil, logt=logt,
+                           lrefl=False, rrefl=True)
+    assert np.allclose(rd._xc, [3, 7, 11, 14, 16])
     fout = np.ones((3,))*99
 
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
     rd.f(t, y, fout)
-    # In [7]: xlst=[0,4,7,10,14]
+    # In [7]: xlst=[3, 7, 11, 14, 16]
 
-    # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[2])[-1][-1])
-    # [1/9, -2/9, 1/9]
+    # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[1])[-1][-1])
+    # [1/14, -1/6, 2/21]
+
+    # In [9]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[2])[-1][-1])
+    # [1/14, -1/6, 2/21]
 
     # In [10]: print(finite_diff_weights(2, xlst[2:5], x0=xlst[3])[-1][-1])
-    # [2/21, -1/6, 1/14]
+    # [2/15, -1/3, 1/5]
 
-    # In [11]: print(finite_diff_weights(2, xlst[2:5], x0=xlst[4])[-1][-1])
-    # [2/21, -1/6, 1/14]
+    D_weight_ref = np.array([1/14, -1/6, 2/21, 1/14, -1/6, 2/21, 2/15, -1/3, 1/5])
+    assert np.allclose(rd.D_weight, D_weight_ref)
 
     fref = np.array([
-        1/9*y0[1] - 2/9*y0[0] + 1/9*y0[1],  # lrefl=True
-        2/21*y0[0] - 1/6*y0[1] + 1/14*y0[2],
-        2/21*y0[0] - 1/6*y0[1] + 1/14*y0[2], # rrefl=False
-    ])
+        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],  # lrefl=False
+        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],
+        2/15*y0[1] - 1/3*y0[2] +  1/5*y0[2],  # rrefl=True
+    ])*D
 
     if logy:
         fref /= y0
@@ -186,8 +231,137 @@ def test_ReactionDiffusion__refl_7(log):
 
     assert np.allclose(fout, fref)
 
+    if logy:
+        Jref = D*np.array([
+            [
+                1/6*y0[1]/y0[0] - 2/21*y0[2]/y0[0],
+                -1/6*y0[1]/y0[0],
+                2/21*y0[2]/y0[0]
+            ],
+            [
+                1/14*y0[0]/y0[1],
+                -1/14*y0[0]/y0[1] - 2/21*y0[2]/y0[1],
+                2/21*y0[2]/y0[1]
+            ],
+            [
+                0,
+                2/15*y0[1]/y0[2],
+                -2/15*y0[1]/y0[2]
+            ]
+        ])
+    else:
+        Jref = D*np.array([
+            [1/14, -1/6, 2/21],
+            [1/14, -1/6, 2/21],
+            [   0, 2/15, 1/5-1/3]
+        ])
 
-@pytest.mark.parametrize("N", [1,3,4,5])
+    if logt:
+        Jref *= t0
+
+    Jref[0,2] = 0  # Not perfect Jacobian
+    Jref[2,0] = 0  # only nearest neighbour
+    Jout = np.zeros_like(Jref)
+
+    y = np.log(y0) if logy else y0
+    t = np.log(t0) if logt else t0
+    rd.dense_jac_rmaj(t, y, Jout)
+
+    assert np.allclose(Jout, Jref)
+
+
+@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+def test_ReactionDiffusion__lrefl_7(log):
+    # Diffusion without reaction (7 bins)
+    N = 7
+    t0 = 3.0
+    logy, logt = log
+    D = 17.0
+    nstencil = 5
+    x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
+    bounds = lambda _nstencil, _N: [(
+        max(0,  min(_N-_nstencil, i - (_nstencil-1)//2)),
+        min(_N, max(_nstencil,    i + (_nstencil+1)//2))
+    ) for i in range(_N)]
+    b = bounds(5, nstencil)
+
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt,
+                           N=N, nstencil=nstencil, lrefl=True)
+    fout = np.ones((N,))*99
+
+    y = np.log(y0) if logy else y0
+    t = np.log(t0) if logt else t0
+    rd.f(t, y, fout)
+    # In [7]: xlst=[]
+
+    # In [8]: print(finite_diff_weights(2, xlst[:], x0=xlst[])[-1][-1])
+
+    # In [9]: print(finite_diff_weights(2, xlst[:], x0=xlst[])[-1][-1])
+
+    # In [10]: print(finite_diff_weights(2, xlst[:], x0=xlst[])[-1][-1])
+
+
+    D_weight_ref = np.array([1/14, -1/6, 2/21, 1/14, -1/6, 2/21, 2/15, -1/3, 1/5])
+    assert np.allclose(rd.D_weight, D_weight_ref)
+
+    fref = np.array([
+        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],  # lrefl=True
+        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],
+        2/15*y0[1] - 1/3*y0[2] +  1/5*y0[2],  # rrefl=False
+    ])*D
+
+    if logy:
+        fref /= y0
+    if logt:
+        fref *= t0
+
+    assert np.allclose(fout, fref)
+
+    if logy:
+        Jref = D*np.array([
+            [
+                1/6*y0[1]/y0[0] - 2/21*y0[2]/y0[0],
+                -1/6*y0[1]/y0[0],
+                2/21*y0[2]/y0[0]
+            ],
+            [
+                1/14*y0[0]/y0[1],
+                -1/14*y0[0]/y0[1] - 2/21*y0[2]/y0[1],
+                2/21*y0[2]/y0[1]
+            ],
+            [
+                0,
+                2/15*y0[1]/y0[2],
+                -2/15*y0[1]/y0[2]
+            ]
+        ])
+    else:
+        Jref = D*np.array([
+            [1/14, -1/6, 2/21],
+            [1/14, -1/6, 2/21],
+            [   0, 2/15, 1/5-1/3]
+        ])
+
+    if logt:
+        Jref *= t0
+
+    Jout = np.zeros_like(Jref)
+
+    y = np.log(y0) if logy else y0
+    t = np.log(t0) if logt else t0
+    rd.dense_jac_rmaj(t, y, Jout)
+
+    print('Jout')
+    print(Jout)
+    print('Jref')
+    print(Jref)
+    print('Jout-Jref')
+    print(Jout-Jref)
+
+    assert np.allclose(Jout, Jref)
+
+
+@pytest.mark.parametrize("N", [1, 3, 4, 5])
 def test_ReactionDiffusion__only_1_reaction__logy(N):
     # See <test_ReactionDiffusion__only_1_reaction__logy.png>
     t0 = 3.0
@@ -202,25 +376,26 @@ def test_ReactionDiffusion__only_1_reaction__logy(N):
         y0_ = y0[i*2:(i+1)*2]
         assert np.allclose(fout[i*2:(i+1)*2], [-k, k*y0_[0]/y0_[1]])
 
-    jout = np.zeros((2*N,2*N))
-    jref = np.zeros((2*N,2*N))
+    jout = np.zeros((2*N, 2*N))
+    jref = np.zeros((2*N, 2*N))
     for i in range(N):
         A = y0[i*2]
         B = y0[i*2+1]
-        jref[i*2+1,i*2] = k/B*A
-        jref[i*2+1,i*2+1] = -k/B*A
+        jref[i*2+1, i*2] = k/B*A
+        jref[i*2+1, i*2+1] = -k/B*A
     rd.dense_jac_rmaj(t0, np.log(y0), jout)
     assert np.allclose(jout, jref)
 
 
-@pytest.mark.parametrize("N", [1,3,4,5])
+@pytest.mark.parametrize("N", [1, 3, 4, 5])
 def test_ReactionDiffusion__only_1_reaction__logy__logt(N):
     # See <test_ReactionDiffusion__only_1_reaction__logy_logt.png>
     t0 = 3.0
     y0 = np.array([2.0, 3.0]*N)
     k = 5.0
     # A -> B
-    rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0], logy=True, logt=True)
+    rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
+                           logy=True, logt=True)
     fout = np.ones((2*N,))*99
     rd.f(np.log(t0), np.log(y0), fout)
 
@@ -229,13 +404,13 @@ def test_ReactionDiffusion__only_1_reaction__logy__logt(N):
         assert np.allclose(fout[i*2:(i+1)*2], [-k*t0, t0*k*y0_[0]/y0_[1]])
 
 
-@pytest.mark.parametrize("N", [1,3,4,5])
+@pytest.mark.parametrize("N", [1, 3, 4, 5])
 def test_ReactionDiffusion__only_1_reaction_bin_k_factor(N):
     y0 = np.concatenate([np.array([2.0, 3.0])/(x+1) for x in range(N)])
     k = 5.0
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
-                           bin_k_factor = [[x+1] for x in range(N)],
+                           bin_k_factor=[[x + 1] for x in range(N)],
                            bin_k_factor_span=[1])
     fout = np.ones((2*N,))*99
     rd.f(0.0, y0, fout)
@@ -244,14 +419,14 @@ def test_ReactionDiffusion__only_1_reaction_bin_k_factor(N):
         assert np.allclose(fout[i*2:(i+1)*2], np.array([-10.0, 10.0]))
 
 
-@pytest.mark.parametrize("N", [1,3,4,5])
+@pytest.mark.parametrize("N", [1, 3, 4, 5])
 def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy(N):
     y0 = np.concatenate([np.array([2.0, 3.0])/(x+1) for x in range(N)])
     k = 5.0
     # A -> B
 
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
-                           bin_k_factor = [[x+1] for x in range(N)],
+                           bin_k_factor=[[x+1] for x in range(N)],
                            bin_k_factor_span=[1], logy=True)
     fout = np.ones((2*N,))*99
     rd.f(0.0, np.log(y0), fout)
@@ -264,7 +439,7 @@ def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy(N):
         assert np.allclose(fout[i*2:(i+1)*2], [-k_(i), k_(i)*y0_[0]/y0_[1]])
 
 
-@pytest.mark.parametrize("N", [1,3,4,5])
+@pytest.mark.parametrize("N", [1, 3, 4, 5])
 def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy_logt(N):
     t0 = 3.0
     y0 = np.concatenate([np.array([2.0, 3.0])/(x+1) for x in range(N)])
@@ -272,7 +447,7 @@ def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy_logt(N):
     # A -> B
 
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
-                           bin_k_factor = [[x+1] for x in range(N)],
+                           bin_k_factor=[[x+1] for x in range(N)],
                            bin_k_factor_span=[1], logy=True, logt=True)
     fout = np.ones((2*N,))*99
     rd.f(np.log(t0), np.log(y0), fout)
@@ -282,7 +457,8 @@ def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy_logt(N):
 
     for i in range(N):
         y0_ = y0[i*2:(i+1)*2]
-        assert np.allclose(fout[i*2:(i+1)*2], [-k_(i)*t0, k_(i)*t0*y0_[0]/y0_[1]])
+        assert np.allclose(fout[i*2:(i+1)*2],
+                           [-k_(i)*t0, k_(i)*t0*y0_[0]/y0_[1]])
 
 
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
@@ -293,14 +469,20 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     logy, logt = log
     D = 17.0
     y0 = np.array([23.0, 27.0, 37.0])
+    N = 3
     x = [5.0, 7.0, 13.0, 15.0]
     xc = [6.0, 10.0, 14.0]
-    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt)
+    nstencil = 3
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, N=N, logy=logy,
+                           logt=logt, lrefl=False, rrefl=False, nstencil=nstencil)
+    assert np.allclose(rd._xc, [4, 6, 10, 14, 16])
     fout = np.ones((3,))*99
 
     w = [1/16, -1/8, 1/16]  # finite diff. weights for 2nd order deriv
-    J = -D*(w[0]*y0[0] + w[1]*y0[1] + w[2]*y0[2])
-    fref = [J, J, J]
+    for i in range(N):
+        assert np.allclose(rd.D_weight[i*nstencil:(i+1)*nstencil], w)
+    J = D*(w[0]*y0[0] + w[1]*y0[1] + w[2]*y0[2])
+    fref = np.array([J, J, J])
 
     if logy:
         fref /= y0
@@ -313,40 +495,36 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
 
     assert np.allclose(fout, fref)
 
-
     # See <test_ReactionDiffusion__only_1_species_diffusion_2bins.png>
-    jout = np.zeros((3,3))
+    jout = np.zeros((3, 3))
     if logy:
-        jref = np.array([
-            [-D*w[k]*exp(y0[k]-y0[i]) if k !=i else exp(-y0[k])*D*sum(
-                [w[j]*exp(y0[j]) if j != k else 0 for j in range(3)])
-             for k in range(3)] for i in range(3)
+        jref = D*np.array([  # jref[i, k] = ...
+            [w[k]*y0[k]/y0[i] if k != i else -1/y0[k]*sum([
+                w[j]*y0[j] if j != k else 0 for j in range(3)
+            ]) for k in range(3)] for i in range(3)
         ])
-        jref[0,2] = 0.0 # dense_jac_rmaj only computes banded approx. (1 pair of bands)
-        jref[2,0] = 0.0 # same as above.
+        jref[0, 2] = 0.0  # dense_jac_rmaj only computes banded approx.
+        jref[2, 0] = 0.0  # same as above.
     else:
-        jref = np.array([
-            [-D*w[k] if abs(k-i) < 2 else 0.0 for k in range(3)] for i in range(3)
-        ])
+        jref = D*np.array([[w[k] if abs(k-i) < 2 else 0.0 for
+                          k in range(3)] for i in range(3)])
 
     if logt:
         jref *= t0
 
     rd.dense_jac_rmaj(t, y, jout)
 
-    print(jout) # DEBUG
-    print(jref) # DEBUG
     assert np.allclose(jout, jref)
 
-    jout_bnd = np.zeros((3,3), order='F')
+    jout_bnd = np.zeros((3, 3), order='F')
     rd.banded_packed_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, 3)
     assert np.allclose(jout_bnd, jref_bnd)
 
 
 def test_ReactionDiffusion__D_weight():
-    x = np.array([2,4,6,8,10,12,14,16], dtype=np.float64)
-    #xc = x[:-1] + np.diff(x)/2
+    x = np.array([2, 4, 6, 8, 10, 12, 14, 16], dtype=np.float64)
+    # xc = x[:-1] + np.diff(x)/2
     rd = ReactionDiffusion(1, [], [], [], D=[1], x=x, nstencil=3)
     assert np.allclose(rd.D_weight, np.array([
         [1/4, -1/2, 1/4],
@@ -370,13 +548,11 @@ def test_ReactionDiffusion__D_weight():
     ]).flatten())
 
 
-
-
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     # Diffusion without reaction
     N = 7
-    nstencil=5
+    nstencil = 5
     t0 = 3.0
     logy, logt = log
     D = 2.0
@@ -384,12 +560,13 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
     bounds = lambda nstencil, N: [(
         max(0, min(N-nstencil, i - (nstencil-1)//2)),
-        min(N, max(  nstencil, i + (nstencil+1)//2))
+        min(N, max(nstencil,   i + (nstencil+1)//2))
     ) for i in range(N)]
     b = bounds(5, 7)
 
     # xc = x[:-1] + np.diff(x)/2
-    # [finite_diff_weights(2, xc[b[i][0]:b[i][1]], xc[i])[-1][-1] for i in range(N)]
+    # [finite_diff_weights(2, xc[b[i][0]:b[i][1]], xc[i])[-1][-1]
+    #                            for i in range(N)]
     weights = [
         [951/8800, -716/2475, 100/297, -75/352, 311/5400],
         [321/8800, -161/2475, 7/297, 3/352, -19/5400],
@@ -399,13 +576,13 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
         [-8/1575, 9/400, 0, -19/450, 25/1008],
         [16/315, -9/32, 31/72, -13/45, 179/2016]
     ]
-    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt, nstencil=nstencil)
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt,
+                           nstencil=nstencil)
     assert np.allclose(rd.D_weight, np.array(weights).flatten())
 
     fout = np.ones((N,))*99
-    fref = np.array([
-        sum([D*weights[i][j]*y0[j+b[i][0]] for j in range(nstencil)]) for i in range(N)
-    ])
+    fref = np.array([sum([D*weights[i][j]*y0[j+b[i][0]] for j
+                          in range(nstencil)]) for i in range(N)])
 
     if logy:
         fref /= y0
@@ -417,10 +594,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     rd.f(t, y, fout)
     assert np.allclose(fout, fref)
 
-    jref = np.zeros((N,N))
-    jout = np.zeros((N,N))
+    jref = np.zeros((N, N))
+    jout = np.zeros((N, N))
     for i in range(N):
-        for j in range(max(0, i-1),min(N,i+2)):
+        for j in range(max(0, i-1), min(N, i+2)):
             if logy:
                 if j == i+1 or j == i-1:
                     jref[i, j] = D*weights[i][j-b[i][0]]*y0[j]/y0[i]
@@ -434,9 +611,9 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     rd.dense_jac_rmaj(t, y, jout)
     assert np.allclose(jout, jref)
 
-    jout_bnd = np.zeros((3,N), order='F')
+    jout_bnd = np.zeros((3, N), order='F')
     rd.banded_packed_jac_cmaj(t, y, jout_bnd)
-    jref_bnd = get_banded(jref,1,N)
+    jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
 
 
@@ -446,9 +623,9 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     # r[1]: D + C -> D + A + B
     # r[2]: B + B -> D
     pi = 3.141592653589793
-    #              r[0]     r[1]    r[2]
-    stoich_reac = [[0,1],   [2,3], [1,1]]
-    stoich_prod = [  [2], [0,1,3],   [3]]
+    #              r[0]     r[1]       r[2]
+    stoich_reac = [[0, 1], [2, 3],    [1, 1]]
+    stoich_prod = [[2],    [0, 1, 3], [3]]
     stoich_actv = stoich_reac
     n = 4
     N = 5
@@ -463,7 +640,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     x = np.array([11.0, 13.0, 17.0, 23.0, 29.0, 37.0])
     k = [31.0, 37.0, 41.0]
 
-    #(r[0], r[1]) modulations over bins
+    # (r[0], r[1]) modulations over bins
     bin_k_factor = [(i+3, i+4) for i in range(N)]
     bin_k_factor_span = [1, 1]
 
@@ -490,15 +667,15 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
 
     def flux(si, bi):
         C = C_(si, bi)
-        if bi > 0: # previous
+        if bi > 0:  # previous
             Cp = y0[si+n*(bi-1)]
         else:
-            Cp = C # Neumann boundary conditions
+            Cp = C  # Neumann boundary conditions
 
         if bi < N-1:
             Cn = y0[si+n*(bi+1)]
         else:
-            Cn = C # Neumann boundary conditions
+            Cn = C  # Neumann boundary conditions
 
         f = 0.0
         if bi > 0:
@@ -508,20 +685,19 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
         return f
 
     r = [
-        [k[0]*bin_k_factor[bi][0]*C_(0,bi)*C_(1,bi) for\
+        [k[0]*bin_k_factor[bi][0]*C_(0, bi)*C_(1, bi) for
          bi in range(N)],
-        [k[1]*bin_k_factor[bi][1]*C_(3,bi)*C_(2,bi) for \
+        [k[1]*bin_k_factor[bi][1]*C_(3, bi)*C_(2, bi) for
          bi in range(N)],
-        [k[2]*C_(1,bi)**2 for bi in range(N)],
+        [k[2]*C_(1, bi)**2 for bi in range(N)],
     ]
 
-    ref_f = np.array([
-        [
-           -r[0][bi] + r[1][bi] +flux(0, bi)/V[bi],
-           -r[0][bi] + r[1][bi] -2*r[2][bi] + flux(1, bi)/V[bi],
-            r[0][bi] - r[1][bi] + flux(2, bi)/V[bi],
-            r[2][bi] + flux(3, bi)/V[bi]
-        ] for bi in range(N)]).flatten()
+    ref_f = np.array([[
+        -r[0][bi] + r[1][bi] + flux(0, bi)/V[bi],
+        -r[0][bi] + r[1][bi] - 2*r[2][bi] + flux(1, bi)/V[bi],
+        r[0][bi] - r[1][bi] + flux(2, bi)/V[bi],
+        r[2][bi] + flux(3, bi)/V[bi]
+    ] for bi in range(N)]).flatten()
 
     # Compare to what is calculated using our C++ callback
     fout = np.empty(n*N)
@@ -532,17 +708,19 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     def dfdC(bi, lri, lci):
         v = 0.0
         for ri in range(len(stoich_reac)):
-            totl = stoich_prod[ri].count(lri) - \
-                   stoich_reac[ri].count(lri)
-            if totl == 0: continue
+            totl = (stoich_prod[ri].count(lri) -
+                    stoich_reac[ri].count(lri))
+            if totl == 0:
+                continue
             actv = stoich_actv[ri].count(lci)
-            if actv == 0: continue
+            if actv == 0:
+                continue
             v += actv*totl*r[ri][bi]/C_(lci, bi)
         return v
 
     def jac_elem(ri, ci):
         bri, bci = ri // n, ci // n
-        lri, lci = ri  % n, ci  % n
+        lri, lci = ri % n,  ci % n
         elem = 0.0
         if bri == bci:
             # on block diagonal
@@ -561,7 +739,6 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
                 # sub diagonal (left diffusion)
                 elem += D[lri]*A[bri]/dx[bri-1]/V[bri]
         return elem
-
 
     ref_j = np.zeros((n*N, n*N), order='C')
     for ri, ci in np.ndindex(n*N, n*N):
@@ -585,13 +762,13 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
         import matplotlib.pyplot as plt
         from chemreac.util import coloured_spy
         fig = plt.figure()
-        ax = fig.add_subplot(3,1,1)
+        ax = fig.add_subplot(3, 1, 1)
         coloured_spy(ref_banded_j, ax=ax)
         plt.title('ref_banded_j')
-        ax = fig.add_subplot(3,1,2)
+        ax = fig.add_subplot(3, 1, 2)
         coloured_spy(jout_bnd_packed_cmaj, ax=ax)
         plt.title('jout_bnd_packed_cmaj')
-        ax = fig.add_subplot(3,1,3)
+        ax = fig.add_subplot(3, 1, 3)
         coloured_spy(ref_banded_j-jout_bnd_packed_cmaj, ax=ax)
         plt.title('diff')
         plt.show()
@@ -600,4 +777,4 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
 
     jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
     rd.banded_padded_jac_cmaj(0.0, y0, jout_bnd_padded_cmaj)
-    assert np.allclose(jout_bnd_padded_cmaj[n:,:], ref_banded_j)
+    assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)

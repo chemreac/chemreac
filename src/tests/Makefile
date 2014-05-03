@@ -99,7 +99,7 @@ clean:
 	rm $(GENERATED)
 
 chemreac.cpp: ../chemreac_template.cpp
-	python enmako.py -p ../exprs.pkl -g '{"USE_OPENMP": False}' -o $@ $<
+	python enmako.py -g '{"USE_OPENMP": False}' -o $@ $<
 
 fornberg.o: ../finitediff/finitediff/fornberg.f90
 	$(FC) $(FORTFLAGS) -c -o $@ $^

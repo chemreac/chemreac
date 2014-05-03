@@ -22,24 +22,24 @@ using std::vector;
 using chemreac::ReactionDiffusion;
 
 ReactionDiffusion get_four_species_system(int N){
-    int n = 4;
-    int nr = 2;
-    vector<vector<int> > stoich_reac {{0}, {1, 2, 2}};
-    vector<vector<int> > stoich_actv;
-    vector<vector<int> > stoich_prod {{1}, {1, 3}};
+    uint n = 4;
+    uint nr = 2;
+    vector<vector<uint> > stoich_reac {{0}, {1, 2, 2}};
+    vector<vector<uint> > stoich_actv;
+    vector<vector<uint> > stoich_prod {{1}, {1, 3}};
     vector<double> k {0.05, 3.0};
     vector<double> D {.1, .2, .3, .4};
     vector<double> x;
     vector<vector<double> > bin_k_factor;
-    vector<int> bin_k_factor_span;
-    vector<int> v;
+    vector<uint> bin_k_factor_span;
+    vector<uint> v;
     for (int ri=0; ri<nr; ++ri)
 	stoich_actv.push_back(v);
     for (int i=0; i<N+1; ++i)
 	x.push_back((double)i);
     return ReactionDiffusion(\
 	n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
-	bin_k_factor, bin_k_factor_span, 0, 0, 0);
+	bin_k_factor, bin_k_factor_span, 0, false, false);
 }
 
 #define RJ(i, j) ref_jac[(i)*8+j]
@@ -101,7 +101,7 @@ int test_dense_jac(){
 #define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<8; ++ri)
-	for (int ci=max(0, ri-rd.n); ci<min(rd.n*rd.N, ri+rd.n); ++ci)
+	for (int ci=max(0, ri-(int)rd.n); ci<min(rd.n*rd.N, ri+rd.n); ++ci)
 	    if (dabs(BND(ri,ci) - DNS(ri,ci)) > 1e-15)
 		std::cout << ri << " " << ci << " " << BND(ri,ci) << " " << DNS(ri,ci) << std::endl;//return 1;
 #undef BND

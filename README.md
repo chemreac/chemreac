@@ -44,7 +44,8 @@ TODO
 ======
 - Jacobian generated for diffusion incorrect (with_jacobian=False performs MUCH better).
     * Need to derive test cases by hand.
-
+- Define what reflective means for CYLINDRICAL and SPHERICAL (add tests for these)
+- Drift
 
 License
 =======

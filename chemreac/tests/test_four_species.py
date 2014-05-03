@@ -35,6 +35,8 @@ See:
 <four_species_f_jac_logt.png>
 """
 
+np.set_printoptions(precision=3, linewidth=120)
+
 JSON_PATH, BLESSED_PATH = map(
     lambda x: os.path.join(os.path.dirname(__file__), x),
     ['four_species.json', 'four_species_blessed.txt']
@@ -155,6 +157,9 @@ def test_dense_jac_cmaj(log):
     t = np.log(t0) if logt else t0
     sys.dense_jac_cmaj(t, y, Jout)
 
+    print(Jout)
+    print(ref_J)
+    print(Jout-ref_J)
     assert np.allclose(Jout, ref_J)
 
 

@@ -90,7 +90,7 @@ cdef class PyReactionDiffusion:
                   bint logy,
                   bint logt,
                   uint nstencil=3,
-                  bint lrefl=False,
+                  bint lrefl=True,
                   bint rrefl=True,
               ):
         self.thisptr = new ReactionDiffusion(
