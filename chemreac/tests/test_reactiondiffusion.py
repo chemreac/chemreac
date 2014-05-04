@@ -11,6 +11,7 @@ import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.util.banded import get_banded
+from chemreac.util.grid import padded_centers, bounds, y_indices
 
 np.set_printoptions(precision=3, linewidth=120)
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
@@ -273,42 +274,39 @@ def test_ReactionDiffusion__rrefl_3(log):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_ReactionDiffusion__lrefl_7(log):
     # Diffusion without reaction (7 bins)
+    lrefl, rrefl = True, False
     N = 7
     t0 = 3.0
     logy, logt = log
     D = 17.0
     nstencil = 5
+    nsidep = (nstencil-1)//2
     x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
-    bounds = lambda _nstencil, _N: [(
-        max(0,  min(_N-_nstencil, i - (_nstencil-1)//2)),
-        min(_N, max(_nstencil,    i + (_nstencil+1)//2))
-    ) for i in range(_N)]
-    b = bounds(5, nstencil)
+    xc_ = padded_centers(x, nsidep)
+    b = bounds(nstencil, N, lrefl=lrefl, rrefl=rrefl)
 
-    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt,
-                           N=N, nstencil=nstencil, lrefl=True)
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
+                           logt=logt, N=N, nstencil=nstencil,
+                           lrefl=lrefl, rrefl=rrefl)
     fout = np.ones((N,))*99
 
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
     rd.f(t, y, fout)
-    # In [7]: xlst=[]
+    le = nsidep if lrefl else 0
+    D_weight_ref = np.array([
+        finite_diff_weights(
+            2, xc_[b[i][0]:b[i][1]], x0=xc_[le+i])[-1][-1]
+        for i in range(N)])
+    assert np.allclose(rd.D_weight, D_weight_ref.flatten())
 
-    # In [8]: print(finite_diff_weights(2, xlst[:], x0=xlst[])[-1][-1])
+    yi = y_indices(nstencil, N)
 
-    # In [9]: print(finite_diff_weights(2, xlst[:], x0=xlst[])[-1][-1])
-
-    # In [10]: print(finite_diff_weights(2, xlst[:], x0=xlst[])[-1][-1])
-
-
-    D_weight_ref = np.array([1/14, -1/6, 2/21, 1/14, -1/6, 2/21, 2/15, -1/3, 1/5])
-    assert np.allclose(rd.D_weight, D_weight_ref)
-
-    fref = np.array([
-        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],  # lrefl=True
-        1/14*y0[0] - 1/6*y0[1] + 2/21*y0[2],
-        2/15*y0[1] - 1/3*y0[2] +  1/5*y0[2],  # rrefl=False
-    ])*D
+    fref = D*np.array([
+        sum([rd.D_weight[i*nstencil+j]*y0[yi[j]]
+             for j in range(b[i][0], b[i][1])])
+        for i in range(N)
+    ])
 
     if logy:
         fref /= y0
@@ -336,6 +334,13 @@ def test_ReactionDiffusion__lrefl_7(log):
             ]
         ])
     else:
+        def cb(i, j):
+            if abs(i-j) > 1:
+                return 0
+            for k in range(nstencil):
+                if yi[k] == j:
+                    return rd.D_weight[i][k]
+        Jref = np.fromfunction(cb, (N, N))
         Jref = D*np.array([
             [1/14, -1/6, 2/21],
             [1/14, -1/6, 2/21],
@@ -558,15 +563,9 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     D = 2.0
     y0 = np.array([12, 8, 11, 5, 7, 4, 9], dtype=np.float64)
     x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
-    bounds = lambda nstencil, N: [(
-        max(0, min(N-nstencil, i - (nstencil-1)//2)),
-        min(N, max(nstencil,   i + (nstencil+1)//2))
-    ) for i in range(N)]
-    b = bounds(5, 7)
-
-    # xc = x[:-1] + np.diff(x)/2
-    # [finite_diff_weights(2, xc[b[i][0]:b[i][1]], xc[i])[-1][-1]
-    #                            for i in range(N)]
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x,
+                           logy=logy, logt=logt, nstencil=nstencil,
+                           lrefl=False, rrefl=False)
     weights = [
         [951/8800, -716/2475, 100/297, -75/352, 311/5400],
         [321/8800, -161/2475, 7/297, 3/352, -19/5400],
@@ -576,8 +575,6 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
         [-8/1575, 9/400, 0, -19/450, 25/1008],
         [16/315, -9/32, 31/72, -13/45, 179/2016]
     ]
-    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy, logt=logt,
-                           nstencil=nstencil)
     assert np.allclose(rd.D_weight, np.array(weights).flatten())
 
     fout = np.ones((N,))*99
