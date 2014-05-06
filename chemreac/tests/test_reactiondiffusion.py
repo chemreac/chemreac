@@ -11,7 +11,7 @@ import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.util.banded import get_banded
-from chemreac.util.grid import padded_centers, bounds, y_indices
+from chemreac.util.grid import padded_centers, lbounds, y_indices
 
 np.set_printoptions(precision=3, linewidth=120)
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
@@ -274,6 +274,7 @@ def test_ReactionDiffusion__rrefl_3(log):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_ReactionDiffusion__lrefl_7(log):
     # Diffusion without reaction (7 bins)
+    from sympy import finite_diff_weights
     lrefl, rrefl = True, False
     N = 7
     t0 = 3.0
@@ -282,8 +283,9 @@ def test_ReactionDiffusion__lrefl_7(log):
     nstencil = 5
     nsidep = (nstencil-1)//2
     x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
+    y0 = np.array([12, 8, 11, 5, 7, 4, 9], dtype=np.float64)
     xc_ = padded_centers(x, nsidep)
-    b = bounds(nstencil, N, lrefl=lrefl, rrefl=rrefl)
+    lb = lbounds(nstencil, N, lrefl=lrefl, rrefl=rrefl)
 
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            logt=logt, N=N, nstencil=nstencil,
@@ -296,15 +298,15 @@ def test_ReactionDiffusion__lrefl_7(log):
     le = nsidep if lrefl else 0
     D_weight_ref = np.array([
         finite_diff_weights(
-            2, xc_[b[i][0]:b[i][1]], x0=xc_[le+i])[-1][-1]
-        for i in range(N)])
+            2, xc_[lb[i]:lb[i]+nstencil], x0=xc_[le+i])[-1][-1]
+        for i in range(N)], dtype=np.float64)
     assert np.allclose(rd.D_weight, D_weight_ref.flatten())
 
     yi = y_indices(nstencil, N)
 
     fref = D*np.array([
-        sum([rd.D_weight[i*nstencil+j]*y0[yi[j]]
-             for j in range(b[i][0], b[i][1])])
+        sum([rd.D_weight[i*nstencil+j]*y0[yi[lb[i]+j]]
+             for j in range(nstencil)])
         for i in range(N)
     ])
 
@@ -316,37 +318,33 @@ def test_ReactionDiffusion__lrefl_7(log):
     assert np.allclose(fout, fref)
 
     if logy:
-        Jref = D*np.array([
-            [
-                1/6*y0[1]/y0[0] - 2/21*y0[2]/y0[0],
-                -1/6*y0[1]/y0[0],
-                2/21*y0[2]/y0[0]
-            ],
-            [
-                1/14*y0[0]/y0[1],
-                -1/14*y0[0]/y0[1] - 2/21*y0[2]/y0[1],
-                2/21*y0[2]/y0[1]
-            ],
-            [
-                0,
-                2/15*y0[1]/y0[2],
-                -2/15*y0[1]/y0[2]
-            ]
-        ])
+        def cb(i, j):
+            if abs(i-j) > 1:
+                return 0  # imperfect Jacobian
+            elif i == j:
+                res = 0
+                for k in range(nstencil):
+                    cyi = yi[lb[i] + k]  # current y index
+                    if cyi != i:
+                        res += y0[cyi]/y0[i]*rd.D_weight[i*nstencil + k]
+                return res
+            else:
+                res = 0
+                for k in range(nstencil):
+                    cyi = yi[lb[i] + k]  # current y index
+                    if cyi == j:
+                        res = y0[j]/y0[i]*rd.D_weight[i*nstencil + k]
+                return res
     else:
         def cb(i, j):
             if abs(i-j) > 1:
-                return 0
+                return 0  # imperfect Jacobian
+            res = 0
             for k in range(nstencil):
-                if yi[k] == j:
-                    return rd.D_weight[i][k]
-        Jref = np.fromfunction(cb, (N, N))
-        Jref = D*np.array([
-            [1/14, -1/6, 2/21],
-            [1/14, -1/6, 2/21],
-            [   0, 2/15, 1/5-1/3]
-        ])
-
+                if yi[lb[i]+k] == j:
+                    res += rd.D_weight[i*nstencil + k]
+            return res
+    Jref = D*np.array([cb(i, j) for i, j in product(range(N), range(N))]).reshape(N,N)
     if logt:
         Jref *= t0
 
@@ -578,7 +576,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     assert np.allclose(rd.D_weight, np.array(weights).flatten())
 
     fout = np.ones((N,))*99
-    fref = np.array([sum([D*weights[i][j]*y0[j+b[i][0]] for j
+    fref = np.array([sum([D*weights[i][j]*y0[j+lb[i]] for j
                           in range(nstencil)]) for i in range(N)])
 
     if logy:
@@ -597,10 +595,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
         for j in range(max(0, i-1), min(N, i+2)):
             if logy:
                 if j == i+1 or j == i-1:
-                    jref[i, j] = D*weights[i][j-b[i][0]]*y0[j]/y0[i]
+                    jref[i, j] = D*weights[i][j-lb[i]]*y0[j]/y0[i]
             else:
                 if i-1 <= j and j <= i+1:
-                    jref[i, j] = D*weights[i][j-b[i][0]]
+                    jref[i, j] = D*weights[i][j-lb[i]]
 
     if logt:
         jref *= t0

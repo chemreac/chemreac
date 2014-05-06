@@ -13,15 +13,11 @@ def y_indices(nstencil, N):
     nsidep = (nstencil-1)//2
     return range(nsidep)[::-1]+range(N)+range(N-1, N-nsidep-1, -1)
 
-def bounds(nstencil, N, lrefl=False, rrefl=False):
+def lbounds(nstencil, N, lrefl=False, rrefl=False):
     """
-    Bounds in (possibly padded) centers for use in fintie difference.
+    Lower bounds in (possibly padded) centers for use in fintie difference.
     """
     nsidep = (nstencil-1)//2
     le = 0 if lrefl else nsidep
     re = 0 if rrefl else nsidep
-    res = []
-    for i in range(N):
-        lb = max(le, min(N + 2*nsidep - re - nstencil, i))
-        res.append((lb, lb+nstencil))
-    return res
+    return [max(le, min(N + 2*nsidep - re - nstencil, i)) for i in range(N)]

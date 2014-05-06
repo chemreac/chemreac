@@ -33,6 +33,8 @@ public:
     double diffusion_contrib_jac_next(int bi) const;
     void _apply_fd(uint);
     const double * _alloc_and_populate_linC16(const double * const restrict) const;
+    uint _stencil_bi_lbound(uint bi) const;
+    uint _xc_bi_map(uint xci) const;
 
 public:
     const uint n; // number of species
@@ -40,8 +42,8 @@ public:
     const uint nstencil; // number of points used in finite difference stencil
     const uint nsidep; // (nstencil-1)/2
     const uint nr; // number of reactions
-    bool logy; // use logarithmic concenctraction
-    bool logt; // use logarithmic time
+    const bool logy; // use logarithmic concenctraction
+    const bool logt; // use logarithmic time
     const vector<vector<uint> > stoich_reac; // Reactants per reaction
     vector<vector<uint> > stoich_actv; // Active reactants per reaction
     const vector<vector<uint> > stoich_prod; // Products per reaction
@@ -50,7 +52,7 @@ public:
     const vector<double> x; // Bin edges (length = N+1)
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
     vector<uint> bin_k_factor_span; // 
-    bool lrefl, rrefl;
+    const bool lrefl, rrefl;
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
 
     ReactionDiffusion(uint, 

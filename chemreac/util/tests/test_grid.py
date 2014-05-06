@@ -1,19 +1,18 @@
 import numpy as np
-from chemreac.util.grid import bounds, padded_centers, y_indices
+from chemreac.util.grid import lbounds, padded_centers, y_indices
 
-def test_bounds():
-    b = bounds(5, 7)
-    assert b == [(2, 7), (2, 7), (2, 7), (3, 8), (4, 9), (4, 9), (4, 9)]
+def test_lbounds():
+    b = lbounds(5, 7)
+    assert b == [2, 2, 2, 3, 4, 4, 4]
 
-    b = bounds(3, 5, lrefl=True)
-    assert b == [(0, 3), (1, 4), (2, 5), (3, 6), (3, 6)]
+    b = lbounds(3, 5, lrefl=True)
+    assert b == [0, 1, 2, 3, 3]
 
-    b = bounds(3, 5, rrefl=True)
-    assert b == [(1, 4), (1, 4), (2, 5), (3, 6), (4, 7)]
+    b = lbounds(3, 5, rrefl=True)
+    assert b == [1, 1, 2, 3, 4]
 
-    b = bounds(5, 7, lrefl=True, rrefl=True)
-    assert b == [(0, 5), (1, 6), (2, 7), (3, 8), (4, 9),
-                 (5, 10), (6, 11)]
+    b = lbounds(5, 7, lrefl=True, rrefl=True)
+    assert b == [0, 1, 2, 3, 4, 5, 6]
 
 def test_y_indices():
     yi = y_indices(5, 7)

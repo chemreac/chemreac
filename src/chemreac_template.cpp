@@ -165,6 +165,23 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []coeff_actv;
 }
 
+uint ReactionDiffusion::_stencil_bi_lbound(uint bi) const
+{
+    const uint le = lrefl ? 0 : nsidep;
+    const uint re = rrefl ? 0 : nsidep;
+    return max(le, min(N + 2*nsidep - re - nstencil, bi));
+}
+
+uint ReactionDiffusion::_xc_bi_map(uint xci) const
+{
+    if (xci < nsidep)
+        return nsidep - xci - 1;
+    else if (xci >= N+nsidep)
+        return 2*N - xci + 1;
+    else
+        return xci - nsidep;
+}
+
 
 #define D_WEIGHT(bi, li) D_weight[nstencil*(bi) + li]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
@@ -233,6 +250,7 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 
 // The indices of x, fluxes and bins
 // <indices.png>
+
 
 #define Y(bi, si) y[(bi)*n+(si)]
 #define LINC(bi, si) linC[(bi)*n+(si)]
@@ -392,52 +410,24 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
-            // reflective logic goes into centerli...
-            int centerli = nsidep;
-            if (bi < nsidep && !lrefl)
-                centerli = bi;
-            if (bi > N - 1 - nsidep && !rrefl)
-                centerli = bi - N + nstencil;
+            uint lbound = _stencil_bi_lbound(bi);
             for (uint si=0; si<n; ++si){ // species index si
                 if (D[si] == 0.0) continue;
                 // Not a strict Jacobian only block diagonal plus closest bands...
-                if (logy){
-                    // // Diagonal
-                    // if (bi > 0 || !lrefl){
-                    //     JAC(bi, bi, si, si) -= D[si]*D_WEIGHT(bi, centerli-1)*\
-                    //         LINC(bi-1, si)/LINC(bi, si);
-                    //     std::cout << bi << " " << JAC(bi, bi, si, si) << std::endl;
-                    // }
-                    // if (bi < N-1 || !rrefl){
-                    //     JAC(bi, bi, si, si) -= D[si]*D_WEIGHT(bi, centerli+1)*\
-                    //         LINC(bi+1, si)/LINC(bi, si);
-                    //     std::cout << bi << " " << JAC(bi, bi, si, si) << std::endl;
-                    // }
-                    JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli); // -FOUT later..
-                    if (bi == 0 && lrefl)
-                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli - 1); // -FOUT later..
-                    if (bi == N-1 && rrefl)
-                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli + 1); // -FOUT later..
-
-                    // Off diagonal
-                    if (bi > 0)
-                        JAC(bi, bi - 1, si, si) = D[si]*D_WEIGHT(bi, centerli - 1)* \
-                            LINC(bi-1, si)/LINC(bi, si);
-                    if (bi < N-1)
-                        JAC(bi, bi + 1, si, si) = D[si]*D_WEIGHT(bi, centerli + 1)* \
-                            LINC(bi+1, si)/LINC(bi, si);
-                } else {
-                    // Diagonal
-                    JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli);
-                    if (bi == 0 && lrefl)
-                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli - 1);
-                    if (bi == N-1 && rrefl)
-                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, centerli + 1);
-                    // Off diagonal
-                    if (bi > 0)
-                        JAC(bi, bi-1, si, si) = D[si]*D_WEIGHT(bi, centerli - 1);
-                    if (bi < N-1)
-                        JAC(bi, bi+1, si, si) = D[si]*D_WEIGHT(bi, centerli + 1);
+                for (uint k=0; k<nstencil; ++k){
+                    const uint sbi = _xc_bi_map(lbound+k);
+                    if (sbi == bi) {
+                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
+                    } else {
+                        if (bi > 0)
+                            if (sbi == bi-1)
+                                JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*\
+                                    (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
+                        if (bi < N-1)
+                            if (sbi == bi+1)
+                                JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*\
+                                    (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
+                    }
                 }
             }
         }

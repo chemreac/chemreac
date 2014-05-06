@@ -15,7 +15,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         double * D_weight
 
         const uint n, N, nr, nstencil
-        bool logy, logt, lrefl, rrefl
+        const bool logy, logt, lrefl, rrefl
         const vector[vector[uint]] stoich_reac
         vector[vector[uint]] stoich_actv
         const vector[vector[uint]] stoich_prod
@@ -202,13 +202,18 @@ cdef class PyReactionDiffusion:
     property logy:
         def __get__(self):
             return self.thisptr.logy
-        def __set__(self, bool logy): self.thisptr.logy = logy
 
     property logt:
         def __get__(self):
             return self.thisptr.logt
-        def __set__(self, bool logt): self.thisptr.logt = logt
 
+    property lrefl:
+        def __get__(self):
+            return self.thisptr.lrefl
+
+    property rrefl:
+        def __get__(self):
+            return self.thisptr.rrefl
 
     # Extra convenience
     property ny:
