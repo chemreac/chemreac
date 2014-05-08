@@ -29,12 +29,12 @@
 #define omp_get_thread_num() 0
 %endif
 
+namespace chemreac {
+
 using std::vector;
 using std::count;
 using std::min;
 using std::max;
-
-namespace chemreac {
 
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(

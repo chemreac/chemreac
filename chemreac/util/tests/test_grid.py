@@ -1,21 +1,21 @@
 import numpy as np
-from chemreac.util.grid import lbounds, padded_centers, y_indices
+from chemreac.util.grid import stencil_pxci_lbounds, padded_centers, pxci_to_bi
 
-def test_lbounds():
-    b = lbounds(5, 7)
+def test_stencil_pxci_lbounds():
+    b = stencil_pxci_lbounds(5, 7)
     assert b == [2, 2, 2, 3, 4, 4, 4]
 
-    b = lbounds(3, 5, lrefl=True)
+    b = stencil_pxci_lbounds(3, 5, lrefl=True)
     assert b == [0, 1, 2, 3, 3]
 
-    b = lbounds(3, 5, rrefl=True)
+    b = stencil_pxci_lbounds(3, 5, rrefl=True)
     assert b == [1, 1, 2, 3, 4]
 
-    b = lbounds(5, 7, lrefl=True, rrefl=True)
+    b = stencil_pxci_lbounds(5, 7, lrefl=True, rrefl=True)
     assert b == [0, 1, 2, 3, 4, 5, 6]
 
-def test_y_indices():
-    yi = y_indices(5, 7)
+def test_pxci_to_bi():
+    yi = pxci_to_bi(5, 7)
     assert yi == [1, 0, 0, 1, 2, 3, 4, 5, 6, 6, 5]
 
 def test_padded_centers():

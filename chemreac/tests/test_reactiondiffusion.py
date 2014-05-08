@@ -11,9 +11,9 @@ import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.util.banded import get_banded
-from chemreac.util.grid import padded_centers, lbounds, y_indices
+from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 
-np.set_printoptions(precision=3, linewidth=120)
+np.set_printoptions(precision=3, linewidth=260)
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
 
@@ -285,7 +285,7 @@ def test_ReactionDiffusion__lrefl_7(log):
     x = np.array([3, 5, 13, 17, 23, 25, 35, 37], dtype=np.float64)
     y0 = np.array([12, 8, 11, 5, 7, 4, 9], dtype=np.float64)
     xc_ = padded_centers(x, nsidep)
-    lb = lbounds(nstencil, N, lrefl=lrefl, rrefl=rrefl)
+    lb = stencil_pxci_lbounds(nstencil, N, lrefl=lrefl, rrefl=rrefl)
 
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            logt=logt, N=N, nstencil=nstencil,
@@ -302,7 +302,7 @@ def test_ReactionDiffusion__lrefl_7(log):
         for i in range(N)], dtype=np.float64)
     assert np.allclose(rd.D_weight, D_weight_ref.flatten())
 
-    yi = y_indices(nstencil, N)
+    yi = pxci_to_bi(nstencil, N)
 
     fref = D*np.array([
         sum([rd.D_weight[i*nstencil+j]*y0[yi[lb[i]+j]]
@@ -326,14 +326,14 @@ def test_ReactionDiffusion__lrefl_7(log):
                 for k in range(nstencil):
                     cyi = yi[lb[i] + k]  # current y index
                     if cyi != i:
-                        res += y0[cyi]/y0[i]*rd.D_weight[i*nstencil + k]
+                        res -= y0[cyi]/y0[i]*rd.D_weight[i*nstencil + k]
                 return res
             else:
                 res = 0
                 for k in range(nstencil):
                     cyi = yi[lb[i] + k]  # current y index
                     if cyi == j:
-                        res = y0[j]/y0[i]*rd.D_weight[i*nstencil + k]
+                        res += y0[j]/y0[i]*rd.D_weight[i*nstencil + k]
                 return res
     else:
         def cb(i, j):
@@ -353,13 +353,6 @@ def test_ReactionDiffusion__lrefl_7(log):
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
     rd.dense_jac_rmaj(t, y, Jout)
-
-    print('Jout')
-    print(Jout)
-    print('Jref')
-    print(Jref)
-    print('Jout-Jref')
-    print(Jout-Jref)
 
     assert np.allclose(Jout, Jref)
 
@@ -528,7 +521,8 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
 def test_ReactionDiffusion__D_weight():
     x = np.array([2, 4, 6, 8, 10, 12, 14, 16], dtype=np.float64)
     # xc = x[:-1] + np.diff(x)/2
-    rd = ReactionDiffusion(1, [], [], [], D=[1], x=x, nstencil=3)
+    rd = ReactionDiffusion(1, [], [], [], D=[1], x=x, nstencil=3,
+                           lrefl=False, rrefl=False)
     assert np.allclose(rd.D_weight, np.array([
         [1/4, -1/2, 1/4],
         [1/4, -1/2, 1/4],
@@ -539,7 +533,8 @@ def test_ReactionDiffusion__D_weight():
         [1/4, -1/2, 1/4]
     ]).flatten())
 
-    rd = ReactionDiffusion(1, [], [], [], D=[1], x=x, nstencil=5)
+    rd = ReactionDiffusion(1, [], [], [], D=[1], x=x, nstencil=5,
+                           lrefl=False, rrefl=False)
     assert np.allclose(rd.D_weight, np.array([
         [35/48, -13/6, 19/8, -7/6, 11/48],
         [11/48, -5/12, 1/8, 1/12, -1/48],
@@ -556,6 +551,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     # Diffusion without reaction
     N = 7
     nstencil = 5
+    nsidep = (nstencil-1)//2
     t0 = 3.0
     logy, logt = log
     D = 2.0
@@ -576,7 +572,9 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     assert np.allclose(rd.D_weight, np.array(weights).flatten())
 
     fout = np.ones((N,))*99
-    fref = np.array([sum([D*weights[i][j]*y0[j+lb[i]] for j
+    lb = stencil_pxci_lbounds(nstencil, N)
+    yi = pxci_to_bi(nstencil, N)
+    fref = np.array([sum([D*weights[i][j]*y0[yi[j+lb[i]]] for j
                           in range(nstencil)]) for i in range(N)])
 
     if logy:
@@ -595,15 +593,29 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
         for j in range(max(0, i-1), min(N, i+2)):
             if logy:
                 if j == i+1 or j == i-1:
-                    jref[i, j] = D*weights[i][j-lb[i]]*y0[j]/y0[i]
+                    for k in range(nstencil):
+                        if yi[k+lb[i]] == j:
+                            jref[i, j] += D*weights[i][k]*y0[j]/y0[i]
+                else:  # j == i
+                    assert i == j
+                    for k in range(nstencil):
+                        cyi = yi[k+lb[i]]
+                        if i == cyi: continue
+                        jref[i, i] -= D*weights[i][k]*y0[cyi]/y0[i]
             else:
                 if i-1 <= j and j <= i+1:
-                    jref[i, j] = D*weights[i][j-lb[i]]
+                    jref[i, j] = D*weights[i][j-lb[i]+nsidep]
 
     if logt:
         jref *= t0
-
     rd.dense_jac_rmaj(t, y, jout)
+
+    print('Jref')
+    print(jref)
+    print('Jout')
+    print(jout)
+    print('Jref-Jour')
+    print(jref-jout)
     assert np.allclose(jout, jref)
 
     jout_bnd = np.zeros((3, N), order='F')
@@ -612,92 +624,81 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     assert np.allclose(jout_bnd, jref_bnd)
 
 
-@pytest.mark.parametrize("geom", (FLAT, SPHERICAL, CYLINDRICAL))
-def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
+#@pytest.mark.parametrize("geom", (FLAT, SPHERICAL, CYLINDRICAL))
+@pytest.mark.parametrize("refl", TRUE_FALSE_PAIRS)
+def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
+    # TODO: add logy, logt
+    # TODO: add geom
+    lrefl, rrefl = refl
+    geom = FLAT
     # r[0]: A + B -> C
     # r[1]: D + C -> D + A + B
     # r[2]: B + B -> D
-    pi = 3.141592653589793
     #              r[0]     r[1]       r[2]
     stoich_reac = [[0, 1], [2, 3],    [1, 1]]
     stoich_prod = [[2],    [0, 1, 3], [3]]
     stoich_actv = stoich_reac
     n = 4
     N = 5
-    D = [2.5, 3.7, 5.11, 7.13]
+    D = np.array([2.6, 3.7, 5.11, 7.13])*10000000
     y0 = np.array([
         2.5, 1.2, 3.2, 4.3,
         2.7, 0.8, 1.6, 2.4,
         3.1, 0.3, 1.5, 1.8,
         3.3, 0.6, 1.6, 1.4,
         3.6, 0.9, 1.7, 1.2
-    ])
-    x = np.array([11.0, 13.0, 17.0, 23.0, 29.0, 37.0])
+    ]).reshape((5, 4))
+    x = np.array([11.0, 13.3, 17.0, 23.2, 29.8, 37.2])
     k = [31.0, 37.0, 41.0]
 
     # (r[0], r[1]) modulations over bins
     bin_k_factor = [(i+3, i+4) for i in range(N)]
     bin_k_factor_span = [1, 1]
-
+    nstencil = 3
     rd = ReactionDiffusion(
         4, stoich_reac, stoich_prod, k, N, D, x,
         bin_k_factor=bin_k_factor,
-        bin_k_factor_span=bin_k_factor_span, geom=geom)
+        bin_k_factor_span=bin_k_factor_span, geom=geom,
+        nstencil=nstencil, lrefl=lrefl, rrefl=rrefl)
 
     # Let's calculate f "by hand"
     if geom == FLAT:
-        A = [1.0]*(N+1)
-        Vincl = x
+        pass
     elif geom == SPHERICAL:
-        A = [4*pi*r**2 for r in x]
-        Vincl = [4*pi*r**3/3 for r in x]
+        pass
     elif geom == CYLINDRICAL:
-        A = [2*pi*r for r in x]
-        Vincl = [pi*r**2 for r in x]
-    V = [Vincl[i+1]-Vincl[i] for i in range(N)]
-    dx = np.diff((x[:-1]+x[1:])/2)
+        pass
 
-    def C_(si, bi):
-        return y0[si+n*bi]
-
-    def flux(si, bi):
-        C = C_(si, bi)
-        if bi > 0:  # previous
-            Cp = y0[si+n*(bi-1)]
-        else:
-            Cp = C  # Neumann boundary conditions
-
-        if bi < N-1:
-            Cn = y0[si+n*(bi+1)]
-        else:
-            Cn = C  # Neumann boundary conditions
-
+    lb = stencil_pxci_lbounds(nstencil, N, lrefl, rrefl)
+    pxci2bi = pxci_to_bi(nstencil, N)
+    print([pxci2bi[x] for x in lb])
+    def cflux(si, bi):
         f = 0.0
-        if bi > 0:
-            f -= D[si]*A[bi]*(C-Cp)/dx[bi-1]
-        if bi < N-1:
-            f += D[si]*A[bi+1]*(Cn-C)/dx[bi]
-        return f
+        for k in range(nstencil):
+            f += rd.D_weight[nstencil*bi+k]*y0[pxci2bi[lb[bi]+k], si]
+        print(si, bi, f, y0[0, si])
+        return D[si]*f
 
     r = [
-        [k[0]*bin_k_factor[bi][0]*C_(0, bi)*C_(1, bi) for
+        [k[0]*bin_k_factor[bi][0]*y0[bi,0]*y0[bi, 1] for
          bi in range(N)],
-        [k[1]*bin_k_factor[bi][1]*C_(3, bi)*C_(2, bi) for
+        [k[1]*bin_k_factor[bi][1]*y0[bi, 3]*y0[bi, 2] for
          bi in range(N)],
-        [k[2]*C_(1, bi)**2 for bi in range(N)],
+        [k[2]*y0[bi, 1]**2 for bi in range(N)],
     ]
 
-    ref_f = np.array([[
-        -r[0][bi] + r[1][bi] + flux(0, bi)/V[bi],
-        -r[0][bi] + r[1][bi] - 2*r[2][bi] + flux(1, bi)/V[bi],
-        r[0][bi] - r[1][bi] + flux(2, bi)/V[bi],
-        r[2][bi] + flux(3, bi)/V[bi]
+    fref = np.array([[
+        -r[0][bi] + r[1][bi] + cflux(0, bi),
+        -r[0][bi] + r[1][bi] - 2*r[2][bi] + cflux(1, bi),
+        r[0][bi] - r[1][bi] + cflux(2, bi),
+        r[2][bi] + cflux(3, bi)
     ] for bi in range(N)]).flatten()
 
     # Compare to what is calculated using our C++ callback
     fout = np.empty(n*N)
-    rd.f(0.0, y0, fout)
-    assert np.allclose(fout, ref_f)
+    rd.f(0.0, y0.flatten(), fout)
+
+    assert np.allclose(fout, fref)
 
     # Now let's check that the Jacobian is correctly computed.
     def dfdC(bi, lri, lci):
@@ -710,29 +711,31 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
             actv = stoich_actv[ri].count(lci)
             if actv == 0:
                 continue
-            v += actv*totl*r[ri][bi]/C_(lci, bi)
+            v += actv*totl*r[ri][bi]/y0[bi, lci]
         return v
 
     def jac_elem(ri, ci):
         bri, bci = ri // n, ci // n
         lri, lci = ri % n,  ci % n
         elem = 0.0
+        def _diffusion():
+            _elem = 0.0
+            for k in range(nstencil):
+                if pxci2bi[lb[bri]+k] == bci:
+                    _elem += D[lri]*rd.D_weight[nstencil*bri+k]
+            return _elem
+
         if bri == bci:
             # on block diagonal
             elem += dfdC(bri, lri, lci)
             if lri == lci:
-                if bri > 0:
-                    elem -= D[lri]*A[bri]/dx[bri-1]/V[bri]
-                if bri < N-1:
-                    elem -= D[lri]*A[bri+1]/dx[bri]/V[bri]
+                elem += _diffusion()
         elif bri == bci - 1:
             if lri == lci:
-                # super diagonal (right diffusion)
-                elem += D[lri]*A[bri+1]/dx[bri]/V[bri]
+                elem = _diffusion()
         elif bri == bci + 1:
             if lri == lci:
-                # sub diagonal (left diffusion)
-                elem += D[lri]*A[bri]/dx[bri-1]/V[bri]
+                elem = _diffusion()
         return elem
 
     ref_j = np.zeros((n*N, n*N), order='C')
@@ -740,17 +743,24 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
         ref_j[ri, ci] = jac_elem(ri, ci)
 
     jout_rmaj = np.zeros((n*N, n*N), order='C')
-    rd.dense_jac_rmaj(0.0, y0, jout_rmaj)
+    rd.dense_jac_rmaj(0.0, y0.flatten(), jout_rmaj)
+    print('ref_j')
+    print(ref_j)
+    print('jout_rmaj')
+    print(jout_rmaj)
+    print('ref_j - jout_rmaj')
+    print(ref_j - jout_rmaj)
+
     assert np.allclose(jout_rmaj, ref_j)
 
     jout_cmaj = np.zeros((n*N, n*N), order='F')
-    rd.dense_jac_cmaj(0.0, y0, jout_cmaj)
+    rd.dense_jac_cmaj(0.0, y0.flatten(), jout_cmaj)
     assert np.allclose(jout_cmaj, ref_j)
 
     ref_banded_j = get_banded(ref_j, n, N)
 
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
-    rd.banded_packed_jac_cmaj(0.0, y0, jout_bnd_packed_cmaj)
+    rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
     plot = False
     if plot:
@@ -771,5 +781,5 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom):
     assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 
     jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
-    rd.banded_padded_jac_cmaj(0.0, y0, jout_bnd_padded_cmaj)
+    rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
     assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)

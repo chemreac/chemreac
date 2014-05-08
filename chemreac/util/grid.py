@@ -8,14 +8,14 @@ def padded_centers(x, nsidep):
         2*x[0]-xc[:nsidep][::-1], xc, 2*x[-1]-xc[-nsidep:][::-1]
     ))
 
-def y_indices(nstencil, N):
-    """ Corresponding y indices for padded centers for refl """
+def pxci_to_bi(nstencil, N):
+    """ Padded xc index to bin index """
     nsidep = (nstencil-1)//2
     return range(nsidep)[::-1]+range(N)+range(N-1, N-nsidep-1, -1)
 
-def lbounds(nstencil, N, lrefl=False, rrefl=False):
+def stencil_pxci_lbounds(nstencil, N, lrefl=False, rrefl=False):
     """
-    Lower bounds in (possibly padded) centers for use in fintie difference.
+    Lower bounds in padded centers for each bin index for use in fintie difference.
     """
     nsidep = (nstencil-1)//2
     le = 0 if lrefl else nsidep
