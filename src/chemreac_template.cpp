@@ -177,7 +177,7 @@ uint ReactionDiffusion::_xc_bi_map(uint xci) const
     if (xci < nsidep)
         return nsidep - xci - 1;
     else if (xci >= N+nsidep)
-        return 2*N - xci + 1;
+        return 2*N - xci;
     else
         return xci - nsidep;
 }

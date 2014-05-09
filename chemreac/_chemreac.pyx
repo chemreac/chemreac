@@ -51,6 +51,9 @@ cdef extern from "chemreac.h" namespace "chemreac":
         void per_rxn_contrib_to_fi(double, const double * const, uint, double * const)
         int get_geom_as_int()
 
+        uint _stencil_bi_lbound(uint)
+        uint _xc_bi_map(uint)
+
 
 cdef class ArrayWrapper(object):
     cdef public dict __array_interface__
@@ -236,3 +239,9 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return fromaddress(<long>self.thisptr.D_weight,
                                               (self.thisptr.N*self.thisptr.nstencil,))
+
+    def _stencil_bi_lbound(self, uint bi):
+        return self.thisptr._stencil_bi_lbound(bi)
+
+    def _xc_bi_map(self, uint xci):
+        return self.thisptr._xc_bi_map(xci)

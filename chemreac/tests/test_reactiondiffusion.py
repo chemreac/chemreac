@@ -670,13 +670,26 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
         pass
 
     lb = stencil_pxci_lbounds(nstencil, N, lrefl, rrefl)
+    if lrefl:
+        if rrefl:
+            assert lb == [0, 1, 2, 3, 4]
+        else:
+            assert lb == [0, 1, 2, 3, 3]
+    else:
+        if rrefl:
+            assert lb == [1, 1, 2, 3, 4]
+        else:
+            assert lb == [1, 1, 2, 3, 3]
+    assert lb == map(rd._stencil_bi_lbound, range(N))
+
     pxci2bi = pxci_to_bi(nstencil, N)
-    print([pxci2bi[x] for x in lb])
+    assert pxci2bi == [0, 0, 1, 2, 3, 4, 4]
+    assert pxci2bi == map(rd._xc_bi_map, range(N+2))
+
     def cflux(si, bi):
         f = 0.0
         for k in range(nstencil):
             f += rd.D_weight[nstencil*bi+k]*y0[pxci2bi[lb[bi]+k], si]
-        print(si, bi, f, y0[0, si])
         return D[si]*f
 
     r = [
