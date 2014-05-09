@@ -6,14 +6,44 @@ FLAT, CYLINDRICAL, SPHERICAL = range(3)
 Geom_names = {FLAT: 'Flat', CYLINDRICAL: 'Cylindrical', SPHERICAL: 'Spherical'}
 GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
 
-from ._chemreac import PyReactionDiffusion
+from ._chemreac import CppReactionDiffusion
 
 
-# Having a Python side wrapper for our Cython Extension (PyReactionDiffusion)
+# Having a Python side wrapper for our Cython Extension (CppReactionDiffusion)
 # allows e.g. Jedi (Python IDE capabilities) to inspect and give help strings
 
-class ReactionDiffusion(PyReactionDiffusion):
+class ReactionDiffusionBase(object):
+    def to_Reaction(self, ri):
+        """
+        Convenience method for making a Reaction instance
+        for reaction index ri
+        """
+        from .chemistry import Reaction
+        return Reaction(
+            {self.names[i]: self.stoich_reac[ri].count(i) for\
+             i in range(self.n)},
+            {self.names[i]: self.stoich_prod[ri].count(i) for\
+             i in range(self.n)},
+            {self.names[i]: self.stoich_actv[ri].count(i) for\
+             i in range(self.n)},
+            k=self.k[ri])
 
+    def alloc_fout(self):
+        return np.empty(self.n*self.N)
+
+    def alloc_jout(self, banded=True, order='C'):
+        if not order in 'CF':
+            raise ValueError("Order must be 'C' or 'F'")
+        if banded:
+            return np.zeros((self.n*2+1, self.n*self.N), order=order)
+        else:
+            return np.zeros((self.n*self.N, self.n*self.N), order=order)
+
+    @property
+    def ny(self):
+        return self.N*self.n
+
+class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     # not used by C++ class
     extra_attrs = ['k_err', 'D_err', 'names', 'tex_names']
 
@@ -134,18 +164,3 @@ class ReactionDiffusion(PyReactionDiffusion):
         if kwargs:
             raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd
-
-    def to_Reaction(self, ri):
-        """
-        Convenience method for making a Reaction instance
-        for reaction index ri
-        """
-        from .chemistry import Reaction
-        return Reaction(
-            {self.names[i]: self.stoich_reac[ri].count(i) for\
-             i in range(self.n)},
-            {self.names[i]: self.stoich_prod[ri].count(i) for\
-             i in range(self.n)},
-            {self.names[i]: self.stoich_actv[ri].count(i) for\
-             i in range(self.n)},
-            k=self.k[ri])

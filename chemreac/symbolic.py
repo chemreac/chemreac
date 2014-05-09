@@ -1,0 +1,94 @@
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import, unicode_literals
+
+from functools import reduce
+from operator import mul
+
+import numpy as np
+import sympy as sp
+
+from .core import FLAT, ReactionDiffusionBase
+from .util.grid import padded_centers, pxci_to_bi, stencil_pxci_lbounds
+
+
+class SymRD(ReactionDiffusionBase):
+
+    @classmethod
+    def from_rd(cls, rd):
+        import inspect
+        return cls(*(getattr(rd, attr) for attr in inspect.getargspec(cls.__init__).args[1:]))
+
+    def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
+                stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
+                geom=FLAT, logy=False, logt=False, nstencil=None, lrefl=True,
+                rrefl=True, **kwargs):
+        self.n = n
+        self.stoich_reac = stoich_reac
+        self.stoich_prod = stoich_prod
+        self.k = k
+        self.D = D if D != None else [0]*n
+        self.x = x if x != None else [0, 1]
+        self.N = N if N != None else len(self.x) - 1
+        self.stoich_actv = stoich_actv or [[]*len(stoich_reac)]
+        self.bin_k_factor = bin_k_factor
+        self.bin_k_factor_span = bin_k_factor_span
+        self.geom = geom
+        self.logy = logy
+        self.logt = logt
+        self.nstencil = nstencil or 3
+        self.lrefl = lrefl
+        self.rrefl = rrefl
+        if kwargs: raise KeyError("Don't know what to do with:", kwargs)
+
+        self._nsidep = (self.nstencil-1) // 2
+        self._y = sp.symbols('y:'+str(self.n*self.N))
+        self._xc = padded_centers(self.x, self._nsidep)
+        self._lb = stencil_pxci_lbounds(self.nstencil, self.N, self.lrefl, self.rrefl)
+        self._pxci2bi = pxci_to_bi(self.nstencil, self.N)
+        self._f = [0]*self.n*self.N
+
+        # Reactions
+        for k, sreac, sactv, sprod in zip(self.k, self.stoich_reac,
+                                          self.stoich_actv, self.stoich_prod):
+            c_reac = [sreac.count(i) for i in range(self.n)]
+            c_prod = [sprod.count(i) for i in range(self.n)]
+            c_totl = [nprod - nreac for nreac, nprod in zip(c_reac, c_prod)]
+            if sactv == []:
+                sactv = sreac
+            for bi in range(self.N):
+                r = k
+                for si in sactv:
+                    r *= self.y(bi, si)
+                for si in range(self.n):
+                    self._f[bi*self.n+si] += c_totl[si]*r
+
+        if self.N == 1:
+            return
+
+        # Diffusion
+        self.D_weights = [
+            sp.finite_diff_weights(
+                2, self._xc[self._lb[bi]:self._lb[bi]+self.nstencil],
+                self._xc[bi+self._nsidep])[-1][-1] for bi in range(self.N)
+        ]
+        for bi, w in enumerate(self.D_weights):
+            for si in range(self.n):
+                print(self._lb)
+                print(w, self.nstencil)
+                fd_terms = [w[k]*self.y(self._pxci2bi[self._lb[bi]+k], si)
+                            for k in range(self.nstencil)]
+                self._f[bi*self.n + si] += self.D[si]*reduce(mul, fd_terms)
+
+    def y(self, bi, si):
+        return self._y[bi*self.n+si]
+
+    def f(self, t, y, fout):
+        subsd = dict(zip(self._y, y))
+        fout[:] = [expr.subs(subsd) for expr in self._f]
+
+    def dense_jac_rmaj(self, t, y, Jout):
+        subsd = dict(zip(self._y, y))
+        fmat = sp.Matrix(1, self.n*self.N, lambda q, i: self._f[i])
+        Jout[:,:] = [[expr.subs(subsd) for expr in row]
+                     for row in fmat.jacobian(self._y).tolist()]

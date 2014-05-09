@@ -73,7 +73,7 @@ cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
     ))
 
 
-cdef class PyReactionDiffusion:
+cdef class CppReactionDiffusion:
     cdef ReactionDiffusion *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
@@ -210,6 +210,10 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.logt
 
+    property nstencil:
+        def __get__(self):
+            return self.thisptr.nstencil
+
     property lrefl:
         def __get__(self):
             return self.thisptr.lrefl
@@ -219,10 +223,6 @@ cdef class PyReactionDiffusion:
             return self.thisptr.rrefl
 
     # Extra convenience
-    property ny:
-        def __get__(self):
-            return self.N*self.n
-
     def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
 

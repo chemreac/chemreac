@@ -10,11 +10,29 @@ import numpy as np
 import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 
+
 np.set_printoptions(precision=3, linewidth=260)
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
+
+
+def _test_f(rd, t, y, fref):
+    fout = rd.alloc_fout()
+    rd.f(t, np.asarray(y, dtype=np.float64), fout)
+    assert np.allclose(fout, fref)
+    if not isinstance(rd, SymRD):
+        _test_f(SymRD.from_rd(rd), t, y, fref)
+
+
+def _test_dense_jac_rmaj(rd, t, y, jref):
+    jout = rd.alloc_jout(banded=False)
+    rd.dense_jac_rmaj(t, y, jout)
+    assert np.allclose(jout, jref)
+    if not isinstance(rd, SymRD):
+        _test_dense_jac_rmaj(SymRD.from_rd(rd), t, y, jref)
 
 
 def test_autobinary():
@@ -27,9 +45,7 @@ def test_autobinary():
     rsys = ReactionSystem([r1])
     rd = rsys.to_ReactionDiffusion(sbstncs)
 
-    fout = np.empty((2,))
-    rd.f(0.0, np.asarray([1.0, 37.0]), fout)
-    assert np.allclose(fout, [-2*3.0, 3.0])
+    _test_f(rd, 0, [1, 37], [-2*3, 3])
 
 
 @pytest.mark.xfail
@@ -58,19 +74,14 @@ def test_ReactionDiffusion__only_1_reaction(N):
     k = 5.0
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0])
-    fout = np.ones((2*N,))*99
-    rd.f(t0, y0, fout)
+    fref = np.array([-10.0, 10.0]*N)
+    _test_f(rd, t0, y0, fref)
 
-    for i in range(N):
-        assert np.allclose(fout[i*2:(i+1)*2], np.array([-10.0, 10.0]))
-
-    jout = np.zeros((2*N, 2*N))
     jref = np.zeros((2*N, 2*N))
     for i in range(N):
         jref[i*2,   i*2] = -k
         jref[i*2+1, i*2] = k
-    rd.dense_jac_rmaj(t0, y0, jout)
-    assert np.allclose(jout, jref)
+    _test_dense_jac_rmaj(rd, t0, y0, jref)
 
 
 def test_ReactionDiffusion__actv_1():
@@ -78,10 +89,8 @@ def test_ReactionDiffusion__actv_1():
     k = 5.0
     # A + C -(+A)-> B + C
     rd = ReactionDiffusion(3, [[0, 0, 2]], [[1, 2]], [k], stoich_actv=[[0, 2]])
-    fout = np.empty((3,))
-    rd.f(0.0, y0, fout)
     r = k*y0[0]*y0[2]
-    assert np.allclose(fout, [-2*r, r, 0])
+    _test_f(rd, 0, y0, [-2*r, r, 0])
 
 
 def test_ReactionDiffusion__actv_2():
@@ -90,10 +99,8 @@ def test_ReactionDiffusion__actv_2():
     # A + C --(+A+5*C)--> B
     rd = ReactionDiffusion(3, [[0, 0, 2, 2, 2, 2, 2, 2]], [[1]], [k],
                            stoich_actv=[[0, 2]])
-    fout = np.empty((3,))
-    rd.f(0.0, y0, fout)
     r = k*y0[0]*y0[2]
-    assert np.allclose(fout, [-2*r, r, -6*r])
+    _test_f(rd, 0, y0, [-2*r, r, -6*r])
 
 
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
