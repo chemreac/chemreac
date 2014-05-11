@@ -14,11 +14,24 @@ def test_stencil_pxci_lbounds():
     b = stencil_pxci_lbounds(5, 7, lrefl=True, rrefl=True)
     assert b == [0, 1, 2, 3, 4, 5, 6]
 
+    b = stencil_pxci_lbounds(3, 4, rrefl=True)
+    # [y0, y0, y1, y2, y3, y3]
+    assert b == [1, 1, 2, 3]
+
+
 def test_pxci_to_bi():
     yi = pxci_to_bi(5, 7)
     assert yi == [1, 0, 0, 1, 2, 3, 4, 5, 6, 6, 5]
 
+    yi = pxci_to_bi(3, 4)
+    assert yi == [0, 0, 1, 2, 3, 3]
+
+
 def test_padded_centers():
+    b = [0, 2, 6]
+    xc_ = padded_centers(b, 1)
+    assert np.allclose(xc_, [-1, 1, 4, 8])
+
     b = np.arange(10,21)
     xc_ = padded_centers(b, 2)
     print(xc_)

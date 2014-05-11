@@ -574,13 +574,13 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     assert np.allclose(jout_bnd, jref_bnd)
 
 
-#@pytest.mark.parametrize("geom", (FLAT, SPHERICAL, CYLINDRICAL))
-@pytest.mark.parametrize("refl", TRUE_FALSE_PAIRS)
-def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
+@pytest.mark.parametrize("geom_refl", list(product((FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
+def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
     # TODO: add logy, logt
     # TODO: add geom
+    from sympy import finite_diff_weights
+    geom, refl = geom_refl
     lrefl, rrefl = refl
-    geom = FLAT
     # r[0]: A + B -> C
     # r[1]: D + C -> D + A + B
     # r[2]: B + B -> D
@@ -590,7 +590,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
     stoich_actv = stoich_reac
     n = 4
     N = 5
-    D = np.array([2.6, 3.7, 5.11, 7.13])*13
+    D = np.array([2.6, 3.7, 5.11, 7.13])*213
     y0 = np.array([
         2.5, 1.2, 3.2, 4.3,
         2.7, 0.8, 1.6, 2.4,
@@ -599,25 +599,23 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
         3.6, 0.9, 1.7, 1.2
     ]).reshape((5, 4))
     x = np.array([11.0, 13.3, 17.0, 23.2, 29.8, 37.2])
+    xc_ = x[:-1]+np.diff(x)/2
+    xc_ = [x[0]-(xc_[0]-x[0])]+list(xc_)+[x[-1]+(x[-1]-xc_[-1])]
+    assert len(xc_) == 7
     k = [31.0, 37.0, 41.0]
 
     # (r[0], r[1]) modulations over bins
     bin_k_factor = [(i+3, i+4) for i in range(N)]
     bin_k_factor_span = [1, 1]
     nstencil = 3
+    nsidep = 1
     rd = ReactionDiffusion(
         4, stoich_reac, stoich_prod, k, N, D, x,
         bin_k_factor=bin_k_factor,
         bin_k_factor_span=bin_k_factor_span, geom=geom,
         nstencil=nstencil, lrefl=lrefl, rrefl=rrefl)
 
-    # Let's calculate f "by hand"
-    if geom == FLAT:
-        pass
-    elif geom == SPHERICAL:
-        pass
-    elif geom == CYLINDRICAL:
-        pass
+    assert np.allclose(xc_, rd._xc)
 
     lb = stencil_pxci_lbounds(nstencil, N, lrefl, rrefl)
     if lrefl:
@@ -636,10 +634,32 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
     assert pxci2bi == [0, 0, 1, 2, 3, 4, 4]
     assert pxci2bi == map(rd._xc_bi_map, range(N+2))
 
+    D_weight = []
+    for bi in range(N):
+        local_x_serie = xc_[lb[bi]:lb[bi]+nstencil]
+        local_x_around = xc_[nsidep+bi]
+        w = finite_diff_weights(
+            2, local_x_serie, x0=local_x_around
+        )
+        D_weight.append(w[-1][-1])
+        if geom == FLAT:
+            pass
+        elif geom == CYLINDRICAL:
+            for wi in range(nstencil):
+                # first order derivative
+                D_weight[bi][wi] += w[-2][-1][wi]*1/local_x_around
+        elif geom == SPHERICAL:
+            for wi in range(nstencil):
+                # first order derivative
+                D_weight[bi][wi] += w[-2][-1][wi]*2/local_x_around
+        else:
+            raise RuntimeError
+    assert np.allclose(rd.D_weight, np.array(D_weight, dtype=np.float64).flatten())
+
     def cflux(si, bi):
         f = 0.0
         for k in range(nstencil):
-            f += rd.D_weight[nstencil*bi+k]*y0[pxci2bi[lb[bi]+k], si]
+            f += rd.D_weight[bi*nstencil+k]*y0[pxci2bi[lb[bi]+k], si]
         return D[si]*f
 
     r = [
@@ -679,7 +699,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(refl):
             _elem = 0.0
             for k in range(nstencil):
                 if pxci2bi[lb[bri]+k] == bci:
-                    _elem += D[lri]*rd.D_weight[nstencil*bri+k]
+                    _elem += D[lri]*rd.D_weight[bri*nstencil+k]
             return _elem
 
         if bri == bci:

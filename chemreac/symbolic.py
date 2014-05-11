@@ -9,7 +9,7 @@ from math import exp
 import numpy as np
 import sympy as sp
 
-from .core import FLAT, ReactionDiffusionBase
+from .core import FLAT, CYLINDRICAL, SPHERICAL, ReactionDiffusionBase
 from .util.grid import padded_centers, pxci_to_bi, stencil_pxci_lbounds
 
 
@@ -69,13 +69,20 @@ class SymRD(ReactionDiffusionBase):
                 for si in range(self.n):
                     self._f[bi*self.n+si] += c_totl[si]*r
 
+        print(geom)
         if self.N > 1:
             # Diffusion
-            self.D_weights = [
-                sp.finite_diff_weights(
-                    2, self._xc[self._lb[bi]:self._lb[bi]+self.nstencil],
-                    self._xc[bi+self._nsidep])[-1][-1] for bi in range(self.N)
-            ]
+            self.D_weights = []
+            for bi in range(self.N):
+                local_x_serie = self._xc[self._lb[bi]:self._lb[bi]+self.nstencil]
+                local_x_around = self._xc[bi+self._nsidep]
+                w = sp.finite_diff_weights(2, local_x_serie, local_x_around)
+                self.D_weights.append(w[-1][-1])
+                for wi in range(self.nstencil):
+                    if geom == CYLINDRICAL:
+                        self.D_weights[bi][wi] += w[-2][-1][wi]/local_x_around
+                    if geom == SPHERICAL:
+                        self.D_weights[bi][wi] += 2*w[-2][-1][wi]/local_x_around
             for bi, w in enumerate(self.D_weights):
                 for si in range(self.n):
                     fd_terms = [w[k]*self.y(self._pxci2bi[self._lb[bi]+k], si)

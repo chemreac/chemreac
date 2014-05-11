@@ -93,7 +93,8 @@ def interleave(arrays, axis=0):
 
 
 def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom='f',
-         logt=False, logy=False, random=False, k=0.0, nstencil=3, lrefl=False, rrefl=False):
+         logt=False, logy=False, random=False, k=0.0, nstencil=3, lrefl=False, rrefl=False,
+         with_jacobian=False):
     decay = (k != 0.0)
     mu = float(mu or x0)
     tout = np.linspace(t0, tend, nt)
@@ -136,7 +137,8 @@ def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom=
     # Run the integration
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t, atol=1e-3, rtol=1e-6, with_jacobian=False, method='bdf')
+    yout, info = run(sys, y, t, atol=(xend-x0)**2/1e9, rtol=1e-8,
+                     with_jacobian=with_jacobian, method='bdf')
     if logy: yout = np.exp(yout)
     print(info)
 

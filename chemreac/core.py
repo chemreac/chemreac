@@ -31,13 +31,18 @@ class ReactionDiffusionBase(object):
     def alloc_fout(self):
         return np.empty(self.n*self.N)
 
-    def alloc_jout(self, banded=True, order='C'):
-        if not order in 'CF':
-            raise ValueError("Order must be 'C' or 'F'")
-        if banded:
-            return np.zeros((self.n*2+1, self.n*self.N), order=order)
+    def alloc_jout(self, banded=True, order='C', pad=0):
+        if order == 'C':
+            rpad, cpad = 0, pad
+        elif order == 'F':
+            rpad, cpad = pad, 0
         else:
-            return np.zeros((self.n*self.N, self.n*self.N), order=order)
+            raise ValueError("Order must be 'C' or 'F'")
+
+        if banded:
+            return np.zeros((self.n*2 + 1 + rpad, self.n*self.N + cpad), order=order)
+        else:
+            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad), order=order)
 
     @property
     def ny(self):
