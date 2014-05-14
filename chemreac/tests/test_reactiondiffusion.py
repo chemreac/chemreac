@@ -41,6 +41,8 @@ def _test_dense_jac_rmaj(rd, t, y, jref=None):
     else:
         # Not perfect Jacobian
         # only nearest neighbour
+        print(jout)
+        print(jref)
         for ri in range(rd.ny):
             #assert np.allclose(jout, jref)
             for ci in range(max(0, ri-rd.n), min(rd.ny, ri+rd.n+1)):
@@ -577,7 +579,6 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
 @pytest.mark.parametrize("geom_refl", list(product((FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
 def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
     # TODO: add logy, logt
-    # TODO: add geom
     from sympy import finite_diff_weights
     geom, refl = geom_refl
     lrefl, rrefl = refl
@@ -752,3 +753,15 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
     jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
     rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
     assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
+
+@pytest.mark.parametrize("geom_refl", list(product((FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
+def test_diffusion_jac(geom_refl):
+    geom, refl = geom_refl
+    lrefl, rrefl = refl
+    N = 9
+    x = np.linspace(0.1, 1, N+1)
+    rd = ReactionDiffusion(1, [], [], [], D=[3], N=N, x=x, nstencil=3,
+                           lrefl=lrefl, rrefl=rrefl, geom=geom)
+    y0 = x[0]+2*x[1:]**2/(1+x[1:]**4)
+    # compare f and jac with Symbolic class:
+    _test_f_and_dense_jac_rmaj(rd, 0, y0)

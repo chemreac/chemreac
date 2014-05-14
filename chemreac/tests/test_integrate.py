@@ -60,6 +60,7 @@ def test_autodimerization():
 
 @pytest.mark.parametrize("log_geom", product(LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
 def test_ReactionDiffusion__bin_k_factor(log_geom):
+    # modulation in x means x_center
     # A -> B # mod1 (x**2)
     # C -> D # mod1 (x**2)
     # E -> F # mod2 (sqrt(x))
@@ -70,7 +71,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     n = 8
     nr = 4
     D = np.zeros(n)
-    x = np.linspace(3,7,N+1)
+    x = np.linspace(3, 7, N+1)
     xc = x[:-1] + np.diff(x)/2
     bkf = [(xc[i]*xc[i], xc[i]**0.5) for i in range(N)]
     bkf_span = [2,1]
@@ -82,6 +83,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
         bin_k_factor_span=bkf_span,
         logy=logy, logt=logt, geom=geom
     )
+    assert np.allclose(rd.xcenters, xc)
     y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N]).flatten()
     t0, tend, nt = 1.0, 1.1, 42
     tout = np.linspace(t0, tend, nt+1)
@@ -109,16 +111,18 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     assert np.allclose(yout, yref)
 
 
-@pytest.mark.parametrize("N_geom", product(range(5,13), (FLAT, CYLINDRICAL, SPHERICAL)))
-def test_integrate__only_1_species_diffusion__mass_conservation(N_geom):
-    N, geom = N_geom
+@pytest.mark.parametrize("N_wjac_geom", product(
+    range(5, 14, 4), (True, False), (FLAT, CYLINDRICAL, SPHERICAL)))
+def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
+    N, wjac, geom = N_wjac_geom
     # Test that mass convervation is fulfilled wrt diffusion.
     x = np.linspace(0.01, 1.0, N+1)
     y0 = (x[0]/2+x[1:])**2
 
-    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=geom, nstencil=3)
+    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=geom, nstencil=3,
+                            lrefl=True, rrefl=True)
     tout = np.linspace(0, 10.0, 50)
-    yout, info = run(sys, y0, tout, atol=1e-12, rtol=1e-13)
+    yout, info = run(sys, y0, tout, atol=1e-12, rtol=1e-13, with_jacobian=wjac)
     if geom == FLAT:
         yprim = yout
     elif geom == CYLINDRICAL:
@@ -130,6 +134,7 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_geom):
 
     ybis = np.sum(yprim, axis=1)
 
+    # Need to plot this
     print(y0)
     print(np.average(ybis) - ybis)
     assert np.allclose(np.average(ybis), ybis)
