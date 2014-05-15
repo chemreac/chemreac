@@ -39,10 +39,10 @@ ReactionDiffusion get_four_species_system(int N){
 	x.push_back((double)i);
     return ReactionDiffusion(\
 	n, stoich_reac, stoich_prod, k, N, D, x, stoich_actv,\
-	bin_k_factor, bin_k_factor_span, 0, false, false);
+	bin_k_factor, bin_k_factor_span, 0, false, false, 3, true, true);
 }
 
-#define RJ(i, j) ref_jac[(i)*8+j]
+#define RJ(i, j) ref_jac[(i)*12+j]
 int test_dense_jac(){
     ReactionDiffusion rd = get_four_species_system(3);
     vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
@@ -64,37 +64,42 @@ int test_dense_jac(){
     RJ(3,7) =  rd.D[3];
 
     RJ(4,0) = rd.D[0];
-    RJ(4,4) = -0.05 - rd.D[0];
+    RJ(4,4) = -0.05 - 2*rd.D[0];
+    RJ(4,8) = rd.D[0];
     RJ(5,1) = rd.D[1];
     RJ(5,4) =  0.05;
-    RJ(5,5) = -rd.D[1];
+    RJ(5,5) = -2*rd.D[1];
+    RJ(5,9) = rd.D[1];
     RJ(6,2) = rd.D[2];
     RJ(6,5) = -2*3.0*y[6]*y[6];
-    RJ(6,6) = -2*2*3.0*y[6]*y[5]-rd.D[2];
+    RJ(6,6) = -2*2*3.0*y[6]*y[5]-2*rd.D[2];
+    RJ(6,10) = rd.D[2];
     RJ(7,3) = rd.D[3];
     RJ(7,5) =  3.0*y[6]*y[6];
     RJ(7,6) =  2*3.0*y[6]*y[5];
-    RJ(7,7) = -rd.D[3];
+    RJ(7,7) = -2*rd.D[3];
+    RJ(7,11) = rd.D[3];
 
     RJ(8,4) = rd.D[0];
     RJ(8,8) = -0.05 - rd.D[0];
     RJ(9,5) = rd.D[1];
-    RJ(9,9) =  0.05;
+    RJ(9,8) =  0.05;
     RJ(9,9) = -rd.D[1];
     RJ(10,6) = rd.D[2];
     RJ(10,9) = -2*3.0*y[10]*y[10];
     RJ(10,10) = -2*2*3.0*y[10]*y[9]-rd.D[2];
     RJ(11,7) = rd.D[3];
     RJ(11,9) =  3.0*y[10]*y[10];
-    RJ(11,10) =  2*3.0*y[9]*y[9];
+    RJ(11,10) =  2*3.0*y[10]*y[9];
     RJ(11,11) = -rd.D[3];
 
     double dense_jac[12*12];
     rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 12);
     for (int i=0; i<12*12; ++i)
-	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-15)
+	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-15){
             printf("i=%d, dense_jac[i]=%.3f, ref_jac[i]=%.3f\n", i, dense_jac[i], ref_jac[i]);
 	    return 2;
+        }
 
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
     rd.banded_packed_jac_cmaj(0.0, &y[0], bnd_jac, (2*rd.n+1));
