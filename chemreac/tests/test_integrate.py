@@ -3,7 +3,6 @@
 
 from __future__ import print_function, division, absolute_import, unicode_literals
 
-
 import os
 from itertools import product
 
@@ -20,6 +19,7 @@ chemical reaction system. (no diffusion)
 """
 
 LOG_COMOBS = list(product([True, False], [True, False]))
+
 
 @pytest.mark.parametrize("log", LOG_COMOBS)
 def test_decay(log):
@@ -79,7 +79,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
         n,
         [[i] for i in range(0,n,2)],
         [[i] for i in range(1,n,2)],
-        k=k, N=N, D=D, bin_k_factor=bkf,
+        k=k, N=N, D=D, x=x, bin_k_factor=bkf,
         bin_k_factor_span=bkf_span,
         logy=logy, logt=logt, geom=geom
     )
@@ -112,19 +112,29 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
 
 
 @pytest.mark.parametrize("N_wjac_geom", product(
-    range(5, 14, 4), (True, False), (FLAT, CYLINDRICAL, SPHERICAL)))
+    [64, 128], [False, True], (FLAT, CYLINDRICAL, SPHERICAL)))
 def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
     N, wjac, geom = N_wjac_geom
     # Test that mass convervation is fulfilled wrt diffusion.
-    x = np.linspace(0.01, 1.0, N+1)
-    y0 = (x[0]/2+x[1:])**2
+    x = np.linspace(0.01*N, N, N+1)
+    y0 = (x[0]/2/N+x[1:]/N)**2
 
-    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x, geom=geom, nstencil=3,
+    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom, nstencil=3,
                             lrefl=True, rrefl=True)
+    debug = False
+    if debug: # From debugging / test design
+        import matplotlib.pyplot as plt
+        plt.subplot(2,1,1)
+        plt.plot(sys.xcenters, y0)
+        plt.xlabel('x')
+        plt.ylabel('y0')
+
     tout = np.linspace(0, 10.0, 50)
-    yout, info = run(sys, y0, tout, atol=1e-12, rtol=1e-13, with_jacobian=wjac)
+    atol, rtol = 1e-6, 1e-8
+    yout, info = run(sys, y0, tout, atol=atol, rtol=rtol, with_jacobian=wjac, method='adams')
+    x /= N
     if geom == FLAT:
-        yprim = yout
+        yprim = yout*(x[1:]**1 - x[:-1]**1)
     elif geom == CYLINDRICAL:
         yprim = yout*(x[1:]**2 - x[:-1]**2)
     elif geom == SPHERICAL:
@@ -134,7 +144,13 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     ybis = np.sum(yprim, axis=1)
 
-    # Need to plot this
-    print(y0)
-    print(np.average(ybis) - ybis)
-    assert np.allclose(np.average(ybis), ybis)
+    if debug: # From debugging / test design
+        plt.subplot(2,1,2)
+        plt.plot(ybis-ybis[0])
+        plt.xlabel('t')
+        plt.ylabel('tot y - tot y0')
+        plt.show()
+        print(y0)
+        print(np.average(ybis) - ybis)
+        print(np.average(ybis))
+    assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)

@@ -29,7 +29,7 @@ class ReactionDiffusionBase(object):
             k=self.k[ri])
 
     def alloc_fout(self):
-        return np.empty(self.n*self.N)
+        return np.zeros(self.n*self.N)
 
     def alloc_jout(self, banded=True, order='C', pad=0):
         if order == 'C':

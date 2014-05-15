@@ -32,7 +32,9 @@ class SymRD(ReactionDiffusionBase):
         self.k = k
         self.D = D if D != None else [0]*n
         self.x = x if x != None else [0, 1]
-        self.N = N if N != None else len(self.x) - 1
+        self.N = len(self.x) - 1
+        if not N in [None, 0]:
+            assert self.N == N
         self.stoich_actv = stoich_actv or [[]*len(stoich_reac)]
         self.bin_k_factor = bin_k_factor
         self.bin_k_factor_span = bin_k_factor_span

@@ -5,6 +5,7 @@ import numpy as np
 
 from chemreac.symbolic import SymRD
 
+
 def test_SymRD():
     rd = SymRD(2, [[0]], [[1]], k=[5.0])
 

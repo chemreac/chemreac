@@ -12,6 +12,8 @@ from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
 
+from test_reactiondiffusion import _test_f_and_dense_jac_rmaj
+
 """
 Test chemical reaction system with 4 species.
 (no diffusion)
@@ -169,9 +171,8 @@ def test_integrate(combo):
     assert np.allclose(tout-t0, ref_t)
 
     y = np.log(y0) if logy else y0
-    if logt:
-        tout = np.log(tout)
-    yout, info = run(rd, y, tout)
-    if logy: yout = np.exp(yout)
-
-    assert np.allclose(yout[:,:rd.n], ref_y, atol=1e-5)
+    t = np.log(tout) if logt else tout
+    _test_f_and_dense_jac_rmaj(rd, t0, y)
+    yout, info = run(rd, y, t, with_jacobian=True)
+    yout = np.exp(yout) if logy else yout
+    assert np.allclose(yout[:, :rd.n], ref_y, atol=1e-4)

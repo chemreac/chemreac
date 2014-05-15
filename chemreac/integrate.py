@@ -57,6 +57,7 @@ def run(sys, y0, tout, mode=None, **kwargs):
 
     def jac(t, y, *j_args):
         jac.neval += 1
+        jout[...] = 0  # <--- this is very important (clear old LU decomp)
         if mode == DENSE:
             sys.dense_jac_cmaj(t, y, jout)
         else:

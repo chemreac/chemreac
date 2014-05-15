@@ -41,7 +41,7 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024,
     tout = np.logspace(log(t0), log(tend), nt+1, base=e)
     y = np.log(y0.flatten()) if logy else y0.flatten()
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t, with_jacobian=False)
+    yout, info = run(sys, y, t)
     if logy: yout = np.exp(yout)
     #if logt: tout = np.exp(tout)
 
