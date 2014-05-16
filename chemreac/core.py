@@ -53,12 +53,12 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     extra_attrs = ['k_err', 'D_err', 'names', 'tex_names']
 
     # subset of extra_attrs optionally passed by user
-    kwarg_attrs = ['names', 'tex_names', 'xscale']
+    kwarg_attrs = ['names', 'tex_names']
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
                 stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
                 geom=FLAT, logy=False, logt=False, nstencil=None, lrefl=True,
-                rrefl=True, **kwargs):
+                rrefl=True, xscale=1.0, **kwargs):
         """
         Arguments:
         -`n`: number of species
@@ -77,8 +77,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         -`nstencil`: number of points used in finite difference scheme
         -`lrefl`: reflective left boundary (default: True)
         -`rrefl`: reflective right boundary (default: True)
-
-        Optional key-word arguments:
         -`xscale`: use internal scaling of length
                    (finite difference scheme works best for step-size ~1)
 
@@ -161,15 +159,12 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
         nstencil = nstencil or (1 if N == 1 else 3)
 
-        xscale = kwargs.pop('xscale', 1.0)
-
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N,
-            xscale**2*np.array(D_val), xscale*np.array(_x),
-            _stoich_actv, bin_k_factor, bin_k_factor_span, geom, logy,
-            logt, nstencil, lrefl, rrefl
+            D_val, _x, _stoich_actv, bin_k_factor,
+            bin_k_factor_span, geom, logy, logt,
+            nstencil, lrefl, rrefl
         )
-        rd.xscale = xscale
         rd.k_err = k_err
         rd.D_err = D_err
 

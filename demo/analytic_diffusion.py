@@ -15,7 +15,6 @@ from __future__ import print_function, division, absolute_import
 
 import argh
 import numpy as np
-import matplotlib.pyplot as plt
 
 from chemreac import (
     ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
@@ -35,10 +34,10 @@ def cylindrical_analytic(x, t, D, mu):
     return (4*np.pi*D*t)**-1 * np.exp(-(x-mu)**2/(4*D*t))
 
 
-def main(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=2048, nt=30,
+def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64, nt=64,
          geom='f', logt=False, logy=False, random=False, k=0.0, nstencil=3,
          linterpol=False, rinterpol=False, num_jacobian=False, method='bdf',
-         scale_x=False):
+         scale_x=False, plot=False):
     decay = (k != 0.0)
     n = 2 if decay else 1
     mu = float(mu or x0)
@@ -89,53 +88,61 @@ def main(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=2048, nt=30,
     # Run the integration
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t, atol=1e-8, rtol=1e-6,
+    yout, info = run(sys, y, t, atol=1e-6, rtol=1e-8,
                      with_jacobian=(not num_jacobian), method=method)
     yout = np.exp(yout) if logy else yout
     print(info)
 
+    rmsd = np.sum((yref-yout)**2 / N, axis=1)**0.5
+    ave_rmsd_over_atol = np.average(rmsd, axis=0)/info['atol']
+
     # Plot results
-    def plot(y, c, ttl=None):
-        plt.plot(sys.xcenters, y, c=c)
-        if N < 100:
-            plt.vlines(sys.x, 0, np.ones_like(sys.x)*y0[0], linewidth=.1,
-                       colors='gray')
-        plt.xlabel('x / m')
-        plt.ylabel('C / M')
-        if ttl:
-            plt.title(ttl)
+    if plot:
+        import matplotlib.pyplot as plt
+        def _plot(y, c, ttl=None):
+            plt.plot(sys.xcenters, y, c=c)
+            if N < 100:
+                plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y), linewidth=.1,
+                           colors='gray')
+            plt.xlabel('x / m')
+            plt.ylabel('C / M')
+            if ttl:
+                plt.title(ttl)
 
-    for i in range(nt):
-        c = 1-tout[i]/tend
-        c = (1.0-c, .5-c/2, .5-c/2)
+        for i in range(nt):
+            c = 1-tout[i]/tend
+            c = (1.0-c, .5-c/2, .5-c/2)
 
-        plt.subplot(4, 1, 1)
-        plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N))
+            plt.subplot(4, 1, 1)
+            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N))
+            if decay:
+                _plot(yout[i, :, 1], c[::-1])
+
+            plt.subplot(4, 1, 2)
+            _plot(yref[i, :, 0], c, 'Analytic')
+            if decay:
+                _plot(yref[i, :, 1], c[::-1])
+
+            plt.subplot(4, 1, 3)
+            _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
+                 'Abs. err. / Abs. tol. (={})'.format(info['atol']))
+            if decay:
+                _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'], c[::-1])
+
+
+        plt.subplot(4, 1, 4)
+        tspan = [tout[0], tout[-1]]
+        plt.plot(tout, rmsd[:,0] / info['atol'], 'r')
+        plt.plot(tspan, [ave_rmsd_over_atol[0]]*2, 'r--')
         if decay:
-            plot(yout[i, :, 1], c[::-1])
+            plt.plot(tout, rmsd[:,1]/info['atol'], 'b')
+            plt.plot(tspan, [ave_rmsd_over_atol[0]]*2, 'b--')
 
-        plt.subplot(4, 1, 2)
-        plot(yref[i, :, 0], c, 'Analytic')
-        if decay:
-            plot(yref[i, :, 1], c[::-1])
-
-        plt.subplot(4, 1, 3)
-        plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
-             'Abs. err. / Abs. tol. (={})'.format(info['atol']))
-        if decay:
-            plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'], c[::-1])
-
-    plt.subplot(4, 1, 4)
-    plt.plot(tout, np.sum((yref[:, :, 0] - yout[:, :, 0])**2 / N,
-                          axis=1)**0.5 / info['atol'], 'r')
-    if decay:
-        plt.plot(tout, np.sum((yref[:, :, 1]-yout[:, :, 1])**2/N,
-                              axis=1)**0.5/info['atol'], 'b')
-    plt.xlabel('Time / s')
-    plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
-    plt.tight_layout()
-    plt.show()
-
+        plt.xlabel('Time / s')
+        plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
+        plt.tight_layout()
+        plt.show()
+    return tout, yout, info, ave_rmsd_over_atol, sys
 
 if __name__ == '__main__':
-    argh.dispatch_command(main)
+    argh.dispatch_command(integrate_rd)

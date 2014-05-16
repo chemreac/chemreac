@@ -74,6 +74,12 @@ cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
 
 
 cdef class CppReactionDiffusion:
+    """
+    Wrapper around C++ class ReactionDiffusion,
+    In addition of being a thing wrapper it abstracts:
+        -`xscale`: scaling of length
+
+    """
     cdef ReactionDiffusion *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
@@ -96,7 +102,14 @@ cdef class CppReactionDiffusion:
                   uint nstencil=3,
                   bint lrefl=True,
                   bint rrefl=True,
+                  double xscale = 1.0,
               ):
+        cdef size_t i
+        for i in range(x.size()):
+            x[i] *= xscale
+        for i in range(D.size()):
+            D[i] *= xscale**2
+        self.xscale = xscale
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
             D, x, stoich_actv, bin_k_factor,
@@ -180,14 +193,18 @@ cdef class CppReactionDiffusion:
 
     property D:
         def __get__(self):
-            return np.asarray(self.thisptr.D)
+            return np.asarray(self.thisptr.D)/self.xscale**2
+
         def __set__(self, vector[double] D):
+            cdef size_t i
+            for i in range(D.size()):
+                D[i] *= self.xscale**2
             assert len(D) == self.n
             self.thisptr.D = D
 
     property x:
         def __get__(self):
-            return np.asarray(self.thisptr.x)
+            return np.asarray(self.thisptr.x)/self.xscale
 
     property bin_k_factor:
         def __get__(self):
@@ -227,20 +244,20 @@ cdef class CppReactionDiffusion:
     def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
 
-    property _xc:
-        def __get__(self):
-            return fromaddress(<long>self.thisptr.xc, (self.N+self.thisptr.nstencil-1,))
-
     property xcenters:
         def __get__(self):
             return 1/self.xscale*fromaddress(
                 <long>(&self.thisptr.xc[(self.thisptr.nstencil-1)//2]), (self.N,))
 
-    # (Private)
-    property D_weight:
+    # For debugging
+    property _xc:
+        def __get__(self):
+            return fromaddress(<long>self.thisptr.xc, (self.N+self.thisptr.nstencil-1,))
+
+    property D_weight:  # (Private)
         def __get__(self):
             return fromaddress(<long>self.thisptr.D_weight,
-                                              (self.thisptr.N*self.thisptr.nstencil,))
+                               (self.thisptr.N*self.thisptr.nstencil,))
 
     def _stencil_bi_lbound(self, uint bi):
         return self.thisptr._stencil_bi_lbound(bi)

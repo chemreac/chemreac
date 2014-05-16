@@ -1,0 +1,54 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from __future__ import print_function, division, absolute_import, unicode_literals
+
+import argh
+import matplotlib.pyplot as plt
+import numpy as np
+
+from chemreac import FLAT, CYLINDRICAL, SPHERICAL, Geom_names
+
+from analytic_diffusion import flat_analytic, spherical_analytic, cylindrical_analytic, integrate_rd
+
+
+def main():
+    nstencils = [3, 5, 7]
+    c = 'rbk'
+    m = 'osd'
+    ls = ['--', ':', '-.']
+
+    nNs = 7
+    Ns = [8*2**i for i in range(nNs)]
+    rates = [0, 0.1]
+    for gi, geom in enumerate([FLAT, CYLINDRICAL, SPHERICAL]):
+        for ri, rate in enumerate(rates):
+            for si, nstencil in enumerate(nstencils):
+                tout, yout, info, rmsd_over_atol, sys = zip(*[integrate_rd(
+                    N=N, nstencil=nstencil, k=rate, geom='fcs'[geom]) for N in Ns])
+                err = np.average(rmsd_over_atol, axis=1)
+                logNs = np.log(Ns)
+                logerr = np.log(err)
+                p = np.polyfit(logNs[:nNs-si*2], logerr[:nNs-si*2], 1)
+
+                plt.subplot(3, 2, gi*2 + ri + 1)
+                plt.loglog(Ns, err, marker=m[si], ls='None', c=c[si])
+                plt.loglog(Ns[:nNs-si*2], np.exp(np.polyval(p, logNs[:nNs-si*2])), ls='--',
+                           c=c[si], label=str(nstencil)+': '+str(round(-p[0], 1)))
+                plt.xlabel('N')
+                ax = plt.gca()
+                ax.set_xticklabels(map(str, Ns))
+                plt.ylabel('RMSD/atol')
+                plt.legend(prop={'size': 11})
+                if rate == 0:
+                    plt.title('Diffusion, geom='+Geom_names[geom])
+                else:
+                    plt.title('Diffusion + 1 decay reaction, geom='+Geom_names[geom])
+
+    plt.tight_layout()
+    plt.show()
+
+
+
+if __name__ == '__main__':
+    argh.dispatch_command(main)
