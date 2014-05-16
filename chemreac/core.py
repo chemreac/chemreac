@@ -164,7 +164,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         xscale = kwargs.pop('xscale', 1.0)
 
         rd = super(ReactionDiffusion, cls).__new__(
-            cls, n, stoich_reac, stoich_prod, k_val, N, xscale**2*np.array(D_val), xscale*_x,
+            cls, n, stoich_reac, stoich_prod, k_val, N,
+            xscale**2*np.array(D_val), xscale*np.array(_x),
             _stoich_actv, bin_k_factor, bin_k_factor_span, geom, logy,
             logt, nstencil, lrefl, rrefl
         )

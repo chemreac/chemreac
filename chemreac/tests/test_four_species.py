@@ -68,7 +68,8 @@ def test_integrate(combo):
     yout, info = run(sys, y, tout)
     if logy: yout = np.exp(yout)
 
-    assert np.allclose(yout[:,:4], ref_y, atol=1e-5)
+    for i in range(N):
+        assert np.allclose(yout[:, i, :], ref_y, atol=1e-5)
 
 
 def _get_ref_f(sys, t0, y0, logy, logt):

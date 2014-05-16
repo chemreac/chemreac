@@ -23,19 +23,21 @@ def main(tend=2.0, nt=500, logy=False, logt=False):
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
     yout, info = run(sys, y, t)
-    if logy: yout = np.exp(yout)
-    for i,l in enumerate('AB'):
-        plt.subplot(2,1,1)
-        plt.plot(tout, yout[:,i], label=l)
-        plt.subplot(2,1,2)
-        plt.plot(tout, yout[:,i]-yref[:,i], label=l)
+    yout = np.exp(yout) if logy else yout
+    yout = yout[:,0,:]
 
-    plt.subplot(2,1,1)
+    for i, l in enumerate('AB'):
+        plt.subplot(2, 1, 1)
+        plt.plot(tout, yout[:, i], label=l)
+        plt.subplot(2, 1, 2)
+        plt.plot(tout, yout[:, i]-yref[:, i], label=l)
+
+    plt.subplot(2, 1, 1)
     plt.title('C(t)')
     plt.legend(loc='best')
     plt.xlabel('t')
     plt.ylabel('C')
-    plt.subplot(2,1,2)
+    plt.subplot(2, 1, 2)
     plt.title('Error in C(t)')
     plt.legend(loc='best')
     plt.xlabel('t')

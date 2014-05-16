@@ -68,17 +68,19 @@ def run(sys, y0, tout, mode=None, **kwargs):
     runner = ode(f, jac=jac if kwargs['with_jacobian'] else None)
     runner.set_integrator(**kwargs)
     runner.set_initial_value(y0.flatten(), tout[0])
-    yout = np.empty((len(tout), sys.n*sys.N))
+
+    yout = np.empty((len(tout), sys.n*sys.N), order='C')
     yout[0,:] = y0
     texec = time.time()
     for i in range(1, len(tout)):
         runner.integrate(tout[i])
         yout[i, :] = runner.y
     texec = time.time() - texec
+
     info = kwargs.copy()
     info.update({
         'texec': texec,
         'neval_f': f.neval,
         'neval_j': jac.neval,
     })
-    return yout, info
+    return yout.reshape((len(tout), sys.N, sys.n)), info

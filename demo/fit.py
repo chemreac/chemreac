@@ -24,19 +24,20 @@ from numpy import exp
 
 from scipy.optimize import curve_fit
 
+
 def binary_eq_analytic(t, kf, kb, d, eps_l, c0):
     # TODO: add for c0[2] > 0
     # TODO: add for 4*A*B == (A+B+kb/kf)**2
 
-    A,B,C = c0
+    A, B, C = c0
     assert C == 0.0
-    #assert 4*A*B < (A+B+kb/kf)**2
     p = 4*A*B*kf**2
     q = kb+kf*(A+B)
     r = (q**2 - p)**0.5
     a = q+r
     b = q-r
     return eps_l*a*b*(exp(r*(t+d))-1)/(2*kf*(a*exp(r*(t+d))-b))
+
 
 def fit_binary_eq(tdata, ydata, c0, **kwargs):
     f = lambda t, kf, kb, d, eps_l: binary_eq_analytic(
@@ -53,8 +54,8 @@ def binary_fw_analytic(t, k, d, eps_l, c0):
     c0 - initial conc
     """
     # dC/dt = dx/dt = k(c[0]-x)(c[1]-x) ...
-    return eps_l*(exp((c0[0]-c0[1])*k*(t+d))-1)/\
-        (c0[0]/c0[1]*exp((c0[0]-c0[1])*k*(t+d))-1)
+    return (eps_l*(exp((c0[0]-c0[1])*k*(t+d))-1) /
+            (c0[0]/c0[1]*exp((c0[0]-c0[1])*k*(t+d))-1))
 
 
 def fit_binary_fw(tdata, ydata, c0, **kwargs):
@@ -68,18 +69,19 @@ def fit_binary_fw(tdata, ydata, c0, **kwargs):
 
 def fit_binary_eq_rd(tdata, ydata, c0, Keq, **kwargs):
     # A + B <-> C
-    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], k=[0,0])
+    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], k=[0, 0])
     pconv = []
+
     def fit_func(tout, k_fw, tdelay, eps_l):
         pconv.append((k_fw, tdelay, eps_l))
         rd.k = [k_fw, k_fw/Keq]
         if tdelay > 0.0:
             c1, info = run(rd, c0, [0, tdelay])
-            c1 = c1[1,:]
+            c1 = c1[1, 0, :]
         else:
             c1 = c0
         yout, info = run(rd, c1, tdelay+tout)
-        return yout[:,2]*eps_l
+        return yout[:, 0, 2]*eps_l
     popt, pcov = curve_fit(fit_func, tdata, ydata, **kwargs)
     return popt, np.asarray(pconv)
 
@@ -97,7 +99,7 @@ def fit_binary_eq_from_temporal_abs_data(
     Assumes C_A(t=0) > C_B(t=0) (pseudo first order guess).
     """
     concA, concB, concC = c0
-    if pseudo_fo == None:
+    if pseudo_fo is None:
         # Could be supported by swaping concentrations...
         assert concA >= concB
         pseudo_fo = concA > concB*2
@@ -108,7 +110,7 @@ def fit_binary_eq_from_temporal_abs_data(
     eps_l_guess = tf_avg/c0[1]
 
     # Catch transient
-    itransient = np.argwhere(ydata > ydata[0]+\
+    itransient = np.argwhere(ydata > ydata[0] +
                              (tf_avg-ydata[0])*peak_yfrac)[0]
 
     # Guess k
@@ -135,6 +137,9 @@ def fit_binary_eq_from_temporal_abs_data(
 
     d_guess = -(lin_y_for_d-lin_p[1])/lin_p[0]
 
+    print("Psuedo first order linear fit only fw: k={}, d={}, eps_l={}".format(
+        k_fw_guess, d_guess, eps_l_guess))
+
     k_fwnl, d_fwnl, eps_l_fwnl = fit_binary_fw(
         tdata, ydata, c0, p0=(k_fw_guess, d_guess, eps_l_guess))
     yfwnlfit = binary_fw_analytic(tdata-d_fwnl, k_fwnl, d_fwnl,
@@ -149,9 +154,8 @@ def fit_binary_eq_from_temporal_abs_data(
     yeqnlfit = binary_eq_analytic(tdata-d_eqnl, kfw_eqnl, kbw_eqnl, d_eqnl,
                                   eps_l_eqnl, c0)
 
-    print("Nonlinear opt only fw: kfw={}, kbw={}, d={}, eps_l={}".format(
+    print("Nonlinear opt equilibrium: kfw={}, kbw={}, d={}, eps_l={}".format(
         kfw_eqnl, kbw_eqnl, d_eqnl, eps_l_eqnl))
-
 
     popt, pconv = fit_binary_eq_rd(tdata, ydata, c0, Keq,
                                    p0=[kfw_eqnl, d_eqnl, eps_l_eqnl])
@@ -184,9 +188,9 @@ def fit_binary_eq_from_temporal_abs_data(
         plt.legend(loc='best')
 
         plt.subplot(4, 1, 4)
-        plt.plot(pconv[0,0]/pconv[:,0], label='k')
-        plt.plot(pconv[0,1]/pconv[:,1], label='t_delay')
-        plt.plot(pconv[0,2]/pconv[:,2], label='eps*l')
+        plt.plot(pconv[0, 0]/pconv[:, 0], label='k')
+        plt.plot(pconv[0, 1]/pconv[:, 1], label='t_delay')
+        plt.plot(pconv[0, 2]/pconv[:, 2], label='eps*l')
         plt.title("Convergence")
         plt.legend(loc='best')
         plt.show()
@@ -195,10 +199,11 @@ def fit_binary_eq_from_temporal_abs_data(
 
 
 def simulate_stopped_flow(rd, t, c0, k, noiselvl, eps_l, tdelay=None):
-    if tdelay == None: tdelay = np.abs(np.random.normal(
+    if tdelay is None:
+        tdelay = np.abs(np.random.normal(
             t[-1]/20, scale=t[-1]/20))
     cout, info = run(rd, c0, t)
-    ytrue = eps_l*cout[:,2]
+    ytrue = eps_l*cout[:, 0, 2]
     skip_nt = np.argwhere(t >= tdelay)[0]
     tinp = t[:-skip_nt] if skip_nt > 0 else t
     yinp = ytrue[skip_nt:] + noiselvl*np.random.normal(
@@ -220,7 +225,7 @@ def main(tdelay=1.0, B0=0.6, noiselvl=3e-4, nt=200, eps_l=4200.0):
 
     c0 = [1.0, B0, 0.0]
     ttrue = np.linspace(0, 10, nt)
-    rd_eq = ReactionDiffusion(3, [[0,1], [2]], [[2], [0,1]], k=ktrue)
+    rd_eq = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], k=ktrue)
     tinp, yinp = simulate_stopped_flow(
         rd_eq, ttrue, c0, ktrue, noiselvl, eps_l, tdelay)
     k_fw_opt, d_opt, eps_l_opt = fit_binary_eq_from_temporal_abs_data(
@@ -228,16 +233,16 @@ def main(tdelay=1.0, B0=0.6, noiselvl=3e-4, nt=200, eps_l=4200.0):
 
     rd_eq.k = [k_fw_opt, k_fw_opt/Keq]
     yout, info = run(rd_eq, c0, ttrue)
-    yopt = yout[:,2]*eps_l_opt
+    yopt = yout[:, 0, 2]*eps_l_opt
 
     # Plot
-    plt.subplot(2,1,1)
+    plt.subplot(2, 1, 1)
     plt.plot(tinp, yinp, label='Input data')
     plt.plot(ttrue-tdelay, yopt,
              label='Shooting Opt (k={})'.format(k_fw_opt))
     plt.legend(loc='best')
 
-    plt.subplot(2,1,2)
+    plt.subplot(2, 1, 2)
     plt.plot(tinp, yinp, label='Input data')
     # TODO: this needs to be improved...
     yquad = (B0-1/(1/B0+k_fw_opt*ttrue))*eps_l_opt

@@ -35,11 +35,11 @@ def test_decay(log):
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
     yout, info = run(rd, y, t)
-    if logy: yout = np.exp(yout)
+    yout = np.exp(yout) if logy else yout
 
     yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
                      y0[1]+y0[0]*(1-np.exp(-k0*(tout-t0)))]).transpose()
-    assert np.allclose(yout, yref)
+    assert np.allclose(yout[:, 0, :], yref)
 
 
 def test_autodimerization():
@@ -55,7 +55,7 @@ def test_autodimerization():
     yout, info = run(rd, [A0, B0], t)
     Aref = 1/(1/A0+2*k*t)
     yref = np.vstack((Aref, (A0-Aref)/2)).transpose()
-    assert np.allclose(yout, yref)
+    assert np.allclose(yout[:, 0, :], yref)
 
 
 @pytest.mark.parametrize("log_geom", product(LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
@@ -108,7 +108,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
                 y0[i+1]+y0[i]*(1-np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)))
             ]).transpose() for i in range(0, n, 2)
         ]) for bi in range(N)])
-    assert np.allclose(yout, yref)
+    assert np.allclose(yout.flatten(), yref.flatten())
 
 
 @pytest.mark.parametrize("N_wjac_geom", product(
@@ -132,6 +132,7 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
     tout = np.linspace(0, 10.0, 50)
     atol, rtol = 1e-6, 1e-8
     yout, info = run(sys, y0, tout, atol=atol, rtol=rtol, with_jacobian=wjac, method='adams')
+    yout = yout[:,:,0]
     x /= N
     if geom == FLAT:
         yprim = yout*(x[1:]**1 - x[:-1]**1)

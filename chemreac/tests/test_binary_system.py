@@ -175,4 +175,5 @@ def test_integrate(combo):
     _test_f_and_dense_jac_rmaj(rd, t0, y)
     yout, info = run(rd, y, t, with_jacobian=True)
     yout = np.exp(yout) if logy else yout
-    assert np.allclose(yout[:, :rd.n], ref_y, atol=1e-4)
+    for i in range(N):
+        assert np.allclose(yout[:, i, :], ref_y, atol=1e-4)

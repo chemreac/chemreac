@@ -9,7 +9,9 @@ from chemreac import DENSE, BANDED, SPARSE
 from chemreac.serialization import load
 from chemreac.integrate import run
 from chemreac.util.plotting import coloured_spy
-from chemreac.util.analysis import plot_jacobian, plot_per_reaction_contribution
+from chemreac.util.analysis import (
+    plot_jacobian, plot_per_reaction_contribution
+)
 
 
 """
@@ -29,7 +31,7 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
     y0 = np.concatenate([y0/(i+1)*(0.25*i**2+1) for i in range(N)])
     t0 = 1e-10
 
-    if mode == None:
+    if mode is None:
         if sys.N == 1:
             mode = DENSE
         elif sys.N > 1:
@@ -57,18 +59,18 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
         y = np.log(y0) if logy else y0
         t = np.log(tout) if logt else tout
         yout, info = run(sys, y, t)
-        if logy:
-            yout = np.exp(yout)
+        yout = np.exp(yout) if logy else yout
+
         if plot:
-            for i,l in enumerate('ABCD'):
-                plt.plot(tout, yout[:,i], label=l)
+            for i, l in enumerate('ABCD'):
+                plt.plot(tout, yout[:, 0, i], label=l)
             plt.legend(loc='best')
             if show:
                 plt.show()
             else:
                 plt.savefig(__file__[:-2]+'png')
 
-            plt.figure(figsize=(8,10))
+            plt.figure(figsize=(8, 10))
             plot_jacobian(
                 sys,
                 np.log(tout) if sys.logt else tout,
@@ -82,7 +84,7 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
             else:
                 plt.savefig(__file__[:-3]+'_jacobian.png')
 
-            plt.figure(figsize=(8,10))
+            plt.figure(figsize=(8, 10))
             plot_per_reaction_contribution(
                 sys,
                 np.log(tout) if sys.logt else tout,

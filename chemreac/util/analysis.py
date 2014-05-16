@@ -37,7 +37,7 @@ def _get_jac_row_over_t(sys, tout, yout, indices, bi=0):
     Jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F')
     row_out = np.zeros((yout.shape[0], len(indices), sys.n))
     for i, y in enumerate(yout):
-        sys.banded_packed_jac_cmaj(tout[i], y, Jout)
+        sys.banded_packed_jac_cmaj(tout[i], y.flatten(), Jout)
         Jtmp = Jout[:, bi*sys.n:(bi + 1)*sys.n]
         row_out[i,:,:] = get_jac_row_from_banded(Jtmp, indices, sys.n)
     return row_out
@@ -46,8 +46,9 @@ def _get_jac_row_over_t(sys, tout, yout, indices, bi=0):
 def _get_per_func_out(sys, tout, yout, indices):
     out = np.empty((yout.shape[0], len(indices), sys.nr))
     for i, y in enumerate(yout):
+        flat_y = y.flatten()
         for j, si in enumerate(indices):
-            sys.per_rxn_contrib_to_fi(tout[i], y, si, out[i, j, :])
+            sys.per_rxn_contrib_to_fi(tout[i], flat_y, si, out[i, j, :])
     return out
 
 
@@ -108,7 +109,7 @@ def plot_C_vs_t_in_bin(
     ax, substances, labels = _init_ax_substances_labels(
         sys, ax, substances, labels, xscale, yscale)
     for i, lbl in zip(substances, labels):
-        ax.plot(tout, yout[:, i+bi*sys.n], label=lbl,
+        ax.plot(tout, yout[:, bi, i], label=lbl,
                 ls=ls[i%len(ls)], c=c[i%len(c)])
     ax.set_xlabel("t / s")
     ax.set_ylabel("C / M")
@@ -123,7 +124,7 @@ def plot_C_vs_x(sys, tout, yout, substances, ti, ax=None, labels=None,
         sys, ax, substances, labels, xscale, yscale)
     x_edges = np.repeat(sys.x, 2)[1:-1]
     for i, lbl in zip(substances, labels):
-        y_edges = np.repeat(yout[ti, range(i, sys.n*sys.N, sys.n)], 2)
+        y_edges = np.repeat(yout[ti, :, i], 2)
         ax.plot(x_edges, y_edges, label=lbl)
     ax.set_xlabel("x / m")
     ax.set_ylabel("C / M")
