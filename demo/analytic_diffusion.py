@@ -92,10 +92,11 @@ def interleave(arrays, axis=0):
     return c
 
 
-def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom='f',
-         logt=False, logy=False, random=False, k=0.0, nstencil=3, lrefl=False, rrefl=False,
-         num_jacobian=False):
+def main(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=2048, nt=30, geom='f',
+         logt=False, logy=False, random=False, k=0.0, nstencil=3, linterpol=False, rinterpol=False,
+         num_jacobian=False, method='bdf', scale_x=False):
     decay = (k != 0.0)
+    n = 2 if decay else 1
     mu = float(mu or x0)
     tout = np.linspace(t0, tend, nt)
 
@@ -108,9 +109,11 @@ def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom=
         SPHERICAL: spherical_analytic
     }[geom]
 
-    # Steup the system
-    x = np.linspace(x0, xend, N+1)
+    # Setup the system
     #x = np.logspace(np.log(x0), np.log(xend), N+1, base=np.exp(1))
+    x = np.linspace(x0, xend, N+1)
+
+
     if random: x += (np.random.random(N+1)-0.5)*(xend-x0)/(N+2)
     sys = ReactionDiffusion(
         2 if decay else 1,
@@ -124,28 +127,31 @@ def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom=
         logy=logy,
         logt=logt,
         nstencil=nstencil,
-        lrefl=lrefl,
-        rrefl=rrefl
+        lrefl=not linterpol,
+        rrefl=not rinterpol,
+        xscale=1/(x[1]-x[0]) if scale_x else 1.0
     )
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt,1))
-    yref = (xend-x0)**2*analytic(sys.xcenters, t, D, mu)
-    if decay: yref = interleave((yref*np.exp(-k*t), yref*(1-np.exp(-k*t))), axis=1)
+    yref = (xend-x0)*analytic(sys.xcenters, t, D, mu)
+    if decay:
+        yref = interleave((yref*np.exp(-k*t), yref*(1-np.exp(-k*t))), axis=1)
     y0 = yref[0, :]
 
     # Run the integration
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t, atol=(xend-x0)**2/1e9, rtol=1e-8,
-                     with_jacobian=(not num_jacobian), method='bdf')
+    yout, info = run(sys, y, t, atol=1e-8, rtol=1e-6,
+                     with_jacobian=(not num_jacobian), method=method)
     if logy: yout = np.exp(yout)
     print(info)
 
     # Plot results
     def plot(y, c, ttl=None):
         plt.plot(sys.xcenters, y, c=c)
-        if N < 100: plt.vlines(sys.x, 0, np.ones_like(sys.x)*y0[0], linewidth=.1, colors='gray')
+        if N < 100:
+            plt.vlines(sys.x, 0, np.ones_like(sys.x)*y0[0], linewidth=.1, colors='gray')
         plt.xlabel('x / m')
         plt.ylabel('C / M')
         if ttl: plt.title(ttl)
@@ -171,7 +177,7 @@ def main(D=2e-3, t0=3., tend=7., x0=1.0, xend=2.0, mu=None, N=2048, nt=30, geom=
     plt.subplot(4, 1, 4)
     plt.plot(tout, np.sum((yref[:, ::stride] - yout[:, ::stride])**2 / N,
                           axis=1)**0.5 / info['atol'], 'r')
-    if decay: plt.plot(tout, np.sum((yref[:,::stride]-yout[:,1::stride])**2/N,
+    if decay: plt.plot(tout, np.sum((yref[:,1::stride]-yout[:,1::stride])**2/N,
                                     axis=1)**0.5/info['atol'], 'b')
     plt.xlabel('Time / s')
     plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')

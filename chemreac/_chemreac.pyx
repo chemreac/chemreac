@@ -77,6 +77,7 @@ cdef class CppReactionDiffusion:
     cdef ReactionDiffusion *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
+    cdef public double xscale
 
     def __cinit__(self,
                   uint n,
@@ -232,7 +233,8 @@ cdef class CppReactionDiffusion:
 
     property xcenters:
         def __get__(self):
-            return fromaddress(<long>(&self.thisptr.xc[(self.thisptr.nstencil-1)//2]), (self.N,))
+            return 1/self.xscale*fromaddress(
+                <long>(&self.thisptr.xc[(self.thisptr.nstencil-1)//2]), (self.N,))
 
     # (Private)
     property D_weight:
