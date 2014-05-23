@@ -2,6 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
+
+ $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5 --k 0.1 --geom f
+
  $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 400 \
      --nstencil 3
 
@@ -9,6 +12,11 @@ Note -D 475
 
  $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 475 \
      --nstencil 7
+
+Still problematic (should not need to be):
+
+ $ python analytic_diffusion.py --plot --nstencil 5 --logy --D 0.0005
+
 """
 
 from __future__ import print_function, division, absolute_import
@@ -22,23 +30,45 @@ from chemreac import (
 from chemreac.integrate import run
 
 
-def flat_analytic(x, t, D, mu):
-    return (4*np.pi*D*t)**-0.5 * np.exp(-(x-mu)**2/(4*D*t))
+def flat_analytic(x, t, D, mu, v, logy=False):
+    a = (4*np.pi*D*t)**-0.5
+    b = -(x-mu-v*t)**2/(4*D*t)
+    if logy:
+        return np.log(a) + b
+    else:
+        return a * np.exp(b)
 
 
-def spherical_analytic(x, t, D, mu):
-    return (4*np.pi*D)**-0.5 * t**-1.5 * np.exp(-(x-mu)**2/(4*D*t))
+def spherical_analytic(x, t, D, mu, v, logy=False):
+    a = (4*np.pi*D)**-0.5 * t**-1.5
+    b = -(x-mu-v*t)**2/(4*D*t)
+    if logy:
+        return np.log(a) + b
+    else:
+        return a * np.exp(b)
 
 
-def cylindrical_analytic(x, t, D, mu):
-    return (4*np.pi*D*t)**-1 * np.exp(-(x-mu)**2/(4*D*t))
+def cylindrical_analytic(x, t, D, mu, v, logy=False):
+    a = (4*np.pi*D*t)**-1
+    b = -(x-mu-v*t)**2/(4*D*t)
+    if logy:
+        return np.log(a) + b
+    else:
+        return a * np.exp(b)
+
+
+def efield_cb(x):
+    """
+    Returns a flat efield (-1)
+    """
+    return -(x**0)
 
 
 def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
-                 nt=64, geom='f', logt=False, logy=False, random=False,
+                 nt=42, geom='f', logt=False, logy=False, random=False,
                  k=0.0, nstencil=3, linterpol=False, rinterpol=False,
                  num_jacobian=False, method='bdf', scale_x=False,
-                 plot=False, atol=1e-6, rtol=1e-6):
+                 plot=False, atol=1e-6, rtol=1e-6, efield=False):
     decay = (k != 0.0)
     n = 2 if decay else 1
     mu = float(mu or x0)
@@ -64,7 +94,9 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         [[1]] if decay else [],
         [k] if decay else [],
         N,
-        D=[D]*2 if decay else [D],
+        D=[D]*(2 if decay else 1),
+        z_chg=[1]*(2 if decay else 1),
+        mobility=[0.01]*(2 if decay else 1),
         x=x,
         geom=geom,
         logy=logy,
@@ -75,32 +107,56 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         xscale=1/(x[1]-x[0]) if scale_x else 1.0
     )
 
+    if efield:
+        if geom != FLAT:
+            raise ValueError("Only analytic solution for flat drift implemented.")
+        sys.efield = efield_cb(sys.xcenters)
+
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = (xend-x0)*analytic(sys.xcenters, t, D, mu).reshape(nt, N, 1)
+    yref = analytic(sys.xcenters, t, D, mu, 0.01 if efield else 0, logy).reshape(nt, N, 1)
+    print(yref.shape, yref)
+    if logy:
+        yref += np.log(xend-x0)
+    else:
+        yref *= (xend-x0)
+
     if decay:
         yref = np.concatenate((yref, yref), axis=2)
-        yref[:, :, 0] *= np.exp(-k*t)
-        yref[:, :, 1] *= 1-np.exp(-k*t)
+        if logy:
+            yref[:, :, 0] += -k*t
+            yref[:, :, 1] += np.log(1-np.exp(-k*t))
+        else:
+            yref[:, :, 0] *= np.exp(-k*t)
+            yref[:, :, 1] *= 1-np.exp(-k*t)
 
     y0 = yref[0, ...].flatten()
 
     # Run the integration
-    y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t, atol=atol, rtol=rtol,
+    yout, info = run(sys, y0, t, atol=atol, rtol=rtol,
                      with_jacobian=(not num_jacobian), method=method)
-    yout = np.exp(yout) if logy else yout
+    #yout = np.exp(yout) if logy else yout
 
-    rmsd = np.sum((yref-yout)**2 / N, axis=1)**0.5
+    def lin_err(i, j):
+        linref = np.exp(yref[i, :, j])
+        linerr = np.exp(yout[i, :, j])-linref
+        linatol = np.average(yref[i, :, j])
+        linrtol = linatol
+        return linerr/(linrtol*np.abs(linref)+linatol)
+
+    if logy:
+        rmsd = np.sum(lin_err(slice(None), slice(None))**2 / N, axis=1)**0.5
+    else:
+        rmsd = np.sum((yref-yout)**2 / N, axis=1)**0.5
     ave_rmsd_over_atol = np.average(rmsd, axis=0)/info['atol']
 
     # Plot results
     if plot:
         import matplotlib.pyplot as plt
 
-        def _plot(y, c, ttl=None):
-            plt.plot(sys.xcenters, y, c=c)
+        def _plot(y, c, ttl=None, apply_exp_on_y=False):
+            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y, c=c)
             if N < 100:
                 plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y), linewidth=.1,
                            colors='gray')
@@ -114,20 +170,26 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
             c = (1.0-c, .5-c/2, .5-c/2)
 
             plt.subplot(4, 1, 1)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N))
+            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N), apply_exp_on_y=logy)
             if decay:
-                _plot(yout[i, :, 1], c[::-1])
+                _plot(yout[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 2)
-            _plot(yref[i, :, 0], c, 'Analytic')
+            _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
             if decay:
-                _plot(yref[i, :, 1], c[::-1])
+                _plot(yref[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 3)
-            _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
-                  'Abs. err. / Abs. tol. (={})'.format(info['atol']))
-            if decay:
-                _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'], c[::-1])
+            if logy:
+                _plot(lin_err(i, 0)/info['atol'], c,
+                      'Linear rel error / Log abs. tol. (={})'.format(info['atol']))
+                if decay:
+                    _plot(lin_err(i, 1)/info['atol'], c[::-1])
+            else:
+                _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
+                      'Abs. err. / Abs. tol. (={})'.format(info['atol']))
+                if decay:
+                    _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'], c[::-1])
 
         plt.subplot(4, 1, 4)
         tspan = [tout[0], tout[-1]]
@@ -135,7 +197,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.plot(tspan, [ave_rmsd_over_atol[0]]*2, 'r--')
         if decay:
             plt.plot(tout, rmsd[:, 1]/info['atol'], 'b')
-            plt.plot(tspan, [ave_rmsd_over_atol[0]]*2, 'b--')
+            plt.plot(tspan, [ave_rmsd_over_atol[1]]*2, 'b--')
 
         plt.xlabel('Time / s')
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
@@ -143,6 +205,6 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.show()
     return tout, yout, info, ave_rmsd_over_atol, sys
 
+
 if __name__ == '__main__':
-    res = argh.dispatch_command(integrate_rd)
-    print(res[2])  # print info
+    argh.dispatch_command(integrate_rd)

@@ -44,6 +44,8 @@ ReactionDiffusion::ReactionDiffusion(
     vector<double> k,
     uint N,
     vector<double> D,
+    const vector<int> z_chg,
+    vector<double> mobility,
     const vector<double> x, // separation
     vector<vector<uint> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     vector<vector<double> > bin_k_factor, // per bin modulation of first k's
@@ -57,8 +59,8 @@ ReactionDiffusion::ReactionDiffusion(
     ):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
-    k(k),  D(D), x(x), bin_k_factor(bin_k_factor),
-    bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl)
+    k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
+    bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), efield(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -74,6 +76,12 @@ ReactionDiffusion::ReactionDiffusion(
         if (D.size() != n)
             throw std::length_error(
                 "Length of D does not match number of species.");
+        if (mobility.size() != n)
+            throw std::length_error(
+                "Length of mobility does not match number of species.");
+        if (z_chg.size() != n)
+            throw std::length_error(
+                "Length of z_chg does not match number of species.");
         if (x.size() != N + 1)
             throw std::length_error(
                 "Number bin edges != number of compartments + 1.");
@@ -96,6 +104,9 @@ ReactionDiffusion::ReactionDiffusion(
 
     // Finite difference scheme
     D_weight = new double[nstencil*N];
+    A_weight = new double[nstencil*N];
+    //efield = ;
+    for (uint i=0; i<N; ++i) efield[i] = 0.0;
     xc = new double[nsidep + N + nsidep]; // xc padded with virtual bins
     for (uint i=0; i<N; ++i)
         xc[nsidep + i] = (x[i] + x[i + 1])/2;
@@ -110,7 +121,6 @@ ReactionDiffusion::ReactionDiffusion(
     // not centered diffs close to boundaries
     for (uint bi=0; bi<N; bi++)
         _apply_fd(bi);
-
 
     // Stoichiometry
     for (uint ri=0; ri<nr; ++ri){
@@ -158,6 +168,8 @@ ReactionDiffusion::ReactionDiffusion(
 ReactionDiffusion::~ReactionDiffusion()
 {
     delete []xc;
+    delete []efield;
+    delete []A_weight;
     delete []D_weight;
     delete []coeff_reac;
     delete []coeff_prod;
@@ -184,6 +196,7 @@ uint ReactionDiffusion::_xc_bi_map(uint xci) const
 
 
 #define D_WEIGHT(bi, li) D_weight[nstencil*(bi) + li]
+#define A_WEIGHT(bi, li) A_weight[nstencil*(bi) + li]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
 void ReactionDiffusion::_apply_fd(uint bi){
     double * const c = new double[3*nstencil];
@@ -201,12 +214,15 @@ void ReactionDiffusion::_apply_fd(uint bi){
 
     for (uint li=0; li<nstencil; ++li){ // li: local index
         D_WEIGHT(bi, li) = FDWEIGHT(2, li);
+        A_WEIGHT(bi, li) = FDWEIGHT(1, li);
         switch(geom){
         case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
             D_WEIGHT(bi, li) += FDWEIGHT(1, li)*1/xc[around];
+            A_WEIGHT(bi, li) += FDWEIGHT(0, li)*1/xc[around];
             break;
         case Geom::SPHERICAL: // Laplace operator in sph coords.
             D_WEIGHT(bi, li) += FDWEIGHT(1, li)*2/xc[around];
+            A_WEIGHT(bi, li) += FDWEIGHT(0, li)*2/xc[around];
             break;
         default:
             break;
@@ -301,8 +317,8 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
             }
         }
         if (N>1){
-            // Contributions from diffusion
-            // ----------------------------
+            // Contributions from diffusion and advection
+            // ------------------------------------------
             int starti;
             if ((bi < nsidep) && (!lrefl)){
                 starti = 0;
@@ -312,8 +328,9 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                 starti = bi - nsidep;
             }
             for (uint si=0; si<n; ++si){ // species index si
-                if (D[si] == 0.0) continue;
-                double tmp = 0;
+                if ((D[si] == 0.0) && ((mobility[si] == 0.0) || efield[bi] == 0.0)) continue;
+                double unscaled_diffusion = 0;
+                double unscaled_advection = 0;
                 for (uint xi=0; xi<nstencil; ++xi){
                     int biw = starti + xi;
                     // reflective logic:
@@ -322,9 +339,11 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                     } else if (starti >= (int)N - (int)nstencil + 1){
                         biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
                     }
-                    tmp += D_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
+                    unscaled_diffusion += D_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
+                    unscaled_advection += A_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
                 }
-                DYDT(bi, si) += D[si]*tmp;
+                DYDT(bi, si) += unscaled_diffusion*D[si];
+                DYDT(bi, si) += unscaled_advection*efield[bi]*mobility[si];
             }
         }
         if (logy){
@@ -412,21 +431,28 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         if (N > 1) {
             uint lbound = _stencil_bi_lbound(bi);
             for (uint si=0; si<n; ++si){ // species index si
-                if (D[si] == 0.0) continue;
+                if ((D[si] == 0.0) && ((mobility[si] == 0.0) || efield[bi] == 0.0)) continue;
                 // Not a strict Jacobian only block diagonal plus closest bands...
                 for (uint k=0; k<nstencil; ++k){
                     const uint sbi = _xc_bi_map(lbound+k);
                     if (sbi == bi) {
                         JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
+                        JAC(bi, bi, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k);
                     } else {
                         if (bi > 0)
-                            if (sbi == bi-1)
-                                JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*\
-                                    (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
+                            if (sbi == bi-1){
+                                double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
+                                JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
+                                JAC(bi, bi-1, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                    Cfactor;
+                            }
                         if (bi < N-1)
-                            if (sbi == bi+1)
-                                JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*\
-                                    (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
+                            if (sbi == bi+1){
+                                double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
+                                JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
+                                JAC(bi, bi+1, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                    Cfactor; 
+                            }
                     }
                 }
             }
@@ -461,6 +487,7 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 #undef LINC
 #undef Y
 #undef D_WEIGHT
+#undef A_WEIGHT
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
                                               uint si, double * const restrict out) const

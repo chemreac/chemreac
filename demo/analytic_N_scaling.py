@@ -23,7 +23,7 @@ def main():
     ls = ['--', ':', '-.']
 
     nNs = 7
-    Ns = [8*2**i for i in range(nNs)]
+    Ns = [16*2**i for i in range(nNs)]
     rates = [0, 0.1]
     for gi, geom in enumerate([FLAT, CYLINDRICAL, SPHERICAL]):
         for ri, rate in enumerate(rates):
@@ -48,7 +48,7 @@ def main():
                     label=str(nstencil)+': '+str(round(-p[0], 1)))
                 plt.xlabel('N')
                 ax = plt.gca()
-                ax.set_xticklabels(map(str, Ns))
+                #ax.set_xticklabels(map(str, Ns))
                 plt.ylabel('RMSD/atol')
                 plt.legend(prop={'size': 11})
                 if rate == 0:

@@ -611,7 +611,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
     nstencil = 3
     nsidep = 1
     rd = ReactionDiffusion(
-        4, stoich_reac, stoich_prod, k, N, D, x,
+        4, stoich_reac, stoich_prod, k, N, D=D, x=x,
         bin_k_factor=bin_k_factor,
         bin_k_factor_span=bin_k_factor_span, geom=geom,
         nstencil=nstencil, lrefl=lrefl, rrefl=rrefl)

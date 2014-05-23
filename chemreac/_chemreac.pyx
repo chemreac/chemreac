@@ -21,16 +21,21 @@ cdef extern from "chemreac.h" namespace "chemreac":
         const vector[vector[uint]] stoich_prod
         vector[double] k
         vector[double] D
+        vector[double] mobility
+        vector[int] z_chg
         const vector[double] x
         vector[vector[double]] bin_k_factor
         vector[uint] bin_k_factor_span
         double * xc
+        double * const efield
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],
                           const vector[vector[uint]],
                           vector[double],
                           uint,
+                          vector[double],
+                          const vector[int],
                           vector[double],
                           const vector[double],
                           vector[vector[uint]],
@@ -77,13 +82,13 @@ cdef class CppReactionDiffusion:
     """
     Wrapper around C++ class ReactionDiffusion,
     In addition of being a thing wrapper it abstracts:
-        -`xscale`: scaling of length
+        -`xscale`: scaling of length (affects D and mobility)
 
     """
     cdef ReactionDiffusion *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
-    cdef public double xscale
+    cdef readonly double xscale
 
     def __cinit__(self,
                   uint n,
@@ -92,6 +97,8 @@ cdef class CppReactionDiffusion:
                   vector[double] k,
                   uint N,
                   vector[double] D,
+                  vector[int] z_chg,
+                  vector[double] mobility,
                   vector[double] x,
                   vector[vector[uint]] stoich_actv,
                   vector[vector[double]] bin_k_factor,
@@ -112,7 +119,7 @@ cdef class CppReactionDiffusion:
         self.xscale = xscale
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
-            D, x, stoich_actv, bin_k_factor,
+            D, z_chg, mobility, x, stoich_actv, bin_k_factor,
             bin_k_factor_span, geom, logy, logt, nstencil,
             lrefl, rrefl)
 
@@ -202,6 +209,25 @@ cdef class CppReactionDiffusion:
             assert len(D) == self.n
             self.thisptr.D = D
 
+    property z_chg:
+        def __get__(self):
+            return np.asarray(self.thisptr.z_chg, dtype=np.int32)
+
+        def __set__(self, vector[int] z_chg):
+            assert len(z_chg) == self.n
+            self.thisptr.z_chg = z_chg
+
+    property mobility:
+        def __get__(self):
+            return np.asarray(self.thisptr.mobility)/self.xscale**2
+
+        def __set__(self, vector[double] mobility):
+            cdef size_t i
+            for i in range(mobility.size()):
+                mobility[i] *= self.xscale**2
+            assert len(mobility) == self.n
+            self.thisptr.mobility = mobility
+
     property x:
         def __get__(self):
             return np.asarray(self.thisptr.x)/self.xscale
@@ -264,3 +290,12 @@ cdef class CppReactionDiffusion:
 
     def _xc_bi_map(self, uint xci):
         return self.thisptr._xc_bi_map(xci)
+
+    property efield:
+        def __get__(self):
+            return fromaddress(<long>self.thisptr.efield, (self.thisptr.N,))
+        def __set__(self, double[:] efield):
+            cdef int i
+            assert efield.size == self.thisptr.N
+            for i in range(self.thisptr.N):
+                self.thisptr.efield[i] = efield[i]

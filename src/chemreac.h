@@ -22,6 +22,7 @@ public:
     int * coeff_totl;
     int * coeff_actv;
     double * D_weight; // diffusion weights 
+    double * A_weight; // Advection weights 
     vector<uint> i_bin_k;
     uint n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
@@ -49,10 +50,13 @@ public:
     const vector<vector<uint> > stoich_prod; // Products per reaction
     vector<double> k; // Rate coefficients (law of mass action)
     vector<double> D; // Diffusion coefficients
+    vector<int> z_chg; // ion charge
+    vector<double> mobility; // electrical mobility
     const vector<double> x; // Bin edges (length = N+1)
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
     vector<uint> bin_k_factor_span; // 
     const bool lrefl, rrefl;
+    double * const efield; // v_d = mu_el*E
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
 
     ReactionDiffusion(uint, 
@@ -61,6 +65,8 @@ public:
 		      vector<double>, 
 		      uint,
 		      vector<double>, 
+                      vector<int>,
+                      vector<double>,
 		      const vector<double>,
 		      vector<vector<uint> >, 
 		      vector<vector<double> >,

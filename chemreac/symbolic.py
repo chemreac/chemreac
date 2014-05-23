@@ -21,16 +21,18 @@ class SymRD(ReactionDiffusionBase):
         return cls(*(getattr(rd, attr) for attr in
                      inspect.getargspec(cls.__init__).args[1:]))
 
-    def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
-                stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
-                geom=FLAT, logy=False, logt=False, nstencil=None, lrefl=True,
-                rrefl=True, **kwargs):
+    def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
+                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
+                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
+                 nstencil=None, lrefl=True, rrefl=True, **kwargs):
         # Save args
         self.n = n
         self.stoich_reac = stoich_reac
         self.stoich_prod = stoich_prod
         self.k = k
         self.D = D if D != None else [0]*n
+        self.z_chg = z_chg if z_chg != None else [0]*n
+        self.mobility = mobility if mobility != None else [0]*n
         self.x = x if x != None else [0, 1]
         self.N = len(self.x) - 1
         if not N in [None, 0]:
@@ -55,6 +57,7 @@ class SymRD(ReactionDiffusionBase):
         self._pxci2bi = pxci_to_bi(self.nstencil, self.N)
         self._f = [0]*self.n*self.N
         self._cum_bin_k_factor_span = np.cumsum(self.bin_k_factor_span)
+        self.efield = [0]*self.N
 
         # Reactions
         for ri, (k, sreac, sactv, sprod) in enumerate(zip(
@@ -71,25 +74,31 @@ class SymRD(ReactionDiffusionBase):
                 for si in range(self.n):
                     self._f[bi*self.n+si] += c_totl[si]*r
 
-        print(geom)
         if self.N > 1:
             # Diffusion
             self.D_weights = []
+            self.A_weights = []
             for bi in range(self.N):
                 local_x_serie = self._xc[self._lb[bi]:self._lb[bi]+self.nstencil]
                 local_x_around = self._xc[bi+self._nsidep]
                 w = sp.finite_diff_weights(2, local_x_serie, local_x_around)
                 self.D_weights.append(w[-1][-1])
+                self.A_weights.append(w[-2][-1])
                 for wi in range(self.nstencil):
                     if geom == CYLINDRICAL:
                         self.D_weights[bi][wi] += w[-2][-1][wi]/local_x_around
+                        self.A_weights[bi][wi] += w[-3][-1][wi]/local_x_around
                     if geom == SPHERICAL:
                         self.D_weights[bi][wi] += 2*w[-2][-1][wi]/local_x_around
-            for bi, w in enumerate(self.D_weights):
+                        self.A_weights[bi][wi] += 2*w[-3][-1][wi]/local_x_around
+            for bi, (dw, aw) in enumerate(zip(self.D_weights, self.A_weights)):
                 for si in range(self.n):
-                    fd_terms = [w[k]*self.y(self._pxci2bi[self._lb[bi]+k], si)
+                    d_terms = [dw[k]*self.y(self._pxci2bi[self._lb[bi]+k], si)
                                 for k in range(self.nstencil)]
-                    self._f[bi*self.n + si] += self.D[si]*reduce(add, fd_terms)
+                    self._f[bi*self.n + si] += self.D[si]*reduce(add, d_terms)
+                    a_terms = [aw[k]*self.y(self._pxci2bi[self._lb[bi]+k], si)
+                                for k in range(self.nstencil)]
+                    self._f[bi*self.n + si] += self.mobility[si]*self.efield[bi]*reduce(add, a_terms)
 
         if self.logy or self.logt:
             for bi in range(self.N):

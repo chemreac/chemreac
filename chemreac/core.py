@@ -55,10 +55,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     # subset of extra_attrs optionally passed by user
     kwarg_attrs = ['names', 'tex_names']
 
-    def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, x=None,
-                stoich_actv=None, bin_k_factor=None, bin_k_factor_span=None,
-                geom=FLAT, logy=False, logt=False, nstencil=None, lrefl=True,
-                rrefl=True, xscale=1.0, **kwargs):
+    def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
+                mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
+                bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
+                nstencil=None, lrefl=True, rrefl=True, xscale=1.0, **kwargs):
         """
         Arguments:
         -`n`: number of species
@@ -67,6 +67,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         -`k`: array of reaction rate coefficients (if 2-tuples, assumed (val, stddev) pairs)
         -`N`: number of compartments (default: 1 if x==None else len(x)-1)
         -`D`: diffusion coefficients (of length n)
+        -`z_chg`: ion charges
+        -`mobility`: mobility of ions
         -`x`: compartment boundaries (of length N+1), default: linspace(1,2, N+1)
         -`stoich_actv`: list of ACTIVE reactant index lists per reaction.n
         -`bin_k_factor`: per compartment modulation of rate coefficients
@@ -107,8 +109,14 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if N < nstencil:
             raise ValueError("N must be >= nstencil")
 
+        if z_chg == None:
+            z_chg = list([0]*n)
+        if mobility == None:
+            mobility = list([0]*n)
         if N > 1:
             assert n == len(D)
+            assert n == len(z_chg)
+            assert n == len(mobility)
         else:
             D = D or list([0]*n)
 
@@ -161,7 +169,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N,
-            D_val, _x, _stoich_actv, bin_k_factor,
+            D_val, z_chg, mobility, _x, _stoich_actv, bin_k_factor,
             bin_k_factor_span, geom, logy, logt,
             nstencil, lrefl, rrefl
         )
