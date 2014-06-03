@@ -5,3 +5,21 @@
   diffusion equation
 
 * write a separate test to confirm that it correctly handles active case.
+
+* add logx (important in order to keep number of bins to a minimum)
+
+* add fixed grid spacing
+
+* stricter boundary conditions:
+  - Robin boundary conditions
+     - Insulating (enforces not net flux) - Ensure correct for spherical/cylindrical (might not be!?)
+     - Extrapolating (Polynomial extrapolation)
+  Mention that the pure boundary conditions are not useful:
+  - Dirichlet
+  - Neumann
+  - Cauchy
+
+* implement symbolic (PLDU) solver for sundials.
+
+* avoid underflow/(overflow) in logy mode. Convolution?
+

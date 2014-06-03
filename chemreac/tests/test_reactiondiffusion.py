@@ -58,6 +58,7 @@ def _test_f_and_dense_jac_rmaj(rd, t, y, fref=None, jref=None):
     _test_f(rd, t, y, fref)
     _test_dense_jac_rmaj(rd, t, y, jref)
 
+
 def test_autobinary():
     from chemreac.chemistry import (
         Reaction, ReactionSystem, mk_sn_dict_from_names
@@ -70,23 +71,23 @@ def test_autobinary():
 
     _test_f_and_dense_jac_rmaj(rd, 0, [1, 37], [-2*3, 3])
 
-@pytest.mark.xfail
+
 def test_ReactionDiffusion__f__wrong_fout_dimension():
     y0 = np.array([2.0, 3.0])
     k = 5.0
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k])
     fout = np.ones((1,))*99  # fout too small
-    rd.f(0.0, y0, fout)
+    with pytest.raises(AssertionError):
+        rd.f(0.0, y0, fout)
 
 
-@pytest.mark.xfail
 def test_ReactionDiffusion__too_few_species():
     # Ensure exception raised when referencing species indices > (n-1)
     # A -> B
     n = 1  # wrong: A, B makes 2
     with pytest.raises(RuntimeError):
-        ReactionDiffusion(n, [[0]], [[1]], [k])
+        ReactionDiffusion(n, [[0]], [[1]], [5.0])
 
 
 @pytest.mark.parametrize("N", [1, 3, 4])

@@ -1,23 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
-
- $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5 --k 0.1 --geom f
-
- $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 400 \
-     --nstencil 3
-
-Note -D 475
-
- $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 475 \
-     --nstencil 7
-
-Still problematic (should not need to be):
-
- $ python analytic_diffusion.py --plot --nstencil 5 --logy --D 0.0005
-
-"""
 
 from __future__ import print_function, division, absolute_import
 
@@ -29,117 +12,120 @@ from chemreac import (
 )
 from chemreac.integrate import run
 
-
-np.random.seed(42)
-
-def flat_analytic(x, t, D, mu, v, logy=False):
-    a = (4*np.pi*D*t)**-0.5
-    b = -(x-mu-v*t)**2/(4*D*t)
-    if logy:
-        return np.log(a) + b
-    else:
-        return a * np.exp(b)
-
-
-def spherical_analytic(x, t, D, mu, v, logy=False):
-    a = (4*np.pi*D)**-0.5 * t**-1.5
-    b = -(x-mu-v*t)**2/(4*D*t)
-    if logy:
-        return np.log(a) + b
-    else:
-        return a * np.exp(b)
-
-
-def cylindrical_analytic(x, t, D, mu, v, logy=False):
-    a = (4*np.pi*D*t)**-1
-    b = -(x-mu-v*t)**2/(4*D*t)
-    if logy:
-        return np.log(a) + b
-    else:
-        return a * np.exp(b)
-
-
 def efield_cb(x):
     """
     Returns a flat efield (-1)
     """
     return -(x**0)
 
+def y0_flat_cb(x):
+    xc = x[:-1] + np.diff(x)/2
+    return 17 - 11*(xc-x[0])/(x[-1]-x[0])
 
-def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
-                 nt=42, geom='f', logt=False, logy=False, random=False,
-                 k=0.0, nstencil=3, linterpol=False, rinterpol=False,
-                 num_jacobian=False, method='bdf', scale_x=False,
+def y0_cylindrical_cb(x):
+    xc = x[:-1] + np.diff(x)/2
+    return 17 - np.log((xc-x[0])/(x[-1]-x[0]))
+
+def y0_spherical_cb(x):
+    xc = x[:-1] + np.diff(x)/2
+    return 3 + 0.1/((xc-x[0])/(x[-1]-x[0]))
+
+
+def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
+                 nt=25, geom='f', logt=False, logy=False, random=False,
+                 nstencil=3, lrefl=False, rrefl=False,
+                 num_jacobian=False, method='bdf',
                  plot=False, atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
     if random_seed:
         np.random.seed(random_seed)
-    decay = (k != 0.0)
-    n = 2 if decay else 1
+    n = 1
     mu = float(mu or x0)
     tout = np.linspace(t0, tend, nt)
 
     assert geom in 'fcs'
     geom = {'f': FLAT, 'c': CYLINDRICAL, 's': SPHERICAL}[geom]
-    analytic = {
-        FLAT: flat_analytic,
-        CYLINDRICAL: cylindrical_analytic,
-        SPHERICAL: spherical_analytic
-    }[geom]
 
-    # Setup the system
-    # x = np.logspace(np.log(x0), np.log(xend), N+1, base=np.exp(1))
+    # Setup the grid
     x = np.linspace(x0, xend, N+1)
-
     if random:
         x += (np.random.random(N+1)-0.5)*(xend-x0)/(N+2)
+
+    mob = 0.3
+    # Initial conditions
+    if geom == FLAT:
+        y0 = y0_flat_cb(x)
+    elif geom == CYLINDRICAL:
+        y0 = y0_cylindrical_cb(x)
+    elif geom == SPHERICAL:
+        y0 = y0_spherical_cb(x)
+
+    # Setup the system
+    stoich_reac = []
+    stoich_prod = []
+    k = []
+    bin_k_factor = [[] for _ in range(N)]
+    bin_k_factor_span = []
+    if lrefl:
+        # isolated system is not stationary for linear conc profile with finite slope
+        # hence we add production reaction at left boundary
+        #assert geom == FLAT
+        assert nstencil == 3  # k is derived for parabola through -x0, x0, x1
+        stoich_reac.append([0])
+        stoich_prod.append([0, 0])
+        for i in range(N):
+            bin_k_factor[i].append(1 if i==0 else 0)
+        bin_k_factor_span.append(1)
+        x0 = (x[0]+x[1])/2 - x[0]
+        x1 = (x[1]+x[2])/2 - x[0]
+        C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
+        k.append(C*D*(y0[0]-y0[1])/(y0[0]*(x1**2 - x0**2)))
+    if rrefl:
+        # for same reason as above, a consumption reaction is added at right boundary
+        #assert geom == FLAT
+        assert nstencil == 3
+        stoich_reac.append([0])
+        stoich_prod.append([])
+        for i in range(N):
+            bin_k_factor[i].append(1 if i == (N-1) else 0)
+        bin_k_factor_span.append(1)
+        xNm1 = (x[N-1]+x[N])/2-x[N]
+        xNm2 = (x[N-2]+x[N-1])/2-x[N]
+        C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
+        k.append(C*D*(y0[N-2]-y0[N-1])/(y0[N-1]*(xNm2**2 - xNm1**2)))
+
     sys = ReactionDiffusion(
-        2 if decay else 1,
-        [[0]] if decay else [],
-        [[1]] if decay else [],
-        [k] if decay else [],
-        N,
-        D=[D]*(2 if decay else 1),
-        z_chg=[1]*(2 if decay else 1),
-        mobility=[0.01]*(2 if decay else 1),
+        1, stoich_reac, stoich_prod, k, N,
+        D=[D],
+        z_chg=[1],
+        mobility=[mob],
         x=x,
+        bin_k_factor=bin_k_factor,
+        bin_k_factor_span=bin_k_factor_span,
         geom=geom,
         logy=logy,
         logt=logt,
         nstencil=nstencil,
-        lrefl=not linterpol,
-        rrefl=not rinterpol,
-        xscale=1/(x[1]-x[0]) if scale_x else 1.0
+        lrefl=lrefl,
+        rrefl=rrefl,
     )
 
+    print(sys.geom)
     if efield:
         if geom != FLAT:
             raise ValueError("Only analytic solution for flat drift implemented.")
         sys.efield = efield_cb(sys.xcenters)
 
-    # Calc initial conditions / analytic reference values
+    # Analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = analytic(sys.xcenters, t, D, mu, 0.01 if efield else 0, logy).reshape(nt, N, 1)
-    if logy:
-        yref += np.log(xend-x0)
-    else:
-        yref *= (xend-x0)
-
-    if decay:
-        yref = np.concatenate((yref, yref), axis=2)
-        if logy:
-            yref[:, :, 0] += -k*t
-            yref[:, :, 1] += np.log(1-np.exp(-k*t))
-        else:
-            yref[:, :, 0] *= np.exp(-k*t)
-            yref[:, :, 1] *= 1-np.exp(-k*t)
-
-    y0 = yref[0, ...].flatten()
+    yref = np.repeat(y0[np.newaxis, :, np.newaxis], nt, axis=0)
+    if efield:
+        yref += t.reshape((nt, 1, 1))*mob
 
     # Run the integration
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y0, t, atol=atol, rtol=rtol,
+    yout, info = run(sys, np.log(y0).flatten() if logy else y0.flatten(), t, atol=atol, rtol=rtol,
                      with_jacobian=(not num_jacobian), method=method)
-    #yout = np.exp(yout) if logy else yout
+    yout = np.exp(yout) if logy else yout
 
     if logy:
         def lin_err(i, j):
@@ -175,33 +161,22 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
 
             plt.subplot(4, 1, 1)
             _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N), apply_exp_on_y=logy)
-            if decay:
-                _plot(yout[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 2)
             _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
-            if decay:
-                _plot(yref[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 3)
             if logy:
                 _plot(lin_err(i, 0)/info['atol'], c,
                       'Linear rel error / Log abs. tol. (={})'.format(info['atol']))
-                if decay:
-                    _plot(lin_err(i, 1)/info['atol'], c[::-1])
             else:
                 _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
                       'Abs. err. / Abs. tol. (={})'.format(info['atol']))
-                if decay:
-                    _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'], c[::-1])
 
         plt.subplot(4, 1, 4)
         tspan = [tout[0], tout[-1]]
         plt.plot(tout, rmsd[:, 0] / info['atol'], 'r')
         plt.plot(tspan, [ave_rmsd_over_atol[0]]*2, 'r--')
-        if decay:
-            plt.plot(tout, rmsd[:, 1]/info['atol'], 'b')
-            plt.plot(tspan, [ave_rmsd_over_atol[1]]*2, 'b--')
 
         plt.xlabel('Time / s')
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')

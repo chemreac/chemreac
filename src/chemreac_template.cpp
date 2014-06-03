@@ -105,7 +105,6 @@ ReactionDiffusion::ReactionDiffusion(
     // Finite difference scheme
     D_weight = new double[nstencil*N];
     A_weight = new double[nstencil*N];
-    //efield = ;
     for (uint i=0; i<N; ++i) efield[i] = 0.0;
     xc = new double[nsidep + N + nsidep]; // xc padded with virtual bins
     for (uint i=0; i<N; ++i)
