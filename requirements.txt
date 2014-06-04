@@ -2,4 +2,6 @@ argh>=0.23.1
 numpy>=1.7.0
 cython>=0.19.1
 mako>=0.5.0
-https://github.com/bjodah/pycompilation/archive/v0.2.15.tar.gz
+quantities>=0.10.1
+pytest>=2.5.2
+https://github.com/bjodah/pycompilation/archive/v0.2.20.tar.gz

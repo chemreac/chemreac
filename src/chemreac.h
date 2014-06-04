@@ -33,7 +33,7 @@ public:
     double diffusion_contrib_jac_prev(int bi) const;
     double diffusion_contrib_jac_next(int bi) const;
     void _apply_fd(uint);
-    const double * _alloc_and_populate_linC16(const double * const restrict) const;
+    const double * _alloc_and_populate_linC(const double * const restrict) const;
     uint _stencil_bi_lbound(uint bi) const;
     uint _xc_bi_map(uint xci) const;
 

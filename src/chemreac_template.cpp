@@ -270,14 +270,15 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 #define Y(bi, si) y[(bi)*n+(si)]
 #define LINC(bi, si) linC[(bi)*n+(si)]
 const double *
-ReactionDiffusion::_alloc_and_populate_linC16(const double * const restrict y) const
+ReactionDiffusion::_alloc_and_populate_linC(const double * const restrict y) const
 {
     if (!logy)
         return nullptr;
-    // logy == True ...
-    int nlinC = 16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0));
-    double * const linC __attribute__((aligned(16))) = (double * const)\
-        (aligned_alloc(16, nlinC*sizeof(double)));
+    // int nlinC = 16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0));
+    // double * const linC __attribute__((aligned(16))) = (double * const)\
+    //     (aligned_alloc(16, nlinC*sizeof(double)));
+    int nlinC = n*N;
+    double * const linC = (double * const)malloc(nlinC*sizeof(double));
 
     // TODO: Tune 42...
     ${"#pragma omp parallel for if (N > 42)" if USE_OPENMP else ""}
@@ -292,7 +293,8 @@ ReactionDiffusion::_alloc_and_populate_linC16(const double * const restrict y) c
 void
 ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
 {
-    const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC16(y);
+    // const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC(y);
+    const double * const restrict linC = _alloc_and_populate_linC(y);
 
     ${"double * const local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
@@ -390,7 +392,8 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     double * const restrict fout = (logy) ? new double[n*N] : nullptr;
     if (fout != nullptr) f(t, y, fout);
 
-    const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC16(y);
+    // const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC(y);
+    const double * const restrict linC = _alloc_and_populate_linC(y);
 
     ${'double * const local_r = new double[nr];' if not USE_OPENMP else ''}
     ${'#pragma omp parallel for' if USE_OPENMP else ''}

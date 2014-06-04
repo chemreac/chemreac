@@ -20,8 +20,9 @@ Setup
 ```
     git clone https://bitbucket.org/bjodah/chemreac.git
     cd chemreac
-    python pip install --upgrade -r requirements.txt
+    pip install --user --upgrade -r requirements.txt
     python setup.py build_ext --inplace
+    py.test
 ```
 
 should be enough (tested on Ubuntu 12.04). Add to $PYTHONPATH to use

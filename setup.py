@@ -52,7 +52,7 @@ else:
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {
                     'src/chemreac.cpp': {
-                        'std': 'c++11',
+                        'std': 'c++0x',
                         'options': ['pic', 'warn', 'fast'] +\
                         (['openmp'] if USE_OPENMP else []),
                         'defmacros': ['restrict=__restrict__', 'DEBUG']+\
@@ -63,7 +63,7 @@ else:
             },
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
-                'std': 'c++11',
+                'std': 'c++0x',
             },
             include_dirs=['src/', 'src/finitediff/finitediff/'],
             logger=True,
