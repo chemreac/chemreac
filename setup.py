@@ -60,6 +60,7 @@ else:
                         (['DEBUG'] if DEBUG else []),
                     },
                 },
+                'options': ['pic', 'warn'],
                 'defmacros': ['restrict=__restrict__'],
             },
             pycompilation_link_kwargs={
