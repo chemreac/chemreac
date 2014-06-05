@@ -53,7 +53,8 @@ else:
                 'per_file_kwargs': {
                     'src/chemreac.cpp': {
                         'std': 'c++0x',
-                        'options': ['pic', 'warn', 'fast'] +\
+                        # 'fast' doesn't work on drone.io
+                        'options': ['pic', 'warn'] +\
                         (['openmp'] if USE_OPENMP else []),
                         'defmacros': ['restrict=__restrict__', 'DEBUG']+\
                         (['DEBUG'] if DEBUG else []),
