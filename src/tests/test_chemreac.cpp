@@ -96,6 +96,7 @@ int test_dense_jac(){
     RJ(11,11) = -rd.D[3];
 
     double dense_jac[12*12];
+    for (int i=0; i<12*12; ++i) dense_jac[i] = 0.0;
     rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 12);
     for (int i=0; i<12*12; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-15){
