@@ -25,7 +25,7 @@ def test_steady_state(params):
 @pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, [5, 7])))
 def test_steady_state__high_stencil(params):
     ly, lt, r, nstencil = params
-    test_steady_state((ly, lt, r, False, False, nstencil, 1e-4))
+    test_steady_state((ly, lt, r, False, False, nstencil, 1e-3))
 
 @pytest.mark.xfail
 @pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, 'cs')))
