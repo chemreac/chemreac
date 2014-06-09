@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 #
 # Test script for the Continuous Integration server drone.io
 
@@ -24,6 +24,7 @@ conda update conda
 conda info -a
 conda create -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1
 source activate test-env
-pip install -r requirements.txt
+
+pip install --upgrade --user argh mako quantities pytest https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz https://github.com/sympy/sympy/archive/master.zip
 python setup.py install
 py.test
