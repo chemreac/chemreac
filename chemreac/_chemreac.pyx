@@ -256,6 +256,10 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.logt
 
+    property logx:
+        def __get__(self):
+            return self.thisptr.logx
+
     property nstencil:
         def __get__(self):
             return self.thisptr.nstencil
