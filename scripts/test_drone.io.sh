@@ -24,7 +24,8 @@ conda update conda
 conda info -a
 conda create -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1
 source activate test-env
-
 pip install argh mako quantities pytest https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz https://github.com/sympy/sympy/archive/master.zip
-python setup.py install
+python -c "import sympy; print sympy.__version__"
+python -c "import pycompilation; print pycompilation.__version__"
+python setup.py build_ext -i
 py.test
