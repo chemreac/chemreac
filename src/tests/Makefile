@@ -39,7 +39,7 @@ ifeq ($(COMPILER_VENDOR),cray-gnu)
   FORTCPPLIBS=-lgfortranbegin -lgfortran
   FORTCPPFLAGS=
   FORTFLAGS=-std=f2008 
-  PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
+  PERFFLAGS=-funroll-loops -O3 -ffast-math # -march=native
   FLAGS=-Wall -Wextra -pedantic -DCRAY
   CXXFLAGS=-std=c++0x -DDEBUG
   C99=-std=c99
@@ -53,11 +53,11 @@ else
   FORTCPPLIBS=-lgfortranbegin -lgfortran
   FORTCPPFLAGS=
   FORTFLAGS=-std=f2008 
-  PERFFLAGS=-funroll-loops -O3 -march=native -ffast-math
+  PERFFLAGS=-funroll-loops -O3 -ffast-math # -march=native
   FLAGS=-Wall -Wextra -pedantic
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
-  CXXFLAGS=-std=c++0x -g -DDEBUG # $(OPENMPFLAG) $(PERFFLAGS)
+  CXXFLAGS=-std=c++0x -g -DDEBUG $(PERFFLAGS) # $(OPENMPFLAG)
   LIBS=-lrt # $(OPENMPLIBS)
   C99=-std=c99
 endif
