@@ -23,7 +23,7 @@ class SymRD(ReactionDiffusionBase):
 
     def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                  mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
-                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False
+                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False,
                  nstencil=None, lrefl=True, rrefl=True, **kwargs):
         # Save args
         self.n = n
