@@ -1,5 +1,5 @@
 argh>=0.23.1
-numpy>=1.7.0
+numpy>=1.8.1
 cython>=0.19.1
 mako>=0.5.0
 quantities>=0.10.1

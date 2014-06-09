@@ -28,6 +28,8 @@ Setup
 should be enough (tested on Ubuntu 12.04). Add to $PYTHONPATH to use
 or ``python setup.py install --user``
 
+You may also look at ``scrips/test_drone.io.sh`` for the CI install.
+
 Tests
 =====
 Run py.test
@@ -39,14 +41,16 @@ without having pytest installed.
 Prerequisites
 =============
 In addition to Python packages listed in ``requirements.txt`` you also need:
-C++11 compliant compiler
+
+- C++11 compliant compiler
 
 TODO
 ======
-- Jacobian generated for diffusion incorrect (with_jacobian=False performs MUCH better).
-    * Need to derive test cases by hand.
-- Define what reflective means for CYLINDRICAL and SPHERICAL (add tests for these)
-- Drift
+- Better defined "isolating" boundary conditions for:
+    - logx
+    - cylindrical/spherical
+    - drift
+    - and combinations of above.
 
 License
 =======
@@ -56,5 +60,3 @@ Open Source. Released under the very permissive "simplified
 Author
 ======
 Björn Dahlgren, contact (gmail adress): bjodah
-python analytic_diffusion.py -g s -N 3 --t0 10 --tend 100
-python analytic_diffusion.py -g s --t0 10 --tend 100
