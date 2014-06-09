@@ -28,4 +28,4 @@ pip install argh mako quantities pytest https://github.com/bjodah/pycompilation/
 python -c "import sympy; print sympy.__version__"
 python -c "import pycompilation; print pycompilation.__version__"
 python setup.py build_ext -i
-py.test
+PYTHONPATH=. py.test

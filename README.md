@@ -1,3 +1,5 @@
+[![Build Status](https://drone.io/bitbucket.org/bjodah/chemreac/status.png)](https://drone.io/bitbucket.org/bjodah/chemreac/latest)
+
 chemreac
 ========
 Chemical Reaction-Diffusion ODE systems discretized in one
