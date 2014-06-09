@@ -22,9 +22,8 @@ hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update conda
 conda info -a
-conda create -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 argh=0.23.1 cython=0.19.1 mako=0.5.0 quantities=0.10.1 pytest=2.5.2
+conda create -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1
 source activate test-env
-pip install https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz
-pip install https://github.com/sympy/sympy/archive/master.zip
+pip install -r requirements.txt
 python setup.py install
 py.test
