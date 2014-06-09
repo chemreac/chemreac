@@ -1,3 +1,2 @@
 #!/bin/bash
-sudo apt-get install gfortran python-numpy python-scipy cython g++ gcc\
-liblapack-pic liblapack-dev
+sudo apt-get install gfortran python-numpy python-scipy cython g++ gcc liblapack-dev
