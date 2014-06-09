@@ -21,6 +21,8 @@ Still problematic (should not need to be):
 
 from __future__ import print_function, division, absolute_import
 
+from math import log
+
 import argh
 import numpy as np
 
@@ -32,31 +34,35 @@ from chemreac.integrate import run
 
 np.random.seed(42)
 
-def flat_analytic(x, t, D, mu, v, logy=False):
+
+def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
+    x = np.exp(x) if logx else x
     a = (4*np.pi*D*t)**-0.5
     b = -(x-mu-v*t)**2/(4*D*t)
     if logy:
-        return np.log(a) + b
+        return np.log(a) + b + log(xend-x0)
     else:
-        return a * np.exp(b)
+        return a*np.exp(b)*(xend-x0)
 
 
-def spherical_analytic(x, t, D, mu, v, logy=False):
+def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
+    x = np.exp(x) if logx else x
     a = (4*np.pi*D)**-0.5 * t**-1.5
     b = -(x-mu-v*t)**2/(4*D*t)
     if logy:
-        return np.log(a) + b
+        return np.log(a) + b + log(xend-x0)
     else:
-        return a * np.exp(b)
+        return a*np.exp(b)*(xend-x0)
 
 
-def cylindrical_analytic(x, t, D, mu, v, logy=False):
+def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
+    x = np.exp(x) if logx else x
     a = (4*np.pi*D*t)**-1
     b = -(x-mu-v*t)**2/(4*D*t)
     if logy:
-        return np.log(a) + b
+        return np.log(a) + b + log(xend-x0)
     else:
-        return a * np.exp(b)
+        return a*np.exp(b)*(xend-x0)
 
 
 def efield_cb(x):
@@ -67,7 +73,7 @@ def efield_cb(x):
 
 
 def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
-                 nt=42, geom='f', logt=False, logy=False, random=False,
+                 nt=42, geom='f', logt=False, logy=False, logx=False, random=False,
                  k=0.0, nstencil=3, linterpol=False, rinterpol=False,
                  num_jacobian=False, method='bdf', scale_x=False,
                  plot=False, atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
@@ -86,12 +92,13 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         SPHERICAL: spherical_analytic
     }[geom]
 
-    # Setup the system
-    # x = np.logspace(np.log(x0), np.log(xend), N+1, base=np.exp(1))
-    x = np.linspace(x0, xend, N+1)
-
+    # Setup the grid
+    _x0 = log(x0) if logx else x0
+    _xend = log(xend) if logx else xend
+    x = np.linspace(_x0, _xend, N+1)
     if random:
-        x += (np.random.random(N+1)-0.5)*(xend-x0)/(N+2)
+        x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
+
     sys = ReactionDiffusion(
         2 if decay else 1,
         [[0]] if decay else [],
@@ -105,6 +112,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         geom=geom,
         logy=logy,
         logt=logt,
+        logx=logx,
         nstencil=nstencil,
         lrefl=not linterpol,
         rrefl=not rinterpol,
@@ -118,11 +126,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = analytic(sys.xcenters, t, D, mu, 0.01 if efield else 0, logy).reshape(nt, N, 1)
-    if logy:
-        yref += np.log(xend-x0)
-    else:
-        yref *= (xend-x0)
+    yref = analytic(sys.xcenters, t, D, mu, x0, xend, 0.01 if efield else 0, logy, logx).reshape(nt, N, 1)
 
     if decay:
         yref = np.concatenate((yref, yref), axis=2)

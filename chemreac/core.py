@@ -57,7 +57,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
-                bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
+                bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False,
                 nstencil=None, lrefl=True, rrefl=True, xscale=1.0, **kwargs):
         """
         Arguments:
@@ -76,6 +76,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         -`geom`: any of (FLAT, SPHERICAL, CYLINDRICAL)
         -`logy`: f and *_jac_* routines operate on log(concentration)
         -`logt`: f and *_jac_* routines operate on log(time)
+        -`logx`: f and *_jac_* routines operate on log(space)
         -`nstencil`: number of points used in finite difference scheme
         -`lrefl`: reflective left boundary (default: True)
         -`rrefl`: reflective right boundary (default: True)
@@ -170,7 +171,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N,
             D_val, z_chg, mobility, _x, _stoich_actv, bin_k_factor,
-            bin_k_factor_span, geom, logy, logt,
+            bin_k_factor_span, geom, logy, logt, logx,
             nstencil, lrefl, rrefl
         )
         rd.k_err = k_err

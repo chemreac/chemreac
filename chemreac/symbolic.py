@@ -23,7 +23,7 @@ class SymRD(ReactionDiffusionBase):
 
     def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                  mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
-                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
+                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False
                  nstencil=None, lrefl=True, rrefl=True, **kwargs):
         # Save args
         self.n = n
@@ -43,6 +43,7 @@ class SymRD(ReactionDiffusionBase):
         self.geom = geom
         self.logy = logy
         self.logt = logt
+        self.logx = logx
         self.nstencil = nstencil or 3
         self.lrefl = lrefl
         self.rrefl = rrefl
@@ -85,12 +86,24 @@ class SymRD(ReactionDiffusionBase):
                 self.D_weights.append(w[-1][-1])
                 self.A_weights.append(w[-2][-1])
                 for wi in range(self.nstencil):
-                    if geom == CYLINDRICAL:
-                        self.D_weights[bi][wi] += w[-2][-1][wi]/local_x_around
-                        self.A_weights[bi][wi] += w[-3][-1][wi]/local_x_around
-                    if geom == SPHERICAL:
-                        self.D_weights[bi][wi] += 2*w[-2][-1][wi]/local_x_around
-                        self.A_weights[bi][wi] += 2*w[-3][-1][wi]/local_x_around
+                    if self.logx:
+                        if geom == FLAT:
+                            self.D_weights[bi][wi] -= w[-2][-1][wi]
+                        elif geom == CYLINDRICAL:
+                            self.A_weights[bi][wi] += w[-3][-1][wi]
+                        elif geom == SPHERICAL:
+                            self.D_weights[bi][wi] += w[-2][-1][wi]
+                            self.A_weights[bi][wi] += 2*w[-3][-1][wi]
+                        self.D_weights[bi][wi] *= exp(-2*local_x_around)
+                        self.A_weights[bi][wi] *= exp(-local_x_around)
+                    else:
+                        if geom == CYLINDRICAL:
+                            self.D_weights[bi][wi] += w[-2][-1][wi]/local_x_around
+                            self.A_weights[bi][wi] += w[-3][-1][wi]/local_x_around
+                        elif geom == SPHERICAL:
+                            self.D_weights[bi][wi] += 2*w[-2][-1][wi]/local_x_around
+                            self.A_weights[bi][wi] += 2*w[-3][-1][wi]/local_x_around
+
             for bi, (dw, aw) in enumerate(zip(self.D_weights, self.A_weights)):
                 for si in range(self.n):
                     d_terms = [dw[k]*self.y(self._pxci2bi[self._lb[bi]+k], si)

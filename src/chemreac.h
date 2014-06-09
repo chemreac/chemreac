@@ -45,6 +45,7 @@ public:
     const uint nr; // number of reactions
     const bool logy; // use logarithmic concenctraction
     const bool logt; // use logarithmic time
+    const bool logx; // use logarithmic x (space coordinate)
     const vector<vector<uint> > stoich_reac; // Reactants per reaction
     vector<vector<uint> > stoich_actv; // Active reactants per reaction
     const vector<vector<uint> > stoich_prod; // Products per reaction
@@ -71,10 +72,11 @@ public:
 		      vector<vector<uint> >, 
 		      vector<vector<double> >,
 		      vector<uint>,
-		      int,
-		      bool,
-		      bool,
-                      uint nstencil = 3,
+		      int geom_=0,
+		      bool logy=false,
+		      bool logt=false,
+                      bool logx=false,
+                      uint nstencil=3,
                       bool lrefl=false,
                       bool rrefl=false);
     ~ReactionDiffusion();

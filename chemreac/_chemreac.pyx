@@ -15,7 +15,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         double * D_weight
 
         const uint n, N, nr, nstencil
-        const bool logy, logt, lrefl, rrefl
+        const bool logy, logt, logx, lrefl, rrefl
         const vector[vector[uint]] stoich_reac
         vector[vector[uint]] stoich_actv
         const vector[vector[uint]] stoich_prod
@@ -42,6 +42,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           vector[vector[double]],
                           vector[uint],
                           int,
+                          bool,
                           bool,
                           bool,
                           uint,
@@ -106,6 +107,7 @@ cdef class CppReactionDiffusion:
                   int geom,
                   bint logy,
                   bint logt,
+                  bint logx,
                   uint nstencil=3,
                   bint lrefl=True,
                   bint rrefl=True,
@@ -120,7 +122,7 @@ cdef class CppReactionDiffusion:
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
             D, z_chg, mobility, x, stoich_actv, bin_k_factor,
-            bin_k_factor_span, geom, logy, logt, nstencil,
+            bin_k_factor_span, geom, logy, logt, logx, nstencil,
             lrefl, rrefl)
 
     def __dealloc__(self):

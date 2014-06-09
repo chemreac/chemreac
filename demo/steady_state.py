@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-
 from __future__ import print_function, division, absolute_import
+
+from math import log
 
 import argh
 import numpy as np
@@ -12,27 +13,33 @@ from chemreac import (
 )
 from chemreac.integrate import run
 
-def efield_cb(x):
+def efield_cb(x, logx=False):
     """
     Returns a flat efield (-1)
     """
     return -(x**0)
 
-def y0_flat_cb(x):
+def y0_flat_cb(x, logx=False):
     xc = x[:-1] + np.diff(x)/2
+    if logx:
+        x, xc = map(np.exp, (x, xc))
     return 17 - 11*(xc-x[0])/(x[-1]-x[0])
 
-def y0_cylindrical_cb(x):
+def y0_cylindrical_cb(x, logx=False):
     xc = x[:-1] + np.diff(x)/2
+    if logx:
+        x, xc = map(np.exp, (x, xc))
     return 17 - np.log((xc-x[0])/(x[-1]-x[0]))
 
-def y0_spherical_cb(x):
+def y0_spherical_cb(x, logx=False):
     xc = x[:-1] + np.diff(x)/2
+    if logx:
+        x, xc = map(np.exp, (x, xc))
     return 3 + 0.1/((xc-x[0])/(x[-1]-x[0]))
 
 
 def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
-                 nt=25, geom='f', logt=False, logy=False, random=False,
+                 nt=25, geom='f', logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf',
                  plot=False, atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
@@ -46,18 +53,20 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     geom = {'f': FLAT, 'c': CYLINDRICAL, 's': SPHERICAL}[geom]
 
     # Setup the grid
-    x = np.linspace(x0, xend, N+1)
+    _x0 = log(x0) if logx else x0
+    _xend = log(xend) if logx else xend
+    x = np.linspace(_x0, _xend, N+1)
     if random:
-        x += (np.random.random(N+1)-0.5)*(xend-x0)/(N+2)
+        x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
 
     mob = 0.3
     # Initial conditions
     if geom == FLAT:
-        y0 = y0_flat_cb(x)
+        y0 = y0_flat_cb(x, logx)
     elif geom == CYLINDRICAL:
-        y0 = y0_cylindrical_cb(x)
+        y0 = y0_cylindrical_cb(x, logx)
     elif geom == SPHERICAL:
-        y0 = y0_spherical_cb(x)
+        y0 = y0_spherical_cb(x, logx)
 
     # Setup the system
     stoich_reac = []
@@ -104,6 +113,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         geom=geom,
         logy=logy,
         logt=logt,
+        logx=logx,
         nstencil=nstencil,
         lrefl=lrefl,
         rrefl=rrefl,
@@ -113,7 +123,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     if efield:
         if geom != FLAT:
             raise ValueError("Only analytic solution for flat drift implemented.")
-        sys.efield = efield_cb(sys.xcenters)
+        sys.efield = efield_cb(sys.xcenters, logx)
 
     # Analytic reference values
     t = tout.copy().reshape((nt, 1))

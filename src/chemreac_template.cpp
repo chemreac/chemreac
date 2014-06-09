@@ -53,12 +53,13 @@ ReactionDiffusion::ReactionDiffusion(
     int geom_,
     bool logy,
     bool logt,
+    bool logx,
     uint nstencil,
     bool lrefl,
     bool rrefl
     ):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
-    logy(logy), logt(logt), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
+    logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
     bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), efield(new double[N])
 {
@@ -214,17 +215,34 @@ void ReactionDiffusion::_apply_fd(uint bi){
     for (uint li=0; li<nstencil; ++li){ // li: local index
         D_WEIGHT(bi, li) = FDWEIGHT(2, li);
         A_WEIGHT(bi, li) = FDWEIGHT(1, li);
-        switch(geom){
-        case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
-            D_WEIGHT(bi, li) += FDWEIGHT(1, li)*1/xc[around];
-            A_WEIGHT(bi, li) += FDWEIGHT(0, li)*1/xc[around];
-            break;
-        case Geom::SPHERICAL: // Laplace operator in sph coords.
-            D_WEIGHT(bi, li) += FDWEIGHT(1, li)*2/xc[around];
-            A_WEIGHT(bi, li) += FDWEIGHT(0, li)*2/xc[around];
-            break;
-        default:
-            break;
+        if (logx){
+            switch(geom){
+            case Geom::FLAT:
+                D_WEIGHT(bi, li) -= FDWEIGHT(1, li);
+                break;
+            case Geom::CYLINDRICAL:
+                A_WEIGHT(bi, li) += FDWEIGHT(0, li);
+                break;
+            case Geom::SPHERICAL:
+                D_WEIGHT(bi, li) += FDWEIGHT(1, li);
+                A_WEIGHT(bi, li) += 2*FDWEIGHT(0, li);
+                break;
+            }
+            D_WEIGHT(bi, li) *= exp(-2*xc[around]);
+            A_WEIGHT(bi, li) *= exp(-xc[around]);
+        } else {
+            switch(geom){
+            case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
+                D_WEIGHT(bi, li) += FDWEIGHT(1, li)*1/xc[around];
+                A_WEIGHT(bi, li) += FDWEIGHT(0, li)*1/xc[around];
+                break;
+            case Geom::SPHERICAL: // Laplace operator in sph coords.
+                D_WEIGHT(bi, li) += FDWEIGHT(1, li)*2/xc[around];
+                A_WEIGHT(bi, li) += FDWEIGHT(0, li)*2/xc[around];
+                break;
+            default:
+                break;
+            }
         }
     }
     delete []c;
