@@ -22,7 +22,7 @@ hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update conda
 conda info -a
-conda create -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1
+conda create -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1 pip
 source activate test-env
 pip install argh mako quantities pytest https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz https://github.com/sympy/sympy/archive/master.zip
 python -c "import sympy; print sympy.__version__"
