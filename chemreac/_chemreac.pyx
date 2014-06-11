@@ -15,7 +15,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         double * D_weight
 
         const uint n, N, nr, nstencil
-        const bool logy, logt, logx, lrefl, rrefl
+        const bool logy, logt, logx, lrefl, rrefl, auto_efield
         const vector[vector[uint]] stoich_reac
         vector[vector[uint]] stoich_actv
         const vector[vector[uint]] stoich_prod
@@ -26,6 +26,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
         const vector[double] x
         vector[vector[double]] bin_k_factor
         vector[uint] bin_k_factor_span
+        const double surf_chg, eps
         double * xc
         double * const efield
 
@@ -47,7 +48,10 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           bool,
                           uint,
                           bool,
-                          bool) except +
+                          bool,
+                          bool,
+                          double,
+                          double) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
         void dense_jac_cmaj(double, const double * const, double * const, int)
@@ -56,6 +60,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
 
         void per_rxn_contrib_to_fi(double, const double * const, uint, double * const)
         int get_geom_as_int()
+        void calc_efield(const double * const)
 
         uint _stencil_bi_lbound(uint)
         uint _xc_bi_map(uint)
@@ -111,6 +116,9 @@ cdef class CppReactionDiffusion:
                   uint nstencil=3,
                   bint lrefl=True,
                   bint rrefl=True,
+                  bint auto_efield=False,
+                  double surf_chg=0.0,
+                  double eps=1.0,
                   double xscale = 1.0,
               ):
         cdef size_t i
@@ -123,7 +131,7 @@ cdef class CppReactionDiffusion:
             n, stoich_reac, stoich_prod, k, N,
             D, z_chg, mobility, x, stoich_actv, bin_k_factor,
             bin_k_factor_span, geom, logy, logt, logx, nstencil,
-            lrefl, rrefl)
+            lrefl, rrefl, auto_efield, surf_chg, eps)
 
     def __dealloc__(self):
         del self.thisptr
@@ -164,6 +172,9 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_packed_jac_cmaj(
             t, &y[0], &Jout[0,0], Jout.shape[0])
+
+    def calc_efield(self, double[::1] linC):
+        self.thisptr.calc_efield(&linC[0])
 
     property n:
         def __get__(self):
@@ -271,6 +282,18 @@ cdef class CppReactionDiffusion:
     property rrefl:
         def __get__(self):
             return self.thisptr.rrefl
+
+    property auto_efield:
+        def __get__(self):
+            return self.thisptr.auto_efield
+
+    property surf_chg:
+        def __get__(self):
+            return self.thisptr.surf_chg
+
+    property eps:
+        def __get__(self):
+            return self.thisptr.eps
 
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
