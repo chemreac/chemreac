@@ -568,9 +568,9 @@ void ReactionDiffusion::calc_efield(const double * const linC)
     }
     if (geom == Geom::FLAT){
         Q = 0.0;
-        for (uint bi=N-1; bi>=0; --bi){
-            nx = logx ? exp(x[bi]) : x[bi];
-            efield[bi] += F*Q;
+        for (uint bi=N; bi>0; --bi){ // unsigned int..
+            nx = logx ? exp(x[bi-1]) : x[bi-1];
+            efield[bi-1] += F*Q;
             Q += netchg[bi]*(cx - nx);
             cx = nx;
         }
