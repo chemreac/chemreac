@@ -22,7 +22,8 @@ def gaussian(x, mu, sigma, logy, logx):
     else:
         return a*np.exp(b)
 
-def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128,
+def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, mobility=6e-5,
+
                  nt=25, geom='f', logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf',
@@ -40,8 +41,6 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128,
     if random:
         x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
 
-    mob = 6e-5
-
     # Setup the system
     stoich_reac = []
     stoich_prod = []
@@ -53,7 +52,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128,
         n, stoich_reac, stoich_prod, k, N,
         D=[D, D],
         z_chg=[1, -1],
-        mobility=[mob, mob],
+        mobility=[mobility, mobility],
         x=x,
         bin_k_factor=bin_k_factor,
         bin_k_factor_span=bin_k_factor_span,
@@ -70,8 +69,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128,
 
     # Initial conditions
     y0 = np.vstack((
-        gaussian(sys.xcenters, x0+0.501*(xend-x0), (xend-x0)/13, logy, logx),
-        gaussian(sys.xcenters, x0+0.499*(xend-x0), (xend-x0)/13, logy, logx)
+        gaussian(sys.xcenters, x0+(0.5+offset)*(xend-x0), (xend-x0)/13, logy, logx),
+        gaussian(sys.xcenters, x0+(0.5-offset)*(xend-x0), (xend-x0)/13, logy, logx)
     )).transpose()
 
     # Run the integration
