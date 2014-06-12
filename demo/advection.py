@@ -22,12 +22,10 @@ def gaussian(x, mu, sigma, logy, logx):
     else:
         return a*np.exp(b)
 
-def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, mobility=6e-5,
-
+def integrate_rd(D=2e-4, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, mobility=1e-6,
                  nt=25, geom='f', logt=False, logy=False, logx=False, random=False,
-                 nstencil=3, lrefl=False, rrefl=False,
-                 num_jacobian=False, method='bdf',
-                 plot=False, atol=1e-6, rtol=1e-6, random_seed=42):
+                 nstencil=3, lrefl=False, rrefl=False, num_jacobian=False, method='bdf',
+                 plot=False, atol=1e-6, rtol=1e-6, random_seed=42, surf_chg=0.0):
     if random_seed:
         np.random.seed(random_seed)
     n = 2
@@ -52,7 +50,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, m
         n, stoich_reac, stoich_prod, k, N,
         D=[D, D],
         z_chg=[1, -1],
-        mobility=[mobility, mobility],
+        mobility=[mobility, -mobility],
         x=x,
         bin_k_factor=bin_k_factor,
         bin_k_factor_span=bin_k_factor_span,
@@ -64,15 +62,24 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, m
         lrefl=lrefl,
         rrefl=rrefl,
         auto_efield=True,
+        surf_chg=surf_chg,
         eps=80.10, # water at 20 deg C
     )
 
+
     # Initial conditions
     y0 = np.vstack((
-        gaussian(sys.xcenters, x0+(0.5+offset)*(xend-x0), (xend-x0)/13, logy, logx),
-        gaussian(sys.xcenters, x0+(0.5-offset)*(xend-x0), (xend-x0)/13, logy, logx)
+        gaussian(sys.xcenters, x0+(0.5+offset)*(xend-x0), (xend-x0)/23, logy, logx),
+        gaussian(sys.xcenters, x0+(0.5-offset)*(xend-x0), (xend-x0)/23, logy, logx)
     )).transpose()
 
+    if plot:
+        # Plot initial E-field
+        import matplotlib.pyplot as plt
+        sys.calc_efield(y0.flatten())
+        plt.subplot(3, 1, 3)
+        plt.plot(sys.xcenters, sys.efield)
+        plt.plot(sys.xcenters, sys.xcenters*0)
     # Run the integration
     t = np.log(tout) if logt else tout
     yout, info = run(sys, np.log(y0).flatten() if logy else y0.flatten(), t, atol=atol, rtol=rtol,
@@ -81,10 +88,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, m
 
     # Plot results
     if plot:
-        import matplotlib.pyplot as plt
-
-        def _plot(y, c, ttl=None, apply_exp_on_y=False):
-            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y, c=c)
+        def _plot(y, ttl=None, apply_exp_on_y=False, **kwargs):
+            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y, **kwargs)
             if N < 100:
                 plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y), linewidth=.1,
                            colors='gray')
@@ -94,19 +99,19 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, N=128, offset=0.01, m
                 plt.title(ttl)
 
         for i in range(nt):
-            plt.subplot(2, 1, 1)
+            plt.subplot(3, 1, 1)
             c = 1-tout[i]/tend
             c = (1.0-c, .5-c/2, .5-c/2)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N), apply_exp_on_y=logy)
-            _plot(yout[i, :, 1], c[::-1], apply_exp_on_y=logy)
+            _plot(yout[i, :, 0], 'Simulation (N={})'.format(sys.N), apply_exp_on_y=logy, c=c, label='$z_A=1$')
+            _plot(yout[i, :, 1], apply_exp_on_y=logy, c=c[::-1], label='$z_B=-1$')
 
-            plt.subplot(2, 1, 2)
-            _plot(yout[i, :, 0]-yout[i, :, 1], [c[2], c[0], c[1]],
-                  'Diff'.format(sys.N), apply_exp_on_y=logy)
-
-
-        plt.xlabel('Time / s')
-        plt.ylabel(r'C')
+            plt.subplot(3, 1, 2)
+            _plot(yout[i, :, 0]-yout[i, :, 1], 'Diff'.format(sys.N), apply_exp_on_y=logy,
+                  c=[c[2], c[0], c[1]], label='A-B (positive excess)')
+            plt.xlabel('Time / s')
+            plt.ylabel(r'C')
+        plt.subplot(3, 1, 3)
+        plt.plot(sys.xcenters, sys.efield)
         plt.show()
     return tout, yout, info, sys
 

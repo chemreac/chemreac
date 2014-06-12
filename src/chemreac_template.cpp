@@ -362,7 +362,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                     unscaled_advection += A_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
                 }
                 DYDT(bi, si) += unscaled_diffusion*D[si];
-                DYDT(bi, si) += unscaled_advection*efield[bi]*mobility[si];
+                DYDT(bi, si) += unscaled_advection*-efield[bi]*mobility[si];
             }
         }
         if (logy){
@@ -459,20 +459,20 @@ ReactionDiffusion::${token}(double t, const double * const y,
                     const uint sbi = _xc_bi_map(lbound+k);
                     if (sbi == bi) {
                         JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
-                        JAC(bi, bi, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k);
+                        JAC(bi, bi, si, si) += -efield[bi]*mobility[si]*A_WEIGHT(bi, k);
                     } else {
                         if (bi > 0)
                             if (sbi == bi-1){
                                 double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
                                 JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi-1, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                JAC(bi, bi-1, si, si) += -efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor;
                             }
                         if (bi < N-1)
                             if (sbi == bi+1){
                                 double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
                                 JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi+1, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                JAC(bi, bi+1, si, si) += -efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor; 
                             }
                     }
@@ -570,7 +570,7 @@ void ReactionDiffusion::calc_efield(const double * const linC)
         Q = 0.0;
         for (uint bi=N; bi>0; --bi){ // unsigned int..
             nx = logx ? exp(x[bi-1]) : x[bi-1];
-            efield[bi-1] += F*Q;
+            efield[bi-1] -= F*Q;
             Q += netchg[bi]*(cx - nx);
             cx = nx;
         }
