@@ -347,7 +347,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                 starti = bi - nsidep;
             }
             for (uint si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && ((mobility[si] == 0.0) || efield[bi] == 0.0)) continue;
+                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
                 double unscaled_diffusion = 0;
                 double unscaled_advection = 0;
                 for (uint xi=0; xi<nstencil; ++xi){
@@ -358,11 +358,12 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                     } else if (starti >= (int)N - (int)nstencil + 1){
                         biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
                     }
-                    unscaled_diffusion += D_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
-                    unscaled_advection += A_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
+                    unscaled_diffusion += D_WEIGHT(bi, xi) * LINC(biw, si);
+                    unscaled_advection += A_WEIGHT(bi, xi) * \
+                        (LINC(biw, si)*efield[bi] + LINC(bi, si)*efield[biw]);
                 }
                 DYDT(bi, si) += unscaled_diffusion*D[si];
-                DYDT(bi, si) += unscaled_advection*-efield[bi]*mobility[si];
+                DYDT(bi, si) += unscaled_advection*-mobility[si];
             }
         }
         if (logy){
@@ -453,26 +454,27 @@ ReactionDiffusion::${token}(double t, const double * const y,
         if (N > 1) {
             uint lbound = _stencil_bi_lbound(bi);
             for (uint si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && ((mobility[si] == 0.0) || efield[bi] == 0.0)) continue;
+                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
                 // Not a strict Jacobian only block diagonal plus closest bands...
                 for (uint k=0; k<nstencil; ++k){
                     const uint sbi = _xc_bi_map(lbound+k);
+                    JAC(bi, bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
                     if (sbi == bi) {
                         JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
-                        JAC(bi, bi, si, si) += -efield[bi]*mobility[si]*A_WEIGHT(bi, k);
+                        JAC(bi, bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
                         if (bi > 0)
                             if (sbi == bi-1){
                                 double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
                                 JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi-1, si, si) += -efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                JAC(bi, bi-1, si, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor;
                             }
                         if (bi < N-1)
                             if (sbi == bi+1){
                                 double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
                                 JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi+1, si, si) += -efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                JAC(bi, bi+1, si, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor; 
                             }
                     }
