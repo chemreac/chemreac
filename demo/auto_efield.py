@@ -3,7 +3,7 @@
 
 from __future__ import print_function, division, absolute_import
 
-from math import log
+from math import log, erf, exp
 
 import argh
 import numpy as np
@@ -14,13 +14,24 @@ from chemreac import (
 from chemreac.integrate import run
 
 
+sq2 = 2**0.5
+pi = np.pi
+sqpi = pi**0.5
+
 def gaussian(x, mu, sigma, logy, logx, geom):
+    # Mathematica code
+    # $Assumptions = {(sigma | mu) \[Element] Reals, sigma > 0}
+    # 1/Integrate[E^(-1/2*((x - mu)/sigma)^2), {x, -Infinity, Infinity}]
+    # 1/Integrate[2*pi*x*E^(-1/2*((x - mu)/sigma)^2), {x, 0, Infinity}]
+    # 1/Integrate[4*pi*x^2*E^(-1/2*((x - mu)/sigma)^2), {x, 0, Infinity}]
     if geom == FLAT:
         a = 1/sigma/(2*np.pi)**0.5
     elif geom == CYLINDRICAL:
-        a = 1/sigma/(2*np.pi)**0.5
+        a = 1/pi/sigma/(2*exp(-mu**2/2/sigma**2)*sigma +\
+                        mu*sq2*sqpi*(1 + erf(mu/(sq2*sigma))))
     elif geom == SPHERICAL:
-        a = 1/sigma/(2*np.pi)**0.5
+        a = 1/2/pi/sigma/(2*exp(-mu**2/2/sigma**2)*mu*sigma +\
+                          sq2*sqpi*(mu**2 + sigma**2)*(1 + erf(mu/sq2/sigma)))
     else:
         raise RuntimeError()
     b = -0.5*((x-mu)/sigma)**2
@@ -41,7 +52,7 @@ def pair_of_gaussians(x, offsets, sigma, logy, logx, geom):
 
 
 def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
-                 offset=0.25, mobility=3e-7, nt=25, geom='f',
+                 offset=0.25, mobility=3e-8, nt=25, geom='f',
                  logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
