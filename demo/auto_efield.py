@@ -12,7 +12,7 @@ from chemreac import (
     ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
 )
 from chemreac.integrate import run
-
+from chemreac.util.transforms import sigmoid_algebraic_4
 
 sq2 = 2**0.5
 pi = np.pi
@@ -102,14 +102,18 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
     s = (xend-x0)/sigma_q
     y0 = np.vstack(pair_of_gaussians(sys.xcenters, [offset, -offset],
                                      s, logy, logx, geom)).transpose()
-
+    if logy:
+        y0 = sigmoid_algebraic_4(y0)
+    print(y0)
     if plot:
         # Plot initial E-field
         import matplotlib.pyplot as plt
-        sys.calc_efield(y0.flatten())
+        sys.calc_efield((np.exp(y0) if logy else y0).flatten())
         plt.subplot(4, 1, 3)
         plt.plot(sys.xcenters, sys.efield)
         plt.plot(sys.xcenters, sys.xcenters*0)
+
+
 
     # Run the integration
     t = np.log(tout) if logt else tout
@@ -120,9 +124,8 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
 
     # Plot results
     if plot:
-        def _plot(y, ttl=None, exp_on_y=False, **kwargs):
-            plt.plot(sys.xcenters, np.exp(y) if exp_on_y else y,
-                     **kwargs)
+        def _plot(y, ttl=None,  **kwargs):
+            plt.plot(sys.xcenters, y, **kwargs)
             if N < 100:
                 plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y),
                            linewidth=.1, colors='gray')
@@ -136,18 +139,14 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
             c = 1-tout[i]/tend
             c = (1.0-c, .5-c/2, .5-c/2)
             _plot(yout[i, :, 0], 'Simulation (N={})'.format(sys.N),
-                  exp_on_y=logy, c=c, label='$z_A=1$' if i==0 else None)
-            _plot(yout[i, :, 1], exp_on_y=logy, c=c[::-1],
+                  c=c, label='$z_A=1$' if i==0 else None)
+            _plot(yout[i, :, 1], c=c[::-1],
                   label='$z_B=-1$' if i==0 else None)
             plt.legend()
 
             plt.subplot(4, 1, 2)
-            if logy:
-                delta_y = np.exp(yout[i, :, 0]) - np.exp(yout[i, :, 1])
-            else:
-                delta_y = yout[i, :, 0] - yout[i, :, 1]
+            delta_y = yout[i, :, 0] - yout[i, :, 1]
             _plot(delta_y, 'Diff'.format(sys.N),
-                  exp_on_y=logy,
                   c=[c[2], c[0], c[1]],
                   label='A-B (positive excess)' if i==0 else None)
             plt.legend()

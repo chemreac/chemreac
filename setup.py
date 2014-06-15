@@ -39,6 +39,17 @@ else:
     subsd = {'USE_OPENMP': USE_OPENMP}
     ext_modules_ = [
         CleverExtension(
+            'chemreac.util._transforms',
+            sources=[
+                'chemreac/util/_transforms.pyx',
+                'chemreac/util/c_transforms.c',
+            ],
+            pycompilation_compile_kwargs={
+                'options': ['pic', 'warn', 'fast']
+            },
+            logger=True,
+        ),
+        CleverExtension(
             "chemreac._chemreac",
             sources=[
                 'src/chemreac_template.cpp',
