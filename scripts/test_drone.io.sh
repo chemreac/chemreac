@@ -1,6 +1,6 @@
 #!/bin/bash -x
 #
-# Test script for the Continuous Integration server drone.io
+# Test script for the Continuous Integration service at drone.io
 
 #LOGFILE=`pwd`/'ci.log'
 
@@ -28,4 +28,4 @@ pip install argh mako quantities pytest periodictable https://github.com/bjodah/
 python -c "import sympy; print sympy.__version__"
 python -c "import pycompilation; print pycompilation.__version__"
 python setup.py build_ext -i
-PYTHONPATH=.:$PYTHONPATH py.test
+PYTHONPATH=.:$PYTHONPATH py.test --slow

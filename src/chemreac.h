@@ -1,17 +1,14 @@
-#ifndef _CHEMREAC_H_
-#define _CHEMREAC_H_
+#ifndef _PVHQOBGMVZECTIJSMOKFUXJXXM
+#define _PVHQOBGMVZECTIJSMOKFUXJXXM
 
 #include <vector>
 #include <stdexcept>
 
 using std::vector;
 
-enum class Geom {FLAT, CYLINDRICAL, SPHERICAL}; // Geom:: -> GEOM_
+enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 
 namespace chemreac {
-
-#define ALIGNED16 
-
 
 class ReactionDiffusion
 {
@@ -27,13 +24,9 @@ public:
     uint n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
 
-    void _fill_local_r(int, const double * const restrict, double * const restrict) const;
-    double flux(int i, int si, const double * const restrict y) const;
-    double diffusion_contrib(int bi, int si, const double * const restrict fluxes) const;
-    double diffusion_contrib_jac_prev(int bi) const;
-    double diffusion_contrib_jac_next(int bi) const;
+    void _fill_local_r(int, const double * const __restrict__, double * const __restrict__) const;
     void _apply_fd(uint);
-    const double * _alloc_and_populate_linC(const double * const restrict) const;
+    const double * _alloc_and_populate_linC(const double * const __restrict__) const;
     uint _stencil_bi_lbound(uint bi) const;
     uint _xc_bi_map(uint xci) const;
 
@@ -57,6 +50,9 @@ public:
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
     vector<uint> bin_k_factor_span; // 
     const bool lrefl, rrefl;
+    const bool auto_efield;
+    const double surf_chg;
+    const double eps;
     double * const efield; // v_d = mu_el*E
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
 
@@ -78,17 +74,20 @@ public:
                       bool logx=false,
                       uint nstencil=3,
                       bool lrefl=false,
-                      bool rrefl=false);
+                      bool rrefl=false,
+                      bool auto_efield=false,
+                      double surf_chg=0.0,
+                      double eps=1.0);
     ~ReactionDiffusion();
-    void f(double, const double * const restrict, double * const restrict) const;
-    void dense_jac_rmaj(double, const double * const restrict, double * const restrict, int) const;
-    void dense_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
-    void banded_padded_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
-    void banded_packed_jac_cmaj(double, const double * const restrict, double * const restrict, int) const;
-    void per_rxn_contrib_to_fi(double, const double * const restrict, uint, double * const restrict) const;
+    void f(double, const double * const, double * const __restrict__);
+    void dense_jac_rmaj(double, const double * const, double * const __restrict__, int);
+    void dense_jac_cmaj(double, const double * const, double * const __restrict__, int);
+    void banded_padded_jac_cmaj(double, const double * const, double * const __restrict__, int);
+    void banded_packed_jac_cmaj(double, const double * const, double * const __restrict__, int);
+    void per_rxn_contrib_to_fi(double, const double * const __restrict__, uint, double * const __restrict__) const;
     int get_geom_as_int() const;
-
+    void calc_efield(const double * const);
 }; // class ReactionDiffusion
 
 }; // namespace chemreac
-#endif
+#endif // _PVHQOBGMVZECTIJSMOKFUXJXXM

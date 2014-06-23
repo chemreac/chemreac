@@ -109,7 +109,7 @@ c_fornberg.o: ../finitediff/finitediff/c_fornberg.f90
 
 
 test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o
-	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff -Drestrict=__restrict__\
+	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff \
 	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # -lrt only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac

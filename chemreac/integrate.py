@@ -14,6 +14,10 @@ def run(sys, y0, tout, mode=None, **kwargs):
     tout: at what times to report, e.g.:
         np.linspace(t0, tend, nt+1)
         np.logspace(t0+1e-12, np.log10(tend), nt+1)
+
+    Returns
+    =======
+    yout: numpy array of shape (len(tout), sys.N, sys.n)
     """
     y0 = np.asarray(y0)
     assert y0.size == sys.n*sys.N

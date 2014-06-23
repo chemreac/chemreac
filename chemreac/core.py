@@ -58,7 +58,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False,
-                nstencil=None, lrefl=True, rrefl=True, xscale=1.0, **kwargs):
+                nstencil=None, lrefl=True, rrefl=True, auto_efield=False, surf_chg=0.0, eps=1.0,
+                xscale=1.0, **kwargs):
         """
         Arguments:
         -`n`: number of species
@@ -80,6 +81,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         -`nstencil`: number of points used in finite difference scheme
         -`lrefl`: reflective left boundary (default: True)
         -`rrefl`: reflective right boundary (default: True)
+        -`auto_efield`: calculate electric field from concentrations
+        -`surf_chg`: total charge of surface
+        -`eps`: relative permitivity of medium (dielectric constant)
         -`xscale`: use internal scaling of length
                    (finite difference scheme works best for step-size ~1)
 
@@ -172,7 +176,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             cls, n, stoich_reac, stoich_prod, k_val, N,
             D_val, z_chg, mobility, _x, _stoich_actv, bin_k_factor,
             bin_k_factor_span, geom, logy, logt, logx,
-            nstencil, lrefl, rrefl
+            nstencil, lrefl, rrefl, auto_efield, surf_chg, eps, xscale
         )
         rd.k_err = k_err
         rd.D_err = D_err

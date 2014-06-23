@@ -56,12 +56,11 @@ else:
                         # 'fast' doesn't work on drone.io
                         'options': ['pic', 'warn'] +\
                         (['openmp'] if USE_OPENMP else []),
-                        'defmacros': ['restrict=__restrict__', 'DEBUG']+\
+                        'defmacros': ['DEBUG']+\
                         (['DEBUG'] if DEBUG else []),
                     },
                 },
                 'options': ['pic', 'warn'],
-                'defmacros': ['restrict=__restrict__'],
             },
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),

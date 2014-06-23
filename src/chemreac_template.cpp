@@ -29,6 +29,7 @@
 #define omp_get_thread_num() 0
 %endif
 
+
 namespace chemreac {
 
 using std::vector;
@@ -56,12 +57,16 @@ ReactionDiffusion::ReactionDiffusion(
     bool logx,
     uint nstencil,
     bool lrefl,
-    bool rrefl
+    bool rrefl,
+    bool auto_efield,
+    double surf_chg,
+    double eps
     ):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
-    bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), efield(new double[N])
+    bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), auto_efield(auto_efield),
+    surf_chg(surf_chg), eps(eps), efield(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -253,8 +258,8 @@ void ReactionDiffusion::_apply_fd(uint bi){
 #define FACTOR(ri, bi) ( ((ri) < n_factor_affected_k) ? \
             bin_k_factor[bi][i_bin_k[ri]] : 1 )
 void
-ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
-                 double * const restrict local_r) const
+ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ y,
+                 double * const __restrict__ local_r) const
 {
     // intent(out) :: local_r
     for (uint rxni=0; rxni<nr; ++rxni){
@@ -288,16 +293,10 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const restrict y,
 #define Y(bi, si) y[(bi)*n+(si)]
 #define LINC(bi, si) linC[(bi)*n+(si)]
 const double *
-ReactionDiffusion::_alloc_and_populate_linC(const double * const restrict y) const
+ReactionDiffusion::_alloc_and_populate_linC(const double * const __restrict__ y) const
 {
-    if (!logy)
-        return nullptr;
-    // int nlinC = 16/sizeof(double)*int(ceil(sizeof(double)*n*N / 16.0));
-    // double * const linC __attribute__((aligned(16))) = (double * const)\
-    //     (aligned_alloc(16, nlinC*sizeof(double)));
     int nlinC = n*N;
     double * const linC = (double * const)malloc(nlinC*sizeof(double));
-
     // TODO: Tune 42...
     ${"#pragma omp parallel for if (N > 42)" if USE_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi)
@@ -309,10 +308,12 @@ ReactionDiffusion::_alloc_and_populate_linC(const double * const restrict y) con
 
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 void
-ReactionDiffusion::f(double t, const double * const restrict y, double * const restrict dydt) const
+ReactionDiffusion::f(double t, const double * const y, double * const __restrict__ dydt)
 {
-    // const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC(y);
-    const double * const restrict linC = _alloc_and_populate_linC(y);
+    // note condifiontal call to free at end of this function
+    const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
+    if (auto_efield)
+        calc_efield(linC);
 
     ${"double * const local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
@@ -347,7 +348,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                 starti = bi - nsidep;
             }
             for (uint si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && ((mobility[si] == 0.0) || efield[bi] == 0.0)) continue;
+                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
                 double unscaled_diffusion = 0;
                 double unscaled_advection = 0;
                 for (uint xi=0; xi<nstencil; ++xi){
@@ -358,21 +359,24 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
                     } else if (starti >= (int)N - (int)nstencil + 1){
                         biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
                     }
-                    unscaled_diffusion += D_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
-                    unscaled_advection += A_WEIGHT(bi, xi) * ((logy) ? LINC(biw, si) : Y(biw, si));
+                    unscaled_diffusion += D_WEIGHT(bi, xi) * LINC(biw, si);
+                    unscaled_advection += A_WEIGHT(bi, xi) * \
+                        (LINC(biw, si)*efield[bi] + LINC(bi, si)*efield[biw]);
                 }
                 DYDT(bi, si) += unscaled_diffusion*D[si];
-                DYDT(bi, si) += unscaled_advection*efield[bi]*mobility[si];
+                DYDT(bi, si) += unscaled_advection*-mobility[si];
             }
         }
         if (logy){
             if (logt)
-                for (uint si=0; si<n; ++si)
+                for (uint si=0; si<n; ++si){
                     DYDT(bi, si) *= exp(t-Y(bi, si));
+                }
             else
-                for (uint si=0; si<n; ++si)
+                for (uint si=0; si<n; ++si){
                     //DYDT(bi, si) *= exp(-Y(bi, si));
                     DYDT(bi, si) /= LINC(bi, si);
+                }
         } else {
             if (logt)
                 for (uint si=0; si<n; ++si)
@@ -384,7 +388,7 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     }
     ${"delete []local_r;" if not USE_OPENMP else ""}
 
-    if ((N > 2) && logy)
+    if (logy)
         free((void*)linC);
 }
 #undef DYDT
@@ -399,19 +403,21 @@ ReactionDiffusion::f(double t, const double * const restrict y, double * const r
     ]:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
 void
-ReactionDiffusion::${token}(double t, const double * const restrict y,
-                            double * const restrict ja, int ldj) const
+ReactionDiffusion::${token}(double t, const double * const y,
+                            double * const __restrict__ ja, int ldj)
 {
     // Note: does not return a strictly correct Jacobian, only 1 pair of bands.
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding)
-    double * const restrict fout = (logy) ? new double[n*N] : nullptr;
+    double * const __restrict__ fout = (logy) ? new double[n*N] : nullptr;
     if (fout != nullptr) f(t, y, fout);
 
-    // const double * const restrict linC __attribute__((aligned(16))) = _alloc_and_populate_linC(y);
-    const double * const restrict linC = _alloc_and_populate_linC(y);
+    // note condifiontal call to free at end of this function
+    const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
+    if (auto_efield)
+        calc_efield(linC);
 
     ${'double * const local_r = new double[nr];' if not USE_OPENMP else ''}
     ${'#pragma omp parallel for' if USE_OPENMP else ''}
@@ -451,26 +457,27 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
         if (N > 1) {
             uint lbound = _stencil_bi_lbound(bi);
             for (uint si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && ((mobility[si] == 0.0) || efield[bi] == 0.0)) continue;
+                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
                 // Not a strict Jacobian only block diagonal plus closest bands...
                 for (uint k=0; k<nstencil; ++k){
                     const uint sbi = _xc_bi_map(lbound+k);
+                    JAC(bi, bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
                     if (sbi == bi) {
                         JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
-                        JAC(bi, bi, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k);
+                        JAC(bi, bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
                         if (bi > 0)
                             if (sbi == bi-1){
                                 double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
                                 JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi-1, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                JAC(bi, bi-1, si, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor;
                             }
                         if (bi < N-1)
                             if (sbi == bi+1){
                                 double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
                                 JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi+1, si, si) += efield[bi]*mobility[si]*A_WEIGHT(bi, k)*\
+                                JAC(bi, bi+1, si, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor; 
                             }
                     }
@@ -499,6 +506,8 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
     ${'delete []local_r;' if not USE_OPENMP else ''}
     if (logy)
         delete []fout;
+    if (logy)
+        free((void*)linC);
 }
 #undef JAC
 %endfor
@@ -509,8 +518,8 @@ ReactionDiffusion::${token}(double t, const double * const restrict y,
 #undef D_WEIGHT
 #undef A_WEIGHT
 
-void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const restrict y,
-                                              uint si, double * const restrict out) const
+void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __restrict__ y,
+                                              uint si, double * const __restrict__ out) const
 {
     double * const local_r = new double[nr];
     _fill_local_r(0, y, local_r);
@@ -527,6 +536,49 @@ int ReactionDiffusion::get_geom_as_int() const
     case Geom::CYLINDRICAL : return 1;
     case Geom::SPHERICAL :   return 2;
     default:                 return -1;
+    }
+}
+
+void ReactionDiffusion::calc_efield(const double * const linC)
+{
+    // Prototype for self-generated electric field
+    double netchg[N];
+    const double F = 96485.3399; // Faraday's constant, [C/mol]
+    const double pi = 3.14159265358979324;
+    double Q = surf_chg;
+    double nx, cx = logx ? exp(x[0]) : x[0];
+    for (uint bi=0; bi<N; ++bi){
+        netchg[bi] = 0.0;
+        for (uint si=0; si<n; ++si)
+            netchg[bi] += z_chg[si]*linC[bi*n+si];
+    }
+    for (uint bi=0; bi<N; ++bi){
+        const double r = logx ? exp(xc[nsidep+bi]) : xc[nsidep+bi];
+        nx = logx ? exp(x[bi+1]) : x[bi+1];
+        switch(geom){
+        case Geom::FLAT:
+            efield[bi] = F*Q;
+            Q += netchg[bi]*(nx - cx);
+            break;
+        case Geom::CYLINDRICAL:
+            efield[bi] = F*Q/(2*pi*eps*r); // Gauss's law
+            Q += netchg[bi]*pi*(nx*nx - cx*cx);
+            break;
+        case Geom::SPHERICAL:
+            efield[bi] = F*Q/(4*pi*eps*r*r); // Gauss's law
+            Q += netchg[bi]*4*pi/3*(nx*nx*nx - cx*cx*cx);
+            break;
+        }
+        cx = nx;
+    }
+    if (geom == Geom::FLAT){
+        Q = 0.0;
+        for (uint bi=N; bi>0; --bi){ // unsigned int..
+            nx = logx ? exp(x[bi-1]) : x[bi-1];
+            efield[bi-1] -= F*Q;
+            Q += netchg[bi]*(cx - nx);
+            cx = nx;
+        }
     }
 }
 

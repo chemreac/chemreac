@@ -24,7 +24,8 @@ class SymRD(ReactionDiffusionBase):
     def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                  mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
                  bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False,
-                 nstencil=None, lrefl=True, rrefl=True, **kwargs):
+                 nstencil=None, lrefl=True, rrefl=True, auto_efield=False, surf_chg=0.0,
+                 eps=1.0, **kwargs):
         # Save args
         self.n = n
         self.stoich_reac = stoich_reac
@@ -47,6 +48,9 @@ class SymRD(ReactionDiffusionBase):
         self.nstencil = nstencil or 3
         self.lrefl = lrefl
         self.rrefl = rrefl
+        self.auto_efield = auto_efield
+        self.surf_chg = surf_chg
+        self.eps = eps
         if kwargs: raise KeyError("Don't know what to do with:", kwargs)
 
         # Set attributes used later

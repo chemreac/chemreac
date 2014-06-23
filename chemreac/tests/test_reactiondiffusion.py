@@ -17,7 +17,9 @@ from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 
 
 np.set_printoptions(precision=3, linewidth=260)
-TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
+
+TR_FLS = [True, False]
+TRUE_FALSE_PAIRS = list(product(TR_FLS, TR_FLS))
 
 
 def _test_f(rd, t, y, fref=None):
@@ -766,3 +768,25 @@ def test_diffusion_jac(geom_refl):
     y0 = x[0]+2*x[1:]**2/(1+x[1:]**4)
     # compare f and jac with Symbolic class:
     _test_f_and_dense_jac_rmaj(rd, 0, y0)
+
+
+COMBOS = list(product((FLAT, CYLINDRICAL, SPHERICAL), TR_FLS))
+@pytest.mark.parametrize("params", COMBOS)
+def test_integrated_conc(params):
+    geom, logx = params
+    N = 8192
+    x0, xend = 0.11, 1.37
+    x = np.linspace(x0, xend, N+1)
+    rd = ReactionDiffusion(1, [], [], [], D=[0], N=N,
+                           x=np.log(x) if logx else x, geom=geom, logx=logx)
+    xc = np.exp(rd.xcenters) if logx else rd.xcenters
+    y = xc*np.exp(-xc)
+    if geom == FLAT:
+        primitive = lambda t: -(t+1)*np.exp(-t)
+    elif geom == CYLINDRICAL:
+        primitive = lambda t: 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
+    elif geom == SPHERICAL:
+        primitive = lambda t: 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
+    res = rd.integrated_conc(y)
+    ref = (primitive(xend) - primitive(x0))
+    assert abs(res - ref) < 1e-8

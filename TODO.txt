@@ -1,19 +1,15 @@
 * remove "banded_padded_jac_cmaj" (same effect can be achieved through
   using and offset plus extra ldj.)
 
-* derive finite differences test by hand for geometries starting from
-  diffusion equation
-
-* write a separate test to confirm that it correctly handles active case.
-
-* add logx (important in order to keep number of bins to a minimum)
+* more tests for logx
 
 * add fixed grid spacing
 
 * stricter boundary conditions:
   - Robin boundary conditions
-     - Insulating (enforces not net flux) - Ensure correct for spherical/cylindrical (might not be!?)
-     - Extrapolating (Polynomial extrapolation)
+     - Insulating (enforces no net flux) 
+         - Ensure true insulation for spherical/cylindrical (needs careful attention)
+     - Explain extrapolating (Polynomial extrapolation)
   Mention that the pure boundary conditions are not useful:
   - Dirichlet
   - Neumann
