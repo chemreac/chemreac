@@ -31,11 +31,15 @@ tests:
 * chemreac.chemistry.ReactionSystem
 """
 
+slow = pytest.mark.slow
+
+TR_FLS = (True, False)
+
 JSON_PATH, BLESSED_PATH = map(
     lambda x: os.path.join(os.path.dirname(__file__), x),
     ['binary_system.json', 'binary_system_blessed.txt']
 )
-TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
+TRUE_FALSE_PAIRS = list(product(TR_FLS, TR_FLS))
 C0 = [5.0, 11.0, 7.0]
 D = [0.1, 0.2, 0.3]
 
@@ -152,10 +156,11 @@ def test_chemistry():
     assert np.allclose(rd.D, serialized_rd.D)
 
 
-combos = list(product([True, False], [True, False], [1, 3, 4], [FLAT, SPHERICAL, CYLINDRICAL]))
-@pytest.mark.parametrize("combo", combos)
-def test_integrate(combo):
-    logy, logt, N, geom = combo
+COMBOS = list(product(TR_FLS, TR_FLS, [1, 3], [FLAT, SPHERICAL, CYLINDRICAL]))
+EXTRA_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5], [FLAT, SPHERICAL, CYLINDRICAL]))
+
+def _test_integrate(params):
+    logy, logt, N, geom = params
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
 
     y0 = np.array(C0*N)
@@ -177,3 +182,12 @@ def test_integrate(combo):
     yout = np.exp(yout) if logy else yout
     for i in range(N):
         assert np.allclose(yout[:, i, :], ref_y, atol=1e-4)
+
+@pytest.mark.parametrize("params", COMBOS)
+def test_integrate(params):
+    _test_integrate(params)
+
+@slow
+@pytest.mark.parametrize("params", EXTRA_COMBOS)
+def test_integrate(params):
+    _test_integrate(params)

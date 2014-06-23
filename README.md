@@ -53,6 +53,7 @@ TODO
     - cylindrical/spherical
     - drift
     - and combinations of above.
+- Look into logx+lrefl
 
 License
 =======

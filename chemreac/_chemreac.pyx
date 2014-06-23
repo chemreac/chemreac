@@ -181,14 +181,25 @@ cdef class CppReactionDiffusion:
         self.thisptr.calc_efield(&linC[0])
         return self.efield  # convenience
 
-    def integrated_conc(self, y):
-        assert y.shape == (self.N,)
+    def integrated_conc(self, linC):
+        """
+        Integrates the concentration over the volume of the system.
+        Pass linear concentration "linC"
+        """
+        assert linC.shape == (self.N,)
         if self.geom == FLAT:
-            return np.sum(np.diff(self.x)*y)
+            return np.sum(np.diff(self.lin_x)*linC)
         elif self.geom == CYLINDRICAL:
-            return np.sum(np.pi*np.diff(self.x**2)*y)
+            return np.sum(np.pi*np.diff(self.lin_x**2)*linC)
         elif self.geom == SPHERICAL:
-            return np.sum(4*np.pi/3*np.diff(self.x**3)*y)
+            return np.sum(4*np.pi/3*np.diff(self.lin_x**3)*linC)
+
+    property lin_x:
+        def __get__(self):
+            if self.logx:
+                return np.exp(self.x)
+            else:
+                return self.x
 
     property n:
         def __get__(self):

@@ -9,10 +9,15 @@ import pytest
 
 from analytic_diffusion import integrate_rd
 
-tf = (True, False)
+slow = pytest.mark.slow
+
+TR_FLS = (True, False)
+
+COMBOS = list(product('fcs', TR_FLS, TR_FLS, [False], [.1], [3]))
+EXTRA_COMBOS = list(product('fcs', TR_FLS, TR_FLS, TR_FLS, [0, .2], [5, 7]))
+
 tol = {3: 1e5, 5: 1e4, 7: 1e2} # determined from analytic_N_scaling demo
-@pytest.mark.parametrize('params', list(product('fcs', tf, tf, tf, [0, .1], [3, 5, 7])))
-def test_gaussian_diffusion(params):
+def _test_gaussian_diffusion(params):
     g, ly, lt, r, k, ns = params
     res = integrate_rd(geom=g, logt=lt, logy=ly, N=128, random=r, k=k, nstencil=ns,
                        atol=1e-6, rtol=1e-6)
@@ -30,3 +35,12 @@ def test_gaussian_diffusion(params):
             assert np.all(ave_rmsd_over_atol < tol[ns]*forgiveness)
         else:
             assert np.all(ave_rmsd_over_atol < tol[ns])
+
+@pytest.mark.parametrize('params', COMBOS)
+def test_gaussian_diffusion(params):
+    _test_gaussian_diffusion(params)
+
+@slow
+@pytest.mark.parametrize('params', EXTRA_COMBOS)
+def test_gaussian_diffusion_extended(params):
+    _test_gaussian_diffusion(params)

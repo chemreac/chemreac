@@ -10,7 +10,6 @@
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include "chemreac.h"
 #include "c_fornberg.h" // fintie differences (remember to link fortran object fornberg.o)
-#include "sigmoid.h"
 
 #ifdef DEBUG
 #include <cstdio>
@@ -372,13 +371,11 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
             if (logt)
                 for (uint si=0; si<n; ++si){
                     DYDT(bi, si) *= exp(t-Y(bi, si));
-                    DYDT(bi, si) = Dsigmoid(DYDT(bi, si));
                 }
             else
                 for (uint si=0; si<n; ++si){
                     //DYDT(bi, si) *= exp(-Y(bi, si));
                     DYDT(bi, si) /= LINC(bi, si);
-                    DYDT(bi, si) = Dsigmoid(DYDT(bi, si));
                 }
         } else {
             if (logt)
