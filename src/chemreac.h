@@ -1,17 +1,14 @@
-#ifndef _CHEMREAC_H_
-#define _CHEMREAC_H_
+#ifndef _PVHQOBGMVZECTIJSMOKFUXJXXM
+#define _PVHQOBGMVZECTIJSMOKFUXJXXM
 
 #include <vector>
 #include <stdexcept>
 
 using std::vector;
 
-enum class Geom {FLAT, CYLINDRICAL, SPHERICAL}; // Geom:: -> GEOM_
+enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 
 namespace chemreac {
-
-#define ALIGNED16 
-
 
 class ReactionDiffusion
 {
@@ -93,4 +90,4 @@ public:
 }; // class ReactionDiffusion
 
 }; // namespace chemreac
-#endif
+#endif // _PVHQOBGMVZECTIJSMOKFUXJXXM

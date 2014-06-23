@@ -310,7 +310,7 @@ void
 ReactionDiffusion::f(double t, const double * const y, double * const __restrict__ dydt)
 {
     // note condifiontal call to free at end of this function
-    const double * const linC = (logy && (N > 1)) ? _alloc_and_populate_linC(y) : y;
+    const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
     if (auto_efield)
         calc_efield(linC);
 
@@ -384,7 +384,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
     }
     ${"delete []local_r;" if not USE_OPENMP else ""}
 
-    if (logy && (N > 1))
+    if (logy)
         free((void*)linC);
 }
 #undef DYDT
@@ -411,7 +411,7 @@ ReactionDiffusion::${token}(double t, const double * const y,
     if (fout != nullptr) f(t, y, fout);
 
     // note condifiontal call to free at end of this function
-    const double * const linC = (logy && (N > 1)) ? _alloc_and_populate_linC(y) : y;
+    const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
     if (auto_efield)
         calc_efield(linC);
 
@@ -501,7 +501,7 @@ ReactionDiffusion::${token}(double t, const double * const y,
     ${'delete []local_r;' if not USE_OPENMP else ''}
     if (logy)
         delete []fout;
-    if (logy && (N > 1))
+    if (logy)
         free((void*)linC);
 }
 #undef JAC

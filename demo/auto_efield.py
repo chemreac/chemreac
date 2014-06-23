@@ -82,8 +82,8 @@ def integrate_rd(D=2e-4, t0=3., tend=7., x0=0.1, xend=1.0, N=128, offset=0.01,
         import matplotlib.pyplot as plt
         sys.calc_efield(y0.flatten())
         plt.subplot(3, 1, 3)
-        plt.plot(sys.xcenters, sys.efield)
-        plt.plot(sys.xcenters, sys.xcenters*0)
+        plt.plot(sys.xcenters, sys.efield, label="E at t=t0")
+        plt.plot(sys.xcenters, sys.xcenters*0, label="0")
     # Run the integration
     t = np.log(tout) if logt else tout
     yout, info = run(sys, y0.flatten(), t,
@@ -127,7 +127,11 @@ def integrate_rd(D=2e-4, t0=3., tend=7., x0=0.1, xend=1.0, N=128, offset=0.01,
             plt.xlabel('Time / s')
             plt.ylabel(r'C')
         plt.subplot(3, 1, 3)
-        plt.plot(sys.xcenters, sys.efield)
+        plt.plot(sys.xcenters, sys.efield, label="E at t=tend")
+        plt.xlabel("$x / m$")
+        plt.ylabel("$E / V\cdot m^{-1}$")
+        plt.legend()
+        plt.tight_layout()
         plt.show()
     return tout, yout, info, sys
 
