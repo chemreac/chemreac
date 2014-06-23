@@ -186,7 +186,7 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
             plt.plot(tout, amount, c=c[::(1,-1)[i]])  # match colors of lines
         plt.xlabel('Time / s')
         plt.ylabel('Amount / mol')
-        plt.tight_laCout()
+        plt.tight_layout()
         plt.show()
     return tout, Cout, info, sys
 
