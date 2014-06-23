@@ -9,6 +9,10 @@ from libcpp.vector cimport vector
 cdef extern from *:
     ctypedef unsigned int uint
 
+DEF FLAT=0
+DEF CYLINDRICAL=1
+DEF SPHERICAL=2
+
 cdef extern from "chemreac.h" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
         # (Private)
@@ -175,6 +179,16 @@ cdef class CppReactionDiffusion:
 
     def calc_efield(self, double[::1] linC):
         self.thisptr.calc_efield(&linC[0])
+        return self.efield  # convenience
+
+    def integrated_conc(self, y):
+        assert y.shape == (self.N,)
+        if self.geom == FLAT:
+            return np.sum(np.diff(self.x)*y)
+        elif self.geom == CYLINDRICAL:
+            return np.sum(np.pi*np.diff(self.x**2)*y)
+        elif self.geom == SPHERICAL:
+            return np.sum(4*np.pi/3*np.diff(self.x**3)*y)
 
     property n:
         def __get__(self):

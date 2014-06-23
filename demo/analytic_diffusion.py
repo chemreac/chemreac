@@ -164,10 +164,11 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         import matplotlib.pyplot as plt
 
         def _plot(y, c, ttl=None, apply_exp_on_y=False):
-            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y, c=c)
+            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y,
+                     c=c)
             if N < 100:
-                plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y), linewidth=.1,
-                           colors='gray')
+                plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y),
+                           linewidth=.1, colors='gray')
             plt.xlabel('x / m')
             plt.ylabel('C / M')
             if ttl:
@@ -178,7 +179,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
             c = (1.0-c, .5-c/2, .5-c/2)
 
             plt.subplot(4, 1, 1)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N), apply_exp_on_y=logy)
+            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N),
+                  apply_exp_on_y=logy)
             if decay:
                 _plot(yout[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
@@ -190,14 +192,16 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
             plt.subplot(4, 1, 3)
             if logy:
                 _plot(lin_err(i, 0)/info['atol'], c,
-                      'Linear rel error / Log abs. tol. (={})'.format(info['atol']))
+                      'Linear rel error / Log abs. tol. (={})'.format(
+                          info['atol']))
                 if decay:
                     _plot(lin_err(i, 1)/info['atol'], c[::-1])
             else:
                 _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
                       'Abs. err. / Abs. tol. (={})'.format(info['atol']))
                 if decay:
-                    _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'], c[::-1])
+                    _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'],
+                          c[::-1])
 
         plt.subplot(4, 1, 4)
         tspan = [tout[0], tout[-1]]
