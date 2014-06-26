@@ -11,39 +11,47 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 
 
-def main(tend=2.0, nt=500, logy=False, logt=False):
+def integrate_rd(tend=2.0, A0=3.14, nt=67, small=20, logy=False, logt=False,
+         plot=False, atolA=1e-6, atolB=1e-6, rtolA=1e-6, rtolB=1e-6):
     """ A -> B """
-    sys = ReactionDiffusion(2, [[0]], [[1]], [1.0], 1, logy=logy, logt=logt)
-
-    y0 = np.array([1.0, 1e-24])
+    rd = ReactionDiffusion(2, [[0]], [[1]], [1.0], 1, logy=logy, logt=logt)
+    B0 = 10**(-small)
+    y0 = np.array([A0, B0])
     t0 = 1e-10
     tout = np.linspace(t0, tend, nt)
-    yref = np.column_stack((np.exp(-tout), 1-np.exp(-tout)))
+    yref = np.column_stack((y0[0]*np.exp(-tout), y0[1]+y0[0]*(1-np.exp(-tout))))
 
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t)
+    yout, info = run(rd, y, t, atol=[atolA, atolB], rtol=[rtolA, rtolB])
     yout = np.exp(yout) if logy else yout
     yout = yout[:,0,:]
 
-    for i, l in enumerate('AB'):
-        plt.subplot(2, 1, 1)
-        plt.plot(tout, yout[:, i], label=l)
-        plt.subplot(2, 1, 2)
-        plt.plot(tout, yout[:, i]-yref[:, i], label=l)
+    if plot:
+        for i, l in enumerate('AB'):
+            plt.subplot(2, 1, 1)
+            plt.plot(tout, yout[:, i], label=l)
+            plt.subplot(2, 1, 2)
+            try:
+                atol = info['atol'][i]
+            except:
+                atol = info['atol']
+            plt.plot(tout, (yout[:, i]-yref[:, i])/atol, label=l)
 
-    plt.subplot(2, 1, 1)
-    plt.title('C(t)')
-    plt.legend(loc='best')
-    plt.xlabel('t')
-    plt.ylabel('C')
-    plt.subplot(2, 1, 2)
-    plt.title('Error in C(t)')
-    plt.legend(loc='best')
-    plt.xlabel('t')
-    plt.ylabel('abs. error in C')
-    plt.tight_layout()
-    plt.show()
+        plt.subplot(2, 1, 1)
+        plt.title('C(t)')
+        plt.legend(loc='best')
+        plt.xlabel('t')
+        plt.ylabel('C')
+        plt.subplot(2, 1, 2)
+        plt.title('Error in C(t)')
+        plt.legend(loc='best')
+        plt.xlabel('t')
+        plt.ylabel('abs. error in C / atol')
+        plt.tight_layout()
+        plt.show()
+
+    return yout, yref, rd, info
 
 if __name__ == '__main__':
-    argh.dispatch_command(main)
+    argh.dispatch_command(integrate_rd)
