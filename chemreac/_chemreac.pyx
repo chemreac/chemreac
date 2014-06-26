@@ -186,7 +186,8 @@ cdef class CppReactionDiffusion:
         Integrates the concentration over the volume of the system.
         Pass linear concentration "linC"
         """
-        assert linC.shape == (self.N,)
+        if linC.shape != (self.N,):
+            raise ValueError("linC must be of length N")
         if self.geom == FLAT:
             return np.sum(np.diff(self.lin_x)*linC)
         elif self.geom == CYLINDRICAL:

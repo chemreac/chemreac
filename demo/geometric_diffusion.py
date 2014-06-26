@@ -20,10 +20,12 @@ from chemreac.integrate import run
 from chemreac.util.analysis import plot_C_vs_t_and_x
 
 """
-Demo of chemical reaction diffusion system.
+Demo of diffusion.
 """
 
 # <geometric_diffusion.png>
+
+GEOMS = (FLAT, SPHERICAL, CYLINDRICAL)
 
 
 def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
@@ -32,22 +34,21 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
     f = lambda x: 2*x**2/(x**4+1)  # f(0)=0, f(1)=1, f'(0)=0, f'(1)=0
     y0 = f(x[1:])+x[0]  # (x[0]/2+x[1:])**2
 
-    geoms = (FLAT, SPHERICAL, CYLINDRICAL)
-
     t0 = 1e-10
     tout = np.linspace(t0, tend, nt)
 
     fig = plt.figure()
-    res = []
-
-    for G in geoms:
+    res, systems = [], []
+    for G in GEOMS:
         sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x,
                                 geom=G, nstencil=nstencil, lrefl=not linterpol,
                                 rrefl=not rinterpol)
         yout, info = run(sys, y0, tout, with_jacobian=(not num_jacobian))
         res.append(yout)
+        systems.append(sys)
 
-    for i, G in enumerate(geoms):
+    # Plot spatio-temporal conc. evolution
+    for i, G in enumerate(GEOMS):
         yout = res[i]
         ax = fig.add_subplot(2, 3, G+1, projection='3d')
 
@@ -55,24 +56,18 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
                           rstride=1, cstride=1, cmap=cm.gist_earth)
         ax.set_title(Geom_names[G])
 
-    for i, G in enumerate(geoms):
+    # Plot mass conservation
+    ax = fig.add_subplot(2, 3, 4)
+    for j in range(3):
+        ax.plot(tout, np.apply_along_axis(
+            systems[j].integrated_conc, 1, res[j][:, :, 0]), label=str(j))
+    ax.legend(loc='best')
+    ax.set_title('Mass conservation')
+
+    # Plot difference from flat evolution (not too informative..)
+    for i, G in enumerate(GEOMS):
         yout = res[i][:, :, 0]  # only one specie
-        if i == 0:
-            ax = fig.add_subplot(2, 3, 3+i+1)
-            for j in range(3):
-                yout = res[j][:, :, 0]
-                if j == 0:
-                    yprim = yout
-                elif j == 1:
-                    yprim = yout*(x[1:]**3-x[:-1]**3)
-                else:
-                    yprim = yout*(x[1:]**2-x[:-1]**2)
-                ybis = np.sum(yprim, axis=1)
-                print(ybis.shape)
-                ax.plot(tout, ybis, label=str(j))
-            ax.legend(loc='best')
-            ax.set_title('Mass conservation')
-        else:
+        if i != 0:
             yout = yout - res[0][:, :, 0]  # difference (1 specie)
             ax = fig.add_subplot(2, 3, 3+G+1, projection='3d')
 
