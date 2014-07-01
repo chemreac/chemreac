@@ -14,6 +14,7 @@ from decay import integrate_rd
 
 def _test_rd(forgiveness=100, **kwargs):
     yout, yref, rd, info = integrate_rd(**kwargs)
+    assert info['success']
     for i in range(rd.n):
         try:
             atol = info['atol'][i]
@@ -32,7 +33,6 @@ def _test_rd(forgiveness=100, **kwargs):
             atol = rtol*ymean
         assert np.allclose(yout[..., i], yref[..., i], rtol*forgiveness, atol*forgiveness)
 
-
 def test_linear():
     _test_rd
 
@@ -40,7 +40,7 @@ def test_logt():
     _test_rd(logt=True)
 
 def test_logy_logt():
-    _test_rd(logy=True, logt=True)
+    _test_rd(logy=True, logt=True, t0=1e-20)
 
 @pytest.mark.xfail
 def test_logy():

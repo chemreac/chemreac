@@ -13,7 +13,7 @@ import numpy as np
 from chemreac.serialization import load
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
-from chemreac.util.analysis import plot_C_vs_t_in_bin
+from chemreac.util.plotting import plot_C_vs_t_in_bin
 
 """
 Demo of a large chemical reaction diffusion system.

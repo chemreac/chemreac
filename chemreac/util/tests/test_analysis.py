@@ -1,3 +1,6 @@
+import numpy as np
 
-def test__get_jac_row_over_t():
-    pass
+from chemreac.util.analysis import solver_linear_error
+
+def test_solver_linear_error():
+    assert np.allclose(solver_linear_error(1.0, 1.0, 1.0), [-1, 3])
