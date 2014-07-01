@@ -1,51 +1,33 @@
 # -*- coding: utf-8 -*-
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from future.builtins import *
 
-from __future__ import (
-    print_function, division, absolute_import, unicode_literals
-)
 
 from math import exp
 
-import numpy as np
 import pytest
 
-from decay import integrate_rd
+import decay
+from chemreac.util.testing import _test_rd_integration_run
 
-
-def _test_rd(forgiveness=100, **kwargs):
-    yout, yref, rd, info = integrate_rd(**kwargs)
-    assert info['success']
-    for i in range(rd.n):
-        try:
-            atol = info['atol'][i]
-        except:
-            atol = info['atol']
-
-        try:
-            rtol = info['rtol'][i]
-        except:
-            rtol = info['rtol']
-
-        if rd.logy:
-            ymean = np.mean(yout[..., i])
-            # exp(abserr + relerr*ytrue) == exp(abserr)*exp(relerr*ytrue)
-            rtol = exp(atol)
-            atol = rtol*ymean
-        assert np.allclose(yout[..., i], yref[..., i], rtol*forgiveness, atol*forgiveness)
 
 def test_linear():
-    _test_rd
+    _test_rd_integration_run(decay.integrate_rd)
+
 
 def test_logt():
-    _test_rd(logt=True)
+    _test_rd_integration_run(decay.integrate_rd, 20, logt=True)
+
 
 def test_logy_logt():
-    _test_rd(logy=True, logt=True, t0=1e-20)
+    _test_rd_integration_run(decay.integrate_rd, 300, rtol='1e-10', logy=True, logt=True)
+
 
 @pytest.mark.xfail
 def test_logy():
-    _test_rd(logy=True)
+    _test_rd_integration_run(decay.integrate_rd, 300, logy=True)
 
 # Manually tweaking
 def test_logy_tweak():
-    _test_rd(logy=True, small=5)
+    _test_rd_integration_run(decay.integrate_rd, logy=True, small=5)
