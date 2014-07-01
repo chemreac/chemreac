@@ -83,6 +83,7 @@ def run(sys, y0, tout, mode=None, **kwargs):
 
     info = kwargs.copy()
     info.update({
+        'success': runner.successful(),
         'texec': texec,
         'neval_f': f.neval,
         'neval_j': jac.neval,
