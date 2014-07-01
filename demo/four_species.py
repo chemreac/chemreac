@@ -8,9 +8,8 @@ import matplotlib.pyplot as plt
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.serialization import load
 from chemreac.integrate import run
-from chemreac.util.plotting import coloured_spy
-from chemreac.util.analysis import (
-    plot_jacobian, plot_per_reaction_contribution
+from chemreac.util.plotting import (
+    coloured_spy, plot_jacobian, plot_per_reaction_contribution,
 )
 
 

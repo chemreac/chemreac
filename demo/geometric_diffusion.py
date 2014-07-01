@@ -17,7 +17,7 @@ from chemreac import (
     CYLINDRICAL, BANDED, Geom_names
 )
 from chemreac.integrate import run
-from chemreac.util.analysis import plot_C_vs_t_and_x
+from chemreac.util.plotting import plot_C_vs_t_and_x
 
 """
 Demo of diffusion.
