@@ -6,5 +6,6 @@ quantities>=0.10.1
 pytest>=2.5.2
 scipy>=0.9.0
 periodictable>=1.4.1
+future>=0.12.3
 https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz
 https://github.com/sympy/sympy/archive/master.zip
