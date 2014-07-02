@@ -23,8 +23,7 @@ def run(sys, y0, tout, mode=None, **kwargs):
     assert y0.size == sys.n*sys.N
 
     defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-9,
-                'rtol': 1e-7, 'with_jacobian': True,
-                'first_step': 1e-9}
+                'rtol': 1e-7, 'with_jacobian': True}
 
     if mode == None:
         if sys.N == 1:
