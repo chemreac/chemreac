@@ -21,8 +21,10 @@ def test_logt():
 
 
 def test_logy_logt():
-    _test_rd_integration_run(decay.integrate_rd, 300, rtol='1e-10', logy=True, logt=True)
-
+    _test_rd_integration_run(decay.integrate_rd, 300, rtol='1e-10', logy=True,
+                             logt=True)
+    _test_rd_integration_run(decay.integrate_rd, 70, tend=4.0, rates='1.0',
+                             atol='1e-6' rtol='1e-13', logy=True, logt=True)
 
 @pytest.mark.xfail
 def test_logy():
