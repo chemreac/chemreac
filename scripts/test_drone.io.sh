@@ -15,7 +15,7 @@ if [[ "$PY_VERSION" == "2.7" ]]; then
 else
     wget --quiet http://repo.continuum.io/miniconda/Miniconda3-3.5.2-Linux-x86_64.sh -O miniconda.sh;
 fi
-if [[ $? != 0 ]]
+if [[ $? != 0 ]]; then
     echo "Failed to get Miniconda."
     exit 1
 fi
