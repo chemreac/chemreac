@@ -12,8 +12,9 @@ from chemreac import (
     ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
 )
 from chemreac.integrate import run
+from chemreac.util.analysis import suggest_t0
 
-def sigm(x, lim=350., n=8):
+def sigm(x, lim=150., n=8):
     # Algebraic sigmoid to avoid overflow/underflow of 'double exp(double)'
     return x/((x/lim)**n+1)**(1./n)
 
@@ -61,7 +62,7 @@ def pair_of_gaussians(x, offsets, sigma, logy, logx, geom):
     )
 
 
-def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
+def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
                  base=0.5, offset=0.25, mobility=3e-8, nt=25, geom='f',
                  logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
@@ -73,7 +74,6 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
     if random_seed:
         np.random.seed(random_seed)
     n = 2
-    tout = np.linspace(t0, tend, nt)
     geom = {'f': FLAT, 'c': CYLINDRICAL, 's': SPHERICAL}[geom]
 
     # Setup the grid
@@ -90,7 +90,7 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
     bin_k_factor = [[] for _ in range(N)]
     bin_k_factor_span = []
 
-    sys = ReactionDiffusion(
+    rd = ReactionDiffusion(
         n, stoich_reac, stoich_prod, k, N,
         D=[D, D],
         z_chg=[1, -1],
@@ -113,22 +113,27 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
     # Initial conditions
     sigma = (xend-x0)/sigma_q
     sigma = [(1-sigma_skew)*sigma, sigma_skew*sigma]
-    y0 = np.vstack(pair_of_gaussians(sys.xcenters, [base+offset, base-offset],
+    y0 = np.vstack(pair_of_gaussians(rd.xcenters, [base+offset, base-offset],
                                      sigma, logy, logx, geom)).transpose()
     if logy:
         y0 = sigm(y0)
     if plot:
         # Plot initial E-field
         import matplotlib.pyplot as plt
-        sys.calc_efield((np.exp(y0) if logy else y0).flatten())
+        rd.calc_efield((np.exp(y0) if logy else y0).flatten())
         plt.subplot(4, 1, 3)
-        plt.plot(sys.xcenters, sys.efield, label="E at t=t0")
-        plt.plot(sys.xcenters, sys.xcenters*0, label="0")
+        plt.plot(rd.xcenters, rd.efield, label="E at t=t0")
+        plt.plot(rd.xcenters, rd.xcenters*0, label="0")
 
 
     # Run the integration
+    if t0 == 0.0 and (logy or logt):
+        t0 = suggest_t0(rd, y0.flatten())
+        print('t0=', t0)
+        tend += t0  # keep total time (autonomous system)
+    tout = np.linspace(t0, tend, nt)
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y0.flatten(), t,
+    yout, info = run(rd, y0.flatten(), t,
                      atol=atol, rtol=rtol,
                      with_jacobian=(not num_jacobian), method=method)
     Cout = np.exp(yout) if logy else yout
@@ -136,7 +141,7 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
     # Plot results
     if plot:
         def _plot(y, ttl=None,  **kwargs):
-            plt.plot(sys.xcenters, y, **kwargs)
+            plt.plot(rd.xcenters, y, **kwargs)
             plt.xlabel('x / m')
             plt.ylabel('C / M')
             if ttl:
@@ -146,7 +151,7 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
             plt.subplot(4, 1, 1)
             c = 1-tout[i]/tend
             c = (1.0-c, .5-c/2, .5-c/2)
-            _plot(Cout[i, :, 0], 'Simulation (N={})'.format(sys.N),
+            _plot(Cout[i, :, 0], 'Simulation (N={})'.format(rd.N),
                   c=c, label='$z_A=1$' if i==nt-1 else None)
             _plot(Cout[i, :, 1], c=c[::-1],
                   label='$z_B=-1$' if i==nt-1 else None)
@@ -154,7 +159,7 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
 
             plt.subplot(4, 1, 2)
             delta_y = Cout[i, :, 0] - Cout[i, :, 1]
-            _plot(delta_y, 'Diff'.format(sys.N),
+            _plot(delta_y, 'Diff'.format(rd.N),
                   c=[c[2], c[0], c[1]],
                   label='A-B (positive excess)' if i==nt-1 else None)
             plt.legend(loc='best')
@@ -162,12 +167,12 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
             plt.ylabel(r'Concentration / M')
         ylim = plt.gca().get_ylim()
         if N < 100:
-            plt.vlines(sys.x, ylim[0], ylim[1],
+            plt.vlines(rd.x, ylim[0], ylim[1],
                        linewidth=1.0, alpha=0.2, colors='gray')
 
         plt.subplot(4, 1, 3)
-        plt.plot(sys.xcenters, sys.efield)
-        plt.plot(sys.xcenters, sys.efield, label="E at t=tend")
+        plt.plot(rd.xcenters, rd.efield)
+        plt.plot(rd.xcenters, rd.efield, label="E at t=tend")
         plt.xlabel("$x~/~m$")
         plt.ylabel("$E~/~V\cdot m^{-1}$")
         plt.legend()
@@ -181,14 +186,14 @@ def integrate_rd(D=0., t0=1e-6, tend=7., x0=0.1, xend=1.0, N=256,
                          ylim, '--k')
         plt.subplot(4, 1, 4)
         for i in range(n):
-            amount = [sys.integrated_conc(Cout[j,:,i]) for j in range(nt)]
+            amount = [rd.integrated_conc(Cout[j,:,i]) for j in range(nt)]
             print(np.array(amount))
             plt.plot(tout, amount, c=c[::(1,-1)[i]])  # match colors of lines
         plt.xlabel('Time / s')
         plt.ylabel('Amount / mol')
         plt.tight_layout()
         plt.show()
-    return tout, Cout, info, sys
+    return tout, Cout, info, rd
 
 if __name__ == '__main__':
-    argh.dispatch_command(integrate_rd)
+    argh.dispatch_command(integrate_rd, output_file=None)

@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from future.builtins import *
+
+
 """
 
  $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5 --k 0.1 --geom f
@@ -18,8 +23,6 @@ Still problematic (should not need to be):
  $ python analytic_diffusion.py --plot --nstencil 5 --logy --D 0.0005
 
 """
-
-from __future__ import print_function, division, absolute_import
 
 from math import log
 
@@ -219,4 +222,4 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
 
 
 if __name__ == '__main__':
-    argh.dispatch_command(integrate_rd)
+    argh.dispatch_command(integrate_rd, output_file=None)

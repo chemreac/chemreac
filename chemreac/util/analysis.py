@@ -40,8 +40,13 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
 
 def suggest_t0(rd, y0, max_f=1.0):
     """
-    Useful when logy==True and logt==True
+    Useful when logy==True and logt==True,
+    If suggested t0 > 1, 1 is returned
     """
     fout = rd.alloc_fout()
     rd.f(0, y0, fout)
-    return max_f/np.max(np.abs(fout))
+    fout_maxabs = np.max(np.abs(fout))
+    if fout_maxabs < max_f:
+        return 1.0
+    else:
+        return max_f/fout_maxabs

@@ -19,22 +19,24 @@ EXTRA_COMBOS = list(product('fcs', TR_FLS, TR_FLS, TR_FLS, [0, .2], [5, 7]))
 tol = {3: 1e5, 5: 1e4, 7: 1e2} # determined from analytic_N_scaling demo
 def _test_gaussian_diffusion(params):
     g, ly, lt, r, k, ns = params
-    res = integrate_rd(geom=g, logt=lt, logy=ly, N=128, random=r, k=k, nstencil=ns,
-                       atol=1e-6, rtol=1e-6)
-    for ave_rmsd_over_atol in res[3]:
+    tout, yout, info, ave_rmsd_over_atol, sys = integrate_rd(
+        geom=g, logt=lt, logy=ly, N=128, random=r, k=k, nstencil=ns,
+        atol=1e-6, rtol=1e-6)
+    assert info['success']
+    for rmsd in ave_rmsd_over_atol:
         if r:
             forgiveness = 5 if ns < 7 else 50
             # Randomized grid has lower convergence order.
             for i in range(6):
-                if np.all(ave_rmsd_over_atol > tol[ns]*forgiveness):
-                    ave_rmsd_over_atol = integrate_rd(
+                if np.all(rmsd > tol[ns]*forgiveness):
+                    rmsd = integrate_rd(
                         geom=g, logt=lt, logy=ly, N=128, random=r, k=k, nstencil=ns,
                         atol=1e-6, rtol=1e-6)[3]
                 else:
                     break
-            assert np.all(ave_rmsd_over_atol < tol[ns]*forgiveness)
+            assert np.all(rmsd < tol[ns]*forgiveness)
         else:
-            assert np.all(ave_rmsd_over_atol < tol[ns])
+            assert np.all(rmsd < tol[ns])
 
 @pytest.mark.parametrize('params', COMBOS)
 def test_gaussian_diffusion(params):

@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, division, absolute_import
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+from future.builtins import *
 
 from math import log
 
@@ -102,7 +104,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
         k.append(C*D*(y0[N-2]-y0[N-1])/(y0[N-1]*(xNm2**2 - xNm1**2)))
 
-    sys = ReactionDiffusion(
+    rd = ReactionDiffusion(
         1, stoich_reac, stoich_prod, k, N,
         D=[D],
         z_chg=[1],
@@ -119,11 +121,11 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         rrefl=rrefl,
     )
 
-    print(sys.geom)
+    print(rd.geom)
     if efield:
         if geom != FLAT:
             raise ValueError("Only analytic solution for flat drift implemented.")
-        sys.efield = efield_cb(sys.xcenters, logx)
+        rd.efield = efield_cb(rd.xcenters, logx)
 
     # Analytic reference values
     t = tout.copy().reshape((nt, 1))
@@ -133,7 +135,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
 
     # Run the integration
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, np.log(y0).flatten() if logy else y0.flatten(), t, atol=atol, rtol=rtol,
+    yout, info = run(rd, np.log(y0).flatten() if logy else y0.flatten(), t, atol=atol, rtol=rtol,
                      with_jacobian=(not num_jacobian), method=method)
     yout = np.exp(yout) if logy else yout
 
@@ -156,9 +158,9 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         import matplotlib.pyplot as plt
 
         def _plot(y, c, ttl=None, apply_exp_on_y=False):
-            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y, c=c)
+            plt.plot(rd.xcenters, np.exp(y) if apply_exp_on_y else y, c=c)
             if N < 100:
-                plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y), linewidth=.1,
+                plt.vlines(rd.x, 0, np.ones_like(rd.x)*max(y), linewidth=.1,
                            colors='gray')
             plt.xlabel('x / m')
             plt.ylabel('C / M')
@@ -170,7 +172,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
             c = (1.0-c, .5-c/2, .5-c/2)
 
             plt.subplot(4, 1, 1)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N), apply_exp_on_y=logy)
+            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(rd.N), apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 2)
             _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
@@ -192,8 +194,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
         plt.show()
-    return tout, yout, info, ave_rmsd_over_atol, sys
+    return tout, yout, info, ave_rmsd_over_atol, rd
 
 
 if __name__ == '__main__':
-    argh.dispatch_command(integrate_rd)
+    argh.dispatch_command(integrate_rd, output_file=None)

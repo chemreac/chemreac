@@ -17,14 +17,14 @@ def test_linear():
 
 
 def test_logt():
-    _test_rd_integration_run(decay.integrate_rd, 20, logt=True)
+    _test_rd_integration_run(decay.integrate_rd, 30, logt=True)
 
 
 def test_logy_logt():
     _test_rd_integration_run(decay.integrate_rd, 300, rtol='1e-10', logy=True,
                              logt=True)
     _test_rd_integration_run(decay.integrate_rd, 70, tend=4.0, rates='1.0',
-                             atol='1e-6' rtol='1e-13', logy=True, logt=True)
+                             atol='1e-6', rtol='1e-13', logy=True, logt=True)
 
 @pytest.mark.xfail
 def test_logy():
@@ -32,4 +32,4 @@ def test_logy():
 
 # Manually tweaking
 def test_logy_tweak():
-    _test_rd_integration_run(decay.integrate_rd, logy=True, small=5)
+    _test_rd_integration_run(decay.integrate_rd, 20, rtol='1e-11', logy=True, small=6)
