@@ -85,15 +85,17 @@ FLAGS += $(EXTRA_FLAGS)
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
 
+INCLUDE ?= -I.. -I../finitediff/finitediff
+
 %.o: %.cpp
-	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) -c -o $@ $<
+	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
 
 
 all: test_chemreac.out
 
 .PHONY: clean all
 
-GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o
+GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o test_chemreac_sundials test_chemreac_sundials.out
 
 clean:
 	rm $(GENERATED)
@@ -113,6 +115,12 @@ test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o
 	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # -lrt only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac
+	./$< >$@
+
+test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_chemreac_sundials.o
+	$(CXX) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -lopenblas -lsundials_nvecserial
+
+test_chemreac_sundials.out: test_chemreac_sundials
 	./$< >$@
 
 profile_test_chemreac.out: test_chemreac
