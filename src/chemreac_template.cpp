@@ -17,6 +17,8 @@
 #define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
 #endif
 
+#include <iostream> // DEBUG
+
 %if USE_OPENMP:
 #ifndef _OPENMP
   #error "Have you forgotten -fopenmp flag?"
@@ -310,10 +312,16 @@ ReactionDiffusion::_alloc_and_populate_linC(const double * const __restrict__ y)
 void
 ReactionDiffusion::f(double t, const double * const y, double * const __restrict__ dydt)
 {
+    std::cout << "In f() and auto_efield=" << auto_efield << std::endl; std::cout.flush(); //DEBUG
     // note condifiontal call to free at end of this function
     const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
-    if (auto_efield)
+    std::cout << "alloc linC complete" << std::endl; std::cout.flush(); //DEBUG
+    if (auto_efield){
+        std::cout << "auto_efield is true!" << std::endl; std::cout.flush(); //DEBUG
         calc_efield(linC);
+        std::cout << "survived?" << std::endl; std::cout.flush(); //DEBUG
+    }
+    //    std::cout << "calc_efield complete" << std::endl; std::cout.flush(); //DEBUG
 
     ${"double * const local_r = new double[nr];" if not USE_OPENMP else ""}
     ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
@@ -321,12 +329,15 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         // compartment bi
         ${"double * const local_r = new double[nr];" if USE_OPENMP else ""}
 
+        //        std::cout << "bi: " << bi << std::endl; std::cout.flush(); //DEBUG
         for (uint si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
 
         // Contributions from reactions
         // ----------------------------
+        //        std::cout << "about to fill local r.. " << std::endl; std::cout.flush(); //DEBUG
         _fill_local_r(bi, y, local_r);
+        //        std::cout << "..local r filled " << std::endl; std::cout.flush(); //DEBUG
         for (uint rxni=0; rxni<nr; ++rxni){
             // reaction index rxni
             for (uint si=0; si<n; ++si){
@@ -336,6 +347,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                     DYDT(bi, si) += overall*local_r[rxni];
             }
         }
+        //        std::cout << "rxns accounted for " << std::endl; std::cout.flush(); //DEBUG
         if (N>1){
             // Contributions from diffusion and advection
             // ------------------------------------------
@@ -367,6 +379,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                 DYDT(bi, si) += unscaled_advection*-mobility[si];
             }
         }
+        //        std::cout << "adv/diff accounted for " << std::endl; std::cout.flush(); //DEBUG
         if (logy){
             if (logt)
                 for (uint si=0; si<n; ++si){
@@ -382,6 +395,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                 for (uint si=0; si<n; ++si)
                     DYDT(bi, si) *= exp(t);
         }
+        //        std::cout << "var transforms accounted for " << std::endl; std::cout.flush(); //DEBUG
 
         ${"delete []local_r;" if USE_OPENMP else ""}
 

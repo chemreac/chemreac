@@ -11,9 +11,7 @@ version_ = '0.2.0-dev'
 
 DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
-USE_SUNDIALS = True if os.environ.get('USE_SUNDIALS', False) else False
-if USE_SUNDIALS:
-    LLAPACK = os.environ.get('LLAPACK', 'lapack')
+LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
 # Make `python setup.py test` work without depending on py.test being installed
 # https://pytest.org/latest/goodpractises.html
@@ -46,9 +44,6 @@ else:
         'src/finitediff/finitediff/c_fornberg.f90',
         'chemreac/_chemreac.pyx',
     ]
-    if USE_SUNDIALS:
-        sources.insert(1, 'src/chemreac_sundials.cpp')
-    print(sources)
 
     ext_modules_ = [
         CleverExtension(
@@ -77,7 +72,7 @@ else:
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
                 'std': 'c++0x',
-                'libs': ['sundials_cvode', LLAPACK] if USE_SUNDIALS else None,
+                'libs': ['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
             },
             include_dirs=['src/', 'src/finitediff/finitediff/'],
             logger=True,

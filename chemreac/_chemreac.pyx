@@ -5,7 +5,7 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-from chemreac_sundials cimport direct_banded
+from chemreac_sundials cimport direct
 
 from libcpp.vector cimport vector
 
@@ -304,12 +304,13 @@ cdef class CppReactionDiffusion:
                 self.thisptr.efield[i] = efield[i]
 
 
-def sundials_direct_banded(
-        CppReactionDiffusion sys, vector[double] atol, double rtol,
+def sundials_direct(
+        CppReactionDiffusion rd, vector[double] atol, double rtol,
         basestring lmm, double[::1] y0, double[::1] tout):
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(
-        (len(tout), sys.n*sys.N))
-    direct_banded[double](sys.thisptr, atol, rtol,
-                          {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
-                          tout.size, &tout[0], <double *>yout.data)
-    return yout
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty((tout.size+1)*rd.n*rd.N)
+    assert y0.size == rd.n
+    print("about to call direct[]() and right now rd.auto_efield=",rd.auto_efield)
+    direct[double, ReactionDiffusion](rd.thisptr, atol, rtol,
+                                      {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
+                                      tout.size, &tout[0], &yout[0])
+    return yout.reshape((tout.size, rd.N, rd.n))
