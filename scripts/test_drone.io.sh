@@ -10,7 +10,7 @@ PY_VERSION="2.7"
 scripts/aptget.ubuntu.12.04LTS.sh
 bash scripts/install_sundials_w_lapack.sh
 if [ $? -ne 0 ]; then
-    exit $?
+    exit 1
 fi
 
 if [[ "$PY_VERSION" == "2.7" ]]; then
