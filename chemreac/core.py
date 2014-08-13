@@ -8,7 +8,6 @@ GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
 
 from ._chemreac import CppReactionDiffusion
 
-
 # Having a Python side wrapper for our Cython Extension (CppReactionDiffusion)
 # allows e.g. Jedi (Python IDE capabilities) to inspect and give help strings
 

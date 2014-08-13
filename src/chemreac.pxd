@@ -24,6 +24,9 @@ cdef extern from "chemreac.h" namespace "chemreac":
         const double surf_chg, eps
         double * xc
         double * const efield
+        uint neval_f
+        uint neval_j
+
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],

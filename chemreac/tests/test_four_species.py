@@ -12,6 +12,8 @@ from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
 
+from test_reactiondiffusion import _test_dense_jac_rmaj
+
 """
 Test chemical reaction system with 4 species.
 (no diffusion)
@@ -180,3 +182,7 @@ def test_chemistry():
     assert rd.stoich_actv == serialized_rd.stoich_actv
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
+
+def test_multi_compartment():
+    rsys = load(JSON_PATH, N=3, lrefl=True, rrefl=True)
+    _test_dense_jac_rmaj(rsys, 1.0, np.asarray([1.3, 1e-4, 0.7, 1e-4]*rsys.N).flatten())

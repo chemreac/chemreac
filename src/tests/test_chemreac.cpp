@@ -31,7 +31,7 @@ int test_dense_jac(){
     for (int i=0; i<12*12; ++i)
         ref_jac[i] = 0.0;
     // First block
-    RJ(0,0) = -0.05 -rd.D[0];
+    RJ(0,0) = -0.05 - rd.D[0];
     RJ(0,4) =  rd.D[0];
     RJ(1,0) =  0.05;
     RJ(1,1) =  -rd.D[1];

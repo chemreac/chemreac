@@ -8,8 +8,32 @@ from scipy.integrate import ode
 
 from chemreac import DENSE, BANDED, SPARSE
 
+from ._chemreac import sundials_direct
 
-def run(sys, y0, tout, mode=None, **kwargs):
+DEFAULTS={
+    'atol': 1e-9,
+    'rtol': 1e-7,
+}
+
+def integrate_sundials(rd, y0, tout, **kwargs):
+    atol = np.asarray(kwargs.get('atol', DEFAULTS['atol']))
+    if atol.ndim == 0:
+        atol = atol.reshape((1,))
+    rtol = np.asarray(kwargs.get('rtol', DEFAULTS['rtol']))
+    lmm = kwargs.get('lmm', 'bdf')
+    rd.neval_f = 0
+    rd.neval_j = 0
+    texec = time.time()
+    yout = sundials_direct(rd, atol, rtol, lmm, y0, tout)
+    texec = time.time() - texec
+    info = {
+        'neval_f': rd.neval_f,
+        'neval_j': rd.neval_j,
+        'texec': texec
+    }
+    return yout, info
+
+def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     """
     tout: at what times to report, e.g.:
         np.linspace(t0, tend, nt+1)
@@ -17,44 +41,44 @@ def run(sys, y0, tout, mode=None, **kwargs):
 
     Returns
     =======
-    yout: numpy array of shape (len(tout), sys.N, sys.n)
+    yout: numpy array of shape (len(tout), rd.N, rd.n)
     """
     y0 = np.asarray(y0)
-    assert y0.size == sys.n*sys.N
+    assert y0.size == rd.n*rd.N
 
-    defaults = {'name': 'vode', 'method': 'bdf', 'atol': 1e-9,
-                'rtol': 1e-7, 'with_jacobian': True}
+    defaults = DEFAULTS.copy()
+    defaults.update({'name': 'vode', 'method': 'bdf', 'with_jacobian': True})
 
     if mode == None:
-        if sys.N == 1:
+        if rd.N == 1:
             mode = DENSE
-        elif sys.N > 1:
+        elif rd.N > 1:
             mode = BANDED
         else:
             raise NotImplementedError
 
     if mode == BANDED:
-        defaults['lband'] = sys.n
-        defaults['uband'] = sys.n
+        defaults['lband'] = rd.n
+        defaults['uband'] = rd.n
 
     for k, v in defaults.items():
         if not k in kwargs:
             kwargs[k] = v
 
     # Create python callbacks with right signature
-    fout = np.empty(sys.n*sys.N)
+    fout = np.empty(rd.n*rd.N)
     def f(t, y, *f_args):
         # Python function closure circumvents reallocation
         f.neval += 1
-        sys.f(t, y, fout)
+        rd.f(t, y, fout)
         return fout
     f.neval = 0
 
     if mode == DENSE:
-        jout = sys.alloc_jout(banded=False, order='F')
+        jout = rd.alloc_jout(banded=False, order='F')
     elif mode == BANDED:
         # Currently SciPy <= v0.14 needs extra padding
-        jout = sys.alloc_jout(banded=True, order='F', pad=sys.n)
+        jout = rd.alloc_jout(banded=True, order='F', pad=rd.n)
     else:
         raise NotImplementedError
 
@@ -62,9 +86,9 @@ def run(sys, y0, tout, mode=None, **kwargs):
         jac.neval += 1
         jout[...] = 0  # <--- this is very important (clear old LU decomp)
         if mode == DENSE:
-            sys.dense_jac_cmaj(t, y, jout)
+            rd.dense_jac_cmaj(t, y, jout)
         else:
-            sys.banded_packed_jac_cmaj(t, y, jout)
+            rd.banded_packed_jac_cmaj(t, y, jout)
         return jout
     jac.neval = 0
 
@@ -72,7 +96,7 @@ def run(sys, y0, tout, mode=None, **kwargs):
     runner.set_integrator(**kwargs)
     runner.set_initial_value(y0.flatten(), tout[0])
 
-    yout = np.empty((len(tout), sys.n*sys.N), order='C')
+    yout = np.empty((len(tout), rd.n*rd.N), order='C')
     yout[0,:] = y0
     texec = time.time()
     for i in range(1, len(tout)):
@@ -87,4 +111,8 @@ def run(sys, y0, tout, mode=None, **kwargs):
         'neval_f': f.neval,
         'neval_j': jac.neval,
     })
-    return yout.reshape((len(tout), sys.N, sys.n)), info
+    return yout.reshape((len(tout), rd.N, rd.n)), info
+
+# Default (backwards compability)
+def run(*args, **kwargs):
+    return integrate_scipy(*args, **kwargs)

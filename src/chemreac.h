@@ -55,6 +55,8 @@ public:
     const double eps;
     double * const efield; // v_d = mu_el*E
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
+    uint neval_f {0};
+    uint neval_j {0};
 
     ReactionDiffusion(uint, 
 		      const vector<vector<uint> >, 

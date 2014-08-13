@@ -749,7 +749,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
         ax = fig.add_subplot(3, 1, 3)
         coloured_spy(ref_banded_j-jout_bnd_packed_cmaj, ax=ax)
         plt.title('diff')
-        plt.show()
+        plt.savefig(__file__+'.png')
 
     assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 

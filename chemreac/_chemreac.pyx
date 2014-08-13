@@ -269,6 +269,18 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.eps
 
+    property neval_f:
+        def __get__(self):
+            return self.thisptr.neval_f
+        def __set__(self, uint n):
+            self.thisptr.neval_f = n
+
+    property neval_j:
+        def __get__(self):
+            return self.thisptr.neval_j
+        def __set__(self, uint n):
+            self.thisptr.neval_j = n
+
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
@@ -308,7 +320,7 @@ def sundials_direct(
         CppReactionDiffusion rd, vector[double] atol, double rtol,
         basestring lmm, double[::1] y0, double[::1] tout):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
-    assert y0.size == rd.n
+    assert y0.size == rd.n*rd.N
     direct[double, ReactionDiffusion](rd.thisptr, atol, rtol,
                                       {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
                                       tout.size, &tout[0], &yout[0])
