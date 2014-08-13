@@ -36,5 +36,6 @@ source activate test-env
 pip install --quiet argh mako quantities pytest periodictable future https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz https://github.com/sympy/sympy/archive/master.zip
 python -c "import sympy; print(sympy.__version__)"
 python -c "import pycompilation; print(pycompilation.__version__)"
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 python setup.py build_ext -i
 PYTHONPATH=.:$PYTHONPATH py.test --slow

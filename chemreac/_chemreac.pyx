@@ -307,9 +307,8 @@ cdef class CppReactionDiffusion:
 def sundials_direct(
         CppReactionDiffusion rd, vector[double] atol, double rtol,
         basestring lmm, double[::1] y0, double[::1] tout):
-    cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty((tout.size+1)*rd.n*rd.N)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n
-    print("about to call direct[]() and right now rd.auto_efield=",rd.auto_efield)
     direct[double, ReactionDiffusion](rd.thisptr, atol, rtol,
                                       {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
                                       tout.size, &tout[0], &yout[0])

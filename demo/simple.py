@@ -10,6 +10,7 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
+from chemreac._chemreac import sundials_direct
 
 
 def main(logy=False, logt=False):
@@ -21,19 +22,17 @@ def main(logy=False, logt=False):
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
 
-    # y = np.log(y0) if logy else y0
-    # t = np.log(tout) if logt else tout
-    # yout, info = run(rd, y, t)
-    # yout = np.exp(yout) if logy else yout
+    y = np.log(y0) if logy else np.asarray(y0)
+    t = np.log(tout) if logt else np.asarray(tout)
+    yout, info = run(rd, y, t)
+    yout2 = sundials_direct(rd, [1e-8, 1e-8], 1e-8, 'bdf', y, t)
+    yout = np.exp(yout) if logy else yout
 
-    # yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
-    #                  y0[1]+y0[0]*(1-np.exp(-k0*(tout-t0)))]).transpose()
-    # assert np.allclose(yout[:, 0, :], yref)
+    yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
+                     y0[1]+y0[0]*(1-np.exp(-k0*(tout-t0)))]).transpose()
+    assert np.allclose(yout[:, 0, :], yref)
 
     # sundials
-    from chemreac._chemreac import sundials_direct
-    print(rd.auto_efield)
-    yout2 = sundials_direct(rd, [1e-8, 1e-8], 1e-8, 'bdf', np.asarray(y0), tout)
     assert np.allclose(yout2[:, 0, :], yref)
 
 

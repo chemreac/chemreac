@@ -312,14 +312,14 @@ ReactionDiffusion::_alloc_and_populate_linC(const double * const __restrict__ y)
 void
 ReactionDiffusion::f(double t, const double * const y, double * const __restrict__ dydt)
 {
-    std::cout << "In f() and auto_efield=" << auto_efield << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "In f() and auto_efield=" << auto_efield << std::endl; std::cout.flush(); //DEBUG
     // note condifiontal call to free at end of this function
     const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
-    std::cout << "alloc linC complete" << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "alloc linC complete" << std::endl; std::cout.flush(); //DEBUG
     if (auto_efield){
-        std::cout << "auto_efield is true!" << std::endl; std::cout.flush(); //DEBUG
+        // std::cout << "auto_efield is true!" << std::endl; std::cout.flush(); //DEBUG
         calc_efield(linC);
-        std::cout << "survived?" << std::endl; std::cout.flush(); //DEBUG
+        // std::cout << "survived?" << std::endl; std::cout.flush(); //DEBUG
     }
     //    std::cout << "calc_efield complete" << std::endl; std::cout.flush(); //DEBUG
 

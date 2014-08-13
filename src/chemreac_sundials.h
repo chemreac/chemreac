@@ -26,9 +26,9 @@ using chemreac::ReactionDiffusion;
 template <typename U>
 int f_cb(realtype t, N_Vector y, N_Vector ydot, void *user_data){
     U * rd = (U*)user_data;
-    std::cout << "about to call f(), auto_efield=" << rd->auto_efield << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "about to call f(), auto_efield=" << rd->auto_efield << std::endl; std::cout.flush(); //DEBUG
     rd->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
-    std::cout << "point1010" << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "point1010" << std::endl; std::cout.flush(); //DEBUG
     return 0;
 }
 
@@ -38,10 +38,10 @@ int jac_dense_cb(long int N, realtype t,
                  N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
     // callback of req. signature wrapping U method.
     U * rd = (U*)user_data;
-    std::cout << "point2000" << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "point2000" << std::endl; std::cout.flush(); //DEBUG
     rd->dense_jac_cmaj(t, NV_DATA_S(y), DENSE_COL(Jac, 0),
                        Jac->ldim);
-    std::cout << "point2010" << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "point2010" << std::endl; std::cout.flush(); //DEBUG
     return 0;
 }
 
@@ -53,10 +53,10 @@ int jac_band_cb(long int N, long int mupper, long int mlower, realtype t,
     U * rd = (U*)user_data;
     if (Jac->s_mu != rd->n)
         throw std::runtime_error("Mismatching size of padding.");
-    std::cout << "point3000" << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "point3000" << std::endl; std::cout.flush(); //DEBUG
     rd->banded_padded_jac_cmaj(t, NV_DATA_S(y), BAND_COL(Jac, 0),
                                 Jac->ldim);
-    std::cout << "point3010" << std::endl; std::cout.flush(); //DEBUG
+    // std::cout << "point3010" << std::endl; std::cout.flush(); //DEBUG
     return 0;
 }
 
@@ -86,9 +86,9 @@ void direct(U * rd,
     cvode_mem = CVodeCreate(lmm, CV_NEWTON);
     if (cvode_mem == nullptr)
         throw std::runtime_error("CVodeCreate failed.");
-    std::cout << "about to init cvode_mem and ny=" << ny << std::endl; std::cout.flush(); // DEBUG
+    // std::cout << "about to init cvode_mem and ny=" << ny << std::endl; std::cout.flush(); // DEBUG
     status = CVodeInit(cvode_mem, f_cb<U>, tout[0], interf_y);
-    std::cout << "done! " << ny << std::endl; std::cout.flush(); // DEBUG
+    // std::cout << "done! " << ny << std::endl; std::cout.flush(); // DEBUG
     if (status < 0)
         throw std::runtime_error("CVodeInit failed.");
 
@@ -113,35 +113,37 @@ void direct(U * rd,
         status = CVLapackBand(cvode_mem, ny, rd->n, rd->n);
         if (status != CVDLS_SUCCESS)
             throw std::runtime_error("CVLapackBand failed");
+        status = CVDlsSetBandJacFn(cvode_mem, jac_band_cb<U>);
+        if (status < 0)
+            throw std::runtime_error("CVDlsSetBandJacFn failed.");
     } else {
         // Use a dense direct solver
         status = CVLapackDense(cvode_mem, ny);
         if (status != CVDLS_SUCCESS)
             throw std::runtime_error("CVLapackDense failed");
+        status = CVDlsSetDenseJacFn(cvode_mem, jac_dense_cb<U>);
+        if (status < 0)
+            throw std::runtime_error("CVDlsSetDenseJacFn failed.");
     }
 
-    status = CVDlsSetBandJacFn(cvode_mem, jac_band_cb<U>);
-    if (status < 0)
-        throw std::runtime_error("CVDlsSetBandJacFn failed.");
-
-    std::cout << "ny: " << ny << std::endl; std::cout.flush(); // DEBUG
-    std::cout << "y0[0]: " << NV_Ith_S(interf_y, 0) << std::endl;std::cout.flush(); 
-    std::cout << "y0[1]: " << NV_Ith_S(interf_y, 1) << std::endl;std::cout.flush(); 
-    std::cout << "point10" << std::endl; std::cout.flush(); // DEBUG
-    memcpy(&yout[0], NV_DATA_S(interf_y), ny);
-    std::cout << "point20"; std::cout.flush(); // DEBUG
+    // std::cout << "ny: " << ny << std::endl; std::cout.flush(); // DEBUG
+    // std::cout << "y0[0]: " << NV_Ith_S(interf_y, 0) << std::endl;std::cout.flush(); 
+    // std::cout << "y0[1]: " << NV_Ith_S(interf_y, 1) << std::endl;std::cout.flush(); 
+    // std::cout << "point10" << std::endl; std::cout.flush(); // DEBUG
+    memcpy(&yout[0], NV_DATA_S(interf_y), ny*sizeof(double));
+    // std::cout << "point20"; std::cout.flush(); // DEBUG
     for(int iout=1; iout < nout; iout++) {
-        std::cout << "point30"; std::cout.flush(); // DEBUG
-        std::cout << "about to call CVode and now rd->auto_efiled=" << rd->auto_efield << std::endl; std::cout.flush(); // DEBUG
+        // std::cout << "point30"; std::cout.flush(); // DEBUG
+        // std::cout << "about to call CVode and now rd->auto_efiled=" << rd->auto_efield << std::endl; std::cout.flush(); // DEBUG
         status = CVode(cvode_mem, tout[iout], interf_y, 
                        &cur_t, CV_NORMAL);
-        std::cout << "survived CVode and rd->auto_efiled=" << rd->auto_efield << std::endl; std::cout.flush(); // DEBUG
+        // std::cout << "survived CVode and rd->auto_efiled=" << rd->auto_efield << std::endl; std::cout.flush(); // DEBUG
         if(status != CV_SUCCESS)
             throw std::runtime_error("Unsuccessful CVODE step...");
-        std::cout << "point40"; std::cout.flush(); // DEBUG
-        memcpy(&yout[ny*iout], NV_DATA_S(interf_y), ny);
+        // std::cout << "point40"; std::cout.flush(); // DEBUG
+        memcpy(&yout[ny*iout], NV_DATA_S(interf_y), ny*sizeof(double));
     }
-    std::cout << "point50"; std::cout.flush(); // DEBUG
+    // std::cout << "point50"; std::cout.flush(); // DEBUG
     
     N_VDestroy_Serial(interf_y);
     N_VDestroy_Serial(interf_atol);
