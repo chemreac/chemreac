@@ -2,7 +2,7 @@
 #include <vector>
 #include "chemreac.h"
 #include "chemreac_sundials.h"
-#include "test_chemreac.h"
+#include "test_utils.h"
 
 using std::vector;
 
@@ -12,11 +12,11 @@ int test_integration(){
     int ny = y.size();
     vector<double> atol {1e-8, 1e-8, 1e-8, 1e-8};
     double rtol {1e-8};
-    vector<double> tout {0 1 2 3 4 5 6 7 8 9 10};
-    double * yout = malloc(sizeof(double)*tout.size()*ny);
-    chemreac_sundials::direct_banded<double>(&rd, atol, rtol, 1, 
-                                             &y0[0], tout, yout);
-    for (int tidx=0; tidx<tout.size(); tidx++){
+    vector<double> tout {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
+    double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
+    chemreac_sundials::direct<double, ReactionDiffusion>(&rd, atol, rtol, 1, 
+                                                         &y[0], tout.size(), &tout[0], yout);
+    for (unsigned int tidx=0; tidx<tout.size(); tidx++){
         std::cout << tout[tidx];
         for (int sidx=0; sidx<ny; sidx++){
             std::cout << " " << yout[tidx*ny + sidx];

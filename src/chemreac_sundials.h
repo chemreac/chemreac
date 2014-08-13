@@ -1,6 +1,7 @@
 #ifndef _XFWQGDP6YJBLPH7SUYHCP7FUKQ
 #define _XFWQGDP6YJBLPH7SUYHCP7FUKQ
 
+#include <cstring> // memcpy
 #include "chemreac.h"
 #include <cvode/cvode_lapack.h>
 // #include <sundials/sundials_band.h> /* def. CVBand  */
@@ -19,12 +20,13 @@ namespace chemreac_sundials {
 // double <=> SUNDIALS_DOUBLE_PRECISION
 // link SUNDIALS with LAPACK.
 
+using std::vector;
 using chemreac::ReactionDiffusion;
 
 template <typename U>
 int f_cb(realtype t, N_Vector y, N_Vector ydot, void *user_data){
     U * rd = (U*)user_data;
-    std::cout << "point1000" << std::endl; std::cout.flush(); //DEBUG
+    std::cout << "about to call f(), auto_efield=" << rd->auto_efield << std::endl; std::cout.flush(); //DEBUG
     rd->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
     std::cout << "point1010" << std::endl; std::cout.flush(); //DEBUG
     return 0;
@@ -41,7 +43,7 @@ int jac_dense_cb(long int N, realtype t,
                        Jac->ldim);
     std::cout << "point2010" << std::endl; std::cout.flush(); //DEBUG
     return 0;
-};
+}
 
 template <typename U>
 int jac_band_cb(long int N, long int mupper, long int mlower, realtype t, 
@@ -56,8 +58,7 @@ int jac_band_cb(long int N, long int mupper, long int mlower, realtype t,
                                 Jac->ldim);
     std::cout << "point3010" << std::endl; std::cout.flush(); //DEBUG
     return 0;
-};
-
+}
 
 template <typename T, typename U>
 void direct(U * rd, 
@@ -77,6 +78,11 @@ void direct(U * rd,
     // Create cvode_mem
     void *cvode_mem = nullptr;
     N_Vector interf_y = N_VMake_Serial(ny, const_cast<T*>(y0));
+    /* N_Vector interf_y = N_VNew_Serial(ny); */
+    /* for (int i=0; i < ny; ++i) */
+    /*     NV_Ith_S(interf_y, i) = y0[i]; */
+
+    /* std::cout << "lmm=" << lmm << std::endl; std::cout.flush(); */
     cvode_mem = CVodeCreate(lmm, CV_NEWTON);
     if (cvode_mem == nullptr)
         throw std::runtime_error("CVodeCreate failed.");
@@ -97,7 +103,7 @@ void direct(U * rd,
     if (status < 0)
         throw std::runtime_error("CVodeSVtolerances failed");
 
-    status = CVodeSetUserData(cvode_mem, (void *)&rd);
+    status = CVodeSetUserData(cvode_mem, (void *)rd);
     if (status < 0)
         throw std::runtime_error("CVodeSetUserData failed.");
 
@@ -142,5 +148,5 @@ void direct(U * rd,
     CVodeFree(&cvode_mem);  /* Free the integrator memory */
 }
 
-}; // namespace chemreac_sundials
+} // namespace chemreac_sundials
 #endif /* _XFWQGDP6YJBLPH7SUYHCP7FUKQ */

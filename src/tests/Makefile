@@ -91,7 +91,7 @@ INCLUDE ?= -I.. -I../finitediff/finitediff
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
 
 
-all: test_chemreac.out
+all: test_chemreac.out test_chemreac_sundials.out
 
 .PHONY: clean all
 
@@ -109,15 +109,17 @@ fornberg.o: ../finitediff/finitediff/fornberg.f90
 c_fornberg.o: ../finitediff/finitediff/c_fornberg.f90
 	$(FC) $(FORTFLAGS) -c -o $@ $^
 
+test_utils.o: test_utils.cpp
+	$(CXX) $(CXXFLAGS) -I.. -c -o $@ $^
 
-test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o
+test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o test_utils.o
 	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff \
 	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # -lrt only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac
 	./$< >$@
 
-test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_chemreac_sundials.o
+test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.o
 	$(CXX) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -lopenblas -lsundials_nvecserial
 
 test_chemreac_sundials.out: test_chemreac_sundials

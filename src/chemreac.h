@@ -4,11 +4,11 @@
 #include <vector>
 #include <stdexcept>
 
-using std::vector;
-
 enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 
 namespace chemreac {
+
+using std::vector;
 
 class ReactionDiffusion
 {
@@ -89,5 +89,5 @@ public:
     void calc_efield(const double * const);
 }; // class ReactionDiffusion
 
-}; // namespace chemreac
+} // namespace chemreac
 #endif // _PVHQOBGMVZECTIJSMOKFUXJXXM

@@ -30,6 +30,12 @@ Setup
 should be enough (tested on Ubuntu 12.04). Add to $PYTHONPATH to use
 or ``python setup.py install --user``
 
+To specify an alternative LAPACK lib set the environment variable LLAPACK, e.g.:
+
+```
+    LLAPACK=openblas python setup.py build_ext --inplace
+```
+
 You may also look at ``scrips/test_drone.io.sh`` for the CI install.
 
 Tests

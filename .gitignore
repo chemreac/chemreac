@@ -24,6 +24,7 @@ build/
 */*.mod
 */*.so
 src/tests/test_chemreac
+src/tests/test_chemreac_sundials
 src/tests/*.mod
 src/tests/*.o
 

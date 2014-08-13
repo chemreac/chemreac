@@ -556,7 +556,7 @@ int ReactionDiffusion::get_geom_as_int() const
 void ReactionDiffusion::calc_efield(const double * const linC)
 {
     // Prototype for self-generated electric field
-    double netchg[N];
+    double * netchg = new double[N];
     const double F = 96485.3399; // Faraday's constant, [C/mol]
     const double pi = 3.14159265358979324;
     double Q = surf_chg;
@@ -594,6 +594,7 @@ void ReactionDiffusion::calc_efield(const double * const linC)
             cx = nx;
         }
     }
+    delete []netchg;
 }
 
-}; // namespace chemreac
+} // namespace chemreac
