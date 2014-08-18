@@ -108,7 +108,7 @@ class InstanceReferenceStore(object):
     """
     Python does not provide a way to access all instances of
     a class, by subclassing this class the classes will have
-    the get_all_instances
+    a `get_all_instances` classmethod.
     """
     _instance_references = defaultdict(WeakList)
     def __init__(self):

@@ -57,17 +57,17 @@ else:
                     'src/chemreac.cpp': {
                         'std': 'c++0x',
                         # 'fast' doesn't work on drone.io
-                        'options': ['pic', 'warn'] +\
+                        'options': ['pic', 'warn', 'fast'] +\
                         (['openmp'] if USE_OPENMP else []),
                         'defmacros': ['DEBUG']+\
                         (['DEBUG'] if DEBUG else []),
                     },
                     'src/chemreac_sundials.cpp': {
                         'std': 'c++0x',
-                        'options': ['pic', 'warn']
+                        'options': ['pic', 'warn', 'fast']
                     },
                 },
-                'options': ['pic', 'warn'],
+                'options': ['pic', 'warn', 'fast'],
             },
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),

@@ -199,8 +199,8 @@ class ReactionSystem(object):
                  ):
 
         self._rxns = rxns
-        self._name = name
-        self._substances = substances
+        self.name = name
+        self.substances = substances
 
         self._do_sanity_check()
 
@@ -217,16 +217,16 @@ class ReactionSystem(object):
 
 
     def _do_sanity_check(self):
-        if self._substances == None: return
+        if self.substances == None: return
         for rxn in self._rxns:
             net_chg  = 0
             net_mass = 0.0
             for reac, n in rxn.reactants.items():
-                net_chg -= self._substances[reac].charge
-                net_mass -= self._substances[reac].mass
+                net_chg -= self.substances[reac].charge
+                net_mass -= self.substances[reac].mass
             for reac, n in rxn.products.items():
-                net_chg += self._substances[reac].charge
-                net_mass += self._substances[reac].mass
+                net_chg += self.substances[reac].charge
+                net_mass += self.substances[reac].mass
             assert net_chg == 0
             assert abs(net_mass) < 0.01
 
