@@ -13,6 +13,11 @@ DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
+if os.environ.get('DRONE', 'false') == 'true':
+    options = ['pic', 'warn']  # 'fast' implies march=native which fails on current version of docker.
+else:
+    options = ['pic', 'warn', 'fast']
+
 # Make `python setup.py test` work without depending on py.test being installed
 # https://pytest.org/latest/goodpractises.html
 class PyTest(Command):
@@ -57,17 +62,17 @@ else:
                     'src/chemreac.cpp': {
                         'std': 'c++0x',
                         # 'fast' doesn't work on drone.io
-                        'options': ['pic', 'warn', 'fast'] +\
+                        'options': options +\
                         (['openmp'] if USE_OPENMP else []),
                         'defmacros': ['DEBUG']+\
                         (['DEBUG'] if DEBUG else []),
                     },
                     'src/chemreac_sundials.cpp': {
                         'std': 'c++0x',
-                        'options': ['pic', 'warn', 'fast']
+                        'options': options
                     },
                 },
-                'options': ['pic', 'warn', 'fast'],
+                'options': options,
             },
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
