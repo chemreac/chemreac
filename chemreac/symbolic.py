@@ -67,8 +67,8 @@ class SymRD(ReactionDiffusionBase):
         # Reactions
         for ri, (k, sreac, sactv, sprod) in enumerate(zip(
                 self.k, self.stoich_reac, self.stoich_actv, self.stoich_prod)):
-            c_reac = [sreac.count(i) for i in range(self.n)]
-            c_prod = [sprod.count(i) for i in range(self.n)]
+            c_reac = map(sreac.count, range(self.n))
+            c_prod = map(sprod.count, range(self.n))
             c_totl = [nprod - nreac for nreac, nprod in zip(c_reac, c_prod)]
             if sactv == []:
                 sactv = sreac
@@ -145,9 +145,17 @@ class SymRD(ReactionDiffusionBase):
         subsd[self._t] = t
         fout[:] = [expr.subs(subsd) for expr in self._f]
 
+    @property
+    def jacobian(self):
+        try:
+            return self._jacobian
+        except AttributeError:
+            fmat = sp.Matrix(1, self.n*self.N, lambda q, i: self._f[i])
+            self._jacobian = fmat.jacobian(self._y)
+            return self._jacobian
+
     def dense_jac_rmaj(self, t, y, Jout):
         subsd = dict(zip(self._y, y))
         subsd[self._t] = t
-        fmat = sp.Matrix(1, self.n*self.N, lambda q, i: self._f[i])
         Jout[:,:] = [[expr.subs(subsd) for expr in row]
-                     for row in fmat.jacobian(self._y).tolist()]
+                     for row in self.jacobian.tolist()]

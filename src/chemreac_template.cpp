@@ -72,6 +72,7 @@ ReactionDiffusion::ReactionDiffusion(
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
     if (nstencil % 2 == 0) throw std::logic_error("Only odd number of stencil points supported");
     if ((N == 1) && (nstencil != 1)) throw std::logic_error("You must set nstencil=1 for N=1");
+    if ((N > 1) && (nstencil <= 1)) throw std::logic_error("You must set nstencil>1 for N>1");
     if (stoich_reac.size() != stoich_prod.size())
         throw std::length_error(
             "stoich_reac and stoich_prod of different sizes.");
@@ -149,8 +150,9 @@ ReactionDiffusion::ReactionDiffusion(
     for (uint rxni=0; rxni<nr; ++rxni){ // reaction index
         if (stoich_actv_[rxni].size() == 0)
             stoich_actv.push_back(stoich_reac[rxni]); // massaction
-    else
-        stoich_actv.push_back(stoich_actv_[rxni]);
+        else
+            stoich_actv.push_back(stoich_actv_[rxni]);
+
         for (uint si=0; si<n; ++si){ // species index
             coeff_reac[rxni*n+si] = count(stoich_reac[rxni].begin(),
                                         stoich_reac[rxni].end(), si);

@@ -43,10 +43,9 @@ def _test_dense_jac_rmaj(rd, t, y, jref=None):
     else:
         # Not perfect Jacobian
         # only nearest neighbour
-        print(jout)
-        print(jref)
+        #assert np.allclose(jout, jref)
+        # ...hence:
         for ri in range(rd.ny):
-            #assert np.allclose(jout, jref)
             for ci in range(max(0, ri-rd.n), min(rd.ny, ri+rd.n+1)):
                 out, ref = jout[ri, ci], jref[ri, ci]
                 assert abs(out - ref) < 1e-12

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Convenince functions for representing reactin systems in tables.
+Convenince functions for representing reaction systems in tables.
 """
 
 import subprocess

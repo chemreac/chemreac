@@ -14,7 +14,7 @@ def rsys2dot(rsys, substances, tex=False, rprefix='r', rref0=1,
     Returns list of lines of DOT (graph description language)
     formated graph
     """
-    lines = ['digraph ' + str(rsys._name) + '{']
+    lines = ['digraph ' + str(rsys.name) + '{']
     ind = '  '  # indentation
     def add_vertex(sn, num, reac):
         snum = str(num) if num > 1 else ''
@@ -46,7 +46,8 @@ def rsys2graph(rsys, substances, outpath, prog=None, **kwargs):
         cmds = [prog or 'dot2tex']
     else:
         cmds = [prog or 'dot', '-T'+outpath.split('.')[-1]]
-    tmpfh = tempfile.NamedTemporaryFile('wt').writelines(lines)
+    tmpfh = tempfile.NamedTemporaryFile('wt')
+    tmpfh.writelines(lines)
     p = subprocess.Popen(cmds + [tmpfh.name, '-o', outpath])
     retcode = p.wait()
     if retcode:

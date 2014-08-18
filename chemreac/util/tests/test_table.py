@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import shutil
 import tempfile
 
 from chemreac.util.table import rsys2tablines, rsys2table, rsys2pdf_table
@@ -31,5 +32,4 @@ def test_rsys2pdf_table():
     try:
         rsys2pdf_table(rsys, sbstncs, tempdir)
     finally:
-        print(tempdir)
-        #shutil.rmtree(tempdir)
+        shutil.rmtree(tempdir)

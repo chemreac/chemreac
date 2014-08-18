@@ -37,7 +37,7 @@ See:
 <four_species_f_jac_logt.png>
 """
 
-np.set_printoptions(precision=3, linewidth=120)
+np.set_printoptions(precision=3, linewidth=180)
 
 JSON_PATH, BLESSED_PATH = map(
     lambda x: os.path.join(os.path.dirname(__file__), x),
@@ -186,3 +186,22 @@ def test_chemistry():
 def test_multi_compartment():
     rsys = load(JSON_PATH, N=3, lrefl=True, rrefl=True)
     _test_dense_jac_rmaj(rsys, 1.0, np.asarray([1.3, 1e-4, 0.7, 1e-4]*rsys.N).flatten())
+
+
+if __name__ == '__main__':
+    # Some old debug code which shows how to inspect using LaTeX:
+    from chemreac.symbolic import SymRD
+    import sympy as sp
+    rd = load(JSON_PATH, N=3, lrefl=True, rrefl=True)
+    print(rd.x)
+    print(rd.stoich_reac)
+    print(rd.stoich_prod)
+    srd = SymRD.from_rd(rd)
+    print('===   f ====')
+    print('\n'.join(map(sp.latex, srd._f)))
+    print('=== dfdy ====')
+    for ri, row in enumerate(srd.jacobian.tolist()):
+        for ci, expr in enumerate(row):
+            if expr == 0:
+                continue
+            print(ri, ci, sp.latex(expr))
