@@ -82,6 +82,9 @@ endif
 
 FLAGS += $(EXTRA_FLAGS)
 
+LOCALLIB=/usr/local/lib
+INCLUDES=-L${LOCALLIB}
+
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
 
@@ -120,7 +123,7 @@ test_chemreac.out: test_chemreac
 	./$< >$@
 
 test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.o
-	$(CXX) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -lopenblas -lsundials_nvecserial
+	$(CXX) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -llapack -lsundials_nvecserial
 
 test_chemreac_sundials.out: test_chemreac_sundials
 	./$< >$@

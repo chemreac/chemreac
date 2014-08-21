@@ -41,6 +41,7 @@ if '--help'in sys.argv[1:] or sys.argv[1] in (
 else:
     import pickle
     from pycompilation.dist import clever_build_ext, CleverExtension
+    import numpy as np
     cmdclass_['build_ext'] = clever_build_ext
     subsd = {'USE_OPENMP': USE_OPENMP}
     sources=[
@@ -79,7 +80,7 @@ else:
                 'std': 'c++0x',
                 'libs': ['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
             },
-            include_dirs=['src/', 'src/finitediff/finitediff/'],
+            include_dirs=['src/', 'src/finitediff/finitediff/', np.get_include()],
             logger=True,
         )
     ]
