@@ -133,8 +133,8 @@ int test_dense_jac(){
 
 void bench_f(){
     double t = 0.0;
-    int ntimings = 10;
-    int N = 1000000; // A ridiculous number of bins for 1D but used for benchmarking
+    int ntimings = 40;
+    int N = 500000; // A ridiculous number of bins for 1D but used for benchmarking
     ReactionDiffusion rd = get_four_species_system(N);
     vector<double> y;
     vector<double> b;

@@ -8,14 +8,18 @@ from scipy.integrate import ode
 
 from chemreac import DENSE, BANDED, SPARSE
 
-from ._chemreac import sundials_direct
 
-DEFAULTS={
+DEFAULTS = {
     'atol': 1e-9,
     'rtol': 1e-7,
 }
 
-def integrate_sundials(rd, y0, tout, **kwargs):
+
+def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
+    from ._chemreac import sundials_direct
+    if mode is not None:
+        raise NotImplementedError(
+            "Sundials integrator auto-selectes banded for N>1")
     atol = np.asarray(kwargs.get('atol', DEFAULTS['atol']))
     if atol.ndim == 0:
         atol = atol.reshape((1,))
@@ -24,14 +28,23 @@ def integrate_sundials(rd, y0, tout, **kwargs):
     rd.neval_f = 0
     rd.neval_j = 0
     texec = time.time()
-    yout = sundials_direct(rd, atol, rtol, lmm, y0, tout)
+    try:
+        yout = sundials_direct(rd, atol, rtol, lmm, y0, tout)
+    except RuntimeError:
+        yout = np.ones((len(tout), rd.n*rd.N), order='C')/0
+        success = False
+    else:
+        success = True
     texec = time.time() - texec
-    info = {
+    info = kwargs.copy()
+    info.update({
         'neval_f': rd.neval_f,
         'neval_j': rd.neval_j,
-        'texec': texec
-    }
+        'texec': texec,
+        'success': success
+    })
     return yout, info
+
 
 def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     """
@@ -49,7 +62,7 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     defaults = DEFAULTS.copy()
     defaults.update({'name': 'vode', 'method': 'bdf', 'with_jacobian': True})
 
-    if mode == None:
+    if mode is not None:
         if rd.N == 1:
             mode = DENSE
         elif rd.N > 1:
@@ -62,11 +75,12 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
         defaults['uband'] = rd.n
 
     for k, v in defaults.items():
-        if not k in kwargs:
+        if k not in kwargs:
             kwargs[k] = v
 
     # Create python callbacks with right signature
     fout = np.empty(rd.n*rd.N)
+
     def f(t, y, *f_args):
         # Python function closure circumvents reallocation
         f.neval += 1
@@ -97,7 +111,7 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     runner.set_initial_value(y0.flatten(), tout[0])
 
     yout = np.empty((len(tout), rd.n*rd.N), order='C')
-    yout[0,:] = y0
+    yout[0, :] = y0
     texec = time.time()
     for i in range(1, len(tout)):
         runner.integrate(tout[i])
@@ -113,6 +127,13 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     })
     return yout.reshape((len(tout), rd.N, rd.n)), info
 
-# Default (backwards compability)
+
+# `run` is provided as backwards compability / environment chosen integrator
 def run(*args, **kwargs):
-    return integrate_scipy(*args, **kwargs)
+    import os
+    use_sundials = os.getenv('USE_SUNDIALS', '0')
+    use_sundials = (use_sundials == '1') or (use_sundials.lower() == 'true')
+    if use_sundials:
+        return integrate_sundials(*args, **kwargs)
+    else:
+        return integrate_scipy(*args, **kwargs)

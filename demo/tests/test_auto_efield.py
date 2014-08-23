@@ -55,7 +55,7 @@ def _test_mass_conservation(params):
     # separated gaussians (offset = 0.25)
     N = 64*(4 if ly else 1)*(8 if ns > 3 else 1)
     tout, Cout, info, rd = integrate_rd(
-        D=0.0, tend=7, x0=0.1, xend=1.0, N=N,
+        D=0.0, t0=1e-6, tend=7, x0=0.1, xend=1.0, N=N,
         offset=.25, mobility=3e-8, nt=25, sigma_q=101, **kwargs)
     assert info['success']
     mass_consv = np.array([

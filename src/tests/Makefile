@@ -83,7 +83,7 @@ endif
 FLAGS += $(EXTRA_FLAGS)
 
 LOCALLIB=/usr/local/lib
-INCLUDES=-L${LOCALLIB}
+LIBRARIES=-L${LOCALLIB}
 
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
@@ -116,14 +116,14 @@ test_utils.o: test_utils.cpp
 	$(CXX) $(CXXFLAGS) -I.. -c -o $@ $^
 
 test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o test_utils.o
-	$(CXX) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff \
+	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff \
 	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # -lrt only needed if we're not using OpenMP
 
 test_chemreac.out: test_chemreac
 	./$< >$@
 
 test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.o
-	$(CXX) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -llapack -lsundials_nvecserial
+	$(CXX) $(CXXFLAGS) $(LIBRARIES) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -llapack -lsundials_nvecserial
 
 test_chemreac_sundials.out: test_chemreac_sundials
 	./$< >$@

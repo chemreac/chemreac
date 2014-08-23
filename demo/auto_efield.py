@@ -142,7 +142,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
     if plot:
         def _plot(y, ttl=None,  **kwargs):
             plt.plot(rd.xcenters, y, **kwargs)
-            plt.xlabel('x / m')
+            plt.xlabel(('log({})' if logx else '{}').format('x / m'))
             plt.ylabel('C / M')
             if ttl:
                 plt.title(ttl)
@@ -171,7 +171,6 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
                        linewidth=1.0, alpha=0.2, colors='gray')
 
         plt.subplot(4, 1, 3)
-        plt.plot(rd.xcenters, rd.efield)
         plt.plot(rd.xcenters, rd.efield, label="E at t=tend")
         plt.xlabel("$x~/~m$")
         plt.ylabel("$E~/~V\cdot m^{-1}$")
@@ -188,11 +187,13 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
         for i in range(n):
             amount = [rd.integrated_conc(Cout[j,:,i]) for j in range(nt)]
             print(np.array(amount))
-            plt.plot(tout, amount, c=c[::(1,-1)[i]])  # match colors of lines
+            plt.plot(tout, amount, c=c[::(1,-1)[i]], label=chr(ord('A')+i))  # match colors of lines
         plt.xlabel('Time / s')
         plt.ylabel('Amount / mol')
+        plt.legend(loc='best')
         plt.tight_layout()
         plt.show()
+        print(info)
     return tout, Cout, info, rd
 
 if __name__ == '__main__':
