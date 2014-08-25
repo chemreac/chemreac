@@ -6,7 +6,7 @@ SUNDIALS_MD5="aba8b56eec600de3109cfb967aa3ba0f"
 
 for URL in "${SUNDIALS_URLS[@]}"; do
     echo "Downloading ${URL}..."
-    wget -q $URL
+    ( wget --quiet --tries=2 --timeout=45 $URL & sleep 60; kill %1 )
     if [ $? -eq 0 ]; then
         DOWNLOAD_MD5=$(md5sum ${SUNDIALS_FNAME} | cut -d ' ' -f 1)
         echo "md5: ${DOWNLOAD_MD5}"
@@ -15,8 +15,20 @@ for URL in "${SUNDIALS_URLS[@]}"; do
             mkdir sundials_build
             cd sundials_build
             cmake -DBUILD_SHARED_LIBS:BOOL="1" -DCMAKE_BUILD_TYPE:STRING="Debug" -DLAPACK_ENABLE:BOOL=1 ../sundials-*/
+            if [[ $? != 0 ]]; then
+                echo "cmake of sundials failed."
+                exit 1
+            fi
             make
+            if [[ $? != 0 ]]; then
+                echo "make of sundials failed."
+                exit 1
+            fi
             sudo make install
+            if [[ $? != 0 ]]; then
+                echo "make install of sundials failed."
+                exit 1
+            fi
             exit 0
         fi
     fi    

@@ -6,6 +6,10 @@
 PY_VERSION="2.7"
 
 scripts/aptget.ubuntu.12.04LTS.sh
+if [[ $? != 0 ]]; then
+    echo "aptget.ubuntu.12.04LTS.sh failed."
+    exit 1
+fi
 bash scripts/install_sundials_w_lapack.sh
 if [ $? -ne 0 ]; then
     exit 1
@@ -35,5 +39,5 @@ pip install --quiet argh mako quantities pytest periodictable future https://git
 python -c "import sympy; print(sympy.__version__)"
 python -c "import pycompilation; print(pycompilation.__version__)"
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-python setup.py build_ext -i
-PYTHONPATH=.:$PYTHONPATH py.test --slow
+DISTUTILS_DEBUG=1 USE_SUNDIALS=1 python setup.py build_ext -i
+PYTHONPATH=.:$PYTHONPATH py.test --slow --ignore build/
