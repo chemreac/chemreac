@@ -5,7 +5,6 @@
 */.\#*
 *~
 */*~
-.metadata_CompilerRunner
 
 # Output files from demos
 demo/*.png
@@ -28,10 +27,13 @@ src/tests/test_chemreac_sundials
 src/tests/*.mod
 src/tests/*.o
 
-
 # Output files
 src/tests/*.out
 
 # Generated files for source distribution
 runtests.py
 src/exprs.pkl
+
+# Various
+.cache/
+.metadata_CompilerRunner

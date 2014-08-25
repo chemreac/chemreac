@@ -67,7 +67,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
                  logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
-                 atol=1e-6, rtol=1e-6, random_seed=42, surf_chg=0.0,
+                 atol=1e-6, rtol=1e-6, random_seed=42, surf_chg=(0.0, 0.0),
                  sigma_q=101, sigma_skew=0.5):
     assert 0<= base and base <= 1
     assert 0 <= offset and offset <= 1

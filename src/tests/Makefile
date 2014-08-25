@@ -14,38 +14,6 @@ ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
   OPENMPFLAG=-openmp
   C99=-std=c99
 else
-ifeq ($(COMPILER_VENDOR),cray-pgi)
-  FC=ftn
-  CXX=CC
-  CC=cc
-  FORTCPPLINKER=CC
-  FORTCPPLIBS=-pgf90libs
-  FORTCPPFLAGS=
-  FORTFLAGS=
-  PERFFLAGS=-O2
-  FLAGS=-DCRAY
-  CXXFLAGS= -DDEBUG
-
-  C99=-c99
-  OPENMPLIBS=
-  OPENMPFLAG=-mp
-else
-  PROFFLAGS=-pg
-ifeq ($(COMPILER_VENDOR),cray-gnu)
-  FC=ftn
-  CXX=CC
-  CC=cc
-  FORTCPPLINKER=CC
-  FORTCPPLIBS=-lgfortranbegin -lgfortran
-  FORTCPPFLAGS=
-  FORTFLAGS=-std=f2008 
-  PERFFLAGS=-funroll-loops -O3 -ffast-math # -march=native
-  FLAGS=-Wall -Wextra -pedantic -DCRAY
-  CXXFLAGS=-std=c++0x -DDEBUG
-  C99=-std=c99
-  OPENMPLIBS=#-lgomp
-  OPENMPFLAG=-fopenmp
-else
   FC=gfortran
   CXX=g++ 
   CC=gcc
@@ -54,20 +22,21 @@ else
   FORTCPPFLAGS=
   FORTFLAGS=-std=f2008 
   PERFFLAGS=-funroll-loops -O3 -ffast-math # -march=native
+  PROFFLAGS=-pg
   FLAGS=-Wall -Wextra -pedantic
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
-  CXXFLAGS=-std=c++0x -g -DDEBUG $(PERFFLAGS) # $(OPENMPFLAG)
-  LIBS=-lrt # $(OPENMPLIBS)
+  CXXFLAGS=-std=c++0x
+  LIBS=-lrt
   C99=-std=c99
-endif
-endif
 endif
 
 ifeq ($(OPTIMIZE),1)
-  FLAGS += $(PERFFLAGS)
+  CONTEXT = time
+  FLAGS += $(PERFFLAGS) -DBENCHMARK
   FORTFLAGS += $(PERFFLAGS)
 else
+  CONTEXT = valgrind
   FLAGS +=-g -DDEBUG 
   FORTFLAGS +=-g #-DDEBUG
   ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
@@ -75,15 +44,28 @@ else
     FORTFLAGS +=-debug all
   endif
 endif
+
+TARGETS=test_chemreac.out test_chemreac_sundials.out
+GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o test_chemreac_sundials test_chemreac_sundials.out test_utils.o chemreac.o c_fornberg.o fornberg.mod c_fornberg.mod
+
 ifeq ($(PROFILING),1)
   FLAGS += $(PROFFLAGS) -DPROFILING 
   FORTFLAGS += $(PROFFLAGS) -DPROFILING 
+  TARGETS += profile_test_chemreac.out
+  GENERATED += profile_test_chemreac.out gmon.out
+endif
+ifeq ($(USE_OPENMP),1)
+  FLAGS += $(OPENMPFLAG)
+  LIBS += $(OPENMPLIBS)
+  USE_OPENMP_TRFL="True"
+else
+  USE_OPENMP_TRFL="False"
 endif
 
 FLAGS += $(EXTRA_FLAGS)
 
 LOCALLIB=/usr/local/lib
-LIBRARIES=-L${LOCALLIB}
+LIBDIRS=-L${LOCALLIB}
 
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
@@ -93,18 +75,15 @@ INCLUDE ?= -I.. -I../finitediff/finitediff
 %.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
 
-
-all: test_chemreac.out test_chemreac_sundials.out
+all: $(TARGETS)
 
 .PHONY: clean all
-
-GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o test_chemreac_sundials test_chemreac_sundials.out
 
 clean:
 	rm $(GENERATED)
 
 chemreac.cpp: ../chemreac_template.cpp
-	python enmako.py -g '{"USE_OPENMP": False}' -o $@ $<
+	python enmako.py -g "{\"USE_OPENMP\": $(USE_OPENMP_TRFL)}" -o $@ $<
 
 fornberg.o: ../finitediff/finitediff/fornberg.f90
 	$(FC) $(FORTFLAGS) -c -o $@ $^
@@ -112,22 +91,23 @@ fornberg.o: ../finitediff/finitediff/fornberg.f90
 c_fornberg.o: ../finitediff/finitediff/c_fornberg.f90
 	$(FC) $(FORTFLAGS) -c -o $@ $^
 
-test_utils.o: test_utils.cpp
-	$(CXX) $(CXXFLAGS) -I.. -c -o $@ $^
-
 test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o test_utils.o
-	$(CXX) $(PERFFLAGS) $(PROFFLAGS) $(CXXFLAGS) -I.. -I../finitediff/finitediff \
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) \
 	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # -lrt only needed if we're not using OpenMP
 
-test_chemreac.out: test_chemreac
-	./$< >$@
 
-test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.o
-	$(CXX) $(CXXFLAGS) $(LIBRARIES) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -llapack -lsundials_nvecserial
+test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.cpp
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -llapack -lsundials_nvecserial
 
-test_chemreac_sundials.out: test_chemreac_sundials
-	./$< >$@
+gmon.out: test_chemreac
+	./$<
 
-profile_test_chemreac.out: test_chemreac
+profile_test_chemreac.out: test_chemreac gmon.out
 	./$<
 	gprof ./$< > $@
+
+test_chemreac.out: test_chemreac
+	$(CONTEXT) ./$< >$@
+
+test_chemreac_sundials.out: test_chemreac_sundials
+	$(CONTEXT) ./$< >$@

@@ -62,7 +62,7 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     defaults = DEFAULTS.copy()
     defaults.update({'name': 'vode', 'method': 'bdf', 'with_jacobian': True})
 
-    if mode is not None:
+    if mode is None:
         if rd.N == 1:
             mode = DENSE
         elif rd.N > 1:

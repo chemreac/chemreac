@@ -57,8 +57,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False,
-                nstencil=None, lrefl=True, rrefl=True, auto_efield=False, surf_chg=0.0, eps=1.0,
-                xscale=1.0, **kwargs):
+                nstencil=None, lrefl=True, rrefl=True, auto_efield=False, surf_chg=(0.0, 0.0),
+                eps=1.0, xscale=1.0, **kwargs):
         """
         Arguments:
         -`n`: number of species

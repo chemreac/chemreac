@@ -2,6 +2,7 @@
 #define _PVHQOBGMVZECTIJSMOKFUXJXXM
 
 #include <vector>
+#include <utility>
 #include <stdexcept>
 
 enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
@@ -9,6 +10,7 @@ enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 namespace chemreac {
 
 using std::vector;
+using std::pair;
 
 class ReactionDiffusion
 {
@@ -51,9 +53,10 @@ public:
     vector<uint> bin_k_factor_span; // 
     const bool lrefl, rrefl;
     const bool auto_efield;
-    const double surf_chg;
+    const pair<double, double> surf_chg;
     const double eps;
     double * const efield; // v_d = mu_el*E
+    double * const netchg;
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
     uint neval_f {0};
     uint neval_j {0};
@@ -78,7 +81,7 @@ public:
                       bool lrefl=false,
                       bool rrefl=false,
                       bool auto_efield=false,
-                      double surf_chg=0.0,
+                      pair<double, double> surf_chg={0, 0},
                       double eps=1.0);
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);

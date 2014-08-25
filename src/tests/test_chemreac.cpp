@@ -112,6 +112,7 @@ int test_dense_jac(){
         }
 
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
+    for (int i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
     rd.banded_packed_jac_cmaj(0.0, &y[0], bnd_jac, (2*rd.n+1));
 #define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
@@ -187,15 +188,61 @@ void bench_f(){
     std::cout << "Average timing: " << std::accumulate(timings.begin(), timings.end(), 0.0)/ntimings << std::endl;
 }
 
+ReactionDiffusion _get_single_specie_system(int N, int z){
+    uint n = 1;
+    vector<vector<uint> > stoich_reac {};
+    vector<vector<uint> > stoich_actv {};
+    vector<vector<uint> > stoich_prod {};
+    vector<double> k {};
+    vector<double> D {1.0};
+    vector<int> z_chg {z};
+    vector<double> mobility {1.0};
+    vector<double> x;
+    vector<vector<double> > bin_k_factor;
+    vector<uint> bin_k_factor_span;
+    vector<uint> v;
+    int geom = 0;
+    bool logy = false, logt = false, logx = false;
+    int nstencil = (N == 1) ? 1 : 3;
+    for (int i=0; i<=N; ++i)
+	x.push_back(1.0 + (double)i*1.0/N);
+    return ReactionDiffusion(n, stoich_reac, stoich_prod, k, N, D, z_chg,
+                             mobility, x, stoich_actv,	bin_k_factor,
+                             bin_k_factor_span, geom, logy, logt, logx, nstencil, true, true,
+                             true, {0, 0}, 1.0);
+}
+
+int test_calc_efield(){
+    ReactionDiffusion rd = _get_single_specie_system(5, 1);
+    vector<double> y {1.0, 2.0, 3.0, 2.0, 1.0};
+    const double factor = 0.2*96485.3399;
+    vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
+    rd.calc_efield(&y[0]);
+    int fail = 0;
+    for (int i=0; i<ref_efield.size(); ++i)
+	if (dabs(rd.efield[i]-ref_efield[i]) > 1e-10){
+            std::cout << i << " " << rd.efield[i] << " " << ref_efield[i] << std::endl;
+            fail = 1;
+        }
+    if (fail)
+        return 4;
+    else
+        return 0;
+}
+
 int main(){
     int status = 0;
     try {
-        std::cout << "test_f...";
+        std::cout << "test_f..." << std::endl;
         status += test_f();
-        std::cout << std::endl <<"test_dense_jac...";
+        std::cout << "test_dense_jac..." << std::endl;
         status += test_dense_jac();
-        std::cout << std::endl << "bench_f...";
+        std::cout << "test_calc_efield..."  << std::endl;
+        status += test_calc_efield();
+#ifdef BENCHMARK
+        std::cout << "bench_f..." << std::endl;
         bench_f();
+#endif
     } catch (std::exception& e){
         std::cout << e.what() << std::endl;
     }

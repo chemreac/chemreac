@@ -8,6 +8,7 @@ from chemreac cimport ReactionDiffusion
 from chemreac_sundials cimport direct
 
 from libcpp.vector cimport vector
+from libcpp.utility cimport pair
 
 cdef extern from *:
     ctypedef unsigned int uint
@@ -69,7 +70,7 @@ cdef class CppReactionDiffusion:
                   bint lrefl=True,
                   bint rrefl=True,
                   bint auto_efield=False,
-                  double surf_chg=0.0,
+                  pair[double, double] surf_chg=(0, 0),
                   double eps=1.0,
                   double xscale = 1.0,
               ):

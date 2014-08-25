@@ -5,7 +5,7 @@
 // Render template using Mako (Python templating engine)
 </%doc>
 #include <algorithm> // std::count
-#include <vector>    // std::vector
+//#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include "chemreac.h"
@@ -59,14 +59,14 @@ ReactionDiffusion::ReactionDiffusion(
     bool lrefl,
     bool rrefl,
     bool auto_efield,
-    double surf_chg,
+    pair<double, double> surf_chg,
     double eps
     ):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
     bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), auto_efield(auto_efield),
-    surf_chg(surf_chg), eps(eps), efield(new double[N])
+    surf_chg(surf_chg), eps(eps), efield(new double[N]), netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -176,6 +176,7 @@ ReactionDiffusion::~ReactionDiffusion()
 {
     delete []xc;
     delete []efield;
+    delete []netchg;
     delete []A_weight;
     delete []D_weight;
     delete []coeff_reac;
@@ -547,16 +548,15 @@ int ReactionDiffusion::get_geom_as_int() const
 void ReactionDiffusion::calc_efield(const double * const linC)
 {
     // Prototype for self-generated electric field
-    double * netchg = new double[N];
     const double F = 96485.3399; // Faraday's constant, [C/mol]
     const double pi = 3.14159265358979324;
-    double Q = surf_chg;
     double nx, cx = logx ? exp(x[0]) : x[0];
     for (uint bi=0; bi<N; ++bi){
         netchg[bi] = 0.0;
         for (uint si=0; si<n; ++si)
             netchg[bi] += z_chg[si]*linC[bi*n+si];
     }
+    double Q = surf_chg.first;
     for (uint bi=0; bi<N; ++bi){
         const double r = logx ? exp(xc[nsidep+bi]) : xc[nsidep+bi];
         nx = logx ? exp(x[bi+1]) : x[bi+1];
@@ -577,15 +577,14 @@ void ReactionDiffusion::calc_efield(const double * const linC)
         cx = nx;
     }
     if (geom == Geom::FLAT){
-        Q = 0.0;
+        Q = surf_chg.second;
         for (uint bi=N; bi>0; --bi){ // unsigned int..
             nx = logx ? exp(x[bi-1]) : x[bi-1];
             efield[bi-1] -= F*Q;
-            Q += netchg[bi]*(cx - nx);
+            Q += netchg[bi-1]*(cx - nx);
             cx = nx;
         }
     }
-    delete []netchg;
 }
 
 } // namespace chemreac

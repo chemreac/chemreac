@@ -1,5 +1,9 @@
+# -*- coding: utf-8 -*-
+# -*- mode: cython-mode -*-
+
 from libcpp cimport bool
 from libcpp.vector cimport vector
+from libcpp.utility cimport pair
 
 cdef extern from *:
     ctypedef unsigned int uint
@@ -21,7 +25,8 @@ cdef extern from "chemreac.h" namespace "chemreac":
         const vector[double] x
         vector[vector[double]] bin_k_factor
         vector[uint] bin_k_factor_span
-        const double surf_chg, eps
+        const pair[double, double] surf_chg
+        const double eps
         double * xc
         double * const efield
         uint neval_f
@@ -48,7 +53,7 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           bool,
                           bool,
                           bool,
-                          double,
+                          pair[double, double],
                           double) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, double * const, int)
