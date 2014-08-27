@@ -13,6 +13,18 @@ def get_banded(A, n, N):
 
 
 def get_jac_row_from_banded(J, rows, n):
+    """
+    Extracts a rows from a banded matrix J
+
+    Parameters
+    ==========
+    J: 2-dimensional array
+        Source matrix with banded storage.
+    rows: sequence
+        indices of rows to extract
+    n: integer
+        row length
+    """
     out = np.empty((len(rows),n))
     for ri in rows:
         for ci in range(n):

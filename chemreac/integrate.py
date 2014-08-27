@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 
+"""
+Integration
+===========
+
+This module provides functions for integrating the
+system of ODEs which the ReactionDiffusion represent.
+Currently the user may choose from using a
+"""
+
 import time
 
 import numpy as np
@@ -15,7 +24,42 @@ DEFAULTS = {
 }
 
 
+def integrate(solver=None, *args, **kwargs):
+    """
+    Model kinetcs by integrating system of ODEs using
+    user specified solver.
+    solver: string
+       "sundials" or "scipy" where scipy uses ODEPACK
+        as the solver.
+    args:
+    rd: ReactionDiffusion instance
+    y0: initial concentrations
+    tout: times for which to report solver results
+    mode: not supported by Sundials solver (current wrapper
+          code auto selects banded for N>1 and uses dense
+          mode for N==1)
+    kwargs:
+      atol: float or sequence
+          absolute tolerance of solution
+      rtol: float or sequence
+          relative tolerance of solution
+    """
+    if solver.lower() == 'sundials':
+        return integrate_sundials(*args, **kwargs)
+    elif solver.lower() == 'scipy':
+        return integrate_scipy(*args, **kwargs)
+    else:
+        raise NotImplementedError("Unknown solver %s" % solver)
+
+
 def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
+    """
+    see integrate.
+
+    kwargs:
+      lmm: linear multistep method: 'bdf' or 'adams'
+
+    """
     from ._chemreac import sundials_direct
     if mode is not None:
         raise NotImplementedError(
@@ -60,7 +104,11 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     assert y0.size == rd.n*rd.N
 
     defaults = DEFAULTS.copy()
-    defaults.update({'name': 'vode', 'method': 'bdf', 'with_jacobian': True})
+    defaults.update({
+        'name': 'vode',
+        'method': 'bdf',
+        'with_jacobian': True
+    })
 
     if mode is None:
         if rd.N == 1:
@@ -128,12 +176,11 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     return yout.reshape((len(tout), rd.N, rd.n)), info
 
 
-# `run` is provided as backwards compability / environment chosen integrator
 def run(*args, **kwargs):
+    """
+    `run` is provided for backwards compability /
+    environment variable directed solver choice
+    """
     import os
-    use_sundials = os.getenv('USE_SUNDIALS', '0')
-    use_sundials = (use_sundials == '1') or (use_sundials.lower() == 'true')
-    if use_sundials:
-        return integrate_sundials(*args, **kwargs)
-    else:
-        return integrate_scipy(*args, **kwargs)
+    return integrate(
+        os.getenv('CHEMREAC_SOLVER', 'scipy'), *args, **kwargs)

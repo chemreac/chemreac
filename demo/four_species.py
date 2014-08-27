@@ -75,7 +75,7 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
                 np.log(tout) if sys.logt else tout,
                 np.log(yout) if sys.logy else yout,
                 'ABCD',
-                limit=1e-10
+                lintreshy=1e-10
             )
             plt.tight_layout()
             if show:

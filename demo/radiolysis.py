@@ -34,7 +34,7 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
 
     # y0 with a H2 gradient
     y0 = np.array([[y0_by_name.get(k, null_conc) if k != 'H2' else
-                    1e-3/(i+2) for k in sys.names]
+                    1e-3/(i+2) for k in sys.substance_names]
                    for i in range(sys.N)])
 
     t0 = 1e-7

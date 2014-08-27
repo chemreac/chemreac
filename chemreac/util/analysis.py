@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+"""
+Functions to analyze output.
+"""
+
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from future.builtins import *
@@ -40,8 +44,19 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
 
 def suggest_t0(rd, y0, max_f=1.0):
     """
-    Useful when logy==True and logt==True,
-    If suggested t0 > 1, 1 is returned
+    Suggests an appropriate initial time,
+    useful when logy==True and logt==True,
+    If suggested t0 > 1, 1 is returned.
+
+    Parameters
+    ==========
+    rd: ReactionDiffusion instance
+         System at hand
+    y0: sequence
+         initial concentrations
+    max_f: float
+         upper bound of absolute value for largest element in for the
+         inital step.
     """
     fout = rd.alloc_fout()
     rd.f(0, y0, fout)
