@@ -1,5 +1,9 @@
 # -*- coding: utf-8 -*-
 
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+
+
 """
 Integration
 ===========
@@ -13,10 +17,11 @@ import time
 
 import numpy as np
 
+from scipy import __version__ as __scipy_version__
 from scipy.integrate import ode
+scipy_version = tuple(map(int, __scipy_version__.split('.')[:3]))
 
 from chemreac import DENSE, BANDED, SPARSE
-
 
 DEFAULTS = {
     'atol': 1e-9,
@@ -139,8 +144,12 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     if mode == DENSE:
         jout = rd.alloc_jout(banded=False, order='F')
     elif mode == BANDED:
-        # Currently SciPy <= v0.14 needs extra padding
-        jout = rd.alloc_jout(banded=True, order='F', pad=rd.n)
+        if scipy_version[0] <= 0 and scipy_version[1] <= 14:
+            # Currently SciPy <= v0.14 needs extra padding
+            jout = rd.alloc_jout(banded=True, order='F', pad=rd.n)
+        else:
+            # SciPy >= v0.15 need no extra padding
+            jout = rd.alloc_jout(banded=True, order='F')
     else:
         raise NotImplementedError
 
