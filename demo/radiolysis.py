@@ -21,21 +21,21 @@ Demo of a large chemical reaction diffusion system.
 
 def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
          logy=False, logt=False, show=False, integrator='scipy',
-         name='aqueous_radiolysis'):
+         name='aqueous_radiolysis', num_jacobian=False):
 
     null_conc = 1e-24
 
     mu = 1.0  # linear attenuation
     rho = 1.0  # kg/dm3
-    sys = load(name+'.json', ReactionDiffusion, N=N, logy=logy,
+    rd = load(name+'.json', ReactionDiffusion, N=N, logy=logy,
                logt=logt, bin_k_factor=[
                    [doserate*rho*exp(-mu*i/N)] for i in range(N)])
     y0_by_name = json.load(open(name+'.y0.json', 'rt'))
 
     # y0 with a H2 gradient
     y0 = np.array([[y0_by_name.get(k, null_conc) if k != 'H2' else
-                    1e-3/(i+2) for k in sys.substance_names]
-                   for i in range(sys.N)])
+                    1e-3/(i+2) for k in rd.substance_names]
+                   for i in range(rd.N)])
 
     t0 = 1e-7
 
@@ -44,7 +44,8 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
     t = np.log(tout) if logt else tout
     yout, info = {
         'scipy': integrate_scipy,
-        'sundials': integrate_sundials}[integrator](sys, y, t)
+        'sundials': integrate_sundials}[integrator](
+            rd, y, t, with_jacobian=(not num_jacobian))
     yout = np.exp(yout) if logy else yout
 
     print("texec={0}, f.neval={1}, jac.neval={2}".format(
@@ -56,12 +57,12 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
                      "with local doserate {}")
         ax = plt.subplot(2, 1, 1)
         plot_C_vs_t_in_bin(
-            sys, tout, yout, 0, ax, substances=('H2', 'H2O2'),
-            ttlfmt=bt_fmtstr.format(sys.bin_k_factor[0][0]))
+            rd, tout, yout, 0, ax, substances=('H2', 'H2O2'),
+            ttlfmt=bt_fmtstr.format(rd.bin_k_factor[0][0]))
         ax = plt.subplot(2, 1, 2)
         plot_C_vs_t_in_bin(
-            sys, tout, yout, N-1, ax, substances=('H2', 'H2O2'),
-            ttlfmt=bt_fmtstr.format(sys.bin_k_factor[N-1][0]))
+            rd, tout, yout, N-1, ax, substances=('H2', 'H2O2'),
+            ttlfmt=bt_fmtstr.format(rd.bin_k_factor[N-1][0]))
         plt.tight_layout()
         if show:
             plt.show()

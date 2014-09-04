@@ -42,7 +42,7 @@ def coloured_spy(A, cmap_name='gray', ax=None):
 
 
 DEFAULT = dict(
-    ls=['-', ':', '--', '-.']
+    ls=['-', ':', '--', '-.'],
     c='krgbycm'
 )
 
