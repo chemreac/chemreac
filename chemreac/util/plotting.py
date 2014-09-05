@@ -12,7 +12,7 @@ def coloured_spy(A, cmap_name='gray', ax=None):
     its LU decomposition.
 
     Parameters
-    ==========
+    ----------
     A: 2D array
         Array to inspect, populated e.g. by jacobian callback.
     cmap_name: string (default: gray)
@@ -21,7 +21,7 @@ def coloured_spy(A, cmap_name='gray', ax=None):
          Axes to plot to, if not given a new figure will be generated.
 
     Returns
-    =======
+    -------
     Axes instance plotted to
     """
     from matplotlib.ticker import MaxNLocator
@@ -71,7 +71,7 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
                    legend_kwargs=None, ls=None, c=None):
     """
     Parameters
-    ==========
+    ----------
     cb: callback
         callback with signature (rd, tout, yout, indices) returning
         3-dimensional array with shape (tout.size, len(axes), len(labels))
@@ -127,6 +127,17 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
     """
     Plots time evolution of Jacobian values (useful when investigating
     numerical instabilities).
+
+    Parameters
+    ----------
+    rd: ReactionDiffusion
+        system at hand
+    tout: array_like
+        output time from integration
+    yout: array_like
+        output data from integration
+    substances: iterable of int or string
+        indices or names of substances to plot jacobian values for
     """
     indices = [si if isinstance(si, int) else rd.substance_names.index(si) for
                si in substances]
@@ -145,12 +156,16 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
     substances from individual reactions.
 
     Parameters
-    ==========
+    ----------
     rd: ReactionDiffusion
     tout: 1D array of floats
     yout: output from solver
     substances: sequence of Substance instances
     **kwargs: kwargs passed on to _plot_analysis
+
+    Returns
+    -------
+    list of matplotlib.axes.Axes instances
     """
     indices = [ri if isinstance(ri, int) else rd.substance_names.index(ri)
                for ri in substances]
@@ -197,7 +212,7 @@ def plot_C_vs_t_in_bin(
     substances.
 
     Parameters
-    ==========
+    ----------
     rd: ReactionDiffusion
     tout: 1D array of floats
     yout: output from solver
@@ -294,7 +309,7 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
     ReactionDiffusion instance
 
     Parameters
-    ==========
+    ----------
     rd: ReactionDiffusion
     ax: Axes instance or dict
         if ax is a dict it is used as **kwargs passed to

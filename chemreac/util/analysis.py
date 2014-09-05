@@ -33,7 +33,7 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
 
     Notes
     =====
-    Assumes maximum mangitude of error be: e_max = |y*rtol| + atol
+    Assumes maximum mangitude of error be: e_max = \|y*rtol\| + atol
     """
     solver_err = scale_err*(np.abs(y*rtol) + atol)
     if logy:

@@ -48,6 +48,15 @@ def stencil_pxci_lbounds(nstencil, N, lrefl=False, rrefl=False):
     """
     Generates a list of lower bounds in padded centers for each bin index
     for use in fintie difference scheme.
+
+    Parameters
+    ----------
+    nstencil: int
+        Number of stencil points used
+    N: int
+        Number of bins
+    lrefl, rrefl: bool
+        left and right reflective boundaries
     """
     nsidep = (nstencil-1)//2
     le = 0 if lrefl else nsidep

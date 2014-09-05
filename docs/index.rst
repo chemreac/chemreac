@@ -49,7 +49,7 @@ where :math:`t` is time, :math:`c_i` is the concentration of species :math:`i`, 
 
 where :math:`\kappa_l` is the rate constant, :math:`R_{kl}` is the stoichiometric coefficient of species :math:`k` on the reactant side.
 which is discretied in one dimension. The model is implemented
-in a C++ class with Python bindings
+in a C++ class with Python_ bindings
 for ease of access.
 
 Contents:
@@ -57,11 +57,11 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-    install.rst
-    core.rst
-    integrate.rst
-    chemistry.rst
-    util.rst
+   install.rst
+   core.rst
+   integrate.rst
+   chemistry.rst
+   util.rst
 
 
 Indices and tables

@@ -19,7 +19,8 @@ from chemreac.util.plotting import plot_C_vs_t_in_bin
 Demo of a large chemical reaction diffusion system.
 """
 
-def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
+
+def main(t0=1e-7, tend=.1, doserate=15, N=1000, nt=1024, plot=False,
          logy=False, logt=False, show=False, integrator='scipy',
          name='aqueous_radiolysis', num_jacobian=False):
 
@@ -28,7 +29,7 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
     mu = 1.0  # linear attenuation
     rho = 1.0  # kg/dm3
     rd = load(name+'.json', ReactionDiffusion, N=N, logy=logy,
-               logt=logt, bin_k_factor=[
+              logt=logt, bin_k_factor=[
                    [doserate*rho*exp(-mu*i/N)] for i in range(N)])
     y0_by_name = json.load(open(name+'.y0.json', 'rt'))
 
@@ -48,8 +49,8 @@ def main(t0=1e-7, tend=.1, doserate=15, N=10, nt=1024, plot=False,
             rd, y, t, with_jacobian=(not num_jacobian))
     yout = np.exp(yout) if logy else yout
 
-    print("texec={0}, f.neval={1}, jac.neval={2}".format(
-        info['texec'], info['neval_f'], info['neval_j']))
+    print("texec={0}, f.neval={1}, jac.neval={2}, integrator={3}".format(
+        info['texec'], info['neval_f'], info['neval_j'], integrator))
 
     if plot:
         import matplotlib.pyplot as plt

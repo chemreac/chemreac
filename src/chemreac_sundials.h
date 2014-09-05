@@ -2,13 +2,11 @@
 #define _XFWQGDP6YJBLPH7SUYHCP7FUKQ
 
 #include <cstring> // memcpy
-#include "chemreac.h"
-#include <cvode/cvode_lapack.h>
-// #include <sundials/sundials_band.h> /* def. CVBand  */
-// #include <sundials/sundials_dense.h> /* def. CVBand  */
-#include <cvode/cvode.h> /* CVODE fcts., CV_BDF, CV_ADAMS */
 #include <sundials/sundials_types.h> /* def. of type realtype */
 #include <nvector/nvector_serial.h>  /* N_Vector types, fcts, macros */
+#include <cvode/cvode.h> /* CVODE fcts., CV_BDF, CV_ADAMS */
+#include <cvode/cvode_lapack.h>
+#include "chemreac.h"
 
 
 namespace chemreac_sundials {
@@ -69,9 +67,6 @@ void direct(U * rd,
     // Create cvode_mem
     void *cvode_mem = nullptr;
     N_Vector interf_y = N_VMake_Serial(ny, const_cast<T*>(y0));
-    /* N_Vector interf_y = N_VNew_Serial(ny); */
-    /* for (int i=0; i < ny; ++i) */
-    /*     NV_Ith_S(interf_y, i) = y0[i]; */
 
     cvode_mem = CVodeCreate(lmm, CV_NEWTON);
     if (cvode_mem == nullptr)
