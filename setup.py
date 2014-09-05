@@ -7,7 +7,7 @@ import sys
 from distutils.core import setup, Command
 
 name_ = 'chemreac'
-version_ = '0.2.0-dev'
+version_ = '0.2.1'
 
 DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
@@ -40,9 +40,9 @@ if '--help'in sys.argv[1:] or sys.argv[1] in (
     ext_modules_ = []
 else:
     import pickle
-    from pycompilation.dist import clever_build_ext, CleverExtension
+    from pycodeexport.dist import pce_build_ext, PCEExtension
     import numpy as np
-    cmdclass_['build_ext'] = clever_build_ext
+    cmdclass_['build_ext'] = pce_build_ext
     subsd = {'USE_OPENMP': USE_OPENMP}
     sources=[
         'src/chemreac_template.cpp',
@@ -52,7 +52,7 @@ else:
     ]
 
     ext_modules_ = [
-        CleverExtension(
+        PCEExtension(
             "chemreac._chemreac",
             sources=sources,
             template_regexps=[

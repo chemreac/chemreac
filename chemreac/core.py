@@ -1,15 +1,20 @@
 # -*- coding: utf-8 -*-
+
+"""
+Provides core functinoality: ReactionDiffusion
+"""
+
 import numpy as np
+from ._chemreac import CppReactionDiffusion
 
 DENSE, BANDED, SPARSE = range(3)
 FLAT, CYLINDRICAL, SPHERICAL = range(3)
 Geom_names = {FLAT: 'Flat', CYLINDRICAL: 'Cylindrical', SPHERICAL: 'Spherical'}
 GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
 
-from ._chemreac import CppReactionDiffusion
-
 # Having a Python side wrapper for our Cython Extension (CppReactionDiffusion)
 # allows e.g. Jedi (Python IDE capabilities) to inspect and give help strings
+
 
 class ReactionDiffusionBase(object):
     def to_Reaction(self, ri):
@@ -19,11 +24,11 @@ class ReactionDiffusionBase(object):
         """
         from .chemistry import Reaction
         return Reaction(
-            {self.names[i]: self.stoich_reac[ri].count(i) for\
+            {self.substance_names[i]: self.stoich_reac[ri].count(i) for
              i in range(self.n)},
-            {self.names[i]: self.stoich_prod[ri].count(i) for\
+            {self.substance_names[i]: self.stoich_prod[ri].count(i) for
              i in range(self.n)},
-            {self.names[i]: self.stoich_actv[ri].count(i) for\
+            {self.substance_names[i]: self.stoich_actv[ri].count(i) for
              i in range(self.n)},
             k=self.k[ri])
 
@@ -39,74 +44,102 @@ class ReactionDiffusionBase(object):
             raise ValueError("Order must be 'C' or 'F'")
 
         if banded:
-            return np.zeros((self.n*2 + 1 + rpad, self.n*self.N + cpad), order=order)
+            return np.zeros((self.n*2 + 1 + rpad, self.n*self.N + cpad),
+                            order=order)
         else:
-            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad), order=order)
+            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
+                            order=order)
 
     @property
     def ny(self):
         return self.N*self.n
 
+
 class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
+    """
+    Parameters
+    ==========
+    n: integer
+        number of species
+    stoich_reac: list of lists of integer indices
+        reactant index lists per reaction.
+    stoich_prod: list of lists of integer indices
+        product index lists per reaction.
+    k: 1-dimensional array
+        reaction rate coefficients (if 2-tuples,
+        assumed (val, stddev) pairs)
+    N: integer
+        number of compartments (default: 1 if x==None else len(x)-1)
+    D: sequence of floats
+        diffusion coefficients (of length n)
+    z_chg: sequence of integers
+        1-dimensional array ion charges
+    mobility: sequence of floats
+        mobility of ions
+    x: sequence of floats
+        compartment boundaries (of length N+1), default: linspace(1,2, N+1)
+    stoich_actv: list of lists of integer indices
+        list of ACTIVE reactant index lists per reaction.n, default: []
+    bin_k_factor: sequence of sequences of floats
+        per compartment modulation of rate coefficients
+    bin_k_factor_span: sequence of integers
+        spans over reactions affected by bin_k_factor
+    geom: integer
+        any of (FLAT, SPHERICAL, CYLINDRICAL)
+    logy: bool
+        f and *_jac_* routines operate on log(concentration)
+    logt: bool
+        f and *_jac_* routines operate on log(time)
+    logx: bool
+        f and *_jac_* routines operate on log(space)
+    nstencil: integer
+        number of points used in finite difference scheme
+    lrefl: bool
+        reflective left boundary (default: True)
+    rrefl: bool
+        reflective right boundary (default: True)
+    auto_efield: bool
+        calculate electric field from concentrations (default: False)
+    surf_chg: pair of floats
+        total charge of surface (defaut: (0.0, 0.0))
+    eps: float
+        relative permitivity of medium (dielectric constant)
+    xscale: float
+        use internal scaling of length (default: 1.0)
+        (finite difference scheme works best for step-size ~1)
+
+    The instance provides methods:
+
+    f(t, y, fout)
+    dense_jac_rmaj(t, y, Jout)
+    dense_jac_cmaj(t, y, Jout)
+    banded_jac_cmaj(t, y, Jout)
+    banded_packed_jac_cmaj(t, y, Jout)
+
+    some of which are used by chemreac.integrate.integrate_scipy
+
+    In addition error estimates (if provided by user) are stored as:
+    - k_err
+    - D_err
+
+    Additional convenience attributes (not used by underlying C++ class):
+    - names
+    - tex_names
+    """
     # not used by C++ class
     extra_attrs = ['k_err', 'D_err', 'names', 'tex_names']
 
     # subset of extra_attrs optionally passed by user
-    kwarg_attrs = ['names', 'tex_names']
+    kwarg_attrs = ['substance_names', 'substance_tex_names']
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
-                bin_k_factor_span=None, geom=FLAT, logy=False, logt=False, logx=False,
-                nstencil=None, lrefl=True, rrefl=True, auto_efield=False, surf_chg=(0.0, 0.0),
-                eps=1.0, xscale=1.0, **kwargs):
-        """
-        Arguments:
-        -`n`: number of species
-        -`stoich_reac`: list of reactant index lists per reaction.
-        -`stoich_prod`: list of product index lists per reaction.
-        -`k`: array of reaction rate coefficients (if 2-tuples, assumed (val, stddev) pairs)
-        -`N`: number of compartments (default: 1 if x==None else len(x)-1)
-        -`D`: diffusion coefficients (of length n)
-        -`z_chg`: ion charges
-        -`mobility`: mobility of ions
-        -`x`: compartment boundaries (of length N+1), default: linspace(1,2, N+1)
-        -`stoich_actv`: list of ACTIVE reactant index lists per reaction.n
-        -`bin_k_factor`: per compartment modulation of rate coefficients
-        -`bin_k_factor_span`: spans over reactions affected by bin_k_factor
-        -`geom`: any of (FLAT, SPHERICAL, CYLINDRICAL)
-        -`logy`: f and *_jac_* routines operate on log(concentration)
-        -`logt`: f and *_jac_* routines operate on log(time)
-        -`logx`: f and *_jac_* routines operate on log(space)
-        -`nstencil`: number of points used in finite difference scheme
-        -`lrefl`: reflective left boundary (default: True)
-        -`rrefl`: reflective right boundary (default: True)
-        -`auto_efield`: calculate electric field from concentrations
-        -`surf_chg`: total charge of surface
-        -`eps`: relative permitivity of medium (dielectric constant)
-        -`xscale`: use internal scaling of length
-                   (finite difference scheme works best for step-size ~1)
-
-        The instance provides methods:
-
-        f(t, y, fout)
-        dense_jac_rmaj(t, y, Jout)
-        dense_jac_cmaj(t, y, Jout)
-        banded_jac_cmaj(t, y, Jout)
-        banded_packed_jac_cmaj(t, y, Jout)
-
-        some of which are used by chemreac.integrate.run
-
-        In addition error estimates (if provided by user) are stored as:
-        - k_err
-        - D_err
-
-        Additional convenience attributes (not used by underlying C++ class):
-        - names
-        - tex_names
-        """
-
+                bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
+                logx=False, nstencil=None, lrefl=True, rrefl=True,
+                auto_efield=False, surf_chg=(0.0, 0.0), eps=1.0,
+                xscale=1.0, **kwargs):
         if N == 0:
-            if x == None:
+            if x is None:
                 N = 1
             else:
                 N = len(x)-1

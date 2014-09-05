@@ -35,7 +35,7 @@ conda update --quiet conda
 conda info -a
 conda create --quiet -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1 pip
 source activate test-env
-pip install --quiet argh mako quantities pytest periodictable future https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz https://github.com/sympy/sympy/archive/master.zip
+pip install --quiet argh mako quantities pytest periodictable future https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz https://github.com/bjodah/pycodeexport/archive/v0.0.3.tar.gz https://github.com/sympy/sympy/archive/master.zip
 python -c "import sympy; print(sympy.__version__)"
 python -c "import pycompilation; print(pycompilation.__version__)"
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH

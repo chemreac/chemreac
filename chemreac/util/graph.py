@@ -12,10 +12,30 @@ def rsys2dot(rsys, substances, tex=False, rprefix='r', rref0=1,
              nodeparams='[label={} shape=diamond]'):
     """
     Returns list of lines of DOT (graph description language)
-    formated graph
+    formated graph.
+
+    Parameters
+    ==========
+    rsys: ReactionSystem
+    substances: sequence of Substance instances
+    tex: bool (default False)
+        If set True, output will be LaTeX formated
+    (Substance need to have tex_name attribute set)
+    rprefix: string
+        Reaction enumeration prefix, default: r
+    rref0: integer
+        Reaction enumeration inital counter value, default: 1
+    nodeparams: string
+        DOT formated param list, default: [label={} shape=diamond]
+
+    Returns
+    =======
+    list of lines of DOT representation of the graph representation.
+
     """
     lines = ['digraph ' + str(rsys.name) + '{']
     ind = '  '  # indentation
+
     def add_vertex(sn, num, reac):
         snum = str(num) if num > 1 else ''
         name = getattr(substances[sn], 'tex_name' if tex else 'name')
@@ -36,10 +56,24 @@ def rsys2dot(rsys, substances, tex=False, rprefix='r', rref0=1,
     lines.append('}')
     return lines
 
+
 def rsys2graph(rsys, substances, outpath, prog=None, **kwargs):
     """
-    Use as e.g.:
-    rsys2graph(rsys, sbstncs, '/tmp/out.png')
+    Convenience function to call `rsys2dot` and write output to file
+    and render the graph
+
+    Parameters
+    ==========
+    rsys: ReactionSystem
+    substances: sequence of Substance instances
+    outpath: path to graph to be rendered
+    prog: command to render DOT file (default: dot)
+    **kwargs: parameters to pass along to `rsys2dot`
+
+    Exapmles
+    ========
+
+    >>> rsys2graph(rsys, sbstncs, '/tmp/out.png')  # doctest: +SKIP
     """
     lines = rsys2dot(rsys, substances, **kwargs)
     if outpath.endswith('.tex'):
@@ -51,5 +85,5 @@ def rsys2graph(rsys, substances, outpath, prog=None, **kwargs):
     p = subprocess.Popen(cmds + [tmpfh.name, '-o', outpath])
     retcode = p.wait()
     if retcode:
-        raise RuntimeError(' '.join(cmds) + "\n returned with exit status {}".format(
-            retcode))
+        fmtstr = "{}\n returned with exit status {}"
+        raise RuntimeError(fmtstr.format(' '.join(cmds), retcode))

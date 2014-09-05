@@ -37,3 +37,4 @@ src/exprs.pkl
 # Various
 .cache/
 .metadata_CompilerRunner
+docs/_build

@@ -18,9 +18,9 @@ DEF CYLINDRICAL=1
 DEF SPHERICAL=2
 
 
-
 cdef class ArrayWrapper(object):
     cdef public dict __array_interface__
+
     def __init__(self, **kwargs):
         self.__array_interface__ = kwargs
 
@@ -28,12 +28,12 @@ cdef class ArrayWrapper(object):
 cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
     dtype = np.dtype(dtype)
     return np.asarray(ArrayWrapper(
-        data = (address, ro),
-        typestr = dtype.str,
-        descr = dtype.descr,
-        shape = shape,
-        strides = strides,
-        version = 3,
+        data=(address, ro),
+        typestr=dtype.str,
+        descr=dtype.descr,
+        shape=shape,
+        strides=strides,
+        version=3,
     ))
 
 
@@ -100,7 +100,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_rmaj(
-            t, &y[0], &Jout[0,0], Jout.shape[1])
+            t, &y[0], &Jout[0, 0], Jout.shape[1])
 
     def dense_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
@@ -108,7 +108,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_cmaj(
-            t, &y[0], &Jout[0,0], Jout.shape[0])
+            t, &y[0], &Jout[0, 0], Jout.shape[0])
 
     def banded_padded_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
@@ -116,7 +116,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*3+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_padded_jac_cmaj(
-            t, &y[0], &Jout[0,0], Jout.shape[0])
+            t, &y[0], &Jout[0, 0], Jout.shape[0])
 
     def banded_packed_jac_cmaj(self, double t, double [::1] y,
                        double [::1, :] Jout):
@@ -124,7 +124,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*2+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_packed_jac_cmaj(
-            t, &y[0], &Jout[0,0], Jout.shape[0])
+            t, &y[0], &Jout[0, 0], Jout.shape[0])
 
     def calc_efield(self, double[::1] linC):
         self.thisptr.calc_efield(&linC[0])
