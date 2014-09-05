@@ -11,76 +11,76 @@ with external radiation fields.
 
 the documentation is found at [INSERT URL HERE...]
 
-.. install-start
-
 Installation
 ============
-chemreac requires:
+.. install-start
 
-    C++ compiler with full C++11 support (e.g. GCC >= 4.8)
-    Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. gfortran)
-    LAPACK
-    Sundials 2.5
-    Python_ (2.7)
+Below you will find instructions for installation. You may also
+look in ``scripts/`` folder for automated install scripts used
+in continuous integration.
+
+Prerequisites
+-------------
+
+   * C++ compiler with C++11 support (e.g. GCC >= 4.8)
+   * Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. gfortran)
+   * LAPACK
+   * Sundials 2.5
+   * Python (2.7)
     
 In addition to python, the following python packages are requiered:
 
-   #. argh>=0.25.0
-   #. numpy>=1.8.1
-   #. cython>=0.19.1
-   #. mako>=0.5.0
-   #. quantities>=0.10.1
-   #. pytest>=2.5.2
-   #. scipy>=0.9.0
-   #. periodictable>=1.4.1
-   #. future>=0.12.3
-   #. https://github.com/bjodah/pycompilation/archive/v0.2.21.tar.gz
-   #. https://github.com/sympy/sympy/archive/master.zip
-   #. `NumPy <http://www.numpy.org/>`_ (>= 1.8.0)
-   #. `SciPy <http://www.scipy.org/>`_
-   #. `Cython <http://cython.org/>`_ (>= 0.19.1)
+   * argh>=0.25.0
+   * numpy>=1.8.1
+   * cython>=0.19.1
+   * mako>=0.5.0
+   * quantities>=0.10.1
+   * pytest>=2.5.2
+   * scipy>=0.9.0
+   * periodictable>=1.4.1
+   * future>=0.12.3
+   * https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz
+   * https://github.com/bjodah/pycodeexport/archive/v0.0.4.tar.gz
+   * https://github.com/sympy/sympy/archive/master.zip
 
-is needed. For rendering the documentation you also need:
+For rendering the documentation you also need:
 
-   #. `Sphinx <http://sphinx-doc.org/>`_
-      
+   * `Sphinx <http://sphinx-doc.org/>`_
+   * numpydoc
 
 to run all the tests you also need:
 
-    valgrind
-    graphviz
-    dot2tex
+   * valgrind
+   * graphviz
+   * dot2tex
 
-    git clone https://bitbucket.org/bjodah/chemreac.git
-    cd chemreac
-    pip install --user --upgrade -r requirements.txt
-    python setup.py build_ext --inplace
-    py.test
+Once non-python prerequisites are in installed, you may procede e.g. as:
 
-should be enough (tested on Ubuntu 12.04). Add to $PYTHONPATH to use
-or ``python setup.py install --user``
+::
+
+    $ git clone https://bitbucket.org/bjodah/chemreac.git
+    $ cd chemreac
+    $ pip install --user --upgrade -r requirements.txt
+    $ python setup.py build_ext --inplace
+    $ py.test
+
+
+the above procedure works on Ubuntu 14.04 for example. 
 
 To specify an alternative LAPACK lib set the environment variable LLAPACK, e.g.:
 
-```
-    LLAPACK=openblas python setup.py build_ext --inplace
-```
+::
 
-You may also look at ``scrips/test_drone.io.sh`` for the CI install.
+    $ LLAPACK=openblas python setup.py build_ext --inplace
+
 
 Tests
-=====
+-----
 Run py.test
 ``py.test``
 (requires make, python-pytest), eventually source distributions will
 include ``runtests.py`` which enables ``python setup.py test`` to work
 without having pytest installed.
-
-Prerequisites
-=============
-In addition to Python packages listed in ``requirements.txt`` you also need:
-
-- C++11 compliant compiler
 
 .. install-end
 
