@@ -2,14 +2,13 @@
 chemreac
 ========
 
-.. image:: https://drone.io/bitbucket.org/bjodah/chemreac/status.png
-   :target: https://drone.io/bitbucket.org/bjodah/chemreac/latest
+chremreac aims to be a library collecting tools and utilities for
+modeling of chemical kinetics problems, primarily in the context of
+aqueous phase with external radiation fields. 
 
-chremreac aims to be a library collecting tools and utilities for modeling 
-of chemical kinetics problems, primarily in the context of aqueous phase 
-with external radiation fields.
-
-the documentation is found at [INSERT URL HERE...]
+Documentation
+=============
+the documentation is found at http://chemreac.readthedocs.org/
 
 Installation
 ============
@@ -84,8 +83,21 @@ without having pytest installed.
 
 .. install-end
 
-TODO
+Status
 ======
+
+Continuous integration
+----------------------
+Build status at drone.io:
+.. image:: https://drone.io/bitbucket.org/bjodah/chemreac/status.png
+   :target: https://drone.io/bitbucket.org/bjodah/chemreac/latest
+
+Build status at travis-ci:
+.. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
+   :target: https://travis-ci.org/bjodah/chemreac
+
+TODO
+----
 - Better defined "isolating" boundary conditions for:
     - logx
     - cylindrical/spherical
@@ -100,4 +112,6 @@ Open Source. Released under the very permissive "simplified
 
 Author
 ======
-Björn Dahlgren, contact (gmail adress): bjodah
+Björn Dahlgren, contact:
+ - gmail adress: bjodah
+ - kth.se adress: bda

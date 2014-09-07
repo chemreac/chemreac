@@ -14,20 +14,27 @@ USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
 if os.environ.get('DRONE', 'false') == 'true':
-    options = ['pic', 'warn']  # 'fast' implies march=native which fails on current version of docker.
+    # 'fast' implies march=native which fails on current version of docker.
+    options = ['pic', 'warn']
 else:
     options = ['pic', 'warn', 'fast']
 
 # Make `python setup.py test` work without depending on py.test being installed
 # https://pytest.org/latest/goodpractises.html
+
+
 class PyTest(Command):
     user_options = []
+
     def initialize_options(self):
         pass
+
     def finalize_options(self):
         pass
+
     def run(self):
-        import sys,subprocess
+        import subprocess
+        import sys
         # py.test --genscript=runtests.py
         errno = subprocess.call([sys.executable, 'runtests.py'])
         raise SystemExit(errno)
@@ -44,7 +51,7 @@ else:
     import numpy as np
     cmdclass_['build_ext'] = pce_build_ext
     subsd = {'USE_OPENMP': USE_OPENMP}
-    sources=[
+    sources = [
         'src/chemreac_template.cpp',
         'src/finitediff/finitediff/fornberg.f90',
         'src/finitediff/finitediff/c_fornberg.f90',
@@ -63,9 +70,9 @@ else:
                     'src/chemreac.cpp': {
                         'std': 'c++0x',
                         # 'fast' doesn't work on drone.io
-                        'options': options +\
+                        'options': options +
                         (['openmp'] if USE_OPENMP else []),
-                        'defmacros': ['DEBUG']+\
+                        'defmacros': ['DEBUG'] +
                         (['DEBUG'] if DEBUG else []),
                     },
                     'src/chemreac_sundials.cpp': {
@@ -80,7 +87,8 @@ else:
                 'std': 'c++0x',
                 'libs': ['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
             },
-            include_dirs=['src/', 'src/finitediff/finitediff/', np.get_include()],
+            include_dirs=['src/', 'src/finitediff/finitediff/',
+                          np.get_include()],
             logger=True,
         )
     ]
@@ -93,6 +101,6 @@ setup(
     author_email='bjodah@DELETEMEgmail.com',
     url='https://bitbucket.org/bjodah/'+name_,
     packages=[name_],
-    cmdclass = cmdclass_,
-    ext_modules = ext_modules_,
+    cmdclass=cmdclass_,
+    ext_modules=ext_modules_,
 )
