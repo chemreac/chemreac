@@ -1,0 +1,16 @@
+language: python
+python:
+  - "2.7"
+  - "3.4"
+#later: - "3.3"
+# command to install dependencies
+before_install:
+  - "./scripts/aptget.ubuntu.12.04LTS.sh"
+  - "./scripts/install_sundials_w_lapack.sh"
+  - "pip install -r requirements.txt"
+install:
+  - "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py install"    
+# command to run tests
+script: "py.test --slow --ignore build/"
+notifications:
+  email: false
