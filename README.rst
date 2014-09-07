@@ -89,10 +89,12 @@ Status
 Continuous integration
 ----------------------
 Build status at drone.io:
+
 .. image:: https://drone.io/bitbucket.org/bjodah/chemreac/status.png
    :target: https://drone.io/bitbucket.org/bjodah/chemreac/latest
 
 Build status at travis-ci:
+
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
 
