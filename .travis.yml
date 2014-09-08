@@ -5,12 +5,16 @@ python:
 #later: - "3.3"
 # command to install dependencies
 before_install:
+  - "./scripts/install_miniconda.sh 2.7 $HOME/miniconda"
+  - "./scripts/conda_create_test-env.sh 2.7 $HOME/miniconda"
+# GLIBC workaround (https://travis-ci.org/bjodah/chemreac/jobs/34707864):
+  - "mv /home/travis/miniconda/envs/test-env/bin/../lib/libm.so* /tmp/"
   - "./scripts/aptget.ubuntu.12.04LTS.sh"
   - "./scripts/install_sundials_w_lapack.sh"
-  - "pip install -r requirements.txt"
 install:
-  - "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py install"    
+  - "source $HOME/miniconda/bin/activate test-env"
+  - "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py build_ext -i"
 # command to run tests
-script: "py.test --slow --ignore build/"
+script: "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --slow --pep8 --doctest-modules --ignore build/ --ignore setup.py"
 notifications:
   email: false
