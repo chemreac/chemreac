@@ -33,7 +33,7 @@ hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update --quiet conda
 conda info -a
-conda create --quiet -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 cython=0.20.1 pip
+conda create --quiet -n test-env python=${PY_VERSION} numpy=1.8.1 scipy=0.14 matplotlib=1.4.0 cython=0.20.1 pip
 source activate test-env
 pip install --quiet argh mako quantities pytest pytest-pep8 periodictable future https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz https://github.com/bjodah/pycodeexport/archive/v0.0.3.tar.gz https://github.com/sympy/sympy/archive/master.zip
 python -c "import sympy; print(sympy.__version__)"
