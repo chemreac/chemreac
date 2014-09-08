@@ -13,8 +13,8 @@ before_install:
   - "./scripts/install_sundials_w_lapack.sh"
 install:
   - "source $HOME/miniconda/bin/activate test-env"
-  - "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py build_ext -i"
+  - "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 python setup.py build_ext -i"
 # command to run tests
-script: "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --slow --pep8 --doctest-modules --ignore build/ --ignore setup.py"
+script: "LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --pep8 --doctest-modules --ignore build/ --ignore setup.py"
 notifications:
   email: false

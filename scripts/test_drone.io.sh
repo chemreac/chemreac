@@ -45,13 +45,14 @@ python -c "import pycompilation; print(pycompilation.__version__)"
 python -c "import pycodeexport; print(pycodeexport.__version__)"
 
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-DISTUTILS_DEBUG=1 USE_SUNDIALS=1 python setup.py build_ext -i
+DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py build_ext -i
 PYTHONPATH=.:$PYTHONPATH py.test --slow --pep8 --doctest-modules --ignore build/ --ignore setup.py
 if [[ $? != 0 ]]; then
     echo "py.test failed."
     exit 1
 fi
 
+CHEMREAC_SOLVER=sundials PYTHONPATH=.:$PYTHONPATH py.test --slow --ignore build/
 
 # Build docs
 cd docs/
