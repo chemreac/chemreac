@@ -45,8 +45,11 @@ JSON_PATH, BLESSED_PATH = map(
 )
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
-Ns = [1] # change to [1, 3, 7]
-combos = list(product([True, False], [True, False], [1], [FLAT, SPHERICAL, CYLINDRICAL]))
+Ns = [1]  # change to [1, 3, 7]
+combos = list(product([True, False], [True, False], [1],
+                      [FLAT, SPHERICAL, CYLINDRICAL]))
+
+
 @pytest.mark.parametrize("combo", combos)
 def test_integrate(combo):
     logy, logt, N, geom = combo
@@ -55,12 +58,12 @@ def test_integrate(combo):
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4]*N)
 
     ref = np.genfromtxt(BLESSED_PATH)
-    ref_t = ref[:,0]
-    ref_y = ref[:,1:5]
+    ref_t = ref[:, 0]
+    ref_y = ref[:, 1:5]
 
     t0 = 3.0
-    tend=10.0+t0
-    nt=100
+    tend = 10.0+t0
+    nt = 100
     tout = np.linspace(t0, tend, nt+1)
     assert np.allclose(tout-t0, ref_t)
 
@@ -68,7 +71,8 @@ def test_integrate(combo):
     if logt:
         tout = np.log(tout)
     yout, info = run(sys, y, tout)
-    if logy: yout = np.exp(yout)
+    if logy:
+        yout = np.exp(yout)
 
     for i in range(N):
         assert np.allclose(yout[:, i, :], ref_y, atol=1e-5)
@@ -90,19 +94,19 @@ def _get_ref_J(sys, t0, y0, logy, logt, order='C'):
     k1, k2 = sys.k
     A, B, C, D = y0
     if logy:
-        f1,f2,f3,f4 = _get_ref_f(sys, t0, y0, logy, logt)
+        f1, f2, f3, f4 = _get_ref_f(sys, t0, y0, logy, logt)
         ref_J = np.array(
-            [[   0,   0,    0,   0],
-             [  f2, -f2,    0,   0],
-             [   0,  f3,   f3,   0],
-             [   0,  f4, 2*f4, -f4]],
+            [[0,    0,    0,   0],
+             [f2, -f2,    0,   0],
+             [0,   f3,   f3,   0],
+             [0,   f4, 2*f4, -f4]],
             order=order)
     else:
         ref_J = np.array(
             [[-k1,         0,           0, 0],
-             [ k1,         0,           0, 0],
-             [  0, -2*k2*C*C, -2*2*k2*C*B, 0],
-             [  0,    k2*C*C,    2*k2*C*B, 0]],
+             [k1,          0,           0, 0],
+             [0,   -2*k2*C*C, -2*2*k2*C*B, 0],
+             [0,      k2*C*C,    2*k2*C*B, 0]],
             order=order)
         if logt:
             ref_J *= t0
@@ -113,7 +117,7 @@ def _get_ref_J(sys, t0, y0, logy, logt, order='C'):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_f(log):
     logy, logt = log
-    N=1
+    N = 1
     sys = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     t0 = 42.0
@@ -130,7 +134,7 @@ def test_f(log):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_dense_jac_rmaj(log):
     logy, logt = log
-    N=1
+    N = 1
     sys = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     t0 = 42.0
@@ -148,7 +152,7 @@ def test_dense_jac_rmaj(log):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_dense_jac_cmaj(log):
     logy, logt = log
-    N=1
+    N = 1
     sys = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     t0 = 42.0
@@ -183,9 +187,11 @@ def test_chemistry():
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
 
+
 def test_multi_compartment():
     rsys = load(JSON_PATH, N=3, lrefl=True, rrefl=True)
-    _test_dense_jac_rmaj(rsys, 1.0, np.asarray([1.3, 1e-4, 0.7, 1e-4]*rsys.N).flatten())
+    _test_dense_jac_rmaj(rsys, 1.0, np.asarray(
+        [1.3, 1e-4, 0.7, 1e-4]*rsys.N).flatten())
 
 
 if __name__ == '__main__':

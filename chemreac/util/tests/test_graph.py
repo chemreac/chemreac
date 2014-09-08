@@ -6,11 +6,14 @@ import tempfile
 from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
 from chemreac.util.graph import rsys2dot, rsys2graph
 
+
 def _get_rsys():
-    sbstncs = mk_sn_dict_from_names('AB', tex_name=(r'$\mathcal{A}$', r'$\mathcal{B}$'))
+    sbstncs = mk_sn_dict_from_names('AB', tex_name=(r'$\mathcal{A}$',
+                                                    r'$\mathcal{B}$'))
     r1 = Reaction({'A': 2}, {'B': 1}, k=3.0)
     rsys = ReactionSystem([r1])
     return rsys, sbstncs
+
 
 def test_rsys2dot():
     rsys, sbstncs = _get_rsys()
@@ -24,6 +27,7 @@ def test_rsys2dot():
         '"r1" -> "B" [label =""];',
         '}'
     ]
+
 
 def test_rsys2graph():
     rsys, sbstncs = _get_rsys()

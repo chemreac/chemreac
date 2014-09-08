@@ -146,9 +146,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if N < nstencil:
             raise ValueError("N must be >= nstencil")
 
-        if z_chg == None:
+        if z_chg is None:
             z_chg = list([0]*n)
-        if mobility == None:
+        if mobility is None:
             mobility = list([0]*n)
         if N > 1:
             assert n == len(D)
@@ -171,7 +171,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 val_lst.append(val)
                 err_lst.append(err)
 
-        if x == None:
+        if x is None:
             x = 1.0
 
         if isinstance(x, float) or isinstance(x, int):
@@ -179,10 +179,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         else:
             assert len(x) == N+1
             # monotonic:
-            assert all([x[i+1]>x[i] for i in range(len(x)-1)])
+            assert all([x[i+1] > x[i] for i in range(len(x)-1)])
             _x = x
 
-        if stoich_actv == None:
+        if stoich_actv is None:
             _stoich_actv = list([[]]*len(stoich_reac))
         else:
             _stoich_actv = stoich_actv
@@ -192,14 +192,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
         # Handle bin_k_factor
-        if bin_k_factor == None:
-            if bin_k_factor_span == None:
+        if bin_k_factor is None:
+            if bin_k_factor_span is None:
                 bin_k_factor_span = []
             bin_k_factor = []
         else:
-            assert bin_k_factor_span != None
+            assert bin_k_factor_span is not None
             assert len(bin_k_factor) == N
-            assert all([len(x) == len(bin_k_factor_span) for x in bin_k_factor])
+            assert all([len(x) == len(bin_k_factor_span) for
+                        x in bin_k_factor])
             assert all([x >= 0 for x in bin_k_factor_span])
 
         nstencil = nstencil or (1 if N == 1 else 3)

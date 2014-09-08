@@ -7,8 +7,11 @@ from future.builtins import *
 
 
 """
+Examples
+--------
 
- $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5 --k 0.1 --geom f
+ $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5 --k 0.1 \
+     --geom f
 
  $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 400 \
      --nstencil 3
@@ -76,10 +79,11 @@ def efield_cb(x):
 
 
 def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
-                 nt=42, geom='f', logt=False, logy=False, logx=False, random=False,
-                 k=0.0, nstencil=3, linterpol=False, rinterpol=False,
-                 num_jacobian=False, method='bdf', scale_x=False,
-                 plot=False, atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
+                 nt=42, geom='f', logt=False, logy=False, logx=False,
+                 random=False, k=0.0, nstencil=3, linterpol=False,
+                 rinterpol=False, num_jacobian=False, method='bdf',
+                 scale_x=False, plot=False, atol=1e-6, rtol=1e-6,
+                 efield=False, random_seed=42):
     if random_seed:
         np.random.seed(random_seed)
     decay = (k != 0.0)
@@ -124,12 +128,13 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
 
     if efield:
         if geom != FLAT:
-            raise ValueError("Only analytic solution for flat drift implemented.")
+            raise ValueError("Only analytic sol. for flat drift implemented.")
         sys.efield = efield_cb(sys.xcenters)
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = analytic(sys.xcenters, t, D, mu, x0, xend, 0.01 if efield else 0, logy, logx).reshape(nt, N, 1)
+    yref = analytic(sys.xcenters, t, D, mu, x0, xend,
+                    0.01 if efield else 0, logy, logx).reshape(nt, N, 1)
 
     if decay:
         yref = np.concatenate((yref, yref), axis=2)
@@ -146,7 +151,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     t = np.log(tout) if logt else tout
     yout, info = run(sys, y0, t, atol=atol, rtol=rtol,
                      with_jacobian=(not num_jacobian), method=method)
-    #yout = np.exp(yout) if logy else yout
+    # yout = np.exp(yout) if logy else yout
 
     if logy:
         def lin_err(i, j):

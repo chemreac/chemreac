@@ -8,6 +8,7 @@ from __future__ import print_function, division
 
 import numpy as np
 
+
 def padded_centers(x, nsidep):
     """
     Parameters
@@ -22,6 +23,7 @@ def padded_centers(x, nsidep):
     return np.concatenate((
         2*x[0]-xc[:nsidep][::-1], xc, 2*x[-1]-xc[-nsidep:][::-1]
     ))
+
 
 def pxci_to_bi(nstencil, N):
     """
@@ -43,6 +45,7 @@ def pxci_to_bi(nstencil, N):
     nsidep = (nstencil-1)//2
     return list(range(nsidep)[::-1]) + list(range(N)) + list(
         range(N-1, N-nsidep-1, -1))
+
 
 def stencil_pxci_lbounds(nstencil, N, lrefl=False, rrefl=False):
     """

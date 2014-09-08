@@ -13,7 +13,8 @@ DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
-if os.environ.get('DRONE', 'false') == 'true':
+if (os.environ.get('DRONE', 'false') == 'true' or
+    os.environ.get('TRAVIS', 'flse') == 'true'):
     # 'fast' implies march=native which fails on current version of docker.
     options = ['pic', 'warn']
 else:

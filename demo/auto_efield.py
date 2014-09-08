@@ -14,6 +14,7 @@ from chemreac import (
 from chemreac.integrate import run
 from chemreac.util.analysis import suggest_t0
 
+
 def sigm(x, lim=150., n=8):
     # Algebraic sigmoid to avoid overflow/underflow of 'double exp(double)'
     return x/((x/lim)**n+1)**(1./n)
@@ -32,10 +33,10 @@ def gaussian(x, mu, sigma, logy, logx, geom):
     if geom == FLAT:
         a = 1/sigma/(2*np.pi)**0.5
     elif geom == CYLINDRICAL:
-        a = 1/pi/sigma/(2*exp(-mu**2/2/sigma**2)*sigma +\
+        a = 1/pi/sigma/(2*exp(-mu**2/2/sigma**2)*sigma +
                         mu*sq2*sqpi*(1 + erf(mu/(sq2*sigma))))
     elif geom == SPHERICAL:
-        a = 1/2/pi/sigma/(2*exp(-mu**2/2/sigma**2)*mu*sigma +\
+        a = 1/2/pi/sigma/(2*exp(-mu**2/2/sigma**2)*mu*sigma +
                           sq2*sqpi*(mu**2 + sigma**2)*(1 + erf(mu/sq2/sigma)))
     else:
         raise RuntimeError()
@@ -69,7 +70,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
                  num_jacobian=False, method='bdf', plot=False,
                  atol=1e-6, rtol=1e-6, random_seed=42, surf_chg=(0.0, 0.0),
                  sigma_q=101, sigma_skew=0.5):
-    assert 0<= base and base <= 1
+    assert 0 <= base and base <= 1
     assert 0 <= offset and offset <= 1
     if random_seed:
         np.random.seed(random_seed)
@@ -125,7 +126,6 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
         plt.plot(rd.xcenters, rd.efield, label="E at t=t0")
         plt.plot(rd.xcenters, rd.xcenters*0, label="0")
 
-
     # Run the integration
     if t0 == 0.0 and (logy or logt):
         t0 = suggest_t0(rd, y0.flatten())
@@ -152,16 +152,16 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
             c = 1-tout[i]/tend
             c = (1.0-c, .5-c/2, .5-c/2)
             _plot(Cout[i, :, 0], 'Simulation (N={})'.format(rd.N),
-                  c=c, label='$z_A=1$' if i==nt-1 else None)
+                  c=c, label='$z_A=1$' if i == nt-1 else None)
             _plot(Cout[i, :, 1], c=c[::-1],
-                  label='$z_B=-1$' if i==nt-1 else None)
+                  label='$z_B=-1$' if i == nt-1 else None)
             plt.legend()
 
             plt.subplot(4, 1, 2)
             delta_y = Cout[i, :, 0] - Cout[i, :, 1]
             _plot(delta_y, 'Diff'.format(rd.N),
                   c=[c[2], c[0], c[1]],
-                  label='A-B (positive excess)' if i==nt-1 else None)
+                  label='A-B (positive excess)' if i == nt-1 else None)
             plt.legend(loc='best')
             plt.xlabel("$x~/~m$")
             plt.ylabel(r'Concentration / M')
@@ -185,9 +185,10 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
                          ylim, '--k')
         plt.subplot(4, 1, 4)
         for i in range(n):
-            amount = [rd.integrated_conc(Cout[j,:,i]) for j in range(nt)]
+            amount = [rd.integrated_conc(Cout[j, :, i]) for j in range(nt)]
             print(np.array(amount))
-            plt.plot(tout, amount, c=c[::(1,-1)[i]], label=chr(ord('A')+i))  # match colors of lines
+            # match colors of lines
+            plt.plot(tout, amount, c=c[::(1, -1)[i]], label=chr(ord('A')+i))
         plt.xlabel('Time / s')
         plt.ylabel('Amount / mol')
         plt.legend(loc='best')

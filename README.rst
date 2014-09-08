@@ -36,6 +36,7 @@ In addition to python, the following python packages are requiered:
    * quantities>=0.10.1
    * pytest>=2.5.2
    * scipy>=0.9.0
+   * matplotlib>=1.4.0
    * periodictable>=1.4.1
    * future>=0.12.3
    * https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz

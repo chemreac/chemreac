@@ -46,15 +46,12 @@ class Substance(object):
 
     Examples
     ========
-    >>> water = Substance(name = 'H2O',  charge = 0, formula = formula_H2O,
-        tex_name = r'$\mathrm{H_{2}O}$', pKa = 14)
+    >>> Substance(name='H2O', charge=0, tex_name=r'$\mathrm{H_{2}O}$', pKa=14)
     <Substance 'H2O'>
     >>> Substance.all_substances['H2O']
     <Substance 'H2O'>
-    >>> del water
     >>> 'H2O' in Substance.all_substances
-    False
-
+    True
 
     """
     # weakref => If instance is deleted GC can kill it.
@@ -84,7 +81,7 @@ class Substance(object):
             self.__class__.all_substances[name] = self
 
     def __repr__(self, ):
-        return "<" + __class__.__name__ + " '" + self.name + "'>"
+        return "<" + self.__class__.__name__ + " '" + self.name + "'>"
 
     # Thanks to total_ordering it is sufficient to specify eq and lt
     def __eq__(self, other):
@@ -107,9 +104,10 @@ def mk_sn_dict_from_names(names, **kwargs):
 
     Examples
     =======
-    >>> sbstncs = mk_sn_dict_from_names('ABCD', D=[0.1, 0.2, 0.3, 0.4])
-    OrderedDict([('A', <Substance 'A'>), 'B', <Substance 'B'>), 'C',
-    <Substance 'C'>), 'D', <Substance 'D'>)])
+    >>> mk_sn_dict_from_names(
+    ...     'ABCD', D=[0.1, 0.2, 0.3, 0.4]) # doctest: +NORMALIZE_WHITESPACE
+    OrderedDict([('A', <Substance 'A'>), ('B', <Substance 'B'>),
+    ('C', <Substance 'C'>), ('D', <Substance 'D'>)])
     """
     kwargs_list = []
     for i in range(len(names)):

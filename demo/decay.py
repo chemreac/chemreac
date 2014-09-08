@@ -19,7 +19,8 @@ Motivation for sigmoid damped exp(); vary tend: 5, 700, 1700.
 Never mind 700 not being correctly represented, the problem
 is 1700 completely ruining the integration (NaN's due to overflow).
 
-python decay.py --plot --rates 1.0 --logy --logt --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024 --tend 1700
+ $ python decay.py --plot --rates 1.0 --logy --logt --rtol 1e-13 --atol 1e-6 \
+      --scale-err 100.0 --plotlogy --nt 1024 --tend 1700
 """
 
 analytic = {

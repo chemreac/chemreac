@@ -4,6 +4,7 @@ import json
 
 from . import ReactionDiffusion
 
+
 def dump(rd, path):
     """
     Attributes ignored are:
@@ -42,5 +43,6 @@ def load(path, RD=None, **kwargs):
         extra_data[attr] = data.pop(attr, None)
     rd = RD(**data)
     for attr, val in extra_data.items():
-        if val != None: setattr(rd, attr, val)
+        if val is not None:
+            setattr(rd, attr, val)
     return rd
