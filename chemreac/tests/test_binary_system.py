@@ -74,15 +74,15 @@ def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
             A *= t0
             B *= t0
         ref_J = np.array(
-            [[    0, -k*B,   0],
-             [ -k*A,    0,   0],
-             [   f3,   f3, -f3]],
+            [[0,    -k*B,   0],
+             [-k*A,    0,   0],
+             [f3,     f3, -f3]],
             order=order)
     else:
         ref_J = np.array(
-            [[ -k*B, -k*A, 0],
-             [ -k*B, -k*A, 0],
-             [  k*B,  k*A, 0]],
+            [[-k*B, -k*A, 0],
+             [-k*B, -k*A, 0],
+             [k*B,   k*A, 0]],
             order=order)
         if logt:
             ref_J *= t0
@@ -93,7 +93,7 @@ def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_f(log):
     logy, logt = log
-    N=1
+    N = 1
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array(C0)
     t0 = 42.0
@@ -110,7 +110,7 @@ def test_f(log):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_dense_jac_rmaj(log):
     logy, logt = log
-    N=1
+    N = 1
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array(C0)
     t0 = 42.0
@@ -128,7 +128,7 @@ def test_dense_jac_rmaj(log):
 @pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
 def test_dense_jac_cmaj(log):
     logy, logt = log
-    N=1
+    N = 1
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array(C0)
     t0 = 42.0
@@ -157,7 +157,9 @@ def test_chemistry():
 
 
 COMBOS = list(product(TR_FLS, TR_FLS, [1, 3], [FLAT, SPHERICAL, CYLINDRICAL]))
-EXTRA_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5], [FLAT, SPHERICAL, CYLINDRICAL]))
+EXTRA_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5],
+                            [FLAT, SPHERICAL, CYLINDRICAL]))
+
 
 def _test_integrate(params):
     logy, logt, N, geom = params
@@ -166,12 +168,12 @@ def _test_integrate(params):
     y0 = np.array(C0*N)
 
     ref = np.genfromtxt(BLESSED_PATH)
-    ref_t = ref[:,0]
-    ref_y = ref[:,1:rd.n+1]
+    ref_t = ref[:, 0]
+    ref_y = ref[:, 1:rd.n+1]
 
     t0 = 3.0
-    tend=5.0+t0
-    nt=137
+    tend = 5.0+t0
+    nt = 137
     tout = np.linspace(t0, tend, nt+1)
     assert np.allclose(tout-t0, ref_t)
 
@@ -183,9 +185,11 @@ def _test_integrate(params):
     for i in range(N):
         assert np.allclose(yout[:, i, :], ref_y, atol=1e-4)
 
+
 @pytest.mark.parametrize("params", COMBOS)
 def test_integrate(params):
     _test_integrate(params)
+
 
 @slow
 @pytest.mark.parametrize("params", EXTRA_COMBOS)

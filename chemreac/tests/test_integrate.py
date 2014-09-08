@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, division, absolute_import, unicode_literals
+from __future__ import (
+    print_function, division, absolute_import, unicode_literals
+)
 
 import os
 from itertools import product
@@ -44,7 +46,9 @@ def test_decay(log):
 
 def test_autodimerization():
     # A + A -> B
-    from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
+    from chemreac.chemistry import (
+        Reaction, ReactionSystem, mk_sn_dict_from_names
+    )
     sbstncs = mk_sn_dict_from_names('AB')
     k = 3.0
     r1 = Reaction({'A': 2}, {'B': 1}, k=k)
@@ -58,7 +62,8 @@ def test_autodimerization():
     assert np.allclose(yout[:, 0, :], yref)
 
 
-@pytest.mark.parametrize("log_geom", product(LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
+@pytest.mark.parametrize("log_geom", product(
+    LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
 def test_ReactionDiffusion__bin_k_factor(log_geom):
     # modulation in x means x_center
     # A -> B # mod1 (x**2)
@@ -74,24 +79,26 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     x = np.linspace(3, 7, N+1)
     xc = x[:-1] + np.diff(x)/2
     bkf = [(xc[i]*xc[i], xc[i]**0.5) for i in range(N)]
-    bkf_span = [2,1]
+    bkf_span = [2, 1]
     rd = ReactionDiffusion(
         n,
-        [[i] for i in range(0,n,2)],
-        [[i] for i in range(1,n,2)],
+        [[i] for i in range(0, n, 2)],
+        [[i] for i in range(1, n, 2)],
         k=k, N=N, D=D, x=x, bin_k_factor=bkf,
         bin_k_factor_span=bkf_span,
         logy=logy, logt=logt, geom=geom
     )
     assert np.allclose(rd.xcenters, xc)
-    y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N]).flatten()
+    y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N])
+    y0 = y0.flatten()
     t0, tend, nt = 1.0, 1.1, 42
     tout = np.linspace(t0, tend, nt+1)
 
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
     yout, info = run(rd, y, t, atol=1e-11, rtol=1e-11)
-    if logy: yout = np.exp(yout)
+    if logy:
+        yout = np.exp(yout)
 
     def _get_bkf(bi, ri):
         if ri < 2:
@@ -119,20 +126,21 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
     x = np.linspace(0.01*N, N, N+1)
     y0 = (x[0]/2/N+x[1:]/N)**2
 
-    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom, nstencil=3,
-                            lrefl=True, rrefl=True)
+    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom,
+                            nstencil=3, lrefl=True, rrefl=True)
     debug = False
-    if debug: # From debugging / test design
+    if debug:  # From debugging / test design
         import matplotlib.pyplot as plt
-        plt.subplot(2,1,1)
+        plt.subplot(2, 1, 1)
         plt.plot(sys.xcenters, y0)
         plt.xlabel('x')
         plt.ylabel('y0')
 
     tout = np.linspace(0, 10.0, 50)
     atol, rtol = 1e-6, 1e-8
-    yout, info = run(sys, y0, tout, atol=atol, rtol=rtol, with_jacobian=wjac, method='adams')
-    yout = yout[:,:,0]
+    yout, info = run(sys, y0, tout, atol=atol, rtol=rtol, with_jacobian=wjac,
+                     method='adams')
+    yout = yout[:, :, 0]
     x /= N
     if geom == FLAT:
         yprim = yout*(x[1:]**1 - x[:-1]**1)
@@ -145,8 +153,8 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     ybis = np.sum(yprim, axis=1)
 
-    if debug: # From debugging / test design
-        plt.subplot(2,1,2)
+    if debug:  # From debugging / test design
+        plt.subplot(2, 1, 2)
         plt.plot(ybis-ybis[0])
         plt.xlabel('t')
         plt.ylabel('tot y - tot y0')

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, division, absolute_import, unicode_literals
+from __future__ import (
+    print_function, division, absolute_import, unicode_literals
+)
 
 from itertools import product
 
@@ -16,7 +18,9 @@ TR_FLS = (True, False)
 COMBOS = list(product('fcs', TR_FLS, TR_FLS, [False], [.1], [3]))
 EXTRA_COMBOS = list(product('fcs', TR_FLS, TR_FLS, TR_FLS, [0, .2], [5, 7]))
 
-tol = {3: 1e5, 5: 1e4, 7: 1e2} # determined from analytic_N_scaling demo
+tol = {3: 1e5, 5: 1e4, 7: 1e2}  # determined from analytic_N_scaling demo
+
+
 def _test_gaussian_diffusion(params):
     g, ly, lt, r, k, ns = params
     tout, yout, info, ave_rmsd_over_atol, sys = integrate_rd(
@@ -30,17 +34,19 @@ def _test_gaussian_diffusion(params):
             for i in range(6):
                 if np.all(rmsd > tol[ns]*forgiveness):
                     rmsd = integrate_rd(
-                        geom=g, logt=lt, logy=ly, N=128, random=r, k=k, nstencil=ns,
-                        atol=1e-6, rtol=1e-6)[3]
+                        geom=g, logt=lt, logy=ly, N=128, random=r, k=k,
+                        nstencil=ns, atol=1e-6, rtol=1e-6)[3]
                 else:
                     break
             assert np.all(rmsd < tol[ns]*forgiveness)
         else:
             assert np.all(rmsd < tol[ns])
 
+
 @pytest.mark.parametrize('params', COMBOS)
 def test_gaussian_diffusion(params):
     _test_gaussian_diffusion(params)
+
 
 @slow
 @pytest.mark.parametrize('params', EXTRA_COMBOS)

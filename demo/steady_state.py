@@ -15,11 +15,13 @@ from chemreac import (
 )
 from chemreac.integrate import run
 
+
 def efield_cb(x, logx=False):
     """
     Returns a flat efield (-1)
     """
     return -(x**0)
+
 
 def y0_flat_cb(x, logx=False):
     xc = x[:-1] + np.diff(x)/2
@@ -27,11 +29,13 @@ def y0_flat_cb(x, logx=False):
         x, xc = map(np.exp, (x, xc))
     return 17 - 11*(xc-x[0])/(x[-1]-x[0])
 
+
 def y0_cylindrical_cb(x, logx=False):
     xc = x[:-1] + np.diff(x)/2
     if logx:
         x, xc = map(np.exp, (x, xc))
     return 17 - np.log((xc-x[0])/(x[-1]-x[0]))
+
 
 def y0_spherical_cb(x, logx=False):
     xc = x[:-1] + np.diff(x)/2
@@ -41,10 +45,10 @@ def y0_spherical_cb(x, logx=False):
 
 
 def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
-                 nt=25, geom='f', logt=False, logy=False, logx=False, random=False,
-                 nstencil=3, lrefl=False, rrefl=False,
-                 num_jacobian=False, method='bdf',
-                 plot=False, atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
+                 nt=25, geom='f', logt=False, logy=False, logx=False,
+                 random=False, nstencil=3, lrefl=False, rrefl=False,
+                 num_jacobian=False, method='bdf', plot=False,
+                 atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
     if random_seed:
         np.random.seed(random_seed)
     n = 1
@@ -77,22 +81,23 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     bin_k_factor = [[] for _ in range(N)]
     bin_k_factor_span = []
     if lrefl:
-        # isolated system is not stationary for linear conc profile with finite slope
-        # hence we add production reaction at left boundary
-        #assert geom == FLAT
+        # isolated system is not stationary for linear conc profile with finite
+        # slope, hence we add production reaction at left boundary
+        # assert geom == FLAT
         assert nstencil == 3  # k is derived for parabola through -x0, x0, x1
         stoich_reac.append([0])
         stoich_prod.append([0, 0])
         for i in range(N):
-            bin_k_factor[i].append(1 if i==0 else 0)
+            bin_k_factor[i].append(1 if i == 0 else 0)
         bin_k_factor_span.append(1)
         x0 = (x[0]+x[1])/2 - x[0]
         x1 = (x[1]+x[2])/2 - x[0]
         C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
         k.append(C*D*(y0[0]-y0[1])/(y0[0]*(x1**2 - x0**2)))
     if rrefl:
-        # for same reason as above, a consumption reaction is added at right boundary
-        #assert geom == FLAT
+        # for same reason as above, a consumption reaction is added at right
+        # boundary
+        # assert geom == FLAT
         assert nstencil == 3
         stoich_reac.append([0])
         stoich_prod.append([])
@@ -124,7 +129,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     print(rd.geom)
     if efield:
         if geom != FLAT:
-            raise ValueError("Only analytic solution for flat drift implemented.")
+            raise ValueError("Only analytic sol. for flat drift implemented.")
         rd.efield = efield_cb(rd.xcenters, logx)
 
     # Analytic reference values
@@ -135,8 +140,9 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
 
     # Run the integration
     t = np.log(tout) if logt else tout
-    yout, info = run(rd, np.log(y0).flatten() if logy else y0.flatten(), t, atol=atol, rtol=rtol,
-                     with_jacobian=(not num_jacobian), method=method)
+    yout, info = run(rd, np.log(y0).flatten() if logy else y0.flatten(),
+                     t, atol=atol, rtol=rtol, with_jacobian=(not num_jacobian),
+                     method=method)
     yout = np.exp(yout) if logy else yout
 
     if logy:
@@ -172,7 +178,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
             c = (1.0-c, .5-c/2, .5-c/2)
 
             plt.subplot(4, 1, 1)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(rd.N), apply_exp_on_y=logy)
+            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(rd.N),
+                  apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 2)
             _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
@@ -180,7 +187,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
             plt.subplot(4, 1, 3)
             if logy:
                 _plot(lin_err(i, 0)/info['atol'], c,
-                      'Linear rel error / Log abs. tol. (={})'.format(info['atol']))
+                      'Linear rel error / Log abs. tol. (={})'.format(
+                          info['atol']))
             else:
                 _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
                       'Abs. err. / Abs. tol. (={})'.format(info['atol']))
