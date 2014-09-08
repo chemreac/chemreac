@@ -8,7 +8,7 @@ aqueous phase with external radiation fields.
 
 Documentation
 =============
-the documentation is found at http://chemreac.readthedocs.org/
+the documentation is found at http://people.kth.se/~bda/chemreac/
 
 Installation
 ============
