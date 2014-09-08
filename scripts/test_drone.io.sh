@@ -53,9 +53,14 @@ if [[ $? != 0 ]]; then
 fi
 
 CHEMREAC_SOLVER=sundials PYTHONPATH=.:$PYTHONPATH py.test --slow --ignore build/
+if [[ $? != 0 ]]; then
+    echo "(sundials) py.test failed."
+    exit 1
+fi
 
 # Build docs
 cd docs/
-make html
+PYTHONPATH=`pwd`/.. make html >_build.log
+cp _build.log _build/html/
 cd _build/
 tar -C html/ -jcf html.tar.bz2 .
