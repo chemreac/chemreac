@@ -6,13 +6,16 @@ from __future__ import (
 
 import pytest
 
+
 def pytest_addoption(parser):
     parser.addoption("--slow", dest="runslow", action="store_true",
-        help="allow slow tests to run")
+                     help="allow slow tests to run")
+
 
 def pytest_configure(config):
     # register an additional marker
     config.addinivalue_line("markers", "slow: slow test")
+
 
 def pytest_runtest_setup(item):
     if not isinstance(item, pytest.Function):

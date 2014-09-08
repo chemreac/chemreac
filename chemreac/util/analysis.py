@@ -10,6 +10,7 @@ from future.builtins import *
 
 import numpy as np
 
+
 def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     """
     Returns linear estimated error bounds from numerical integration
@@ -41,6 +42,7 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     else:
         res = y - solver_err, y + solver_err
     return np.array(res)
+
 
 def suggest_t0(rd, y0, max_f=1.0):
     """

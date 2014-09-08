@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import print_function, division, absolute_import, unicode_literals
+from __future__ import (
+    print_function, division, absolute_import, unicode_literals
+)
 
 from itertools import product
 
@@ -11,7 +13,9 @@ from steady_state import integrate_rd
 
 TR_FLS = (True, False)
 
-@pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, TR_FLS, TR_FLS, [3], [1e-5])))
+
+@pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, TR_FLS,
+                                                TR_FLS, [3], [1e-5])))
 def test_steady_state(params):
     ly, lt, r, lr, rr, ns, forgiveness = params
     # notice forgiveness << 1
@@ -24,10 +28,13 @@ def test_steady_state(params):
     for rmsd in ave_rmsd_over_atol:
         assert np.all(rmsd < forgiveness)
 
-@pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, [5, 7])))
+
+@pytest.mark.parametrize('params', list(product(
+    TR_FLS, TR_FLS, TR_FLS, [5, 7])))
 def test_steady_state__high_stencil(params):
     ly, lt, r, nstencil = params
     test_steady_state((ly, lt, r, False, False, nstencil, 1e-2))
+
 
 @pytest.mark.xfail
 @pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, 'cs')))

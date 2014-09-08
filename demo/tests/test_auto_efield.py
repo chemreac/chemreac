@@ -28,7 +28,8 @@ def _test_perfect_overlap(params):
               'nstencil': ns, 'lrefl': lr, 'rrefl': rr}
 
     # zero offset (offset = 0.0)
-    tout, Cout, info, rd = integrate_rd(D=1e-5, N=64, offset=0, sigma_q=13, **kwargs)
+    tout, Cout, info, rd = integrate_rd(D=1e-5, N=64, offset=0,
+                                        sigma_q=13, **kwargs)
     assert info['success']
     delta_C = Cout[:, :, 0] - Cout[:, :, 1]
 
@@ -46,6 +47,7 @@ def test_perfect_overlap(params):
 def test_perfect_overlap_extended(params):
     _test_perfect_overlap(params)
 
+
 # Mass convservation for a pair of gaussians at a offset
 def _test_mass_conservation(params):
     (ly, lt, lr, rr, ns), geom, lx = params
@@ -62,19 +64,20 @@ def _test_mass_conservation(params):
         [rd.integrated_conc(Cout[j, :, i]) for i in range(rd.n)]
         for j in range(tout.size)
     ])
-    print(mass_consv - mass_consv[[0],:])
-    assert np.all(np.abs(mass_consv - mass_consv[[0],:]) < 1e-5)
+    print(mass_consv - mass_consv[[0], :])
+    assert np.all(np.abs(mass_consv - mass_consv[[0], :]) < 1e-5)
     # For current parameters gaussians are well separated at end
     # of simulation, hence we expect maximum Efield to have same
     # value as in the beginning of simulation
-    efield_i = rd.calc_efield(Cout[0,:,:].flatten())
-    efield_f = rd.calc_efield(Cout[-1,:,:].flatten())
+    efield_i = rd.calc_efield(Cout[0, :, :].flatten())
+    efield_f = rd.calc_efield(Cout[-1, :, :].flatten())
     assert abs(np.max(np.abs(efield_i)) - np.max(np.abs(efield_f))) < 1e-6
 
 
 @pytest.mark.parametrize('params', list(product(COMBOS, 'f', [False])))
 def test_mass_conservation_flat(params):
     _test_mass_conservation(params)
+
 
 @slow
 @pytest.mark.parametrize('params', list(product(EXTRA_COMBOS, 'f', [False])))
@@ -98,22 +101,26 @@ def _test_pair_centered_at_x0_different_sigma(params):
     N = 64*(8 if ly else 1)*(4 if ns > 3 else 1)
     tout, Cout, info, rd = integrate_rd(
         D=0.0, t0=1e-6, tend=7, x0=1e-6, xend=1.0, N=N,
-        base=0, offset=0, mobility=3e-8, nt=25, sigma_q=101, sigma_skew=0.1, **kwargs)
+        base=0, offset=0, mobility=3e-8, nt=25, sigma_q=101,
+        sigma_skew=0.1, **kwargs)
     assert info['success']
     mass_consv = np.array([
         [rd.integrated_conc(Cout[j, :, i]) for i in range(rd.n)]
         for j in range(tout.size)
     ])
-    assert np.all(np.abs(mass_consv - mass_consv[[0],:]) < 1e-4)
+    assert np.all(np.abs(mass_consv - mass_consv[[0], :]) < 1e-4)
+
 
 @pytest.mark.parametrize('params', list(product(COMBOS, 'f', [True])))
 def test_pair_centered_at_x0_different_sigma_flat_logx(params):
     _test_pair_centered_at_x0_different_sigma(params)
 
+
 @slow
 @pytest.mark.parametrize('params', list(product(EXTRA_COMBOS, 'f', [True])))
 def test_pair_centered_at_x0_different_sigma_flat_logx_extended(params):
     _test_pair_centered_at_x0_different_sigma(params)
+
 
 @pytest.mark.parametrize('params', list(product(COMBOS, 'cs', [True])))
 @pytest.mark.xfail

@@ -48,7 +48,7 @@ def main():
                     label=str(nstencil)+': '+str(round(-p[0], 1)))
                 plt.xlabel('N')
                 ax = plt.gca()
-                #ax.set_xticklabels(map(str, Ns))
+                # ax.set_xticklabels(map(str, Ns))
                 plt.ylabel('RMSD/atol')
                 plt.legend(prop={'size': 11})
                 if rate == 0:
