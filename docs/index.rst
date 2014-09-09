@@ -55,13 +55,10 @@ for ease of access.
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    install.rst
-   core.rst
-   integrate.rst
-   chemistry.rst
-   util.rst
+   modules.rst
 
 
 Indices and tables

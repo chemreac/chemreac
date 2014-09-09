@@ -3,9 +3,16 @@
 """
 Provides core functinoality: ReactionDiffusion
 """
-
+import os
 import numpy as np
-from ._chemreac import CppReactionDiffusion
+
+
+if os.environ.get('READTHEDOCS', None) == 'True':
+    # On readthedocs, cannot compile extension module.
+    class CppReactionDiffusion(object):
+        pass  # mockup
+else:
+    from ._chemreac import CppReactionDiffusion
 
 DENSE, BANDED, SPARSE = range(3)
 FLAT, CYLINDRICAL, SPHERICAL = range(3)
@@ -57,8 +64,29 @@ class ReactionDiffusionBase(object):
 
 class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     """
+    Object representing the numerical model, with callbacks for evaluating
+    derivatives and jacobian.
+
+    The instance provides methods:
+
+    f(t, y, fout)
+    dense_jac_rmaj(t, y, Jout)
+    dense_jac_cmaj(t, y, Jout)
+    banded_jac_cmaj(t, y, Jout)
+    banded_packed_jac_cmaj(t, y, Jout)
+
+    some of which are used by chemreac.integrate.integrate_scipy
+
+    In addition error estimates (if provided by user) are stored as:
+    - k_err
+    - D_err
+
+    Additional convenience attributes (not used by underlying C++ class):
+    - names
+    - tex_names
+
     Parameters
-    ==========
+    ----------
     n: integer
         number of species
     stoich_reac: list of lists of integer indices
@@ -107,24 +135,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     xscale: float
         use internal scaling of length (default: 1.0)
         (finite difference scheme works best for step-size ~1)
-
-    The instance provides methods:
-
-    f(t, y, fout)
-    dense_jac_rmaj(t, y, Jout)
-    dense_jac_cmaj(t, y, Jout)
-    banded_jac_cmaj(t, y, Jout)
-    banded_packed_jac_cmaj(t, y, Jout)
-
-    some of which are used by chemreac.integrate.integrate_scipy
-
-    In addition error estimates (if provided by user) are stored as:
-    - k_err
-    - D_err
-
-    Additional convenience attributes (not used by underlying C++ class):
-    - names
-    - tex_names
     """
     # not used by C++ class
     extra_attrs = ['k_err', 'D_err', 'names', 'tex_names']

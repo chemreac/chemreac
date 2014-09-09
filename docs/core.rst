@@ -1,5 +1,5 @@
-chemreac core
-=============
+core
+====
 
 .. automodule:: chemreac.core
     :members:

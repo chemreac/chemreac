@@ -103,7 +103,7 @@ def mk_sn_dict_from_names(names, **kwargs):
     of kwargs to Substance class.
 
     Examples
-    =======
+    ========
     >>> mk_sn_dict_from_names(
     ...     'ABCD', D=[0.1, 0.2, 0.3, 0.4]) # doctest: +NORMALIZE_WHITESPACE
     OrderedDict([('A', <Substance 'A'>), ('B', <Substance 'B'>),
@@ -322,18 +322,21 @@ class ReactionSystem(object):
 class Henry(object):
     """
     Henry's gas constant
+
+    Parameters
+    ----------
+    k_H0: float
+        Henry's constant [M/atm]
+    derivative: float
+        -dln(k_H)/d(1/T) [K]
+    ref: object
+        Note about origin of parameters
+
     """
 
     T0 = 298.15 * pq.kelvin
 
     def __init__(self, k_H0, derivative, ref=None):
-        """
-
-        Arguments:
-        - `k_H0`:        Henry's constant [M/atm]
-        - `derivative`: -dln(k_H)/d(1/T) [K]
-        - `ref`:         Note about origin of parameters
-        """
         self._k_H0 = k_H0
         self._derivative = derivative
         self._ref = ref
