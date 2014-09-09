@@ -8,7 +8,12 @@ aqueous phase with external radiation fields.
 
 Documentation
 =============
-the documentation is found at http://people.kth.se/~bda/chemreac/
+
+.. image:: https://readthedocs.org/projects/chemreac/badge/?version=latest
+   :target: https://readthedocs.org/projects/chemreac/?badge=latest
+   :alt: Documentation Status
+
+the documentation is found at http://chemreac.readthedocs.org/
 
 Installation
 ============
@@ -46,7 +51,8 @@ In addition to python, the following python packages are requiered:
 For rendering the documentation you also need:
 
    * `Sphinx <http://sphinx-doc.org/>`_
-   * numpydoc
+   * `numpydoc <https://pypi.python.org/pypi/numpydoc>`_
+   * `sphinx_rtd_theme <https://pypi.python.org/pypi/sphinx_rtd_theme>`_
 
 to run all the tests you also need:
 
@@ -91,8 +97,8 @@ Continuous integration
 ----------------------
 Build status at drone.io:
 
-.. image:: https://drone.io/bitbucket.org/bjodah/chemreac/status.png
-   :target: https://drone.io/bitbucket.org/bjodah/chemreac/latest
+.. image:: https://drone.io/github.com/bjodah/chemreac/status.png
+   :target: https://drone.io/github.com/bjodah/chemreac/latest
 
 Build status at travis-ci:
 

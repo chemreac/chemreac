@@ -13,6 +13,7 @@ DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
+on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if (os.environ.get('DRONE', 'false') == 'true' or
     os.environ.get('TRAVIS', 'flse') == 'true'):
     # 'fast' implies march=native which fails on current version of docker.
@@ -42,7 +43,7 @@ class PyTest(Command):
 
 cmdclass_ = {'test': PyTest}
 
-if '--help'in sys.argv[1:] or sys.argv[1] in (
+if on_rtd or '--help' in sys.argv[1:] or sys.argv[1] in (
         '--help-commands', 'egg_info', 'clean', '--version'):
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
