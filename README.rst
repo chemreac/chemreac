@@ -4,11 +4,13 @@ chemreac
 
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
+   :alt: Build status
 .. image:: https://readthedocs.org/projects/chemreac/badge/?version=latest
-   :target: https://readthedocs.org/projects/chemreac/?badge=latest
+   :target: http://chemreac.readthedocs.org/
    :alt: Documentation Status
 .. image:: https://coveralls.io/repos/bjodah/chemreac/badge.png?branch=master
-    :target: https://coveralls.io/r/bjodah/chemreac
+   :target: https://coveralls.io/r/bjodah/chemreac?branch=master
+   :alt: Test coverage
 
 chremreac aims to be a library collecting tools and utilities for
 modeling of chemical kinetics problems, primarily in the context of
@@ -30,39 +32,39 @@ in continuous integration.
 Prerequisites
 -------------
 
-   * C++ compiler with C++11 support (e.g. GCC >= 4.8)
-   * Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. gfortran)
-   * LAPACK
-   * Sundials 2.5
-   * Python (2.7)
+- C++ compiler with C++11 support (e.g. GCC >= 4.8)
+- Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. gfortran)
+- LAPACK
+- Sundials 2.5
+- Python (2.7)
     
 In addition to python, the following python packages are requiered:
 
-   * argh>=0.25.0
-   * numpy>=1.8.1
-   * cython>=0.19.1
-   * mako>=0.5.0
-   * quantities>=0.10.1
-   * pytest>=2.5.2
-   * scipy>=0.9.0
-   * matplotlib>=1.4.0
-   * periodictable>=1.4.1
-   * future>=0.12.3
-   * https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz
-   * https://github.com/bjodah/pycodeexport/archive/v0.0.4.tar.gz
-   * https://github.com/sympy/sympy/archive/master.zip
+- argh>=0.25.0
+- numpy>=1.8.1
+- cython>=0.19.1
+- mako>=0.5.0
+- quantities>=0.10.1
+- pytest>=2.5.2
+- scipy>=0.9.0
+- matplotlib>=1.4.0
+- periodictable>=1.4.1
+- future>=0.12.3
+- https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz
+- https://github.com/bjodah/pycodeexport/archive/v0.0.4.tar.gz
+- https://github.com/sympy/sympy/archive/master.zip
 
 For rendering the documentation you also need:
 
-   * `Sphinx <http://sphinx-doc.org/>`_
-   * `numpydoc <https://pypi.python.org/pypi/numpydoc>`_
-   * `sphinx_rtd_theme <https://pypi.python.org/pypi/sphinx_rtd_theme>`_
+- `Sphinx <http://sphinx-doc.org/>`_
+- `numpydoc <https://pypi.python.org/pypi/numpydoc>`_
+- `sphinx_rtd_theme <https://pypi.python.org/pypi/sphinx_rtd_theme>`_
 
 to run all the tests you also need:
 
-   * valgrind
-   * graphviz
-   * dot2tex
+- valgrind
+- graphviz
+- dot2tex
 
 Once non-python prerequisites are in installed, you may procede e.g. as:
 
@@ -86,11 +88,13 @@ To specify an alternative LAPACK lib set the environment variable LLAPACK, e.g.:
 
 Tests
 -----
-Run py.test
-``py.test``
-(requires make, python-pytest), eventually source distributions will
-include ``runtests.py`` which enables ``python setup.py test`` to work
-without having pytest installed.
+Run py.test, possibly with explicit PYTHONPATH (if build_ext --inplace was used)
+
+::
+
+    $ PYTHONPATH=`pwd`:$PYTHONPATH py.test
+
+All tests should pass (or xfail).
 
 .. install-end
 
@@ -99,12 +103,12 @@ Status
 
 Continuous integration
 ----------------------
-Build status at drone.io:
+Build status at drone.io (uses OpenMP and tests sundials backend):
 
 .. image:: https://drone.io/github.com/bjodah/chemreac/status.png
    :target: https://drone.io/github.com/bjodah/chemreac/latest
 
-Build status at travis-ci:
+Build status at travis-ci (neither OpenMP nor sundials backend):
 
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
