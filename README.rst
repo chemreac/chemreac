@@ -2,16 +2,20 @@
 chemreac
 ========
 
+.. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
+   :target: https://travis-ci.org/bjodah/chemreac
+.. image:: https://readthedocs.org/projects/chemreac/badge/?version=latest
+   :target: https://readthedocs.org/projects/chemreac/?badge=latest
+   :alt: Documentation Status
+.. image:: https://coveralls.io/repos/bjodah/chemreac/badge.png?branch=master
+    :target: https://coveralls.io/r/bjodah/chemreac
+
 chremreac aims to be a library collecting tools and utilities for
 modeling of chemical kinetics problems, primarily in the context of
 aqueous phase with external radiation fields. 
 
 Documentation
 =============
-
-.. image:: https://readthedocs.org/projects/chemreac/badge/?version=latest
-   :target: https://readthedocs.org/projects/chemreac/?badge=latest
-   :alt: Documentation Status
 
 the documentation is found at http://chemreac.readthedocs.org/
 
@@ -104,6 +108,7 @@ Build status at travis-ci:
 
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
+
 
 TODO
 ----
