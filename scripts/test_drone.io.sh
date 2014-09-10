@@ -60,8 +60,9 @@ if [[ $? != 0 ]]; then
 fi
 
 # Build docs
-cd docs/
-PYTHONPATH=`pwd`/.. make html >_build.log
-cp _build.log _build/html/
-cd _build/
-tar -jcf ../../html.tar.bz2 html/
+bash scripts/build_docs.sh
+if [ $? -ne 0 ]; then
+    echo "build_docs.sh failed"
+    exit 1
+fi
+tar -jcf html.tar.bz2 docs/_build/html/
