@@ -38,3 +38,5 @@ src/exprs.pkl
 .cache/
 .metadata_CompilerRunner
 docs/_build
+.coverage
+htmlcov/

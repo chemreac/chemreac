@@ -102,7 +102,7 @@ setup(
     author='Björn Dahlgren',
     author_email='bjodah@DELETEMEgmail.com',
     url='https://bitbucket.org/bjodah/'+name_,
-    packages=[name_],
+    packages=[name_, name_+'.util'],
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
 )

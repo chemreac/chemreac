@@ -46,11 +46,12 @@ python -c "import pycodeexport; print(pycodeexport.__version__)"
 
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py build_ext -i
-PYTHONPATH=.:$PYTHONPATH py.test --slow --pep8 --doctest-modules --ignore build/ --ignore setup.py
+PYTHONPATH=.:$PYTHONPATH py.test --slow --pep8 --doctest-modules --cov chemreac --cov-report html --ignore build/ --ignore setup.py
 if [[ $? != 0 ]]; then
     echo "py.test failed."
     exit 1
 fi
+tar -jcf htmlcov.tar.bz2 htmlcov/
 
 CHEMREAC_SOLVER=sundials PYTHONPATH=.:$PYTHONPATH py.test --slow --ignore build/
 if [[ $? != 0 ]]; then
@@ -63,4 +64,4 @@ cd docs/
 PYTHONPATH=`pwd`/.. make html >_build.log
 cp _build.log _build/html/
 cd _build/
-tar -C html/ -jcf html.tar.bz2 .
+tar -jcf ../../html.tar.bz2 html/

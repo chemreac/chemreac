@@ -101,14 +101,16 @@ All tests should pass (or xfail).
 Status
 ======
 
+
 Continuous integration
 ----------------------
-Build status at drone.io (uses OpenMP and tests sundials backend):
+Build status at drone.io (Py 2.7, uses OpenMP, tests sundials backend, 
+runs slow tests, build docs as artifact, html coverage report as artifact):
 
 .. image:: https://drone.io/github.com/bjodah/chemreac/status.png
    :target: https://drone.io/github.com/bjodah/chemreac/latest
 
-Build status at travis-ci (neither OpenMP nor sundials backend):
+Build status at travis-ci (Py 2.7, Py 3.4, no OpenMP, runs coveralls):
 
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
