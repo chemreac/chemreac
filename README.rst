@@ -36,9 +36,10 @@ Prerequisites
 - Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. gfortran)
 - LAPACK
 - Sundials 2.5
-- Python (2.7)
+- Python (2.7 or >=3.3)
     
-In addition to python, the following python packages are requiered:
+In addition to python, the following python packages are required
+(versions indicate what is tested):
 
 - argh>=0.25.0
 - numpy>=1.8.1
@@ -66,6 +67,8 @@ to run all the tests you also need:
 - graphviz
 - dot2tex
 
+Building and installing
+-----------------------
 Once non-python prerequisites are in installed, you may procede e.g. as:
 
 ::
@@ -73,13 +76,13 @@ Once non-python prerequisites are in installed, you may procede e.g. as:
     $ git clone https://bitbucket.org/bjodah/chemreac.git
     $ cd chemreac
     $ pip install --user --upgrade -r requirements.txt
-    $ python setup.py build_ext --inplace
+    $ python setup.py install --user
     $ py.test
 
 
-the above procedure works on Ubuntu 14.04 for example. 
+the above procedure works on Ubuntu 14.04 for example. See the `Python docs <https://docs.python.org/2/install/index.html#install-index>`_ for more information on how to install e.g. system wide.
 
-To specify an alternative LAPACK lib set the environment variable LLAPACK, e.g.:
+To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.:
 
 ::
 
@@ -88,13 +91,13 @@ To specify an alternative LAPACK lib set the environment variable LLAPACK, e.g.:
 
 Tests
 -----
-Run py.test, possibly with explicit PYTHONPATH (if build_ext --inplace was used)
+Run ``py.test``, possibly with explicit ``PYTHONPATH`` (e.g. if ``build_ext --inplace`` was used)
 
 ::
 
     $ PYTHONPATH=`pwd`:$PYTHONPATH py.test
 
-All tests should pass (or xfail).
+All tests should pass (or xfail). If they are not, please `file an issue <https://github.com/bjodah/chemreac/issues>`_.
 
 .. install-end
 
@@ -104,17 +107,28 @@ Status
 
 Continuous integration
 ----------------------
-Build status at drone.io (Py 2.7, uses OpenMP, tests sundials backend, 
-runs slow tests, build docs as artifact, html coverage report as artifact):
+.. ci-start
 
-.. image:: https://drone.io/github.com/bjodah/chemreac/status.png
-   :target: https://drone.io/github.com/bjodah/chemreac/latest
+In order to minimize the risk of (re)introducing bugs the code base, 
+it is continuously built on two CI services:
 
-Build status at travis-ci (Py 2.7, Py 3.4, no OpenMP, runs coveralls):
+- `travis-ci.org <https://travis-ci.org/bjodah/chemreac>`_
+- `drone.io <https://drone.io/github.com/bjodah/chemreac>`_
 
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
 
+above you find build status shield for travis-ci (Py 2.7, Py 3.4, no OpenMP, runs coveralls).
+
+
+.. image:: https://drone.io/github.com/bjodah/chemreac/status.png
+   :target: https://drone.io/github.com/bjodah/chemreac/latest
+
+above you find build status shield for drone.io (Py 2.7, uses OpenMP, tests sundials backend, 
+runs slow tests, build docs as artifact, html coverage report as artifact):
+
+
+.. ci-end
 
 TODO
 ----

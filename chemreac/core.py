@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
+core
+====
 Provides core functinoality: ReactionDiffusion
 """
 import os

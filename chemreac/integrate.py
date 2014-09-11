@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
-
-
 """
-Integration
-===========
+integrate
+=========
 
 This module provides functions for integrating the
 system of ODEs which the ReactionDiffusion represent.
 Currently the user may choose from using a
 """
+
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+
 
 import time
 

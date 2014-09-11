@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 
+"""
+plotting
+--------
+
+convenience functions to create matplotlib plots
+of results.
+"""
+
 import numpy as np
 from chemreac.util.banded import get_jac_row_from_banded
 import matplotlib.pyplot as plt

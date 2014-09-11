@@ -1,11 +1,9 @@
+* Screening (Debye-Hückel)
+
 * remove "banded_padded_jac_cmaj" (same effect can be achieved through
   using and offset plus extra ldj.)
 
-* derive atol/rtol estimates for logy
-
-* more tests for logx
-
-* add fixed grid spacing
+* derive atol/rtol estimates for logy [essentially done: document this!]
 
 * stricter boundary conditions:
   - Robin boundary conditions
@@ -17,7 +15,10 @@
   - Neumann
   - Cauchy
 
-* implement symbolic (PLDU) solver for sundials.
-
 * avoid underflow/(overflow) in logy mode. Convolution?
 
+* more tests for logx
+
+* add fixed grid spacing
+
+* implement symbolic (PLDU) solver for sundials.

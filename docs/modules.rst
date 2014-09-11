@@ -1,10 +1,10 @@
-modules
-=======
+Modules Reference
+=================
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
    core.rst
    integrate.rst
    chemistry.rst
-   util.rst
+   util/index.rst
