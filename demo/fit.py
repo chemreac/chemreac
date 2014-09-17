@@ -7,7 +7,6 @@ from math import ceil
 
 import argh
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 from chemreac import ReactionDiffusion
@@ -163,6 +162,7 @@ def fit_binary_eq_from_temporal_abs_data(
         *popt))
 
     if plot_info:
+        import matplotlib.pyplot as plt
         # Guess of rate coefficient (k)
         plt.subplot(4, 1, 1)
         linB_t_plot = np.array([0, d_guess+tdata[itransient-1]])
@@ -211,7 +211,7 @@ def simulate_stopped_flow(rd, t, c0, k, noiselvl, eps_l, tdelay=None):
     return tinp, yinp
 
 
-def main(tdelay=1.0, B0=0.6, noiselvl=3e-4, nt=200, eps_l=4200.0):
+def main(tdelay=1.0, B0=0.6, noiselvl=3e-4, nt=200, eps_l=4200.0, plot=False):
     """
     Solution:
       1. non-linear fit to:
@@ -235,20 +235,22 @@ def main(tdelay=1.0, B0=0.6, noiselvl=3e-4, nt=200, eps_l=4200.0):
     yout, info = run(rd_eq, c0, ttrue)
     yopt = yout[:, 0, 2]*eps_l_opt
 
-    # Plot
-    plt.subplot(2, 1, 1)
-    plt.plot(tinp, yinp, label='Input data')
-    plt.plot(ttrue-tdelay, yopt,
-             label='Shooting Opt (k={})'.format(k_fw_opt))
-    plt.legend(loc='best')
+    if plot:
+        import matplotlib.pyplot as plt
+        # Plot
+        plt.subplot(2, 1, 1)
+        plt.plot(tinp, yinp, label='Input data')
+        plt.plot(ttrue-tdelay, yopt,
+                 label='Shooting Opt (k={})'.format(k_fw_opt))
+        plt.legend(loc='best')
 
-    plt.subplot(2, 1, 2)
-    plt.plot(tinp, yinp, label='Input data')
-    # TODO: this needs to be improved...
-    yquad = (B0-1/(1/B0+k_fw_opt*ttrue))*eps_l_opt
-    plt.plot(ttrue-tdelay, yquad, label='Equal initial conc treatment')
-    plt.legend(loc='best')
-    plt.show()
+        plt.subplot(2, 1, 2)
+        plt.plot(tinp, yinp, label='Input data')
+        # TODO: this needs to be improved...
+        yquad = (B0-1/(1/B0+k_fw_opt*ttrue))*eps_l_opt
+        plt.plot(ttrue-tdelay, yquad, label='Equal initial conc treatment')
+        plt.legend(loc='best')
+        plt.show()
 
 
 if __name__ == '__main__':

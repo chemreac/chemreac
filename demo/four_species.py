@@ -3,7 +3,6 @@
 
 import argh
 import numpy as np
-import matplotlib.pyplot as plt
 
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.serialization import load
@@ -38,6 +37,7 @@ def main(tend=10.0, N=1, nt=500, plot=False, jac_spy=False, mode=None,
     else:
         mode = int(mode)
 
+    import matplotlib.pyplot as plt
     if jac_spy:
         fout = np.empty(sys.n*sys.N)
         sys.f(t0, y0, fout)

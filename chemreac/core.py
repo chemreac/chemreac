@@ -144,6 +144,17 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     # subset of extra_attrs optionally passed by user
     kwarg_attrs = ['substance_names', 'substance_tex_names']
 
+    _substance_names = None
+    _substance_tex_names = None
+
+    @property
+    def substance_names(self):
+        return self._substance_names or map(str, range(self.n))
+
+    @property
+    def substance_tex_names(self):
+        return self._substance_tex_names or map(str, range(self.n))
+
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
@@ -228,7 +239,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
         for attr in cls.kwarg_attrs:
             if attr in kwargs:
-                setattr(rd, attr, kwargs.pop(attr))
+                setattr(rd, '_' + attr, kwargs.pop(attr))
         if kwargs:
             raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd

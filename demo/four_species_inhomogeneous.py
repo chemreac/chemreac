@@ -5,11 +5,6 @@ from __future__ import print_function, division
 
 import argh
 import numpy as np
-# matplotlib
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib
-from matplotlib import cm
-from matplotlib import pyplot as plt
 
 from chemreac.serialization import load
 from chemreac import DENSE, BANDED, SPARSE
@@ -46,6 +41,9 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
 
     cx = sys.x[:-1]+np.diff(sys.x)/2  # center x
     if plot:
+        # matplotlib
+        from matplotlib import cm
+        from matplotlib import pyplot as plt
         fig = plt.figure()
 
         for i, l in enumerate('ABCD'):
