@@ -8,7 +8,7 @@ Welcome to chemreac's documentation!
 
 chemreac is an open-source library for modeling chemical kinetcs in either:
 
-- Homogeneous bulk solution
+- Homogeneous bulk solution (no concentration gradients)
     - Kinetics governed by law of mass action
 - Non-homogeneous solution where concentration profile has either:
     - planar symmetry
@@ -19,21 +19,22 @@ For the non-homogeneous case the user may choose:
 
 - reflective or interpolating boundary conditions
 - number of stencil points (3, 5 or 7)
-- arbitrarily spaced grid
-- calculate the electric field from concentrations for advection (drift).
+- an arbitrarily spaced grid
+- to calculate the electric field from concentrations for advection (drift).
 
 Interfaces are provided to Sundials_ (CVODE) at the C++ level and to both 
-Sundials and ODEPACK at the python level.
+Sundials and SciPy_ at the python level.
 
 Currently the code is written with the following assumptions:
 
 - isothermal conditions
+- law of mass action kinetics
+- low concentrations of charged species
 
-TODO:
 
-- Screening (Debye-Hückel)
+The Advection/Diffusion/Reaction model
+--------------------------------------
 
-Advection/Diffusion/Reaction models.
 The model is formulated as the Smoluchovski equation:
 
 .. math ::
@@ -48,17 +49,18 @@ where :math:`t` is time, :math:`c_i` is the concentration of species :math:`i`, 
     0 &\mbox{otherwise} \end{cases}
 
 where :math:`\kappa_l` is the rate constant, :math:`R_{kl}` is the stoichiometric coefficient of species :math:`k` on the reactant side.
-which is discretied in one dimension. The model is implemented
-in a C++ class with Python_ bindings
-for ease of access.
+
+The equation is discretized in one dimension (flat, cylindrical or spherical shells). 
+The model is implemented in a C++ class with Python_ bindings for ease of access.
 
 Contents:
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 4
 
    install.rst
    modules.rst
+   dev.rst
 
 
 Indices and tables
@@ -71,5 +73,5 @@ Indices and tables
 
 .. _Python: https://www.python.org/
 .. _Sundials: http://computation.llnl.gov/casc/sundials/main.html
-.. _SciPy: http://www.scipy.org/
+.. _SciPy: http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html#scipy.integrate.ode
 .. _VODE: http://www.netlib.org/ode/vode.f

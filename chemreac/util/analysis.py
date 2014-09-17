@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-
 """
+analysis
+--------
+
 Functions to analyze output.
 """
 

@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 
+"""
+stoich
+------
+
+functions to decompose yield to linear
+combination of reactions.
+
+"""
+
 import numpy as np
 
 

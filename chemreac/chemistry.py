@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+chemistry
+=========
 
+Classes to describe substances, reactions and reaction systems. The
+classes have methods to help with low-level conversion to parameters
+of the model.
+"""
 from __future__ import print_function, division, absolute_import
 
 from collections import defaultdict, OrderedDict

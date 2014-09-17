@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+banded
+------
+
+Functions to deal with banded matrices.
+"""
+
 import numpy as np
 
 
