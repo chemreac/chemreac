@@ -6,7 +6,6 @@ from __future__ import (
 )
 
 import argh
-import matplotlib.pyplot as plt
 import numpy as np
 
 from chemreac import FLAT, CYLINDRICAL, SPHERICAL, Geom_names
@@ -17,6 +16,7 @@ from analytic_diffusion import (
 
 
 def main():
+    import matplotlib.pyplot as plt
     nstencils = [3, 5, 7]
     c = 'rbk'
     m = 'osd'

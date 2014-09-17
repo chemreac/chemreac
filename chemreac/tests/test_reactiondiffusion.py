@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 from __future__ import division, print_function
@@ -15,8 +14,6 @@ from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 
-
-np.set_printoptions(precision=3, linewidth=260)
 
 TR_FLS = [True, False]
 TRUE_FALSE_PAIRS = list(product(TR_FLS, TR_FLS))
@@ -747,8 +744,9 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
     rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
-    plot = True
     if os.environ.get('plot_tests', False):
+        import matplotlib
+        matplotlib.use('Agg')
         import matplotlib.pyplot as plt
         from chemreac.util.plotting import coloured_spy
         fig = plt.figure()

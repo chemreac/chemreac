@@ -8,6 +8,8 @@ before_install:
 - mv /home/travis/miniconda/envs/test-env/bin/../lib/libm.so* /tmp/
 - ./scripts/aptget.ubuntu.12.04LTS.sh
 - ./scripts/install_sundials_w_lapack.sh
+- mkdir -p $HOME/.config/matplotlib/
+- cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 install:
 - source $HOME/miniconda/bin/activate test-env
 - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 python setup.py
