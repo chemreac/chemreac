@@ -21,6 +21,6 @@ if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}
     cp -R ${WORKDIR}/htmlcov .
     git add -f .
     git commit -m "Lastest docs on successful travis build $TRAVIS_BUILD_NUMBER auto-pushed to gh-pages"
-    git push -fq origin gh-pages > /dev/null
+    git push -f origin gh-pages
     echo -e "Published docs to gh-pages.\n"
 fi
