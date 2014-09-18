@@ -18,7 +18,7 @@ script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --pep8 --doctest
   --cov chemreac --cov-report html --ignore build/ --ignore setup.py
 after_success:
 - coveralls
-- scripts/push-to-gh-pages.sh
+- LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH scripts/push-to-gh-pages.sh
 notifications:
   email: false
 env:
