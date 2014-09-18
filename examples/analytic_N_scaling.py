@@ -1,6 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+This examples plots the error in the solution
+as function of number of bins. We expect different
+behaviour depending on the number of stencil points used.
+(N**-2, N**-4 and N**-6 for 3, 5 and 7 stencil points respectively)
+
+"""
+
 from __future__ import (
     print_function, division, absolute_import, unicode_literals
 )
@@ -15,7 +23,7 @@ from analytic_diffusion import (
 )
 
 
-def main():
+def main(output='analytic_N_scaling.png'):
     import matplotlib.pyplot as plt
     nstencils = [3, 5, 7]
     c = 'rbk'
@@ -58,7 +66,10 @@ def main():
                               Geom_names[geom])
 
     plt.tight_layout()
-    plt.show()
+    if output:
+        plt.savefig(output)
+    else:
+        plt.show()
 
 
 if __name__ == '__main__':
