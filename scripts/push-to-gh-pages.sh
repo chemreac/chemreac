@@ -17,6 +17,7 @@ if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}
     git checkout --orphan gh-pages
     git rm -rf .
     cp -R ${WORKDIR}/gh-pages-skeleton/* .
+    cp ${WORKDIR}/gh-pages-skeleton/.* .
     cp -R ${WORKDIR}/docs/_build/html ./docs
     cp -R ${WORKDIR}/htmlcov .
     git add -f .

@@ -19,7 +19,10 @@ aqueous phase with external radiation fields.
 Documentation
 =============
 
-the documentation is found at http://chemreac.readthedocs.org/
+the documentation is hostad at
+
+- http://chemreac.readthedocs.org/
+- http://bjodah.github.io/chemreac/docs/
 
 Installation
 ============

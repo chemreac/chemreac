@@ -202,7 +202,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
                  random=False, k=0.0, nstencil=3, linterpol=False,
                  rinterpol=False, num_jacobian=False, method='bdf',
                  scale_x=False, plot=False, atol=1e-6, rtol=1e-6,
-                 efield=False, random_seed=42, savefig=''):
+                 efield=False, random_seed=42, savefig='None'):
     if random_seed:
         np.random.seed(random_seed)
     decay = (k != 0.0)
@@ -342,7 +342,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.xlabel('Time / s')
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
-        if savefig:
+        if savefig != 'None':
             plt.savefig(savefig)
         else:
             plt.show()
