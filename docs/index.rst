@@ -60,6 +60,7 @@ Contents:
 
    install.rst
    modules.rst
+   examples/index.rst
    dev.rst
 
 

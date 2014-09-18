@@ -19,6 +19,7 @@ script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --pep8 --doctest
 after_success:
 - coveralls
 - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH scripts/push-to-gh-pages.sh
+- scripts/push-to-readthedocs.sh
 notifications:
   email: false
 env:

@@ -74,6 +74,9 @@ if on_rtd:
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
+
+sys.path.insert(0, os.path.abspath('./extensions/'))
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.doctest',
@@ -81,6 +84,7 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
     'numpydoc',
+    'exec_directive',
 ]
 
 numpydoc_show_class_members = False
