@@ -88,7 +88,14 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
         bin_k_factor_span=bkf_span,
         logy=logy, logt=logt, geom=geom
     )
+    assert rd.n == n
+    assert rd.N == N
+    assert rd.nr == 4
+    assert np.allclose(rd.D, D)
+    assert np.allclose(rd.k, k)
     assert np.allclose(rd.xcenters, xc)
+    assert np.allclose(rd.bin_k_factor, bkf)
+    assert np.allclose(rd.bin_k_factor_span, bkf_span)
     y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N])
     y0 = y0.flatten()
     t0, tend, nt = 1.0, 1.1, 42

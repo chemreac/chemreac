@@ -36,6 +36,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+mkdir -p $HOME/.config/matplotlib/
+cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 
 # Build extension module and run test suite
 source activate test-env

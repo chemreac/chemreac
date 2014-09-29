@@ -1,9 +1,12 @@
 #!/bin/bash -x
 GH_USER=bjodah
 GH_REPO=chemreac
-WORKDIR=`pwd`
-
 if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}/${GH_REPO}" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
+    # ReadTheDocs
+    echo -e "Triggering readthedocs webhook...\n"
+    curl -X POST http://readthedocs.org/build/chemreac
+
+    # Github pages
     echo -e "Building docs...\n"
     ./scripts/build_docs.sh
 
@@ -24,4 +27,7 @@ if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}
     git commit -m "Lastest docs on successful travis build $TRAVIS_BUILD_NUMBER auto-pushed to gh-pages"
     git push -f origin gh-pages
     echo -e "Published docs to gh-pages.\n"
+
+    # Trigger drone.io build (more extensive testing)
+    curl -X https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX
 fi

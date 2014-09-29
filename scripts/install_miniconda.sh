@@ -3,9 +3,9 @@ INSTALL_PATH=$2
 
 if [[ "$PY_VERSION" == "2.7" ]]; then
     # This saves us some downloading for this version
-    wget --quiet http://repo.continuum.io/miniconda/Miniconda-3.6.0-Linux-x86_64.sh -O miniconda.sh;
+    wget --quiet http://repo.continuum.io/miniconda/Miniconda-3.7.0-Linux-x86_64.sh -O miniconda.sh;
 else
-    wget --quiet http://repo.continuum.io/miniconda/Miniconda3-3.6.0-Linux-x86_64.sh -O miniconda.sh;
+    wget --quiet http://repo.continuum.io/miniconda/Miniconda3-3.7.0-Linux-x86_64.sh -O miniconda.sh;
 fi
 if [[ $? != 0 ]]; then
     echo "Failed to get Miniconda."
