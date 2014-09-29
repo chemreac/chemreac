@@ -1,49 +1,27 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import (
-    print_function, division, absolute_import, unicode_literals
-)
-
-from itertools import product
-
 import numpy as np
-import pytest
 
 from steady_state import integrate_rd
 
-TR_FLS = (True, False)
+
+def _assert_mp(t, ydot, yout):
+    from sympy.mpmath import odefun
+    f = odefun(ydot, 0, [1, 0, 0])
+    for tidx, tval in enumerate(t):
+        mpvals = f(tval)
+        for sidx in range(3):
+            assert abs(mpvals[sidx] - yout[tidx, 0, sidx]) < 1e-8
 
 
-@pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, TR_FLS,
-                                                TR_FLS, [3], [1e-5])))
-def test_steady_state(params):
-    ly, lt, r, lr, rr, ns, forgiveness = params
-    # notice forgiveness << 1
-    # this is because static conditions is very simple to integrate
-    atol = 1e-6
-    tout, yout, info, ave_rmsd_over_atol, rd = integrate_rd(
-        geom='f', logt=lt, logy=ly, N=128, random=r, nstencil=ns,
-        lrefl=lr, rrefl=rr, atol=atol, rtol=1e-6)
-    assert info['success']
-    for rmsd in ave_rmsd_over_atol:
-        assert np.all(rmsd < forgiveness)
+def test_Bss_approxiamtion():
+    t, yout, A_ssB, A_ssB_2fast, ydot = integrate_rd(
+        1.0, 1e-3, 220, 217)
+    assert np.allclose(yout[:, 0, 0], A_ssB)
+    _assert_mp(t, ydot, yout)
 
 
-@pytest.mark.parametrize('params', list(product(
-    TR_FLS, TR_FLS, TR_FLS, [5, 7])))
-def test_steady_state__high_stencil(params):
-    ly, lt, r, nstencil = params
-    test_steady_state((ly, lt, r, False, False, nstencil, 3e-2))
-
-
-@pytest.mark.xfail
-@pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, 'cs')))
-def test_steady_state__curved_geom(params):
-    ly, lt, r, geom = params
-    atol = 1e-6
-    tout, yout, info, ave_rmsd_over_atol, rd = integrate_rd(
-        geom=geom, logt=lt, logy=ly, N=128, random=r,
-        lrefl=True, rrefl=True, atol=atol, rtol=1e-6)
-    assert info['success']
-    for rmsd in ave_rmsd_over_atol:
-        assert np.all(rmsd < 1.0)
+def test_Bss_2fast_approxiamtion():
+    t, yout, A_ssB, A_ssB_2fast, ydot = integrate_rd(
+        1.0, 1e-10, 220e5, 217)
+    assert np.allclose(yout[:, 0, 0], A_ssB_2fast)
+    # Too slow:
+    # _assert_mp(t, ydot, yout)
