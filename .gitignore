@@ -6,9 +6,9 @@
 *~
 */*~
 
-# Output files from demos
-demo/*.png
-demo/profile.out
+# Output files from examples
+examples/*.png
+examples/profile.out
 
 # Rendered sources
 src/tests/chemreac.cpp
@@ -18,7 +18,6 @@ build/
 *.pyc
 */*.pyc
 */*/*.pyc
-*/*.html
 */*.o
 */*.mod
 */*.so
@@ -34,7 +33,11 @@ src/tests/*.out
 runtests.py
 src/exprs.pkl
 
+# Generated files from docs
+docs/_build
+
 # Various
 .cache/
 .metadata_CompilerRunner
-docs/_build
+.coverage
+htmlcov/

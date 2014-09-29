@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 
+"""
+stoich
+------
+
+functions to decompose yield to linear
+combination of reactions.
+
+"""
+
 import numpy as np
 
 
@@ -20,7 +29,7 @@ def get_coeff_mtx(substances, stoichs):
     A = np.zeros((len(substances), len(stoichs)))
     for ri, sb in enumerate(substances):
         for ci, (reac, prod) in enumerate(stoichs):
-            A[ri,ci] = prod.get(sb, 0) - reac.get(sb, 0)
+            A[ri, ci] = prod.get(sb, 0) - reac.get(sb, 0)
     return A
 
 

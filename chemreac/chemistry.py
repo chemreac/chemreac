@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+chemistry
+=========
 
+Classes to describe substances, reactions and reaction systems. The
+classes have methods to help with low-level conversion to parameters
+of the model.
+
+"""
 from __future__ import print_function, division, absolute_import
 
 from collections import defaultdict, OrderedDict
@@ -26,35 +34,32 @@ class Substance(object):
     Parameters
     ==========
     name: string
-         unique string representation e.g. "CNO-", "ONC-"
+        unique string representation e.g. "CNO-", "ONC-"
     charge: integer
-         charge of substance
+        charge of substance
     mass: float
-         molar mass (default None)
+        molar mass (default None)
     formula: e.g. periodictable.formulas.Formula instance
-         optional, if formula instance provides `mass` attribute it is
-         used as mass in the case mass=None
+        optional, if formula instance provides `mass` attribute it is
+        used as mass in the case mass=None
     tex_name: string
-         optional, TeX formated string, e.g. '$\mathrm{OH^{-}}$'
+        optional, TeX formated string, e.g. '$\mathrm{OH^{-}}$'
     multiplicity: integer
-         optional, 1 for singlet, 2 for doublet...
-    D: diffusion coefficent
-         optional, default 0.0, for now: isothermal, isotropic and only
-         for one medium.
+        optional, 1 for singlet, 2 for doublet...
+    D: float (optional)
+        diffusion coefficent, for now: isothermal, isotropic and only
+        for one medium.  default: 0.0
     **kwargs:
-         additional freely chosen attributes
+        additional freely chosen attributes
 
     Examples
     ========
-    >>> water = Substance(name = 'H2O',  charge = 0, formula = formula_H2O,
-        tex_name = r'$\mathrm{H_{2}O}$', pKa = 14)
+    >>> Substance(name='H2O', charge=0, tex_name=r'$\mathrm{H_{2}O}$', pKa=14)
     <Substance 'H2O'>
     >>> Substance.all_substances['H2O']
     <Substance 'H2O'>
-    >>> del water
     >>> 'H2O' in Substance.all_substances
-    False
-
+    True
 
     """
     # weakref => If instance is deleted GC can kill it.
@@ -84,7 +89,7 @@ class Substance(object):
             self.__class__.all_substances[name] = self
 
     def __repr__(self, ):
-        return "<" + __class__.__name__ + " '" + self.name + "'>"
+        return "<" + self.__class__.__name__ + " '" + self.name + "'>"
 
     # Thanks to total_ordering it is sufficient to specify eq and lt
     def __eq__(self, other):
@@ -105,11 +110,20 @@ def mk_sn_dict_from_names(names, **kwargs):
     instances from a sequence of names and corresponding sequences
     of kwargs to Substance class.
 
+    Parameters
+    ----------
+    names: sequence of strings
+        names of substances
+    **kwargs:
+        sequences of corresponding keyword arguments
+
     Examples
-    =======
-    >>> sbstncs = mk_sn_dict_from_names('ABCD', D=[0.1, 0.2, 0.3, 0.4])
-    OrderedDict([('A', <Substance 'A'>), 'B', <Substance 'B'>), 'C',
-    <Substance 'C'>), 'D', <Substance 'D'>)])
+    --------
+    >>> mk_sn_dict_from_names(
+    ...     'ABCD', D=[0.1, 0.2, 0.3, 0.4]) # doctest: +NORMALIZE_WHITESPACE
+    OrderedDict([('A', <Substance 'A'>), ('B', <Substance 'B'>),
+    ('C', <Substance 'C'>), ('D', <Substance 'D'>)])
+
     """
     kwargs_list = []
     for i in range(len(names)):
@@ -124,8 +138,9 @@ def mk_sn_dict_from_names(names, **kwargs):
 
 class Reaction(object):
     """
+    Reaction with kinetics governed by the law of mass-action.
 
-    Must honour:
+    Must honor:
       A + R --> A + P
     That is: law of massaction depend on [A]
 
@@ -146,6 +161,39 @@ class Reaction(object):
 
     along the same lines `name` is possible to use if the reaction
     is known under a certain name, e.g. "H2O2 auto-decomposition"
+
+    Parameters
+    ----------
+    reactants: dict
+        dictionary mapping substance name (string) to stoichiometric
+        coefficient (integer)
+    products: dict
+        dictionary mapping substance name (string) to stoichiometric
+        coefficient (integer)
+    active_reac: dict (optional)
+        if the rate expression contains a reactant to the power of a
+        number different than its stoichiometric coefficient it may be
+        overridden here. For example: active_reac={'H2O': 1} makes the rate
+        expression linear in H2O concentration even though reactants['H2O']
+        could be equal to 4 (say)
+    inactive_reac: dict (optional)
+        semantically different but provides same functionality as active_reac
+        (only one of these may be passed). Here you specify a positive number <
+        the stoichiometric coefficient of the reactant not to be counted. The
+        corresponding example to active_reac may be achieved by passing
+        inactive_reac={'H2O': 3}
+    k: float
+        rate coefficient
+    T: float
+        absolute temperature
+    Ea: float
+        activation energy
+    A: float
+        preexponential prefactor (Arrhenius type eq.)
+    ref: string
+        Reference key
+    name: string
+        Descriptive name of reaction
     """
 
     all_instances = weakref.WeakSet()
@@ -217,14 +265,15 @@ class ReactionSystem(object):
     Collection of reactions forming a system (model).
 
     Parameters
-    ==========
+    ----------
     rxns: sequence
          Reaction instances in ReactionSystem
     name: string
          Name of ReactionSystem (e.g. model name / citation key)
     substances: sequence
          Sequence of Substance instances, will be used in doing
-         a sanity check and as default in method `to_ReactionDiffusion`
+         a sanity check and as default in method :method:`to_ReactionDiffusion`
+
     """
 
     def __init__(self, rxns=None, name=None, substances=None):
@@ -244,6 +293,7 @@ class ReactionSystem(object):
         self._do_sanity_check()
 
     def _do_sanity_check(self):
+        """ Check for conservation of mass and charge. """
         if self.substances is None:
             return
         for rxn in self._rxns:
@@ -324,18 +374,21 @@ class ReactionSystem(object):
 class Henry(object):
     """
     Henry's gas constant
+
+    Parameters
+    ----------
+    k_H0: float
+        Henry's constant [M/atm]
+    derivative: float
+        -dln(k_H)/d(1/T) [K]
+    ref: object
+        Note about origin of parameters
+
     """
 
     T0 = 298.15 * pq.kelvin
 
     def __init__(self, k_H0, derivative, ref=None):
-        """
-
-        Arguments:
-        - `k_H0`:        Henry's constant [M/atm]
-        - `derivative`: -dln(k_H)/d(1/T) [K]
-        - `ref`:         Note about origin of parameters
-        """
         self._k_H0 = k_H0
         self._derivative = derivative
         self._ref = ref

@@ -1,4 +1,13 @@
+# -*- coding: utf-8 -*-
+"""
+banded
+------
+
+Functions to deal with banded matrices.
+"""
+
 import numpy as np
+
 
 def get_banded(A, n, N):
     """
@@ -39,7 +48,7 @@ def get_jac_row_from_banded(J, rows, n):
     n: integer
         row length
     """
-    out = np.empty((len(rows),n))
+    out = np.empty((len(rows), n))
     for ri in rows:
         for ci in range(n):
             out[rows.index(ri), ci] = J[n+ri-ci, ci]

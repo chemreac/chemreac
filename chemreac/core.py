@@ -1,11 +1,20 @@
 # -*- coding: utf-8 -*-
 
 """
+core
+====
 Provides core functinoality: ReactionDiffusion
 """
-
+import os
 import numpy as np
-from ._chemreac import CppReactionDiffusion
+
+
+if os.environ.get('READTHEDOCS', None) == 'True':
+    # On readthedocs, cannot compile extension module.
+    class CppReactionDiffusion(object):
+        pass  # mockup
+else:
+    from ._chemreac import CppReactionDiffusion
 
 DENSE, BANDED, SPARSE = range(3)
 FLAT, CYLINDRICAL, SPHERICAL = range(3)
@@ -57,8 +66,29 @@ class ReactionDiffusionBase(object):
 
 class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     """
+    Object representing the numerical model, with callbacks for evaluating
+    derivatives and jacobian.
+
+    The instance provides methods:
+
+    f(t, y, fout)
+    dense_jac_rmaj(t, y, Jout)
+    dense_jac_cmaj(t, y, Jout)
+    banded_jac_cmaj(t, y, Jout)
+    banded_packed_jac_cmaj(t, y, Jout)
+
+    some of which are used by chemreac.integrate.integrate_scipy
+
+    In addition error estimates (if provided by user) are stored as:
+    - k_err
+    - D_err
+
+    Additional convenience attributes (not used by underlying C++ class):
+    - names
+    - tex_names
+
     Parameters
-    ==========
+    ----------
     n: integer
         number of species
     stoich_reac: list of lists of integer indices
@@ -107,30 +137,23 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     xscale: float
         use internal scaling of length (default: 1.0)
         (finite difference scheme works best for step-size ~1)
-
-    The instance provides methods:
-
-    f(t, y, fout)
-    dense_jac_rmaj(t, y, Jout)
-    dense_jac_cmaj(t, y, Jout)
-    banded_jac_cmaj(t, y, Jout)
-    banded_packed_jac_cmaj(t, y, Jout)
-
-    some of which are used by chemreac.integrate.integrate_scipy
-
-    In addition error estimates (if provided by user) are stored as:
-    - k_err
-    - D_err
-
-    Additional convenience attributes (not used by underlying C++ class):
-    - names
-    - tex_names
     """
     # not used by C++ class
     extra_attrs = ['k_err', 'D_err', 'substance_names', 'substance_tex_names']
 
     # subset of extra_attrs optionally passed by user
     kwarg_attrs = ['substance_names', 'substance_tex_names']
+
+    _substance_names = None
+    _substance_tex_names = None
+
+    @property
+    def substance_names(self):
+        return self._substance_names or map(str, range(self.n))
+
+    @property
+    def substance_tex_names(self):
+        return self._substance_tex_names or map(str, range(self.n))
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
@@ -146,9 +169,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if N < nstencil:
             raise ValueError("N must be >= nstencil")
 
-        if z_chg == None:
+        if z_chg is None:
             z_chg = list([0]*n)
-        if mobility == None:
+        if mobility is None:
             mobility = list([0]*n)
         if N > 1:
             assert n == len(D)
@@ -171,7 +194,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 val_lst.append(val)
                 err_lst.append(err)
 
-        if x == None:
+        if x is None:
             x = 1.0
 
         if isinstance(x, float) or isinstance(x, int):
@@ -179,10 +202,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         else:
             assert len(x) == N+1
             # monotonic:
-            assert all([x[i+1]>x[i] for i in range(len(x)-1)])
+            assert all([x[i+1] > x[i] for i in range(len(x)-1)])
             _x = x
 
-        if stoich_actv == None:
+        if stoich_actv is None:
             _stoich_actv = list([[]]*len(stoich_reac))
         else:
             _stoich_actv = stoich_actv
@@ -192,14 +215,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
         # Handle bin_k_factor
-        if bin_k_factor == None:
-            if bin_k_factor_span == None:
+        if bin_k_factor is None:
+            if bin_k_factor_span is None:
                 bin_k_factor_span = []
             bin_k_factor = []
         else:
-            assert bin_k_factor_span != None
+            assert bin_k_factor_span is not None
             assert len(bin_k_factor) == N
-            assert all([len(x) == len(bin_k_factor_span) for x in bin_k_factor])
+            assert all([len(x) == len(bin_k_factor_span) for
+                        x in bin_k_factor])
             assert all([x >= 0 for x in bin_k_factor_span])
 
         nstencil = nstencil or (1 if N == 1 else 3)
@@ -215,7 +239,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
         for attr in cls.kwarg_attrs:
             if attr in kwargs:
-                setattr(rd, attr, kwargs.pop(attr))
+                setattr(rd, '_' + attr, kwargs.pop(attr))
         if kwargs:
             raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd

@@ -6,10 +6,12 @@ import tempfile
 from chemreac.util.table import rsys2tablines, rsys2table, rsys2pdf_table
 from test_graph import _get_rsys
 
+
 def test_rsys2tablines():
     assert rsys2tablines(*_get_rsys(), tex=False) == [
         '1 & 2A & $\\rightarrow$ & B & 3 & None'
     ]
+
 
 def test_rsys2table():
     assert rsys2table(*_get_rsys()) == r"""
@@ -25,6 +27,7 @@ Id. & Reactants &  & Products & Rate constant & Ref \\
 \bottomrule
 \end{tabular}
 \end{table}"""
+
 
 def test_rsys2pdf_table():
     rsys, sbstncs = _get_rsys()

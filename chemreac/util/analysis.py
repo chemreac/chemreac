@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
-
 """
+analysis
+--------
+
 Functions to analyze output.
 """
 
@@ -9,6 +11,7 @@ from __future__ import (absolute_import, division,
 from future.builtins import *
 
 import numpy as np
+
 
 def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     """
@@ -31,9 +34,7 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     =======
     Length 2 tuple of arrays corrsponding to lower and upper bounds around y.
 
-    Notes
-    =====
-    Assumes maximum mangitude of error be: e_max = \|y*rtol\| + atol
+    .. note:: Assumes maximum mangitude of error be: e_max = \|y*rtol\| + atol
     """
     solver_err = scale_err*(np.abs(y*rtol) + atol)
     if logy:
@@ -41,6 +42,7 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     else:
         res = y - solver_err, y + solver_err
     return np.array(res)
+
 
 def suggest_t0(rd, y0, max_f=1.0):
     """

@@ -1,17 +1,16 @@
 # -*- coding: utf-8 -*-
-
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
-
-
 """
-Integration
-===========
+integrate
+=========
 
 This module provides functions for integrating the
 system of ODEs which the ReactionDiffusion represent.
 Currently the user may choose from using a
 """
+
+from __future__ import (absolute_import, division,
+                        print_function, unicode_literals)
+
 
 import time
 
@@ -78,9 +77,10 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     rd.neval_j = 0
     texec = time.time()
     try:
-        yout = sundials_direct(rd, atol, rtol, lmm, y0, tout)
+        yout = sundials_direct(rd, atol, rtol, lmm, np.asarray(y0).flatten(),
+                               np.asarray(tout).flatten())
     except RuntimeError:
-        yout = np.ones((len(tout), rd.n*rd.N), order='C')/0
+        yout = np.ones((len(tout), rd.n*rd.N), order='C')/0  # NaN
         success = False
     else:
         success = True
@@ -99,7 +99,7 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     """
     tout: at what times to report, e.g.:
         np.linspace(t0, tend, nt+1)
-        np.logspace(t0+1e-12, np.log10(tend), nt+1)
+        np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt+1)
 
     Returns
     =======

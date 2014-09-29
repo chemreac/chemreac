@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 """
+testing
+-------
 Utility module for unit testing.
 """
 
@@ -12,6 +14,7 @@ import numpy as np
 
 
 from chemreac.util.analysis import solver_linear_error
+
 
 # _test... to avoid auto-detection by py.test
 def _test_rd_integration_run(cb, forgiveness=10, **kwargs):

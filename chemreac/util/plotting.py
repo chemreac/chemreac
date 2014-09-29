@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 
+"""
+plotting
+--------
+
+convenience functions to create matplotlib plots
+of results.
+"""
+
 import numpy as np
 from chemreac.util.banded import get_jac_row_from_banded
 import matplotlib.pyplot as plt
@@ -145,9 +153,10 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
     axes = _plot_analysis(_get_jac_row_over_t, print_names, rd, tout, yout,
                           indices, titles=[
                               print_names[i] for i in indices], **kwargs)
-    [ax.set_ylabel(
-        "$\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")
-     for ax in axes]
+    for ax in axes:
+        ax.set_ylabel(
+            "$\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")
+    return axes
 
 
 def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
@@ -259,6 +268,28 @@ def plot_C_vs_t_in_bin(
 
 def plot_C_vs_x(rd, tout, yout, substances, ti, ax=None, labels=None,
                 xscale='log', yscale='log', basetitle="C(x)"):
+    """
+    Plots concentration as function of x for selected
+    substances at time index 'ti'.
+
+    Parameters
+    ----------
+    rd: ReactionDiffusion
+    tout: 1D array of floats
+    yout: output from solver
+    substances: sequence of indies or names of substances
+    ti: int
+        time index
+    ax: Axes instance
+    labels: sequence of strings
+    xscale: matplotlib scale choice (e.g. 'log', 'symlog')
+    yscale: matplotlib scale choice (e.g. 'log', 'symlog')
+    basetitle: string
+
+    Returns
+    =======
+    Axes instance
+    """
     ax, substances, labels = _init_ax_substances_labels(
         rd, ax, substances, labels, xscale, yscale)
     x_edges = np.repeat(rd.x, 2)[1:-1]
@@ -269,10 +300,32 @@ def plot_C_vs_x(rd, tout, yout, substances, ti, ax=None, labels=None,
     ax.set_ylabel("C / M")
     ax.set_title(basetitle+" at t = {0:.3g} s".format(tout[ti]))
     ax.legend(loc='best', prop={'size': 11})
+    return ax
 
 
 def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
                       **plot_kwargs):
+    """
+    Plots 3D surface of concentration as function of time and x for a
+    selected substance.
+
+    Parameters
+    ----------
+    rd: ReactionDiffusion
+    tout: 1D array of floats
+    yout: output from solver
+    substance: int or string
+        index or name of substance
+    ax: Axes instance
+    log10: bool
+        Use log logarithmic (base 10) axis
+    **plot_kwargs:
+        passed onto plot_surface
+
+    Returns
+    =======
+    Axes3D instance
+    """
     # it would be nice to accpet kwargs
     #    xscale='log', yscale='log', zscale='log'
     # but it's currently not supported by matplotlib:
@@ -289,7 +342,7 @@ def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
     X, T = np.meshgrid(x_, t_)
     if 'cmap' not in plot_kwargs:
         plot_kwargs['cmap'] = cm.gist_earth
-    ax.plot_surface(X, T, y_[:, range(substance, rd.n*rd.N, rd.n)],
+    ax.plot_surface(X, T, y_[:, :, substance],
                     **plot_kwargs)
 
     fmtstr = "$log_{{10}}$({})" if log10 else "{}"
@@ -320,10 +373,10 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
     indices: sequence of integers
         what factor sequences to plot
     """
-    if not hasattr(ax, 'plot'):
-        if ax is None:
-            ax = plt.axes()
-        else:
+    if ax is None:
+        ax = plt.axes()
+    else:
+        if not hasattr(ax, 'plot'):
             ax = plt.axes(**ax)
     indices = indices or range(len(rd.bin_k_factor_span))
     factors = np.array(rd.bin_k_factor)
@@ -331,3 +384,4 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
     for i in indices:
         y_edges = np.pad(np.repeat(factors[:, i], 2), (0, 1), 'constant')
         ax.plot(x_edges, y_edges, label=i)
+    return ax
