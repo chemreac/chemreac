@@ -29,5 +29,5 @@ if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}
     echo -e "Published docs to gh-pages.\n"
 
     # Trigger drone.io build (more extensive testing)
-    curl -X https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX
+    curl -X POST "https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX"
 fi
