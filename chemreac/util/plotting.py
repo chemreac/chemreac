@@ -199,8 +199,9 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
     if substances is None:
         substance_idxs = range(rd.n)
     else:
-        substance_idxs = [s if isinstance(s, int) else rd.substance_names.index(s) for
-                      s in substances]
+        substance_idxs = [
+            s if isinstance(s, int) else rd.substance_names.index(s) for
+            s in substances]
 
     if labels is None:
         try:
