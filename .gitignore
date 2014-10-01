@@ -35,6 +35,7 @@ src/exprs.pkl
 
 # Generated files from docs
 docs/_build
+docs/_build.log
 
 # Various
 .cache/

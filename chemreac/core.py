@@ -139,7 +139,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         (finite difference scheme works best for step-size ~1)
     """
     # not used by C++ class
-    extra_attrs = ['k_err', 'D_err', 'names', 'tex_names']
+    extra_attrs = ['k_err', 'D_err', 'substance_names', 'substance_tex_names']
 
     # subset of extra_attrs optionally passed by user
     kwarg_attrs = ['substance_names', 'substance_tex_names']

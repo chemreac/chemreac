@@ -88,7 +88,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
     stoich_reac = []
     stoich_prod = []
     k = []
-    bin_k_factor = [[] for _ in range(N)]
+    bin_k_factor = [[] for _ in range(N)]  # initialize unique lists
     bin_k_factor_span = []
 
     rd = ReactionDiffusion(
@@ -196,6 +196,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
         plt.show()
         print(info)
     return tout, Cout, info, rd
+
 
 if __name__ == '__main__':
     argh.dispatch_command(integrate_rd, output_file=None)
