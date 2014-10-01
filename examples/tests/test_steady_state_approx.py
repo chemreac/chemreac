@@ -1,6 +1,6 @@
 import numpy as np
 
-from steady_state import integrate_rd
+from steady_state_approx import integrate_rd
 
 
 def _assert_mp(t, ydot, yout):
