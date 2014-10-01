@@ -11,6 +11,7 @@ from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
+from chemreac.util.testing import slow
 
 from test_reactiondiffusion import _test_dense_jac_rmaj
 
@@ -188,6 +189,7 @@ def test_chemistry():
     assert np.allclose(rd.D, serialized_rd.D)
 
 
+@slow
 def test_multi_compartment():
     rsys = load(JSON_PATH, N=3, lrefl=True, rrefl=True)
     _test_dense_jac_rmaj(rsys, 1.0, np.asarray(

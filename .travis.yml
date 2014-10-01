@@ -14,7 +14,7 @@ install:
 - source $HOME/miniconda/bin/activate test-env
 - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 python setup.py
   build_ext -i
-script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --pep8 --doctest-modules
+script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --slow --veryslow --pep8 --doctest-modules
   --cov chemreac --cov-report html --ignore build/ --ignore setup.py
 after_success:
 - coveralls

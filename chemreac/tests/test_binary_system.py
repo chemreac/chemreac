@@ -11,6 +11,7 @@ from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
+from chemreac.util.testing import slow, veryslow
 
 from test_reactiondiffusion import _test_f_and_dense_jac_rmaj
 
@@ -30,8 +31,6 @@ tests:
 * chemreac.chemistry.mk_sn_dict_from_names
 * chemreac.chemistry.ReactionSystem
 """
-
-slow = pytest.mark.slow
 
 TR_FLS = (True, False)
 
@@ -156,8 +155,9 @@ def test_chemistry():
     assert np.allclose(rd.D, serialized_rd.D)
 
 
-COMBOS = list(product(TR_FLS, TR_FLS, [1, 3], [FLAT, SPHERICAL, CYLINDRICAL]))
-EXTRA_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5],
+COMBOS = list(product(TR_FLS, TR_FLS, [1], [FLAT]))
+SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3], [FLAT, SPHERICAL, CYLINDRICAL]))
+VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5],
                             [FLAT, SPHERICAL, CYLINDRICAL]))
 
 
@@ -190,8 +190,13 @@ def _test_integrate(params):
 def test_integrate(params):
     _test_integrate(params)
 
-
 @slow
-@pytest.mark.parametrize("params", EXTRA_COMBOS)
-def test_integrate(params):
+@pytest.mark.parametrize("params", SLOW_COMBOS)
+def test_integrate_slow(params):
+    _test_integrate(params)
+
+
+@veryslow
+@pytest.mark.parametrize("params", VERYSLOW_COMBOS)
+def test_integrate_veryslow(params):
     _test_integrate(params)
