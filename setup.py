@@ -14,8 +14,10 @@ USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if (os.environ.get('DRONE', 'false') == 'true' or
-    os.environ.get('TRAVIS', 'flse') == 'true'):
+on_drone = os.environ.get('DRONE', 'false') == 'true'
+on_travis = os.environ.get('TRAVIS', 'flse') == 'true'
+
+if on_drone or on_travis:
     # 'fast' implies march=native which fails on current version of docker.
     options = ['pic', 'warn']
 else:

@@ -10,8 +10,7 @@ import numpy as np
 import pytest
 
 from analytic_diffusion import integrate_rd
-
-slow = pytest.mark.slow
+from chemreac.util.testing import veryslow
 
 TR_FLS = (True, False)
 
@@ -48,7 +47,7 @@ def test_gaussian_diffusion(params):
     _test_gaussian_diffusion(params)
 
 
-@slow
+@veryslow
 @pytest.mark.parametrize('params', EXTRA_COMBOS)
 def test_gaussian_diffusion_extended(params):
     _test_gaussian_diffusion(params)

@@ -14,8 +14,7 @@ install:
 - source $HOME/miniconda/bin/activate test-env
 - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 python setup.py
   build_ext -i
-script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH py.test --pep8 --doctest-modules
-  --cov chemreac --cov-report html --ignore build/ --ignore setup.py --ignore docs/examples/examples/
+script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./scripts/run_tests.sh
 after_success:
 - coveralls
 - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH scripts/travis_after_success.sh

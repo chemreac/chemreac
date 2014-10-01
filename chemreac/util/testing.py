@@ -6,14 +6,18 @@ testing
 Utility module for unit testing.
 """
 
+# -*- coding: utf-8 -*-
 from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from future.builtins import *
-
 import numpy as np
-
+import pytest
 
 from chemreac.util.analysis import solver_linear_error
+
+
+slow = pytest.mark.slow  # call time >~ 100 ms
+veryslow = pytest.mark.veryslow  # call time > a few seconds
 
 
 # _test... to avoid auto-detection by py.test
