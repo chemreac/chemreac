@@ -2,10 +2,10 @@
 # -*- coding: utf-8 -*-
 
 r"""
-Steady state
-------------
+Steady state approximation
+--------------------------
 
-:download:`examples/steady_state.py` shows how you can estimate
+:download:`examples/steady_state_approx.py` shows how you can estimate
 errors commited when assuming steady state for simple systems.
 We will consider the following system:
 
@@ -96,18 +96,19 @@ def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
     --------
     ::
 
-       $ python steady_state.py --plot --savefig steady_state.png
+       $ python steady_state_approx.py --plot --savefig steady_state_approx.png
 
 
-    .. image:: ../_generated/steady_state.png
+    .. image:: ../_generated/steady_state_approx.png
 
 
     ::
 
-       $ python steady_state.py --plot --savefig steady_state.html
+       $ python steady_state_approx.py --plot --savefig \
+           steady_state_approx.html
 
 
-    :download:`../_generated/steady_state.html`
+    :download:`../_generated/steady_state_approx.html`
 
     """
     def f(t):

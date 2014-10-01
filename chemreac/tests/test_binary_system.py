@@ -156,9 +156,10 @@ def test_chemistry():
 
 
 COMBOS = list(product(TR_FLS, TR_FLS, [1], [FLAT]))
-SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3], [FLAT, SPHERICAL, CYLINDRICAL]))
+SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3],
+                           [FLAT, SPHERICAL, CYLINDRICAL]))
 VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5],
-                            [FLAT, SPHERICAL, CYLINDRICAL]))
+                               [FLAT, SPHERICAL, CYLINDRICAL]))
 
 
 def _test_integrate(params):
@@ -189,6 +190,7 @@ def _test_integrate(params):
 @pytest.mark.parametrize("params", COMBOS)
 def test_integrate(params):
     _test_integrate(params)
+
 
 @slow
 @pytest.mark.parametrize("params", SLOW_COMBOS)

@@ -1,13 +1,13 @@
 #!/bin/bash
 if git diff-index --quiet HEAD --; then
     # no changes between index and working copy; just run tests
-    py.test
+    py.test --pep8
     RESULT=$?
 else
     # Test the version that's about to be committed,
     # stashing all unindexed changes
     git stash -q --keep-index
-    py.test
+    py.test --pep8
     RESULT=$?
     git stash pop -q
 fi

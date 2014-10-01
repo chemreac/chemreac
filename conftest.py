@@ -25,5 +25,6 @@ def pytest_runtest_setup(item):
         return
     if not item.config.getvalue("runslow") and hasattr(item.obj, 'slow'):
         pytest.skip("slow test: pass --slow to run")
-    if not item.config.getvalue("runveryslow") and hasattr(item.obj, 'veryslow'):
+    if not item.config.getvalue("runveryslow") and hasattr(
+            item.obj, 'veryslow'):
         pytest.skip("very slow test: pass --veryslow to run")

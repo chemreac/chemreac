@@ -48,9 +48,9 @@ python -c "import pycodeexport; print(pycodeexport.__version__)"
 
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py build_ext -i
-PYTHONPATH=.:$PYTHONPATH py.test --slow --veryslow --pep8 --doctest-modules --cov chemreac --cov-report html --ignore build/ --ignore setup.py --ignore docs/examples/examples/
+PYTHONPATH=`pwd`:$PYTHONPATH ./scripts/run_tests.sh
 if [[ $? != 0 ]]; then
-    echo "py.test failed."
+    echo "run_tests.sh failed."
     exit 1
 fi
 tar -jcf htmlcov.tar.bz2 htmlcov/
