@@ -37,9 +37,9 @@ Test coverage
    :target: https://coveralls.io/r/bjodah/chemreac?branch=master
    :alt: Test coverage
 
-unit tests are a great tool provided they actually cover the majority
-of the code base, in order to keep track of the coverage coveralls is
-used:
+unit testing is a great tool provided they actually cover the majority
+of the code base. In order to keep track of the coverage coveralls is
+used (click the badge above to see detailed per-line breakdown).
 
 
 Coding standards
@@ -56,3 +56,36 @@ The API docs are generated automatically and `numpydoc
 automatically parse docstrings of functions and classes. 
 See the `NumPy/SciPy documentation guide
 <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_ for more info.
+
+Example of setting up a development environment
+-----------------------------------------------
+Here is an example to get you started developing chemreac and contributing
+to the code:
+
+1. Fork the repository on github
+2. Install the dependencies specified in the README.rst
+3. Clone you own repo:
+
+::
+
+    $ git clone https://bitbucket.org/YOUR_GITHUB_USERNAME/chemreac.git
+
+4. Set-up the pre-commit hook.
+::
+
+    $ cd .git/hooks
+    $ ln -s ../../scripts/pre-commit.sh pre-commit
+
+5. Create a new branch
+::
+
+    $ git checkout -b fix_silly_bug
+
+6. Edit files, make a commit, and push your changes:
+::
+
+    $ git commit -am "Fixed a silly bug in the complex-thingy."
+    $ git push
+
+7. Go to your forked repo on github and create a pull-request from there.
+

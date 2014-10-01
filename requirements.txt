@@ -9,6 +9,7 @@ scipy>=0.14.0
 matplotlib>=1.4.0
 periodictable>=1.4.1
 future>=0.13.0
+mpld3>=0.2
 https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz
 https://github.com/bjodah/pycodeexport/archive/v0.0.4.tar.gz
 https://github.com/sympy/sympy/archive/master.zip
