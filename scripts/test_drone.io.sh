@@ -6,6 +6,11 @@
 PY_VERSION="2.7"
 MINICONDA_PATH=$HOME/miniconda
 # Install prerequisities
+function finish {
+    # Tell github that the shield cache has expired
+    curl -X PURGE https://camo.githubusercontent.com/7e92a4f31426afab773c4cc869f88e5c6a38e946/68747470733a2f2f64726f6e652e696f2f6769746875622e636f6d2f626a6f6461682f6368656d726561632f7374617475732e706e67
+}
+trap finish EXIT
 
 # miniconda
 bash scripts/install_miniconda.sh $PY_VERSION $MINICONDA_PATH
@@ -68,3 +73,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 tar -jcf html.tar.bz2 docs/_build/html/
+
