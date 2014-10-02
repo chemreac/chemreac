@@ -112,8 +112,8 @@ Continuous integration
 ----------------------
 .. ci-start
 
-In order to minimize the risk of (re)introducing bugs the code base, 
-it is continuously built on two CI services:
+In order to minimize the risk of (re)introducing bugs into the code
+base, it is continuously built on two CI services:
 
 - `travis-ci.org <https://travis-ci.org/bjodah/chemreac>`_
 - `drone.io <https://drone.io/github.com/bjodah/chemreac>`_
@@ -121,14 +121,15 @@ it is continuously built on two CI services:
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
 
-above you find build status shield for travis-ci (Py 2.7, Py 3.4, no OpenMP, runs coveralls).
+above you can find the build status shield for travis-ci (Py 2.7, Py
+3.4, no OpenMP, runs coveralls, builds docs and pushes them to the
+gh-pages branch).
 
 
 .. image:: https://drone.io/github.com/bjodah/chemreac/status.png
    :target: https://drone.io/github.com/bjodah/chemreac/latest
 
-above you find build status shield for drone.io (Py 2.7, uses OpenMP, tests sundials backend, 
-runs slow tests, build docs as artifact, html coverage report as artifact):
+above you can find build status shield for drone.io (Py 2.7, uses OpenMP, tests sundials backend, build docs as artifact, html coverage report as artifact):
 
 
 .. ci-end
