@@ -13,6 +13,36 @@ from chemreac.util.banded import get_jac_row_from_banded
 import matplotlib.pyplot as plt
 
 
+def save_and_or_show_plot(show=None, savefig='None'):
+    """
+    Convenience method
+    Parameters
+    ----------
+    show: bool or None
+        Show plot, when None only show when savefig is not used
+        default: None
+    savefig: string
+        path to output file of figure. If extension is html, mpld3
+        will be used to generate a d3 backed html output.
+    """
+    if savefig is not None and savefig != 'None':
+        if savefig.endswith('.html'):
+            # Export using mpld3
+            import mpld3
+            open(savefig, 'wt').write(mpld3.fig_to_html(plt.gcf()))
+        else:
+            plt.savefig(savefig)
+
+        if show is None:
+            show = False
+    else:
+        if show is None:
+            show = True
+
+    if show:
+        plt.show()
+
+
 def coloured_spy(A, cmap_name='gray', ax=None):
     """
     Convenience function for using matplotlib to

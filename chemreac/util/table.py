@@ -5,6 +5,7 @@ table
 -----
 
 Convenience functions for representing reaction systems in tables.
+
 """
 
 import subprocess
@@ -30,6 +31,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         default: '$\rightarrow$'
     ref_fmt: string
         format string of `ref` attribute of reactions
+
     """
     param_fmt = '{0:.3g}'  # Could be taken from Reaction instance
     _get_name = lambda sn: getattr(substances[sn],

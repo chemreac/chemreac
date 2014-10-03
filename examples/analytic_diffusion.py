@@ -66,7 +66,7 @@ from chemreac import (
     ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
 )
 from chemreac.integrate import run
-
+from chemreac.util.plotting import save_and_or_show_plot
 
 np.random.seed(42)
 
@@ -342,10 +342,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.xlabel('Time / s')
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
-        if savefig != 'None':
-            plt.savefig(savefig)
-        else:
-            plt.show()
+        save_and_or_show_plot(savefig=savefig)
 
     return tout, yout, info, ave_rmsd_over_atol, sys
 

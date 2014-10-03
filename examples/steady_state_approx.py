@@ -82,7 +82,7 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
-from chemreac.util.plotting import plot_C_vs_t_in_bin
+from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot
 
 
 def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
@@ -139,15 +139,7 @@ def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
         plt.legend(loc='best', prop={'size': 11})
         plt.tight_layout()
 
-        if savefig != 'None':
-            if savefig.endswith('.html'):
-                # Export using mpld3
-                import mpld3
-                open(savefig, 'wt').write(mpld3.fig_to_html(plt.gcf()))
-            else:
-                plt.savefig(savefig)
-        else:
-            plt.show()
+        save_and_or_show_plot(savefig=savefig)
 
     ydot = lambda x, y: (-k1*y[0] - k3*y[0]*y[1], k1*y[0] - k2*y[1],
                          k2*y[1] + k3*y[0]*y[1])
