@@ -32,21 +32,25 @@ def integrate(solver=None, *args, **kwargs):
     """
     Model kinetcs by integrating system of ODEs using
     user specified solver.
+
+    Parameters
+    ----------
     solver: string
-       "sundials" or "scipy" where scipy uses ODEPACK
+        "sundials" or "scipy" where scipy uses VODE
         as the solver.
-    args:
-    rd: ReactionDiffusion instance
-    y0: initial concentrations
-    tout: times for which to report solver results
-    mode: not supported by Sundials solver (current wrapper
+    *args:
+        rd: ReactionDiffusion instance
+        y0: initial concentrations
+        tout: times for which to report solver results
+        mode: not supported by Sundials solver (current wrapper
           code auto selects banded for N>1 and uses dense
           mode for N==1)
-    kwargs:
-      atol: float or sequence
-          absolute tolerance of solution
-      rtol: float or sequence
-          relative tolerance of solution
+    **kwargs:
+        atol: float or sequence
+            absolute tolerance of solution
+        rtol: float or sequence
+            relative tolerance of solution
+
     """
     if solver.lower() == 'sundials':
         return integrate_sundials(*args, **kwargs)
@@ -77,8 +81,9 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     rd.neval_j = 0
     texec = time.time()
     try:
-        yout = sundials_direct(rd, atol, rtol, lmm, np.asarray(y0).flatten(),
-                               np.asarray(tout).flatten())
+        yout = sundials_direct(rd, np.asarray(y0).flatten(),
+                               np.asarray(tout).flatten(),
+                               atol, rtol, lmm)
     except RuntimeError:
         yout = np.ones((len(tout), rd.n*rd.N), order='C')/0  # NaN
         success = False
@@ -97,13 +102,17 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
 
 def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
     """
-    tout: at what times to report, e.g.:
-        np.linspace(t0, tend, nt+1)
-        np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt+1)
+    see integrate
+
+    tout: array-like
+        at what times to report, e.g.:
+        - np.linspace(t0, tend, nt+1)
+        - np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt+1)
 
     Returns
     =======
     yout: numpy array of shape (len(tout), rd.N, rd.n)
+
     """
     y0 = np.asarray(y0)
     assert y0.size == rd.n*rd.N
@@ -187,8 +196,9 @@ def integrate_scipy(rd, y0, tout, mode=None, **kwargs):
 
 def run(*args, **kwargs):
     """
-    `run` is provided for backwards compability /
-    environment variable directed solver choice
+    ``run`` is provided for environment variable directed solver choice.
+    Set ``CHEMREAC_SOLVER`` to indicate what integrator to
+    use (default: "scipy").
     """
     import os
     return integrate(
