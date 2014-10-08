@@ -17,9 +17,13 @@ install:
 script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./scripts/run_tests.sh
 after_success:
 - coveralls
+- git config credential.helper "store --file=$HOME/git_credentials"
+- echo "https://${GH_TOKEN}:@github.com" > $HOME/git_credentials
+- echo ${BINSTAR_TOKEN} > $HOME/binstar_token
 - LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH scripts/travis_after_success.sh
 notifications:
   email: false
 env:
   global:
-    secure: M+U3qO8QjKtvB9yNVlIiClqMbUsrEOoXSGDvvfI3gsKd2r+hpxjk2MoVcgf2b9Gvrt7vRWit1d6wEAwcNOhb/s/DpyWYR/Rz4rnmKe3iqnkSmad+jWPPjEN09uX1fgiewjxGl+Nx8XcCk0Dx0XR0S87UgTRkttA8Z43kYzJAvyc=
+    secure: "CBQSeuxYK0cKDjp1jxw+Rf8IoP0Tq0fissPmCW5XbZ/SkynLqDiFZL0S5GPnGTyWxy1i+1ahpsKl2f8P+aKn4rof6ndba2yc94c5lTLOiDOJ50iRo6j/3WUbaCs48bcRxdoqF7cnpIOpPbwWTX0cGTVXdBpf0TjYN43MFEqBfYw="
+    secure: "FU2KD4srb2WbGuXE60GeHg8jb/HFAfynE/BsR/q5NT6DG7BdGBWFplvv5k9T4uzAM8wFL3dWMqT+zRct/8v9nv2VCyCX/jtfS8Tj3q73xdkZ+j7ksGBiJUvsj/udOTYOsQuxDgV6MIbIwtzcuKRRXo5yY9NMr4mB0D6EFRol+8E="

@@ -14,7 +14,7 @@ if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}
     cd $HOME
     git config --global user.email "travis@travis-ci.org"
     git config --global user.name "travis-ci"
-    git clone --quiet https://${GH_TOKEN}@github.com/${GH_USER}/${GH_REPO} ${GH_REPO} > /dev/null
+    git clone --quiet https://git@github.com/${GH_USER}/${GH_REPO} ${GH_REPO} > /dev/null
     cd ${GH_REPO}
     git branch -D gh-pages
     git checkout --orphan gh-pages
@@ -30,4 +30,9 @@ if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ] && [ "$TRAVIS_REPO_SLUG" == "${GH_USER}
 
     # Trigger drone.io build (more extensive testing)
     curl -X POST "https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX"
+
+    # Push wheel to binstar.org
+    conda config --add channels http://conda.binstar.org/USER
+    conda build conda-recipe/
+    binstar -t `cat $HOME/binstar_token` upload --force *.tar.bz2 # bash -x workaround
 fi
