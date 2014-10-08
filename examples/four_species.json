@@ -4,5 +4,5 @@
  "stoich_prod": [[1], [1, 3]],
  "n": 4,
  "N": 2,
- "names": ["A", "B", "C", "D"]
+ "substance_names": ["A", "B", "C", "D"]
 }

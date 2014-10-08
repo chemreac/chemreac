@@ -66,7 +66,7 @@ from chemreac import (
     ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
 )
 from chemreac.integrate import run
-
+from chemreac.util.plotting import save_and_or_show_plot
 
 np.random.seed(42)
 
@@ -291,12 +291,12 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         import matplotlib.pyplot as plt
         fig = plt.figure(figsize=(6, 10))
 
-        def _plot(y, c, ttl=None, apply_exp_on_y=False):
+        def _plot(y, c, ttl=None, apply_exp_on_y=False, vlines=False):
             plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y,
                      c=c)
-            if N < 100:
+            if vlines:
                 plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y),
-                           linewidth=.1, colors='gray')
+                           linewidth=1, colors='gray')
             plt.xlabel('x / m')
             plt.ylabel('C / M')
             if ttl:
@@ -308,12 +308,13 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
 
             plt.subplot(4, 1, 1)
             _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N),
-                  apply_exp_on_y=logy)
+                  apply_exp_on_y=logy, vlines=(i == 0 and N < 100))
             if decay:
                 _plot(yout[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 2)
-            _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
+            _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy,
+                  vlines=(i == 0 and N < 100))
             if decay:
                 _plot(yref[i, :, 1], c[::-1], apply_exp_on_y=logy)
 
@@ -321,12 +322,13 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
             if logy:
                 _plot(lin_err(i, 0)/info['atol'], c,
                       'Linear rel error / Log abs. tol. (={})'.format(
-                          info['atol']))
+                          info['atol']), vlines=(i == nt-1 and N < 100))
                 if decay:
                     _plot(lin_err(i, 1)/info['atol'], c[::-1])
             else:
                 _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
-                      'Abs. err. / Abs. tol. (={})'.format(info['atol']))
+                      'Abs. err. / Abs. tol. (={})'.format(info['atol']),
+                      vlines=(i == nt-1 and N < 100))
                 if decay:
                     _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'],
                           c[::-1])
@@ -342,10 +344,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.xlabel('Time / s')
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
-        if savefig != 'None':
-            plt.savefig(savefig)
-        else:
-            plt.show()
+        save_and_or_show_plot(savefig=savefig)
 
     return tout, yout, info, ave_rmsd_over_atol, sys
 

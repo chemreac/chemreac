@@ -1,6 +1,17 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+# ::
+#
+#     A     ->  B      k1
+#         B ->  C      k2
+#     A + B ->  B + C  k3
+#
+#     dA/dt = -k1*A          - k3*A*B
+#     dB/dt =  k1*A - k2*B
+#     dC/dt =         k2*B   + k3*A*B
+
+
 r"""
 Steady state approximation
 --------------------------
@@ -9,15 +20,20 @@ Steady state approximation
 errors commited when assuming steady state for simple systems.
 We will consider the following system:
 
-::
 
-    A     ->  B      k1
-        B ->  C      k2
-    A + B ->  B + C  k3
 
-    dA/dt = -k1*A          - k3*A*B
-    dB/dt =  k1*A - k2*B
-    dC/dt =         k2*B   + k3*A*B
+.. math ::
+
+    A &    &\rightarrow  B &     &~~~k_1 \\
+      &  B &\rightarrow  C &     &~~~k_2 \\
+    A + &B &\rightarrow  B &+ C  &~~~k_3
+
+
+.. math ::
+
+    \frac{dA}{dt} &= -k1 \cdot A  &        &- k3 \cdot A \cdot B \\
+    \frac{dB}{dt} &=  +k1 \cdot A  &- k2 \cdot B   &         \\
+    \frac{dC}{dt} &=        &+ k2 \cdot B   &+ k3 \cdot A \cdot B
 
 
 The rate expressions are from mass action and hence
@@ -82,7 +98,7 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
-from chemreac.util.plotting import plot_C_vs_t_in_bin
+from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot
 
 
 def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
@@ -105,7 +121,7 @@ def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
     ::
 
        $ python steady_state_approx.py --plot --savefig \
-           steady_state_approx.html
+steady_state_approx.html
 
 
     :download:`../_generated/steady_state_approx.html`
@@ -139,15 +155,7 @@ def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
         plt.legend(loc='best', prop={'size': 11})
         plt.tight_layout()
 
-        if savefig != 'None':
-            if savefig.endswith('.html'):
-                # Export using mpld3
-                import mpld3
-                open(savefig, 'wt').write(mpld3.fig_to_html(plt.gcf()))
-            else:
-                plt.savefig(savefig)
-        else:
-            plt.show()
+        save_and_or_show_plot(savefig=savefig)
 
     ydot = lambda x, y: (-k1*y[0] - k3*y[0]*y[1], k1*y[0] - k2*y[1],
                          k2*y[1] + k3*y[0]*y[1])

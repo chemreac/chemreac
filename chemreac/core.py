@@ -84,8 +84,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     - D_err
 
     Additional convenience attributes (not used by underlying C++ class):
-    - names
-    - tex_names
+    - substance_names
+    - substance_tex_names
 
     Parameters
     ----------
@@ -151,9 +151,17 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     def substance_names(self):
         return self._substance_names or map(str, range(self.n))
 
+    @substance_names.setter
+    def substance_names(self, names):
+        self._substance_names = names
+
     @property
     def substance_tex_names(self):
         return self._substance_tex_names or map(str, range(self.n))
+
+    @substance_tex_names.setter
+    def substance_tex_names(self, tex_names):
+        self._substance_tex_names = tex_names
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,

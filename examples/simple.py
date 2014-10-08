@@ -9,7 +9,7 @@ import argh
 import numpy as np
 
 from chemreac import ReactionDiffusion
-from chemreac.integrate import run
+from chemreac.integrate import run, integrate_sundials
 from chemreac._chemreac import sundials_direct
 
 
@@ -25,7 +25,7 @@ def main(logy=False, logt=False):
     y = np.log(y0) if logy else np.asarray(y0)
     t = np.log(tout) if logt else np.asarray(tout)
     yout, info = run(rd, y, t)
-    yout2 = sundials_direct(rd, [1e-8, 1e-8], 1e-8, 'bdf', y, t)
+    yout2 = sundials_direct(rd, y, t, atol=[1e-8, 1e-8], rtol=1e-8, lmm='bdf')
     yout = np.exp(yout) if logy else yout
 
     yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),

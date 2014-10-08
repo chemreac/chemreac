@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
-from chemreac.integrate import run
+from chemreac.integrate import run, integrate
 from chemreac.serialization import load
 
 """
@@ -170,3 +170,38 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
         print(np.average(ybis) - ybis)
         print(np.average(ybis))
     assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)
+
+
+@pytest.mark.parametrize("log", LOG_COMOBS)
+def test_integrators(log):
+    logy, logt = log
+    # Update the dict if more integrators are added:
+    solver_kwargs = {
+        'scipy': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8
+        },
+        'sundials': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8,
+            'lmm': 'bdf'
+        }
+    }
+
+    # A -> B
+    n = 2
+    k0 = 0.13
+    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt)
+    y0 = [3.0, 1.0]
+    t0, tend, nt = 5.0, 17.0, 42
+    tout = np.linspace(t0, tend, nt+1)
+
+    y = np.log(y0) if logy else np.asarray(y0)
+    t = np.log(tout) if logt else np.asarray(tout)
+
+    results = []
+    for solver, kwargs in solver_kwargs.items():
+        results.append(integrate(solver, rd, y, t, **kwargs))
+
+    for result in results[1:]:
+        assert np.allclose(results[0][0], result[0])
