@@ -1,5 +1,10 @@
 #!/bin/bash
-SUNDIALS_URLS=("http://computation.llnl.gov/casc/sundials/download/code/sundials-2.5.0.tar.gz" "http://pkgs.fedoraproject.org/repo/pkgs/sundials/sundials-2.5.0.tar.gz/aba8b56eec600de3109cfb967aa3ba0f/sundials-2.5.0.tar.gz" "http://ftp.mcs.anl.gov/pub/petsc/externalpackages/sundials-2.5.0.tar.gz")
+SUNDIALS_URLS=(\
+"http://hera.physchem.kth.se/~bjorn/sundials-2.5.0.tar.gz" \
+"http://computation.llnl.gov/casc/sundials/download/code/sundials-2.5.0.tar.gz" \
+"http://ftp.mcs.anl.gov/pub/petsc/externalpackages/sundials-2.5.0.tar.gz" \
+"http://pkgs.fedoraproject.org/repo/pkgs/sundials/sundials-2.5.0.tar.gz/aba8b56eec600de3109cfb967aa3ba0f/sundials-2.5.0.tar.gz" \
+)
 
 SUNDIALS_FNAME="sundials-2.5.0.tar.gz"
 SUNDIALS_MD5="aba8b56eec600de3109cfb967aa3ba0f"
@@ -10,7 +15,9 @@ for URL in "${SUNDIALS_URLS[@]}"; do
     if [ $? -eq 0 ]; then
         DOWNLOAD_MD5=$(md5sum ${SUNDIALS_FNAME} | cut -d ' ' -f 1)
         echo "md5: ${DOWNLOAD_MD5}"
-        if [[ "$DOWNLOAD_MD5" == "$SUNDIALS_MD5" ]]; then
+        if [[ "$DOWNLOAD_MD5" != "$SUNDIALS_MD5" ]]; then
+            rm ${SUNDIALS_FNAME}
+        else
             tar xzf $SUNDIALS_FNAME
             mkdir sundials_build
             cd sundials_build

@@ -1,4 +1,4 @@
-#!/bin/bash -x
+#!/bin/bash -x -e
 #
 # Test script for the Continuous Integration service at drone.io
 
@@ -14,32 +14,19 @@ trap finish EXIT
 
 # miniconda
 bash scripts/install_miniconda.sh $PY_VERSION $MINICONDA_PATH
-if [ $? -ne 0 ]; then
-    echo "install_miniconda.sh failed"
-    exit 1
-fi
 export PATH="$MINICONDA_PATH/bin:$PATH"
 
 # test-env
-bash scripts/conda_create_test-env.sh $PY_VERSION
-if [ $? -ne 0 ]; then
-    echo "conda_create_test-env failed"
-    exit 1
-fi
+bash scripts/setup_conda_testenv.sh $PY_VERSION $MINICONDA_PATH $ENV_NAME
 
 # apt-get
-scripts/aptget.ubuntu.12.04LTS.sh
-if [[ $? != 0 ]]; then
-    echo "aptget.ubuntu.12.04LTS.sh failed."
-    exit 1
-fi
+scripts/ubuntu12.04/apt_get_gcc_48.sh
+scripts/ubuntu12.04/apt_get_g++_48.sh
+scripts/ubuntu12.04/apt_get_gfortran_48.sh
+scripts/aptget_debian.sh
 
 # sundials
 bash scripts/install_sundials_w_lapack.sh
-if [ $? -ne 0 ]; then
-    echo "install_sundials_w_lapack.sh failed"
-    exit 1
-fi
 
 mkdir -p $HOME/.config/matplotlib/
 cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
@@ -60,17 +47,9 @@ if [[ $? != 0 ]]; then
 fi
 tar -jcf htmlcov.tar.bz2 htmlcov/
 
-CHEMREAC_SOLVER=sundials PYTHONPATH=.:$PYTHONPATH py.test --slow --ignore build/
-if [[ $? != 0 ]]; then
-    echo "(sundials) py.test failed."
-    exit 1
-fi
+CHEMREAC_SOLVER=sundials PYTHONPATH=.:$PYTHONPATH py.test --slow --veryslow --ignore build/
 
 # Build docs
 bash scripts/build_docs.sh
-if [ $? -ne 0 ]; then
-    echo "build_docs.sh failed"
-    exit 1
-fi
 tar -jcf html.tar.bz2 docs/_build/html/
 

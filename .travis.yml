@@ -1,25 +1,33 @@
 language: python
 python:
-- '2.7'
-- '3.4'
+  - '2.7'
+  - '3.4'
 before_install:
-- ./scripts/install_miniconda.sh 2.7 $HOME/miniconda
-- ./scripts/conda_create_test-env.sh 2.7 $HOME/miniconda
-- mv /home/travis/miniconda/envs/test-env/bin/../lib/libm.so* /tmp/
-- ./scripts/aptget.ubuntu.12.04LTS.sh
-- ./scripts/install_sundials_w_lapack.sh
-- mkdir -p $HOME/.config/matplotlib/
-- cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
+  - export CONDA_PATH=$HOME/miniconda
+  - export ENV_NAME=testenv
+  - source ./scripts/install_miniconda.sh $TRAVIS_PYTHON_VERSION $CONDA_PATH
+  - ./scripts/ubuntu12.04/apt_get_gcc_48.sh
+  - ./scripts/ubuntu12.04/apt_get_g++_48.sh
+  - ./scripts/ubuntu12.04/apt_get_gfortran_48.sh
+  - ./scripts/aptget_debian.sh
+  - ./scripts/install_sundials_w_lapack.sh
+  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+  - mkdir -p $HOME/.config/matplotlib/
+  - cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
+  - source ./scripts/setup_conda_testenv.sh $TRAVIS_PYTHON_VERSION $CONDA_PATH $ENV_NAME
+  - mv $CONDA_PATH/envs/$ENV_NAME/lib/libm.so* /tmp/  # Work around for conda bug.
 install:
-- source $HOME/miniconda/bin/activate test-env
-- LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH DISTUTILS_DEBUG=1 python setup.py
-  build_ext -i
-script: LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH ./scripts/run_tests.sh
+  - if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ]; then sudo apt-get install python3-dev; fi # work-around: https://github.com/conda/conda-build/pull/228
+  - source $CONDA_PATH/bin/activate $ENV_NAME
+  - DISTUTILS_DEBUG=1 python setup.py build_ext -i
+script:
+  - ./scripts/run_tests.sh
 after_success:
-- coveralls
-- LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH scripts/travis_after_success.sh
+  - coveralls
+  - ./scripts/travis_after_success.sh $CONDA_PATH
 notifications:
   email: false
 env:
   global:
-    secure: M+U3qO8QjKtvB9yNVlIiClqMbUsrEOoXSGDvvfI3gsKd2r+hpxjk2MoVcgf2b9Gvrt7vRWit1d6wEAwcNOhb/s/DpyWYR/Rz4rnmKe3iqnkSmad+jWPPjEN09uX1fgiewjxGl+Nx8XcCk0Dx0XR0S87UgTRkttA8Z43kYzJAvyc=
+   - secure: "bMCx+Ic2vzr9n+GB7V3p0SOTH/aTTJL4bSt4Bv7maT3DmgEoZSCR96DqruKKqLAkmBZ9lnDZP/V19XU9vtCCkaW6VsRpY1r2De7He4qdpeiEQdhRKsMV+SZ1Ys/UHm53WaXJKAbdya+IDQujkaPvyOdQNqLL9WDNpaKVHlQpEsg="
+   - secure: "fFSCXFzVUPTLA0Dpx7eyqg3f+f4daeYKKMbpAmL4s944sFnJ62HFq43+2tQ1ZjV20dBEaWTlwXsfgPrcHWrbLNeWslcYYKoyRKk566v6kfMR2cuGIfQlGjKuzKbZQGBPGuSLFRgSGdw7ooKxXbRq55Yjpe+8rxtnD33WkjscB38="

@@ -28,9 +28,12 @@ Installation
 ============
 .. install-start
 
-Below you will find instructions for installation. You may also
-look in ``scripts/`` folder for automated install scripts used
-in continuous integration.
+Easiest way to install chemreac (on linux) is by using conda to pull it from
+https://binstar.org/bjodah/chemreac
+
+Below you will find instructions for installation by building it from source.
+You may also look in ``scripts/`` folder for automated install scripts used
+by the continuous integration servers.
 
 Prerequisites
 -------------
@@ -45,18 +48,19 @@ In addition to python, the following python packages are required
 (versions indicate what is tested):
 
 - argh>=0.25.0
-- numpy>=1.8.1
-- cython>=0.19.1
-- mako>=0.5.0
+- numpy>=1.9.0
+- cython>=0.21.0
+- mako>=1.0.0
 - quantities>=0.10.1
 - pytest>=2.5.2
-- scipy>=0.9.0
+- pytest-pep8>=1.0.6
+- scipy>=0.14.0
 - matplotlib>=1.4.0
 - periodictable>=1.4.1
-- future>=0.12.3
-- https://github.com/bjodah/pycompilation/archive/v0.3.3.tar.gz
-- https://github.com/bjodah/pycodeexport/archive/v0.0.4.tar.gz
-- https://github.com/sympy/sympy/archive/master.zip
+- future>=0.13.0
+- pycompilation>=0.3.6
+- pycodeexport>=0.0.5
+- https://github.com/sympy/sympy/archive/master.zip (will req. 0.7.6)
 
 For rendering the documentation you also need:
 
