@@ -360,7 +360,8 @@ def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
     # it would be nice to accpet kwargs
     #    xscale='log', yscale='log', zscale='log'
     # but it's currently not supported by matplotlib:
-    # http://matplotlib.1069221.n5.nabble.com/plot-surface-fails-with-log-axes-td10206.html
+    # http://matplotlib.1069221.n5.nabble.com/
+    #     plot-surface-fails-with-log-axes-td10206.html
     substance = (substance if isinstance(substance, int) else
                  rd.substance_names.index(substance))
     from mpl_toolkits.mplot3d import Axes3D

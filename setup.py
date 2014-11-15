@@ -6,44 +6,38 @@ import sys
 
 from distutils.core import setup, Command
 
-name_ = 'chemreac'
-version_ = '0.2.1'
+pkg_name = 'chemreac'
+# read __version__ and __doc__ attributes:
+exec(open(pkg_name+'/release.py').read())
+try:
+    major, minor, micro = map(int, __version__.split('.'))
+except ValueError:
+    IS_RELEASE=False
+else:
+    IS_RELEASE=True
+
+with open(pkg_name+'/__init__.py') as f:
+    long_description = f.read().split('"""')[1]
 
 DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 
+CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-on_drone = os.environ.get('DRONE', 'false') == 'true'
-on_travis = os.environ.get('TRAVIS', 'flse') == 'true'
+ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
+ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 
-if on_drone or on_travis:
+if CONDA_BUILD:
+    open('__conda_version__.txt', 'w').write(__version__)
+
+if ON_DRONE or ON_TRAVIS:
     # 'fast' implies march=native which fails on current version of docker.
     options = ['pic', 'warn']
 else:
     options = ['pic', 'warn', 'fast']
 
-# Make `python setup.py test` work without depending on py.test being installed
-# https://pytest.org/latest/goodpractises.html
-
-
-class PyTest(Command):
-    user_options = []
-
-    def initialize_options(self):
-        pass
-
-    def finalize_options(self):
-        pass
-
-    def run(self):
-        import subprocess
-        import sys
-        # py.test --genscript=runtests.py
-        errno = subprocess.call([sys.executable, 'runtests.py'])
-        raise SystemExit(errno)
-
-cmdclass_ = {'test': PyTest}
+cmdclass_ = {}
 
 if on_rtd or '--help' in sys.argv[1:] or sys.argv[1] in (
         '--help-commands', 'egg_info', 'clean', '--version'):
@@ -76,7 +70,7 @@ else:
                         # 'fast' doesn't work on drone.io
                         'options': options +
                         (['openmp'] if USE_OPENMP else []),
-                        'defmacros': ['DEBUG'] +
+                        'define': ['DEBUG'] +
                         (['DEBUG'] if DEBUG else []),
                     },
                     'src/chemreac_sundials.cpp': {
@@ -89,7 +83,7 @@ else:
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
                 'std': 'c++0x',
-                'libs': ['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
+                'libraries': ['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
             },
             include_dirs=['src/', 'src/finitediff/finitediff/',
                           np.get_include()],
@@ -97,14 +91,32 @@ else:
         )
     ]
 
+modules = [
+    pkg_name+'.util',
+]
+
+tests = [
+    pkg_name+'.tests',
+    pkg_name+'.util.tests',
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    'License :: OSI Approved :: BSD License',
+    'Operating System :: OS Independent',
+    'Programming Language :: Python',
+    'Topic :: Scientific/Engineering',
+    'Topic :: Scientific/Engineering :: Mathematics',
+]
+
 setup(
-    name=name_,
-    version=version_,
+    name=pkg_name,
+    version=__version__,
     description='Python extension for reaction diffusion.',
     author='Björn Dahlgren',
     author_email='bjodah@DELETEMEgmail.com',
-    url='https://bitbucket.org/bjodah/'+name_,
-    packages=[name_, name_+'.util'],
+    url='https://github.com/bjodah/' + pkg_name,
+    packages=[pkg_name] + modules + tests,
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
 )

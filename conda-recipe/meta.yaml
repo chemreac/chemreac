@@ -1,6 +1,6 @@
 package:
   name: chemreac
-  version: "0.2.1"
+  #  version: "0.2.1"
   # the version is actually being set by the __conda_version__.txt file
   # http://conda.pydata.org/docs/build.html#post-build-version
 

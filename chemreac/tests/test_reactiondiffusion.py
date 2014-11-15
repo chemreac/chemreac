@@ -34,7 +34,8 @@ def _test_f(rd, t, y, fref=None):
 def _test_dense_jac_rmaj(rd, t, y, jref=None):
     jout = rd.alloc_jout(banded=False)
     rd.dense_jac_rmaj(t, np.asarray(y, dtype=np.float64), jout)
-
+    atol = 1e-13
+    rtol = 1e-13
     if jref is None:
         jref = jout
     else:
@@ -45,9 +46,7 @@ def _test_dense_jac_rmaj(rd, t, y, jref=None):
         for ri in range(rd.ny):
             for ci in range(max(0, ri-rd.n), min(rd.ny, ri+rd.n+1)):
                 out, ref = jout[ri, ci], jref[ri, ci]
-                assert abs(out - ref) < 1e-12
-                if ref > 1e-16:
-                    assert abs((out - ref)/ref) < 1e-9
+                assert abs(out - ref) < atol + rtol*abs(ref)
         if isinstance(rd, SymRD):
             return
     _test_dense_jac_rmaj(SymRD.from_rd(rd), t, y, jref)
