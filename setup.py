@@ -83,10 +83,10 @@ else:
             pycompilation_link_kwargs={
                 'options': (['openmp'] if USE_OPENMP else []),
                 'std': 'c++0x',
-                'libraries': ['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
             },
             include_dirs=['src/', 'src/finitediff/finitediff/',
                           np.get_include()],
+            libraries=['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
             logger=True,
         )
     ]
