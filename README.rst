@@ -5,9 +5,6 @@ chemreac
 .. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
    :target: https://travis-ci.org/bjodah/chemreac
    :alt: Build status
-.. image:: https://readthedocs.org/projects/chemreac/badge/?version=latest
-   :target: http://chemreac.readthedocs.org/
-   :alt: Documentation Status
 .. image:: https://coveralls.io/repos/bjodah/chemreac/badge.png?branch=master
    :target: https://coveralls.io/r/bjodah/chemreac?branch=master
    :alt: Test coverage
@@ -21,8 +18,8 @@ Documentation
 
 the documentation is hostad at
 
-- http://chemreac.readthedocs.org/
 - http://bjodah.github.io/chemreac/docs/
+
 
 Installation
 ============
