@@ -1,9 +1,20 @@
 import os
 import sys
 import traceback
-from subprocess import Popen
+from subprocess import Popen, check_output
 
 pkg_name = 'chemreac'
+
+# THIS DID NOT WORK (tests run in isolation of source):
+# -----------------------------------------------------
+# Work around the libm.so bug:
+# print(__file__)
+# print(check_output(['pwd']))
+# print(check_output(['ls', '..']))
+#conda_path=check_output(['./scripts/get_conda_path.sh'])
+#p = Popen(['bash', './scripts/pruge_conda_shared_obj.sh', './chemreac/_chemreac.so', conda_path, 'libm'])
+#p.wait()
+
 
 print("Importing %s..." % pkg_name)
 try:

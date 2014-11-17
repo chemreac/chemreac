@@ -149,7 +149,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @property
     def substance_names(self):
-        return self._substance_names or map(str, range(self.n))
+        return self._substance_names or list(map(str, range(self.n)))
 
     @substance_names.setter
     def substance_names(self, names):
@@ -157,7 +157,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @property
     def substance_tex_names(self):
-        return self._substance_tex_names or map(str, range(self.n))
+        return self._substance_tex_names or list(map(str, range(self.n)))
 
     @substance_tex_names.setter
     def substance_tex_names(self, tex_names):
@@ -174,6 +174,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 N = 1
             else:
                 N = len(x)-1
+        nstencil = nstencil or (1 if N == 1 else 3)
         if N < nstencil:
             raise ValueError("N must be >= nstencil")
 
@@ -233,8 +234,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             assert all([len(x) == len(bin_k_factor_span) for
                         x in bin_k_factor])
             assert all([x >= 0 for x in bin_k_factor_span])
-
-        nstencil = nstencil or (1 if N == 1 else 3)
 
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N,

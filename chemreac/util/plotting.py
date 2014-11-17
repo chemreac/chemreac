@@ -237,7 +237,7 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
         try:
             names = rd.substance_tex_names or rd.substance_names
         except AttributeError:
-            names = map(str, substance_idxs)
+            names = list(map(str, substance_idxs))
         labels = [names[i] for i in substance_idxs]
     else:
         assert len(labels) == len(substance_idxs)
@@ -370,7 +370,7 @@ def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
     assert isinstance(ax, Axes3D)
 
     xty = [rd.xcenters, tout, yout]
-    x_, t_, y_ = map(np.log10, xty) if log10 else xty
+    x_, t_, y_ = list(map(np.log10, xty)) if log10 else xty
     X, T = np.meshgrid(x_, t_)
     if 'cmap' not in plot_kwargs:
         plot_kwargs['cmap'] = cm.gist_earth

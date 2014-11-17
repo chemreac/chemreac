@@ -641,11 +641,11 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
             assert lb == [1, 1, 2, 3, 4]
         else:
             assert lb == [1, 1, 2, 3, 3]
-    assert lb == map(rd._stencil_bi_lbound, range(N))
+    assert lb == list(map(rd._stencil_bi_lbound, range(N)))
 
     pxci2bi = pxci_to_bi(nstencil, N)
     assert pxci2bi == [0, 0, 1, 2, 3, 4, 4]
-    assert pxci2bi == map(rd._xc_bi_map, range(N+2))
+    assert pxci2bi == list(map(rd._xc_bi_map, range(N+2)))
 
     D_weight = []
     for bi in range(N):

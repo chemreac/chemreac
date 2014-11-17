@@ -4,7 +4,7 @@ import shutil
 import tempfile
 
 from chemreac.util.table import rsys2tablines, rsys2table, rsys2pdf_table
-from test_graph import _get_rsys
+from .test_graph import _get_rsys
 
 
 def test_rsys2tablines():

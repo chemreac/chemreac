@@ -3,6 +3,8 @@
 # Usage, e.g.:
 # ./scripts/run_tests.sh --ignore examples/
 
+export PKG_NAME=chemreac
+
 # Check dependencies for the py.test test command below,
 # note that the package itself might depend on more packages
 # (see ../requirements.txt)
@@ -15,11 +17,11 @@ fi
 if ! python -c "import pytest_cov" > /dev/null 2>&1; then
     >&2 echo "Error, could not import pytest_cov, please install pytest-cov."
 fi
-if ! python -c "import pybestprac" > /dev/null 2>&1; then
+if ! python -c "import $PKG_NAME" > /dev/null 2>&1; then
     if ! python -c "import pycompilation" > /dev/null 2>&1; then
         >&2 echo "Error, could not import pycompilation, please install pycompilation."
     else
-        >&2 echo "pybestprac has not been built, building inplace..."
+        >&2 echo "$PKG_NAME has not been built, building inplace..."
         python setup.py build_ext --inplace
         export TEST_INSTALL=1
     fi
@@ -32,4 +34,4 @@ if [[ "$TEST_INSTALL" != "1" ]]; then
     export PYTHONPATH=$absolute_repo_path:$PYTHONPATH
 fi
 set -xe  # bash: echo commands, exit on failure
-py.test --slow --veryslow --pep8 --doctest-modules --cov pybestprac --cov-report html $@
+py.test --slow --veryslow --pep8 --doctest-modules --cov $PKG_NAME --cov-report html $@

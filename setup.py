@@ -31,23 +31,34 @@ ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 if CONDA_BUILD:
     open('__conda_version__.txt', 'w').write(__version__)
 
-if ON_DRONE or ON_TRAVIS:
-    # 'fast' implies march=native which fails on current version of docker.
-    options = ['pic', 'warn']
-else:
-    options = ['pic', 'warn', 'fast']
+flags = []
+options = ['pic', 'warn']
+if not (ON_DRONE or ON_TRAVIS):
+    if CONDA_BUILD:
+        flags += ['-O2', '-funroll-loops']  # -ffast-math buggy in anaconda
+    else:
+        options += ['fast'] # -ffast-math -funroll-loops
 
 cmdclass_ = {}
 
-if on_rtd or '--help' in sys.argv[1:] or sys.argv[1] in (
-        '--help-commands', 'egg_info', 'clean', '--version'):
+IDEMPOTENT_INVOCATION = False
+if len(sys.argv) > 1:
+    if '--help' in sys.argv[1:] or sys.argv[1] in (
+            '--help-commands', 'egg_info', 'clean', '--version'):
+        IDEMPOTENT_INVOCATION = True
+elif len(sys.argv) == 1:
+    IDEMPOTENT_INVOCATION = True
+
+if on_rtd or IDEMPOTENT_INVOCATION:
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
 else:
     import pickle
     from pycodeexport.dist import pce_build_ext, PCEExtension
+    from pycompilation.dist import pc_sdist
     import numpy as np
     cmdclass_['build_ext'] = pce_build_ext
+    cmdclass_['sdist'] = pc_sdist
     subsd = {'USE_OPENMP': USE_OPENMP}
     sources = [
         'src/chemreac_template.cpp',
@@ -68,6 +79,7 @@ else:
                     'src/chemreac.cpp': {
                         'std': 'c++0x',
                         # 'fast' doesn't work on drone.io
+                        'flags': flags,
                         'options': options +
                         (['openmp'] if USE_OPENMP else []),
                         'define': ['DEBUG'] +
@@ -75,9 +87,14 @@ else:
                     },
                     'src/chemreac_sundials.cpp': {
                         'std': 'c++0x',
+                        'flags': flags,
                         'options': options
                     },
+                    'chemreac/_chemreac.pyx': {
+                        'cy_kwargs': {'annotate': True}
+                    }
                 },
+                'flags': flags,
                 'options': options,
             },
             pycompilation_link_kwargs={
@@ -86,7 +103,7 @@ else:
             },
             include_dirs=['src/', 'src/finitediff/finitediff/',
                           np.get_include()],
-            libraries=['sundials_cvode', LLAPACK, 'sundials_nvecserial'],
+            libraries=['sundials_cvode', LLAPACK, 'sundials_nvecserial', 'm'],
             logger=True,
         )
     ]
@@ -100,6 +117,10 @@ tests = [
     pkg_name+'.util.tests',
 ]
 
+package_data = {
+    pkg_name: ['tests/*.json', 'tests/*.txt']
+}
+
 classifiers = [
     "Development Status :: 3 - Alpha",
     'License :: OSI Approved :: BSD License',
@@ -109,7 +130,7 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Mathematics',
 ]
 
-setup(
+setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
     description='Python extension for reaction diffusion.',
@@ -117,6 +138,10 @@ setup(
     author_email='bjodah@DELETEMEgmail.com',
     url='https://github.com/bjodah/' + pkg_name,
     packages=[pkg_name] + modules + tests,
+    package_data=package_data,
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
 )
+
+if __name__ == '__main__':
+    setup(**setup_kwargs)
