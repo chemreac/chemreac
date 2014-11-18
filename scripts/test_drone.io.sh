@@ -4,6 +4,8 @@
 
 # Define the version of Python that should be tested
 PYTHON_VERSION="2.7"
+CONDA_PY="27"
+ENV_NAME="testenv"
 MINICONDA_PATH=$HOME/miniconda
 # Install prerequisities
 function finish {
