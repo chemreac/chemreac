@@ -1,9 +1,9 @@
-#!/bin/bash -x -e
+#!/bin/bash
 #
 # Test script for the Continuous Integration service at drone.io
 
 # Define the version of Python that should be tested
-PY_VERSION="2.7"
+PYTHON_VERSION="2.7"
 MINICONDA_PATH=$HOME/miniconda
 # Install prerequisities
 function finish {
@@ -13,11 +13,8 @@ function finish {
 trap finish EXIT
 
 # miniconda
-bash scripts/install_miniconda.sh $PY_VERSION $MINICONDA_PATH
+bash scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.7.0"
 export PATH="$MINICONDA_PATH/bin:$PATH"
-
-# test-env
-bash scripts/setup_conda_testenv.sh $PY_VERSION $MINICONDA_PATH $ENV_NAME
 
 # apt-get
 scripts/ubuntu12.04/apt_get_gcc_48.sh
@@ -32,14 +29,10 @@ mkdir -p $HOME/.config/matplotlib/
 cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 
 # Build extension module and run test suite
-source activate test-env
-
-python -c "import sympy; print(sympy.__version__)"
-python -c "import pycompilation; print(pycompilation.__version__)"
-python -c "import pycodeexport; print(pycodeexport.__version__)"
-
+export USE_OPENMP=1
+export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-DISTUTILS_DEBUG=1 USE_OPENMP=1 python setup.py build_ext -i
+bash ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 1
 PYTHONPATH=`pwd`:$PYTHONPATH ./scripts/run_tests.sh
 if [[ $? != 0 ]]; then
     echo "run_tests.sh failed."
@@ -47,7 +40,7 @@ if [[ $? != 0 ]]; then
 fi
 tar -jcf htmlcov.tar.bz2 htmlcov/
 
-CHEMREAC_SOLVER=sundials PYTHONPATH=.:$PYTHONPATH py.test --slow --veryslow --ignore build/
+CHEMREAC_SOLVER=sundials PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow --ignore build/
 
 # Build docs
 bash scripts/build_docs.sh
