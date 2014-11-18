@@ -14,7 +14,7 @@ trap finish EXIT
 
 # miniconda
 source scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.7.0"
-conda config --add channels http://conda.binstar.org/$BINSTAR_USER
+conda config --add channels http://conda.binstar.org/bjodah
 
 # apt-get
 scripts/ubuntu12.04/apt_get_gcc_48.sh
