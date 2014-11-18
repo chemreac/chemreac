@@ -29,7 +29,6 @@ script:
   - LIBRARY_PATH=$CONDA_PATH/envs/$ENV_NAME/lib:$LIBRARY_PATH ./scripts/run_tests.sh
 after_success:
   - coveralls
-  - curl -X POST "https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX"
   - ./scripts/travis_after_success.sh $CONDA_PATH
 notifications:
   email: false

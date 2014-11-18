@@ -38,5 +38,8 @@ if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL
         git commit -m "Lastest docs from successful travis build $TRAVIS_BUILD_NUMBER"
         git push -f origin gh-pages
         echo -e "Published docs to gh-pages.\n"
+
+        # Not really building docs, but trigger drone build:
+        curl -X POST "https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX"
     fi
 fi
