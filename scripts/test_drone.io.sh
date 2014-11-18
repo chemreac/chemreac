@@ -13,8 +13,8 @@ function finish {
 trap finish EXIT
 
 # miniconda
-bash scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.7.0"
-export PATH="$MINICONDA_PATH/bin:$PATH"
+source scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.7.0"
+conda config --add channels http://conda.binstar.org/$BINSTAR_USER
 
 # apt-get
 scripts/ubuntu12.04/apt_get_gcc_48.sh
