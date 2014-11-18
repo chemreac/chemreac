@@ -24,25 +24,23 @@ scripts/aptget_debian.sh
 
 # sundials
 bash scripts/install_sundials_w_lapack.sh
+export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
 mkdir -p $HOME/.config/matplotlib/
 cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 
 # Build extension module and run test suite
 export USE_OPENMP=1
-export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-bash ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 1
-PYTHONPATH=`pwd`:$PYTHONPATH ./scripts/run_tests.sh
+source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 1
 if [[ $? != 0 ]]; then
-    echo "run_tests.sh failed."
+    >&2 echo "./scripts/ci_conda.sh failed."
     exit 1
 fi
 tar -jcf htmlcov.tar.bz2 htmlcov/
 
-CHEMREAC_SOLVER=sundials PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow --ignore build/
+CHEMREAC_SOLVER=sundials py.test --slow --veryslow --ignore build/
 
 # Build docs
 bash scripts/build_docs.sh
 tar -jcf html.tar.bz2 docs/_build/html/
-
