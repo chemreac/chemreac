@@ -9,7 +9,6 @@ export RUN_TESTS=$4
 export CONDA_PATH=$(conda info --system | grep sys.prefix | cut -d: -f2 | sed -e 's/^ *//')
 source ./scripts/setup_conda_testenv.sh $PYTHON_VERSION $ENV_NAME
 export LIBRARY_PATH=$CONDA_PATH/envs/$ENV_NAME/lib:$LIBRARY_PATH
-export LD_LIBRARY_PATH=$CONDA_PATH/envs/$ENV_NAME/lib:$LD_LIBRARY_PATH
 conda info
 python --version
 python setup.py --version
