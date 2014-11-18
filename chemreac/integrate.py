@@ -102,13 +102,18 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     return yout, info
 
 
-def integrate_rk4(rd, y0, tout):
+def integrate_rk4(rd, y0, tout, **kwargs):
     from ._chemreac import rk4
     texec = time.time()
     yout, Dyout = rk4(rd, y0, tout)
     texec = time.time() - texec
-    info = {'neval_f': 4*(tout.size-1), 'neval_j': 0,
-            'texec': texec, 'success': True}
+    info = kwargs.copy()
+    info.update({
+        'neval_f': 4*(tout.size-1),
+        'neval_j': 0,
+        'texec': texec,
+        'success': True
+    })
     return yout, info
 
 
