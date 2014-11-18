@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 # distutils: language = c++
 
+import cython
+
 import numpy as np
 cimport numpy as cnp
 
@@ -316,6 +318,7 @@ cdef class CppReactionDiffusion:
             for i in range(self.thisptr.N):
                 self.thisptr.efield[i] = efield[i]
 
+# sundials wrapper:
 
 def sundials_direct(
         CppReactionDiffusion rd, double[::1] y0, double[::1] tout,
@@ -326,3 +329,63 @@ def sundials_direct(
                                       {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
                                       tout.size, &tout[0], &yout[0])
     return yout.reshape((tout.size, rd.N, rd.n))
+
+
+cdef void _add_2_vecs(int n,  double * v1, double * v2,
+                      double f1, double f2, double * out):
+    cdef int i
+    for i in range(n):
+        out[i] = f1*v1[i] + f2*v2[i]
+
+cdef void _add_5_vecs(int n, double * v1, double * v2, double * v3,
+                      double * v4, double * v5, double f1, double f2,
+                      double f3, double f4, double f5, double * out):
+    cdef int i
+    for i in range(n):
+        out[i] = f1*v1[i] + f2*v2[i] + f3*v3[i] + f4*v4[i] + f5*v5[i]
+
+
+@cython.boundscheck(False)
+@cython.wraparound(False)
+@cython.cdivision(True)
+cdef void _rk4(ReactionDiffusion * rd,
+               cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] y0,
+               cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout,
+               cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] y0out,
+               cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] y1out):
+    # Runge-Kutta 4th order stepper
+    # see: http://en.wikipedia.org/wiki/Runge%E2%80%93Kutta_methods
+    cdef int i
+    cdef double t, h
+    cdef int ny = y0.size
+    cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tmp = np.empty(ny, dtype=np.float64)
+    #cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k1 = np.empty(ny, dtype=np.float64)
+    cdef double *k1
+    cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k2 = np.empty(ny, dtype=np.float64)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k3 = np.empty(ny, dtype=np.float64)
+    cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k4 = np.empty(ny, dtype=np.float64)
+    y0out[0, :] = y0[:]
+    for i in range(1, tout.size):
+        t = tout[i]
+        h = t - tout[i-1]
+        k1 = &y1out[i-1, 0]
+        rd.f(t, &y0out[i-1, 0], &k1[0])
+        _add_2_vecs(ny, &y0out[i-1, 0], &k1[0], 1.0, h/2, &tmp[0])
+        rd.f(t + h/2, &tmp[0], &k2[0])
+        _add_2_vecs(ny, &y0out[i-1, 0], &k2[0], 1.0, h/2, &tmp[0])
+        rd.f(t + h/2, &tmp[0], &k3[0])
+        _add_2_vecs(ny, &y0out[i-1, 0], &k3[0], 1.0, h/2, &tmp[0])
+        rd.f(t + h, &tmp[0], &k4[0])
+        _add_5_vecs(ny, &y0out[i-1, 0], &k1[0], &k2[0], &k3[0], &k4[0],
+                    1.0, h/6, h/3, h/3, h/6, &y0out[i, 0])
+
+
+
+def rk4(CppReactionDiffusion rd, y0, tout):
+    """
+    simple explicit, fixed step size, Runge Kutta 4th order integrator:
+    """
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] y0out = np.empty((tout.size, y0.size), dtype=np.float64)
+    cdef cnp.ndarray[cnp.float64_t, ndim=2] y1out = np.empty((tout.size, y0.size), dtype=np.float64)
+    _rk4(rd.thisptr, np.asarray(y0), np.asarray(tout), y0out, y1out)
+    return y0out.reshape((tout.size, rd.N, rd.n)), y1out.reshape((tout.size, rd.N, rd.n))

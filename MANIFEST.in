@@ -1,0 +1,9 @@
+recurisve-include docs *
+prune docs/_build
+recurisve-include examples *.py *.json
+
+include chemreac/tests/*.json
+include chemreac/tests/*.txt
+
+include LICENSE.txt
+include README.rst

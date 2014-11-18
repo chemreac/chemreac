@@ -33,6 +33,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         format string of `ref` attribute of reactions
 
     """
+
     param_fmt = '{0:.3g}'  # Could be taken from Reaction instance
     _get_name = lambda sn: getattr(substances[sn],
                                    'tex_name' if tex else 'name')
@@ -53,7 +54,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
 
 def rsys2table(rsys, substances, table_template=None,
                table_template_dict=None, **kwargs):
-    """
+    r"""
     Renders user provided table_template with table_template_dict which
     also has 'body' entry generated from `rsys2tablines`.
 
@@ -69,6 +70,7 @@ def rsys2table(rsys, substances, table_template=None,
     **kwargs:
         passed onto rsys2tablines
     """
+
     line_term = r' \\'
     if table_template is None:
         table_template = r"""

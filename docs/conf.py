@@ -17,50 +17,6 @@ import os
 
 import sphinx_rtd_theme
 
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
-if on_rtd:
-    from mock import Mock as MagicMock
-
-    class Mock(MagicMock):
-
-        @classmethod
-        def __getattr__(cls, name):
-            if name in ('__file__', '__path__'):
-                return '/dev/null'
-            elif name == '__all__':
-                return []
-            elif name == '__version__':
-                return '-1.-1.-1'
-            # elif name[0] == name[0].upper():
-            #     mockType = type(name, (), {})
-            #     mockType.__module__ = __name__
-            #     return mockType
-            else:
-                return Mock()
-
-        def __div__(self, other):
-            return self
-
-        def __truediv__(self, other):
-            return self
-
-        def __pow__(self, other):
-            return self
-
-        def __mul__(self, other):
-            return self
-
-        def __rmul__(self, other):
-            return self
-
-
-    MOCK_MODULES = ('argh numpy cython mako quantities pytest pytest-pep8 '
-                    'scipy scipy.integrate matplotlib matplotlib.pyplot '
-                    'periodictable future future.builtins pycompilation '
-                    'pycodeexport sympy').split()
-    for mod_name in MOCK_MODULES:
-        sys.modules[mod_name] = Mock()
-
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.

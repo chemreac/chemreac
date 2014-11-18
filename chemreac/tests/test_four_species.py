@@ -13,7 +13,7 @@ from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
 from chemreac.util.testing import slow
 
-from test_reactiondiffusion import _test_dense_jac_rmaj
+from chemreac.tests.test_reactiondiffusion import _test_dense_jac_rmaj
 
 """
 Test chemical reaction system with 4 species.

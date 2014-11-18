@@ -64,7 +64,7 @@ def decompose_yield_into_rate_coeffs(yields, stoichs, atol=1e-10):
         assert present
 
     sbstncs = yields.keys()
-    y = np.array(yields.values())
+    y = np.array(list(yields.values()))
     A = get_coeff_mtx(sbstncs, stoichs)
     k, residuals, rank, s = np.linalg.lstsq(A, y)
     assert residuals < atol

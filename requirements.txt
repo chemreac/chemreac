@@ -10,6 +10,6 @@ matplotlib>=1.4.0
 periodictable>=1.4.1
 future>=0.13.0
 mpld3>=0.2
-pycompilation>=0.3.6
-pycodeexport>=0.0.5
+https://github.com/sympy/pycodeexport/archive/v0.1-dev.zip
+https://github.com/sympy/pycompilatoin/archive/v0.4-dev.zip
 https://github.com/sympy/sympy/archive/master.zip

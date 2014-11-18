@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-chemreac provides python bindings to C++ ReactionDiffusion class.
+Python extension for reaction diffusion.
 """
 
-__version__ = '0.2.1'
+import os
+import subprocess
+
+from .release import __version__
 
 from .core import (
     ReactionDiffusion, DENSE, BANDED, SPARSE, FLAT,

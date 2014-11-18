@@ -146,6 +146,8 @@ class SymRD(ReactionDiffusionBase):
 
     def factor(self, ri, bi):
         for i, ub in enumerate(self._cum_bin_k_factor_span):
+            if ub is None:
+                continue
             if ri < ub:
                 idx = i
                 break

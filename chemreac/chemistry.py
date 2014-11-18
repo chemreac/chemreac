@@ -241,8 +241,8 @@ class Reaction(object):
 
     @property
     def species_names(self):
-        return set(self.reactants.keys() + self.products.keys() +
-                   (self.active_reac or {}).keys())
+        return set(list(self.reactants.keys()) + list(self.products.keys()) +
+                   list((self.active_reac or {}).keys()))
 
     def reactant_stoich_coeffs(self, species_names):
         return [self.reactants[n] for n in species_names]
@@ -332,7 +332,7 @@ class ReactionSystem(object):
 
     @property
     def species_names(self):
-        return set.union(*(rxn.species_names for rxn in self._rxns))
+        return set.union(*tuple(rxn.species_names for rxn in self._rxns))
 
     def ordered_names(self):
         return sorted(self.species_names)

@@ -32,10 +32,13 @@ src/tests/*.out
 # Generated files for source distribution
 runtests.py
 src/exprs.pkl
+MANIFEST
+dist/
 
 # Generated files from docs
 docs/_build
 docs/_build.log
+
 
 # Various
 .cache/

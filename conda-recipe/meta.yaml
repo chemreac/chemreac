@@ -1,11 +1,11 @@
 package:
   name: chemreac
-  version: "0.2.1"
+  #  version: "x.y.z"
   # the version is actually being set by the __conda_version__.txt file
   # http://conda.pydata.org/docs/build.html#post-build-version
 
 source:
-  url: https://github.com/bjodah/chemreac/archive/master.zip
+  path: ../
 
 requirements:
   build:
@@ -28,8 +28,8 @@ test:
   requires:
     - pytest
     - sympy
-  commands:
-    - py.test
+    - quantities
+    - periodictable
 
 about:
   home: https://github.com/bjodah/chemreac

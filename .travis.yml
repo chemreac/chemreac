@@ -1,11 +1,20 @@
-language: python
-python:
-  - '2.7'
-  - '3.4'
+language: c
+env:
+  matrix:
+    - PYTHON_VERSION=2.7 CONDA_PY=27 BUILD_DOCS=1
+    - PYTHON_VERSION=3.4 CONDA_PY=34 BUILD_DOCS=0
+  global:
+    - BINSTAR_USER=bjodah
+    - GITHUB_USER=bjodah
+    - GITHUB_REPO=chemreac
+    - CONDA_VERSION="3.7.0"
+    - ENV_NAME=testenv
+    - secure: "bMCx+Ic2vzr9n+GB7V3p0SOTH/aTTJL4bSt4Bv7maT3DmgEoZSCR96DqruKKqLAkmBZ9lnDZP/V19XU9vtCCkaW6VsRpY1r2De7He4qdpeiEQdhRKsMV+SZ1Ys/UHm53WaXJKAbdya+IDQujkaPvyOdQNqLL9WDNpaKVHlQpEsg="
+    - secure: "fFSCXFzVUPTLA0Dpx7eyqg3f+f4daeYKKMbpAmL4s944sFnJ62HFq43+2tQ1ZjV20dBEaWTlwXsfgPrcHWrbLNeWslcYYKoyRKk566v6kfMR2cuGIfQlGjKuzKbZQGBPGuSLFRgSGdw7ooKxXbRq55Yjpe+8rxtnD33WkjscB38="
 before_install:
   - export CONDA_PATH=$HOME/miniconda
-  - export ENV_NAME=testenv
-  - source ./scripts/install_miniconda.sh $TRAVIS_PYTHON_VERSION $CONDA_PATH
+  - source ./scripts/install_miniconda.sh $PYTHON_VERSION $CONDA_PATH $CONDA_VERSION
+  - conda config --add channels http://conda.binstar.org/$BINSTAR_USER
   - ./scripts/ubuntu12.04/apt_get_gcc_48.sh
   - ./scripts/ubuntu12.04/apt_get_g++_48.sh
   - ./scripts/ubuntu12.04/apt_get_gfortran_48.sh
@@ -14,20 +23,12 @@ before_install:
   - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
   - mkdir -p $HOME/.config/matplotlib/
   - cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
-  - source ./scripts/setup_conda_testenv.sh $TRAVIS_PYTHON_VERSION $CONDA_PATH $ENV_NAME
-  - mv $CONDA_PATH/envs/$ENV_NAME/lib/libm.so* /tmp/  # Work around for conda bug.
 install:
-  - if [ "$TRAVIS_PYTHON_VERSION" == "3.4" ]; then sudo apt-get install python3-dev; fi # work-around: https://github.com/conda/conda-build/pull/228
-  - source $CONDA_PATH/bin/activate $ENV_NAME
-  - DISTUTILS_DEBUG=1 python setup.py build_ext -i
+  - source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 0
 script:
-  - ./scripts/run_tests.sh
+  - LIBRARY_PATH=$CONDA_PATH/envs/$ENV_NAME/lib:$LIBRARY_PATH ./scripts/run_tests.sh
 after_success:
   - coveralls
   - ./scripts/travis_after_success.sh $CONDA_PATH
 notifications:
   email: false
-env:
-  global:
-   - secure: "bMCx+Ic2vzr9n+GB7V3p0SOTH/aTTJL4bSt4Bv7maT3DmgEoZSCR96DqruKKqLAkmBZ9lnDZP/V19XU9vtCCkaW6VsRpY1r2De7He4qdpeiEQdhRKsMV+SZ1Ys/UHm53WaXJKAbdya+IDQujkaPvyOdQNqLL9WDNpaKVHlQpEsg="
-   - secure: "fFSCXFzVUPTLA0Dpx7eyqg3f+f4daeYKKMbpAmL4s944sFnJ62HFq43+2tQ1ZjV20dBEaWTlwXsfgPrcHWrbLNeWslcYYKoyRKk566v6kfMR2cuGIfQlGjKuzKbZQGBPGuSLFRgSGdw7ooKxXbRq55Yjpe+8rxtnD33WkjscB38="
