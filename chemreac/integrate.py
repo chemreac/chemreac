@@ -36,7 +36,7 @@ def integrate(solver=None, *args, **kwargs):
     Parameters
     ----------
     solver: string
-        "sundials" or "scipy" where scipy uses VODE
+        "cvode_direct" or "scipy" where scipy uses VODE
         as the solver.
     *args:
         rd: ReactionDiffusion instance
@@ -52,8 +52,8 @@ def integrate(solver=None, *args, **kwargs):
             relative tolerance of solution
 
     """
-    if solver.lower() == 'sundials':
-        return integrate_sundials(*args, **kwargs)
+    if solver.lower() == 'cvode_direct':
+        return integrate_cvode_direct(*args, **kwargs)
     elif solver.lower() == 'scipy':
         return integrate_scipy(*args, **kwargs)
     elif solver.lower() == 'rk4':
@@ -62,7 +62,7 @@ def integrate(solver=None, *args, **kwargs):
         raise NotImplementedError("Unknown solver %s" % solver)
 
 
-def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
+def integrate_cvode_direct(rd, y0, tout, mode=None, **kwargs):
     """
     see integrate.
 
@@ -70,7 +70,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
       lmm: linear multistep method: 'bdf' or 'adams'
 
     """
-    from ._chemreac import sundials_direct
+    from ._chemreac import cvode_direct
     if mode is not None:
         raise NotImplementedError(
             "Sundials integrator auto-selectes banded for N>1")
@@ -83,9 +83,9 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     rd.neval_j = 0
     texec = time.time()
     try:
-        yout = sundials_direct(rd, np.asarray(y0).flatten(),
-                               np.asarray(tout).flatten(),
-                               atol, rtol, lmm)
+        yout = cvode_direct(rd, np.asarray(y0).flatten(),
+                            np.asarray(tout).flatten(),
+                            atol, rtol, lmm)
     except RuntimeError:
         yout = np.ones((len(tout), rd.n*rd.N), order='C')/0  # NaN
         success = False

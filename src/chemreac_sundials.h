@@ -4,8 +4,8 @@
 #include <cstring> // memcpy
 #include <sundials/sundials_types.h> /* def. of type realtype */
 #include <nvector/nvector_serial.h>  /* N_Vector types, fcts, macros */
-#include <cvode/cvode.h> /* CVODE fcts., CV_BDF, CV_ADAMS */
-#include <cvode/cvode_lapack.h>
+#include <cvodes/cvodes.h> /* CVODE fcts., CV_BDF, CV_ADAMS */
+#include <cvodes/cvodes_lapack.h>
 #include "chemreac.h"
 
 
@@ -50,13 +50,13 @@ int jac_band_cb(long int N, long int mupper, long int mlower, realtype t,
 }
 
 template <typename T, typename U>
-void direct(U * rd, 
-            const vector<T> atol,
-            const T rtol, const int lmm,
-            const T * const __restrict__ y0, 
-            const std::size_t nout,
-            const T * const tout,
-            T * const __restrict__ yout){
+void cvode_direct(U * rd, 
+                  const vector<T> atol,
+                  const T rtol, const int lmm,
+                  const T * const __restrict__ y0, 
+                  const std::size_t nout,
+                  const T * const tout,
+                  T * const __restrict__ yout){
     // lmm: linear multistep method: 1: CV_ADAMS, 2: CV_BDF (cvode.h)
 
     int status;
@@ -69,57 +69,111 @@ void direct(U * rd,
     N_Vector interf_y = N_VMake_Serial(ny, const_cast<T*>(y0));
 
     cvode_mem = CVodeCreate(lmm, CV_NEWTON);
-    if (cvode_mem == nullptr)
+    if (cvode_mem == nullptr){
+        N_VDestroy_Serial(interf_y);
         throw std::runtime_error("CVodeCreate failed.");
+    }
     status = CVodeInit(cvode_mem, f_cb<U>, tout[0], interf_y);
-    if (status < 0)
+    if (status < 0){
+        N_VDestroy_Serial(interf_y);
+        CVodeFree(&cvode_mem);
         throw std::runtime_error("CVodeInit failed.");
+    }
 
     // Tolerances
-    if (atol.size() != 1 && atol.size() != ny)
+    if (atol.size() != 1 && atol.size() != ny){
+        N_VDestroy_Serial(interf_y);
+        CVodeFree(&cvode_mem);
         throw std::length_error("atol of incorrect size");
-    N_Vector interf_atol = N_VNew_Serial(ny);
-    for (int i=0; i < ny; ++i)
-        NV_Ith_S(interf_atol, i) = 
-            atol[(atol.size() == 1) ? 0 : i];
-    status = CVodeSVtolerances(cvode_mem, rtol, interf_atol);
-    if (status < 0)
-        throw std::runtime_error("CVodeSVtolerances failed");
+    }
+    N_Vector interf_atol = nullptr;
+    if (atol.size() == 1) {
+        status = CVodeSStolerances(cvode_mem, rtol, atol[0]);
+        if (status < 0){
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
+            throw std::runtime_error("CVodeSStolerances failed");
+        }
+    }else if (atol.size() == ny) {
+        interf_atol = N_VNew_Serial(ny);
+        for (int i=0; i < ny; ++i)
+            NV_Ith_S(interf_atol, i) = atol[i];
+        status = CVodeSVtolerances(cvode_mem, rtol, interf_atol);
+        if (status < 0){
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
+            throw std::runtime_error("CVodeSVtolerances failed");
+        }
+    } else {
+        N_VDestroy_Serial(interf_y);
+        CVodeFree(&cvode_mem);
+        throw std::runtime_error("atol.size() != ny");
+    }
 
     status = CVodeSetUserData(cvode_mem, (void *)rd);
-    if (status < 0)
+    if (status < 0){
+        if (atol.size() > 1)
+            N_VDestroy_Serial(interf_atol);
+        N_VDestroy_Serial(interf_y);
+        CVodeFree(&cvode_mem);
         throw std::runtime_error("CVodeSetUserData failed.");
-
+    }
     // Setup a linear solver
     if (rd->N > 1){
         // Use a banded direct solver
         status = CVLapackBand(cvode_mem, ny, rd->n, rd->n);
-        if (status != CVDLS_SUCCESS)
+        if (status != CVDLS_SUCCESS){
+            if (atol.size() > 1)
+                N_VDestroy_Serial(interf_atol);
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
             throw std::runtime_error("CVLapackBand failed");
+        }
         status = CVDlsSetBandJacFn(cvode_mem, jac_band_cb<U>);
-        if (status < 0)
+        if (status < 0){
+            if (atol.size() > 1)
+                N_VDestroy_Serial(interf_atol);
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
             throw std::runtime_error("CVDlsSetBandJacFn failed.");
+        }
     } else {
         // Use a dense direct solver
         status = CVLapackDense(cvode_mem, ny);
-        if (status != CVDLS_SUCCESS)
+        if (status != CVDLS_SUCCESS){
+            if (atol.size() > 1)
+                N_VDestroy_Serial(interf_atol);
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
             throw std::runtime_error("CVLapackDense failed");
+        }
         status = CVDlsSetDenseJacFn(cvode_mem, jac_dense_cb<U>);
-        if (status < 0)
+        if (status < 0){
+            if (atol.size() > 1)
+                N_VDestroy_Serial(interf_atol);
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
             throw std::runtime_error("CVDlsSetDenseJacFn failed.");
+        }
     }
 
     memcpy(&yout[0], NV_DATA_S(interf_y), ny*sizeof(double));
     for(int iout=1; iout < nout; iout++) {
         status = CVode(cvode_mem, tout[iout], interf_y, 
                        &cur_t, CV_NORMAL);
-        if(status != CV_SUCCESS)
+        if(status != CV_SUCCESS){
+            if (atol.size() > 1)
+                N_VDestroy_Serial(interf_atol);
+            N_VDestroy_Serial(interf_y);
+            CVodeFree(&cvode_mem);
             throw std::runtime_error("Unsuccessful CVODE step...");
+        }
         memcpy(&yout[ny*iout], NV_DATA_S(interf_y), ny*sizeof(double));
     }
     
+    if (atol.size() > 1)
+        N_VDestroy_Serial(interf_atol);
     N_VDestroy_Serial(interf_y);
-    N_VDestroy_Serial(interf_atol);
     CVodeFree(&cvode_mem);  /* Free the integrator memory */
 }
 

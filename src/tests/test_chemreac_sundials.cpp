@@ -15,7 +15,7 @@ int test_integration(){
     vector<double> tout {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
     for (int i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
-    chemreac_sundials::direct<double, ReactionDiffusion>(&rd, atol, rtol, 1, 
+    chemreac_sundials::cvode_direct<double, ReactionDiffusion>(&rd, atol, rtol, 1, 
                                                          &y[0], tout.size(), &tout[0], yout);
     for (unsigned int tidx=0; tidx<tout.size(); tidx++){
         std::cout << tout[tidx];

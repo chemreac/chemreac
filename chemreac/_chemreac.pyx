@@ -7,7 +7,7 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-from chemreac_sundials cimport direct
+from chemreac_sundials cimport cvode_direct as _cvode_direct
 
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
@@ -320,15 +320,18 @@ cdef class CppReactionDiffusion:
 
 # sundials wrapper:
 
-def sundials_direct(
+def cvode_direct(
         CppReactionDiffusion rd, double[::1] y0, double[::1] tout,
         vector[double] atol, double rtol, basestring lmm):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N
-    direct[double, ReactionDiffusion](rd.thisptr, atol, rtol,
+    _cvode_direct[double, ReactionDiffusion](rd.thisptr, atol, rtol,
                                       {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
                                       tout.size, &tout[0], &yout[0])
     return yout.reshape((tout.size, rd.N, rd.n))
+
+
+# Below is an implementation of Runge Kutta 4th order stepper with fixed step size
 
 
 cdef void _add_2_vecs(int n,  double * v1, double * v2,
@@ -336,6 +339,7 @@ cdef void _add_2_vecs(int n,  double * v1, double * v2,
     cdef int i
     for i in range(n):
         out[i] = f1*v1[i] + f2*v2[i]
+
 
 cdef void _add_5_vecs(int n, double * v1, double * v2, double * v3,
                       double * v4, double * v5, double f1, double f2,
@@ -378,7 +382,6 @@ cdef void _rk4(ReactionDiffusion * rd,
         rd.f(t + h, &tmp[0], &k4[0])
         _add_5_vecs(ny, &y0out[i-1, 0], &k1[0], &k2[0], &k3[0], &k4[0],
                     1.0, h/6, h/3, h/3, h/6, &y0out[i, 0])
-
 
 
 def rk4(CppReactionDiffusion rd, y0, tout):
