@@ -45,9 +45,11 @@ from analytic_diffusion import (
 )
 
 
-def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1'):
+def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1',
+         nfit='7,5,4'):
     import matplotlib.pyplot as plt
     nstencils = [3, 5, 7]
+    nfit = [float(_) for _ in nfit.split(',')]
     c = 'rbk'
     m = 'osd'
     ls = ['--', ':', '-.']
@@ -77,7 +79,7 @@ def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1'):
                 logerr = np.log(err)
 
                 if plot:
-                    p = np.polyfit(logNs[:nNs-si], logerr[:nNs-si], 1)
+                    p = np.polyfit(logNs[:nfit[si]], logerr[:nfit[si]], 1)
                     plt.subplot(3, 2, gi*2 + ri + 1)
                     plt.loglog(Ns, err, marker=m[si], ls='None', c=c[si])
                     plt.loglog(

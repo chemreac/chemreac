@@ -323,17 +323,16 @@ cdef class CppReactionDiffusion:
 
 def cvode_direct(
         CppReactionDiffusion rd, double[::1] y0, double[::1] tout,
-        vector[double] atol, double rtol, basestring lmm):
+        vector[double] atol, double rtol, basestring method):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N
-    simple_integrate[double, ReactionDiffusion](rd.thisptr, atol, rtol,
-                                      {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
-                                      tout.size, &tout[0], &yout[0])
+    simple_integrate[double, ReactionDiffusion](
+        rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
+        &y0[0], tout.size, &tout[0], &yout[0])
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
 # Below is an implementation of Runge Kutta 4th order stepper with fixed step size
-
 
 cdef void _add_2_vecs(int n,  double * v1, double * v2,
                       double f1, double f2, double * out):

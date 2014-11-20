@@ -203,6 +203,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
                  rinterpol=False, num_jacobian=False, method='bdf',
                  scale_x=False, plot=False, atol=1e-6, rtol=1e-6,
                  efield=False, random_seed=42, savefig='None', verbose=False):
+    if t0 == 0.0:
+        raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
         np.random.seed(random_seed)
     decay = (k != 0.0)
@@ -264,13 +266,11 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
             yref[:, :, 0] *= np.exp(-k*t)
             yref[:, :, 1] *= 1-np.exp(-k*t)
 
-    y0 = yref[0, ...].flatten()
-
     # Run the integration
-    t = np.log(tout) if logt else tout
-    yout, info = run(sys, y0, t, atol=atol, rtol=rtol,
-                     with_jacobian=(not num_jacobian), method=method)
-    # yout = np.exp(yout) if logy else yout
+    integr = run(sys, yref[0, ...], tout, atol=atol, rtol=rtol,
+                 with_jacobian=(not num_jacobian), method=method,
+                 C0_is_log=logy)
+    yout, info = integr.yout, integr.info
 
     if logy:
         def lin_err(i, j):

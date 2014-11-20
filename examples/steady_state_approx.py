@@ -135,7 +135,7 @@ steady_state_approx.html
     rd = ReactionDiffusion(
         3, [[0], [1], [0, 1]], [[1], [2], [1, 2]], k)
     t = np.linspace(0, tend, nt)
-    yout, info = run(rd, y, t)
+    integr = run(rd, y, t)
     A_ssB = 1/(1/f(t) - k3/k2)
     A_ssB_2fast = f(t)
 
@@ -144,13 +144,13 @@ steady_state_approx.html
         fig = plt.figure(figsize=(6, 10))
 
         ax = plt.subplot(3, 1, 1)
-        plot_C_vs_t_in_bin(rd, t, yout, ax=ax)
+        plot_C_vs_t_in_bin(rd, t, integr.Cout, ax=ax)
         plt.subplot(3, 1, 2)
-        plt.plot(t, yout[:, 0, 0] - A_ssB,
+        plt.plot(t, integr.Cout[:, 0, 0] - A_ssB,
                  label="Abs. err. in A assuming steady state of B")
         plt.legend(loc='best', prop={'size': 11})
         plt.subplot(3, 1, 3)
-        plt.plot(t, yout[:, 0, 0] - A_ssB_2fast,
+        plt.plot(t, integr.Cout[:, 0, 0] - A_ssB_2fast,
                  label="Abs. err. in A when also assuming k2 >> k3")
         plt.legend(loc='best', prop={'size': 11})
         plt.tight_layout()
@@ -159,7 +159,7 @@ steady_state_approx.html
 
     ydot = lambda x, y: (-k1*y[0] - k3*y[0]*y[1], k1*y[0] - k2*y[1],
                          k2*y[1] + k3*y[0]*y[1])
-    return t, yout, A_ssB, A_ssB_2fast, ydot
+    return t, integr.Cout, A_ssB, A_ssB_2fast, ydot
 
 
 if __name__ == '__main__':

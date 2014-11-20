@@ -33,8 +33,8 @@ def test_plot_jacobian():
     rd = _get_decay_rd(1)
     y0 = [3.0, 1.0]
     tout = np.linspace(0, 3.0, 7)
-    yout, info = run(rd, y0, tout)
-    axes = plot_jacobian(rd, tout, yout, [0, 1])
+    integr = run(rd, y0, tout)
+    axes = plot_jacobian(rd, integr.tout, integr.yout, [0, 1])
     for ax in axes:
         assert isinstance(ax, matplotlib.axes.Axes)
 
@@ -43,8 +43,8 @@ def test_plot_per_reaction_contribution():
     rd = _get_decay_rd(1)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]
-    yout, info = run(rd, y0, tout)
-    axes = plot_per_reaction_contribution(rd, tout, yout, [0, 1])
+    integr = run(rd, y0, tout)
+    axes = plot_per_reaction_contribution(rd, tout, integr.yout, [0, 1])
     for ax in axes:
         assert isinstance(ax, matplotlib.axes.Axes)
 
@@ -54,8 +54,8 @@ def test_plot_C_vs_t_in_bin():
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]*N
-    yout, info = run(rd, y0, tout)
-    ax = plot_C_vs_t_in_bin(rd, tout, yout, 0)
+    integr = run(rd, y0, tout)
+    ax = plot_C_vs_t_in_bin(rd, tout, integr.yout, 0)
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
@@ -64,8 +64,8 @@ def test_plot_C_vs_x():
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]*N
-    yout, info = run(rd, y0, tout)
-    ax = plot_C_vs_x(rd, tout, yout, [0, 1], 6)
+    integr = run(rd, y0, tout)
+    ax = plot_C_vs_x(rd, tout, integr.yout, [0, 1], 6)
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
@@ -74,8 +74,8 @@ def test_plot_C_vs_t_and_x():
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]*N
-    yout, info = run(rd, y0, tout)
-    ax = plot_C_vs_t_and_x(rd, tout, yout, 0)
+    integr = run(rd, y0, tout)
+    ax = plot_C_vs_t_and_x(rd, tout, integr.yout, 0)
     import mpl_toolkits.mplot3d
     assert isinstance(ax, mpl_toolkits.mplot3d.Axes3D)
 

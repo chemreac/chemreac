@@ -12,7 +12,7 @@ import numpy as np
 import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
-from chemreac.integrate import run, integrate
+from chemreac.integrate import run, Integration
 from chemreac.serialization import load
 
 """
@@ -34,14 +34,10 @@ def test_decay(log):
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(tout) if logt else tout
-    yout, info = run(rd, y, t)
-    yout = np.exp(yout) if logy else yout
-
+    integr = run(rd, y0, tout)
     yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
                      y0[1]+y0[0]*(1-np.exp(-k0*(tout-t0)))]).transpose()
-    assert np.allclose(yout[:, 0, :], yref)
+    assert np.allclose(integr.Cout[:, 0, :], yref)
 
 
 def test_autodimerization():
@@ -56,10 +52,10 @@ def test_autodimerization():
     rd = rsys.to_ReactionDiffusion(sbstncs)
     t = np.linspace(0, 5, 3)
     A0, B0 = 1.0, 0.0
-    yout, info = run(rd, [A0, B0], t)
+    integr = run(rd, [A0, B0], t)
     Aref = 1/(1/A0+2*k*t)
     yref = np.vstack((Aref, (A0-Aref)/2)).transpose()
-    assert np.allclose(yout[:, 0, :], yref)
+    assert np.allclose(integr.yout[:, 0, :], yref)
 
 
 @pytest.mark.parametrize("log_geom", product(
@@ -101,11 +97,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     t0, tend, nt = 1.0, 1.1, 42
     tout = np.linspace(t0, tend, nt+1)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(tout) if logt else tout
-    yout, info = run(rd, y, t, atol=1e-11, rtol=1e-11)
-    if logy:
-        yout = np.exp(yout)
+    integr = run(rd, y0, tout, atol=1e-11, rtol=1e-11)
 
     def _get_bkf(bi, ri):
         if ri < 2:
@@ -122,7 +114,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
                 y0[i+1]+y0[i]*(1-np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)))
             ]).transpose() for i in range(0, n, 2)
         ]) for bi in range(N)])
-    assert np.allclose(yout.flatten(), yref.flatten())
+    assert np.allclose(integr.Cout.flatten(), yref.flatten())
 
 
 @pytest.mark.parametrize("N_wjac_geom", product(
@@ -145,9 +137,9 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     tout = np.linspace(0, 10.0, 50)
     atol, rtol = 1e-6, 1e-8
-    yout, info = run(sys, y0, tout, atol=atol, rtol=rtol, with_jacobian=wjac,
-                     method='adams')
-    yout = yout[:, :, 0]
+    integr = run(sys, y0, tout, atol=atol, rtol=rtol, with_jacobian=wjac,
+                 method='adams')
+    yout = integr.yout[:, :, 0]
     x /= N
     if geom == FLAT:
         yprim = yout*(x[1:]**1 - x[:-1]**1)
@@ -184,7 +176,7 @@ def test_integrators(log):
         'cvode_direct': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
-            'lmm': 'bdf'
+            'method': 'bdf'
         }
     }
 
@@ -196,12 +188,10 @@ def test_integrators(log):
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
 
-    y = np.log(y0) if logy else np.asarray(y0)
-    t = np.log(tout) if logt else np.asarray(tout)
-
     results = []
     for solver, kwargs in solver_kwargs.items():
-        results.append(integrate(solver, rd, y, t, **kwargs))
+        integr = Integration(solver, rd, y0, tout, **kwargs)
+        results.append(integr.yout)
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])

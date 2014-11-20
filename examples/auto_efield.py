@@ -93,13 +93,14 @@ def pair_of_gaussians(x, offsets, sigma, logy, logx, geom):
     )
 
 
-def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
+def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
                  base=0.5, offset=0.25, mobility=3e-8, nt=25, geom='f',
                  logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
                  savefig='None', atol=1e-6, rtol=1e-6, random_seed=42,
-                 surf_chg=(0.0, 0.0), sigma_q=101, sigma_skew=0.5):
+                 surf_chg=(0.0, 0.0), sigma_q=101, sigma_skew=0.5,
+                 verbose=False):
     assert 0 <= base and base <= 1
     assert 0 <= offset and offset <= 1
     if random_seed:
@@ -144,8 +145,9 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
     # Initial conditions
     sigma = (xend-x0)/sigma_q
     sigma = [(1-sigma_skew)*sigma, sigma_skew*sigma]
-    y0 = np.vstack(pair_of_gaussians(rd.xcenters, [base+offset, base-offset],
-                                     sigma, logy, logx, geom)).transpose()
+    y0 = np.vstack(pair_of_gaussians(
+        rd.xcenters, [base+offset, base-offset], sigma, logy,
+        logx, geom)).transpose()
     if logy:
         y0 = sigm(y0)
     if plot:
@@ -158,17 +160,15 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
         plt.plot(rd.xcenters, rd.xcenters*0, label="0")
 
     # Run the integration
-    if t0 == 0.0 and (logy or logt):
-        t0 = suggest_t0(rd, y0.flatten())
-        print('t0=', t0)
-        tend += t0  # keep total time (autonomous system)
     tout = np.linspace(t0, tend, nt)
-    t = np.log(tout) if logt else tout
-    yout, info = run(rd, y0.flatten(), t,
-                     atol=atol, rtol=rtol,
-                     with_jacobian=(not num_jacobian), method=method)
-    Cout = np.exp(yout) if logy else yout
+    integr = run(rd, y0, tout,
+                 atol=atol, rtol=rtol, sigm_damp=True,
+                 C0_is_log=logy,
+                 with_jacobian=(not num_jacobian), method=method)
+    Cout = integr.Cout
 
+    if verbose:
+        print(integr.info)
     # Plot results
     if plot:
         def _plot(y, ttl=None,  **kwargs):
@@ -217,16 +217,13 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=256,
         plt.subplot(4, 1, 4)
         for i in range(n):
             amount = [rd.integrated_conc(Cout[j, :, i]) for j in range(nt)]
-            print(np.array(amount))
-            # match colors of lines
             plt.plot(tout, amount, c=c[::(1, -1)[i]], label=chr(ord('A')+i))
         plt.xlabel('Time / s')
         plt.ylabel('Amount / mol')
         plt.legend(loc='best')
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
-        print(info)
-    return tout, Cout, info, rd
+    return tout, Cout, integr.info, rd
 
 
 if __name__ == '__main__':

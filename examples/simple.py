@@ -9,8 +9,7 @@ import argh
 import numpy as np
 
 from chemreac import ReactionDiffusion
-from chemreac.integrate import run
-from chemreac._chemreac import cvode_direct
+from chemreac.integrate import Integration
 
 
 def main(logy=False, logt=False):
@@ -22,18 +21,17 @@ def main(logy=False, logt=False):
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
 
-    y = np.log(y0) if logy else np.asarray(y0)
-    t = np.log(tout) if logt else np.asarray(tout)
-    yout, info = run(rd, y, t)
-    yout2 = cvode_direct(rd, y, t, atol=[1e-8, 1e-8], rtol=1e-8, lmm='bdf')
-    yout = np.exp(yout) if logy else yout
-
-    yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
+    Cref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
                      y0[1] + y0[0]*(1 - np.exp(-k0*(tout-t0)))]).transpose()
-    assert np.allclose(yout[:, 0, :], yref)
+
+    # scipy
+    integr1 = Integration('scipy', rd, np.asarray(y0), np.asarray(tout))
+    assert np.allclose(integr1.Cout[:, 0, :], Cref)
 
     # sundials
-    assert np.allclose(yout2[:, 0, :], yref)
+    integr2 = Integration('cvode_direct', rd, np.asarray(y0), np.asarray(tout),
+                          atol=[1e-8, 1e-8], rtol=1e-8, method='bdf')
+    assert np.allclose(integr2.Cout[:, 0, :], Cref)
 
 
 if __name__ == '__main__':

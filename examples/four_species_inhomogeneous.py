@@ -3,13 +3,15 @@
 
 from __future__ import print_function, division
 
+import os
+
 import argh
 import numpy as np
 
 from chemreac.serialization import load
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
-from chemreac.util.plotting import coloured_spy
+from chemreac.util.plotting import coloured_spy, save_and_or_show_plot
 
 
 """
@@ -21,13 +23,15 @@ Demo of chemical reaction diffusion system.
 
 
 def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
-         logy=False, logt=False, show=False):
+         logy=False, logt=False, savefig='None', verbose=False):
     mod1 = lambda x: x/(x**2+1)
 
     # decay A->B is modulated with x
-    sys = load('four_species.json', N=N,
-               bin_k_factor=[[mod1(x/3+0.1)] for x in range(N)],
-               bin_k_factor_span=[1])
+    sys = load(
+        os.path.join(os.path.dirname(
+            __file__), 'four_species.json'),
+        N=N, bin_k_factor=[[mod1(x/3+0.1)] for x in range(N)],
+        bin_k_factor_span=[1])
 
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     y0 = np.concatenate([y0/(i+1)*(0.25*i**2+1) for i in range(N)])
@@ -36,20 +40,21 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
     tout = np.linspace(t0, tend, nt)
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
-    yout, info = run(sys, y, t)
-    yout = np.exp(yout) if logy else yout
+    integr = run(sys, y, t)
 
     cx = sys.x[:-1]+np.diff(sys.x)/2  # center x
     if plot:
         # matplotlib
+        from mpl_toolkits.mplot3d import Axes3D
         from matplotlib import cm
         from matplotlib import pyplot as plt
+
         fig = plt.figure()
 
         for i, l in enumerate('ABCD'):
             ax = fig.add_subplot(3, 2, i+1, projection='3d')
             T, X = np.meshgrid(cx, tout)
-            ax.plot_surface(T, X, yout[:, i, 3], rstride=1, cstride=1,
+            ax.plot_surface(T, X, integr.Cout[:, i, 3], rstride=1, cstride=1,
                             cmap=cm.YlGnBu_r)
             ax.set_xlabel('x / m')
             ax.set_ylabel('time / s')
@@ -61,10 +66,7 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
         print(sys.bin_k_factor[:, 0].shape)
         ax.plot(cx, sys.bin_k_factor[:, 0])
 
-        if show:
-            plt.show()
-        else:
-            plt.savefig(__file__[:-2]+'png')
+        save_and_or_show_plot(savefig=savefig)
 
 if __name__ == '__main__':
     argh.dispatch_command(main)

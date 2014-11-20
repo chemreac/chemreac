@@ -44,6 +44,27 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     return np.array(res)
 
 
+def solver_linear_error_from_integration(integration, ti=slice(None), bi=0,
+                                         si=0, **kwargs):
+    """
+    See solver_linear_error
+
+    Parameters
+    ----------
+    integration
+    """
+    try:
+        atol_i = integration.info['atol'][si]
+    except TypeError:
+        atol_i = integration.info['atol']
+    return solver_linear_error(
+        integration.yout[ti, bi, si],
+        integration.info['rtol'],
+        atol_i,
+        integration.rd.logy,
+        **kwargs)
+
+
 def suggest_t0(rd, y0, max_f=1.0):
     """
     Suggests an appropriate initial time,
@@ -55,7 +76,7 @@ def suggest_t0(rd, y0, max_f=1.0):
     rd: ReactionDiffusion instance
          System at hand
     y0: sequence
-         initial concentrations
+         initial values
     max_f: float
          upper bound of absolute value for largest element in for the
          inital step.

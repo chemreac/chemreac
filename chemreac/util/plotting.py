@@ -9,8 +9,19 @@ of results.
 """
 
 import numpy as np
+from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
+from chemreac.util.pyutil import dict_with_defaults
 import matplotlib.pyplot as plt
+
+
+def _init_axes(ax=None):
+    if ax is None:
+        ax = plt.axes()
+    else:
+        if not hasattr(ax, 'plot'):
+            ax = plt.axes(**ax)
+    return ax
 
 
 def save_and_or_show_plot(show=None, savefig='None'):
@@ -134,8 +145,8 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     c: sequence of strings
         colors
     """
-    if legend_kwargs is None:
-        legend_kwargs = dict(loc=None, prop={'size': 11})
+    legend_kwargs = dict_with_defaults(legend_kwargs,
+                                       dict(loc=None, prop={'size': 11}))
     if axes is None:
         axes = [plt.subplot(len(indices), 1, i+1) for i in range(
             len(indices))]
@@ -279,8 +290,8 @@ def plot_C_vs_t_in_bin(
     =======
     Axes instance
     """
-    if legend_kwargs is None:
-        legend_kwargs = dict(loc='best', prop={'size': 11})
+    legend_kwargs = dict_with_defaults(legend_kwargs,
+                                       dict(loc='best', prop={'size': 11}))
     ls = ls or DEFAULT['ls']
     c = c or DEFAULT['c']
     ax, substances, labels = _init_ax_substances_labels(
@@ -405,11 +416,7 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
     indices: sequence of integers
         what factor sequences to plot
     """
-    if ax is None:
-        ax = plt.axes()
-    else:
-        if not hasattr(ax, 'plot'):
-            ax = plt.axes(**ax)
+    ax = _init_axes(ax)
     indices = indices or range(len(rd.bin_k_factor_span))
     factors = np.array(rd.bin_k_factor)
     x_edges = np.repeat(rd.x, 2)[1:]
@@ -417,3 +424,46 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
         y_edges = np.pad(np.repeat(factors[:, i], 2), (0, 1), 'constant')
         ax.plot(x_edges, y_edges, label=i)
     return ax
+
+
+def plot_solver_linear_error(
+        integration, Cref=0, ax=None, x=None, ti=slice(None), bi=0, si=0,
+        plot_kwargs=None, fill_between_kwargs=None, scale_err=1.0, fill=True,
+        **kwargs):
+    ax = _init_axes(ax)
+    Cerr = integration.Cout - Cref
+    if x is None:
+        if isinstance(ti, slice):
+            x = integration.tout[ti]
+        elif isinstance(bi, slice):
+            x = integration.rd.xcenters[bi]
+        else:
+            raise NotImplementedError("Failed to deduce x-axis.")
+
+    plt.plot(x, scale_err*Cerr[ti, bi, si], **dict_with_defaults(
+        plot_kwargs, kwargs))
+
+    if fill:
+        le_l, le_u = solver_linear_error_from_integration(
+            integration, ti=ti, bi=bi, si=si)
+        Cerr_u = le_u - Cref[ti, bi, si]
+        Cerr_l = le_l - Cref[ti, bi, si]
+        plt.fill_between(x, scale_err*Cerr_l,
+                         scale_err*Cerr_u, **dict_with_defaults(
+                             fill_between_kwargs, {'alpha': 0.2}, kwargs))
+
+
+def plot_solver_linear_excess_error(
+        integration, Cref, ax=None, ti=slice(None), bi=0, si=0, **kwargs):
+    ax = _init_axes(ax)
+    le_l, le_u = solver_linear_error_from_integration(integration, ti, bi, si)
+    Eexcess_l = Cref[ti, bi, si] - le_l  # Excessive if negative
+    Eexcess_u = Cref[ti, bi, si] - le_u  # Excessive if positive
+    Eexcess_l[np.argwhere(Eexcess_l >= 0)] = 0
+    Eexcess_u[np.argwhere(Eexcess_u <= 0)] = 0
+    fused = np.concatenate((Eexcess_l[..., np.newaxis],
+                            Eexcess_u[..., np.newaxis]), axis=-1)
+    indices = np.argmax(abs(fused), axis=-1)
+    Eexcess = fused[np.indices(indices.shape), indices][0, ...]
+    le_span = le_u - le_l
+    ax.plot(integration.tout, Eexcess/le_span, **kwargs)

@@ -33,5 +33,6 @@ if [[ "$TEST_INSTALL" != "1" ]]; then
     absolute_repo_path="${absolute_repo_path_x%x}"
     export PYTHONPATH=$absolute_repo_path:$PYTHONPATH
 fi
+echo "About to run the full test suite. It can take several minutes..."
 set -xe  # bash: echo commands, exit on failure
 py.test --slow --veryslow --pep8 --doctest-modules --cov $PKG_NAME --cov-report html $@

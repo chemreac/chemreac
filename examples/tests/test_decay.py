@@ -21,18 +21,19 @@ def test_logt():
 
 
 def test_logy_logt():
-    _test_rd_integration_run(decay.integrate_rd, 300, rtol='1e-10', logy=True,
-                             logt=True)
-    _test_rd_integration_run(decay.integrate_rd, 100, tend=4.0, rates='1.0',
-                             atol='1e-6', rtol='1e-13', logy=True, logt=True)
+    _test_rd_integration_run(decay.integrate_rd, 500, rtol='1e-10', logy=True,
+                             logt=True, small=1e-20, t0=1e-70)
+    _test_rd_integration_run(decay.integrate_rd, 500, tend=4.0, rates='1.0',
+                             atol='1e-6', rtol='1e-13', logy=True, logt=True,
+                             small=1e-20, t0=1e-40)
 
 
 # Manually tweaking
 def test_logy_tweak():
-    _test_rd_integration_run(decay.integrate_rd, 20, rtol='1e-11', logy=True,
-                             small=6)
+    _test_rd_integration_run(decay.integrate_rd, 10, rtol='1e-11', logy=True,
+                             small=1e-6)
 
 
 @pytest.mark.xfail
 def test_logy():
-    _test_rd_integration_run(decay.integrate_rd, 300, logy=True)
+    _test_rd_integration_run(decay.integrate_rd, 300, logy=True, small=1e-20)
