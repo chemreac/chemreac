@@ -23,7 +23,7 @@ ReactionDiffusion get_four_species_system(int N){
     int geom = 0;
     bool logy = false, logt = false, logx = false;
     int nstencil = (N == 1) ? 1 : 3;
-    for (int ri=0; ri<nr; ++ri)
+    for (uint ri=0; ri<nr; ++ri)
 	stoich_actv.push_back(v);
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);

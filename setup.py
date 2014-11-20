@@ -12,9 +12,9 @@ exec(open(pkg_name+'/release.py').read())
 try:
     major, minor, micro = map(int, __version__.split('.'))
 except ValueError:
-    IS_RELEASE=False
+    IS_RELEASE = False
 else:
-    IS_RELEASE=True
+    IS_RELEASE = True
 
 with open(pkg_name+'/__init__.py') as f:
     long_description = f.read().split('"""')[1]
@@ -35,9 +35,10 @@ flags = []
 options = ['pic', 'warn']
 if not (ON_DRONE or ON_TRAVIS):
     if CONDA_BUILD:
-        flags += ['-O2', '-funroll-loops']  # -ffast-math buggy in anaconda
+        # -ffast-math buggy in anaconda
+        flags += ['-O2', '-funroll-loops'] if IS_RELEASE else ['-O1']
     else:
-        options += ['fast'] # -ffast-math -funroll-loops
+        options += ['fast']  # -ffast-math -funroll-loops
 
 cmdclass_ = {}
 
@@ -92,6 +93,7 @@ else:
                     },
                     'chemreac/_chemreac.pyx': {
                         'cy_kwargs': {'annotate': True}
+                        # , 'gdb_debug': not IS_RELEASE}
                     }
                 },
                 'flags': flags,

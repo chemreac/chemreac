@@ -7,7 +7,8 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-from chemreac_sundials cimport cvode_direct as _cvode_direct
+#from chemreac_sundials cimport cvode_direct as _cvode_direct
+from cvodes_wrapper cimport simple_integrate
 
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
@@ -325,7 +326,7 @@ def cvode_direct(
         vector[double] atol, double rtol, basestring lmm):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N
-    _cvode_direct[double, ReactionDiffusion](rd.thisptr, atol, rtol,
+    simple_integrate[double, ReactionDiffusion](rd.thisptr, atol, rtol,
                                       {'adams': 1, 'bdf': 2}[lmm.lower()], &y0[0],
                                       tout.size, &tout[0], &yout[0])
     return yout.reshape((tout.size, rd.N, rd.n))

@@ -34,7 +34,7 @@ int test_f(){
     double f[12];
     rd.f(0.0, &y[0], f);
     int exit1 = 0;
-    for (int i=0; i<12; ++i)
+    for (uint i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-14){
             std::cout << i << " " << f[i] << " " << ref_f[i] << std::endl;            
             exit1 = 1;
@@ -55,7 +55,7 @@ int test_dense_jac(){
     double ref_jac[12*12];
     double dense_jac[12*12];
 
-    for (int i=0; i<12*12; ++i){
+    for (uint i=0; i<12*12; ++i){
         ref_jac[i] = 0.0;
         dense_jac[i] = 0.0;
     }
@@ -105,19 +105,19 @@ int test_dense_jac(){
 
     rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 12);
     int exit2 = 0;
-    for (int i=0; i<12*12; ++i)
+    for (uint i=0; i<12*12; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-14){
             printf("i=%d, dense_jac[i]=%.3f, ref_jac[i]=%.3f\n", i, dense_jac[i], ref_jac[i]);
             exit2 = 1;
         }
 
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
-    for (int i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
+    for (uint i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
     rd.banded_packed_jac_cmaj(0.0, &y[0], bnd_jac, (2*rd.n+1));
 #define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)
-	for (int ci=max(0, ri-(int)rd.n); ci<min(rd.n*rd.N, ri+rd.n); ++ci)
+	for (uint ci=max(0, ri-(int)rd.n); ci<min(rd.n*rd.N, ri+rd.n); ++ci)
 	    if (dabs(BND(ri,ci) - DNS(ri,ci)) > 1e-14){
 		std::cout << ri << " " << ci << " " << BND(ri,ci) << " " << DNS(ri,ci) << std::endl;
                 exit2 = 1;
@@ -219,7 +219,7 @@ int test_calc_efield(){
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
     rd.calc_efield(&y[0]);
     int fail = 0;
-    for (int i=0; i<ref_efield.size(); ++i)
+    for (uint i=0; i<ref_efield.size(); ++i)
 	if (dabs(rd.efield[i]-ref_efield[i]) > 1e-10){
             std::cout << i << " " << rd.efield[i] << " " << ref_efield[i] << std::endl;
             fail = 1;

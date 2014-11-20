@@ -1,9 +1,7 @@
 from libcpp.vector cimport vector
-from chemreac cimport ReactionDiffusion
-from libcpp cimport bool
 
-cdef extern from "chemreac_sundials.h" namespace "chemreac_sundials":
-    cdef void cvode_direct[T, U](
+cdef extern from "cvodes_wrapper.hpp" namespace "cvodes_wrapper":
+    cdef void simple_integrate[T, U](
         U * sys,
         const vector[T] atol,
         const T rtol, const int lmm,
