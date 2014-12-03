@@ -1,9 +1,10 @@
 #!/bin/bash
-#!/bin/bash
 # Usage, e.g.:
 # ./scripts/run_tests.sh --ignore examples/
 
 export PKG_NAME=chemreac
+
+PYTEST_ARGS=()
 
 # Check dependencies for the py.test test command below,
 # note that the package itself might depend on more packages
@@ -11,12 +12,19 @@ export PKG_NAME=chemreac
 if ! python -c "import pytest" > /dev/null 2>&1; then
     >&2 echo "Error, could not import pytest, please install pytest."
 fi
+
 if ! python -c "import pytest_pep8" > /dev/null 2>&1; then
-    >&2 echo "Error, could not import pytest_pep8, please install pytest-pep8."
+    echo "Could not import pytest_pep8, install pytest-pep8 if you want it."
+else
+    PYTEST_ARGS+=(--pep8)
 fi
+
 if ! python -c "import pytest_cov" > /dev/null 2>&1; then
-    >&2 echo "Error, could not import pytest_cov, please install pytest-cov."
+    echo "Could not import pytest_cov, install pytest-cov if you want it."
+else
+    PYTEST_ARGS+=(--cov $PKG_NAME --cov-report html)
 fi
+
 if ! python -c "import $PKG_NAME" > /dev/null 2>&1; then
     if ! python -c "import pycompilation" > /dev/null 2>&1; then
         >&2 echo "Error, could not import pycompilation, please install pycompilation."
@@ -35,4 +43,4 @@ if [[ "$TEST_INSTALL" != "1" ]]; then
 fi
 echo "About to run the full test suite. It can take several minutes..."
 set -xe  # bash: echo commands, exit on failure
-py.test --slow --veryslow --pep8 --doctest-modules --cov $PKG_NAME --cov-report html $@
+py.test --slow --veryslow --doctest-modules ${PYTEST_ARGS[@]} $@

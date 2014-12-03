@@ -80,9 +80,11 @@ def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1',
 
                 if plot:
                     p = np.polyfit(logNs[:nfit[si]], logerr[:nfit[si]], 1)
-                    plt.subplot(3, 2, gi*2 + ri + 1)
-                    plt.loglog(Ns, err, marker=m[si], ls='None', c=c[si])
-                    plt.loglog(
+                    ax = plt.subplot(3, 2, gi*2 + ri + 1)
+                    ax.set_xscale('log', basex=2)
+                    ax.set_yscale('log', basey=2)
+                    ax.plot(Ns, err, marker=m[si], ls='None', c=c[si])
+                    ax.plot(
                         Ns[:nNs-si], np.exp(np.polyval(p, logNs[:nNs-si])),
                         ls='--', c=c[si],
                         label=str(nstencil)+': '+str(round(-p[0], 1)))
@@ -92,10 +94,10 @@ def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1',
                     plt.ylabel('RMSD/atol')
                     plt.legend(loc='best', prop={'size': 10})
                     if rate == 0:
-                        plt.title('Diffusion, geom='+Geom_names[geom])
+                        plt.title('{} diffusion'.format(Geom_names[geom]))
                     else:
-                        plt.title('Diffusion + 1 reaction, geom=' +
-                                  Geom_names[geom])
+                        plt.title('{} diffusion + 1 decay'.format(
+                                  Geom_names[geom]))
 
     if plot:
         plt.tight_layout()

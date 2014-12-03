@@ -19,21 +19,28 @@ def dict_with_defaults(dct, *args):
     --------
     >>> d = {1: None}
     >>> e = dict_with_defaults(d, {2: []})
-    >>> d
-    {1: None, 2: []}
+    >>> d == {1: None, 2: []}
+    True
     >>> d is e
     True
-    >>> dict_with_defaults({'a': 1}, {'b': 2, 'a': 7}, {'b': 3})
-    {'a': 1, 'b': 3}
-    >>> dict_with_defaults(None, {42: True, 'b': 2}, {'b': 3})
-    {42: True, 'b': 3}
+    >>> f = {'a': 1, 'b': 3}
+    >>> f == dict_with_defaults({'a': 1}, {'b': 2, 'a': 7}, {'b': 3})
+    True
+    >>> g = {42: True, 'b': 3}
+    >>> g == dict_with_defaults(None, {42: True, 'b': 2}, {'b': 3})
+    True
     >>> dict_with_defaults(None)
     {}
     """
-    dct = dct or {}
-    ori_dct_keys = dct.keys()
+    try:
+        ori_dct_keys = dct.keys()
+    except AttributeError:
+        dct = {}
+        ori_dct_keys = []
+    new_dct = {}
     for defaults in args:
         for k, v in defaults.items():
             if k not in ori_dct_keys:
-                dct[k] = v
+                new_dct[k] = v
+    dct.update(new_dct)
     return dct

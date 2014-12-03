@@ -17,10 +17,14 @@ Steady state approximation
 --------------------------
 
 :download:`examples/steady_state_approx.py` shows how you can estimate
-errors commited when assuming steady state for simple systems.
+errors commited when assuming steady state for simple systems. In this
+essence it is quite different from the other examples where we have been
+investigating the error of the numerical integration `vs.` an analytic
+solution. Here we will do the reverse, we will assume that our result
+from the numerical integration is correct (or rather: much more accurate)
+compared to our approximately correct analytic expressions.
+
 We will consider the following system:
-
-
 
 .. math ::
 
@@ -28,13 +32,11 @@ We will consider the following system:
       &  B &\rightarrow  C &     &~~~k_2 \\
     A + &B &\rightarrow  B &+ C  &~~~k_3
 
-
 .. math ::
 
     \frac{dA}{dt} &= -k1 \cdot A  &        &- k3 \cdot A \cdot B \\
     \frac{dB}{dt} &=  +k1 \cdot A  &- k2 \cdot B   &         \\
     \frac{dC}{dt} &=        &+ k2 \cdot B   &+ k3 \cdot A \cdot B
-
 
 The rate expressions are from mass action and hence
 we are conserving mass:
@@ -50,7 +52,7 @@ sum of derivatives = 0 (already satisfied)
 For initial concentrations of A much larger than B we have:
 
 
-Steady state assumption for B (A0 >> B0):
+Steady state assumption for B (:math:`A_0 \gg B_0`):
 
 .. math ::
 
@@ -72,7 +74,7 @@ we get
 
 .. math ::
 
-    A(1 - f(t)*\frac{k_3}{k_2}) &= f(t) \\
+    A(1 - f(t) \cdot \frac{k_3}{k_2}) &= f(t) \\
     A &= \frac{f(t)}{1 - f(t)\frac{k_3}{k_2}} [*] \\
     A &= \frac{1}{\frac{1}{f(t)} - \frac{k_3}{k_2}} \\
     A &= \frac{1}{\frac{\frac{k_3}{k_2}A_0 + 1}{A_0}e^{k_1 t} -
@@ -83,7 +85,7 @@ where we note:
 
 .. math ::
 
-    [*] if \frac{k_3}{k_2} << 1: \\
+    [*] ~~ if \frac{k_3}{k_2} << 1: \\
     A = f(t)
 
 
@@ -124,7 +126,8 @@ def integrate_rd(tend=1.0, k1=7e-1, k2=3e2, k3=7.0,
 steady_state_approx.html
 
 
-    :download:`../_generated/steady_state_approx.html`
+    :download:`steady_state_approx.html\
+        <../_generated/steady_state_approx.html>`
 
     """
     def f(t):

@@ -311,9 +311,10 @@ class Integration(object):
         """
         # Possibly scale the concentrations
         if self.scaling != 1.0:
-            C0 = scaling*self.C0
-            rd.k = [k*self.scaling**sum(sa) for k, sa in
-                    zip(rd.k, rd.stoich_actv)]
+            C0 = self.scaling*self.C0
+            ori_k = self.rd.k
+            self.rd.k = [k*self.scaling**-(len(sa) - 1) for k, sa in
+                         zip(self.rd.k, self.rd.stoich_actv)]
         else:
             C0 = self.C0
 
@@ -343,7 +344,7 @@ class Integration(object):
         if self.tout[0] == 0.0 and self.rd.logt:
             t0_set = True
             t0 = suggest_t0(self.rd, y0)
-            t = np.log(self.tout + t0)  # same total time
+            t = np.log(self.tout + t0)  # conserve total time
         else:
             t0_set = False
             t = np.log(self.tout) if self.rd.logt else self.tout
@@ -353,7 +354,12 @@ class Integration(object):
             self.rd, y0, t, **self.kwargs)
         self.internal_t = t
         self.info['t0_set'] = t0 if t0_set else False
+
+        # Back-transform integration output into linear concentration
         self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
+        if self.scaling != 1.0:
+            self.Cout /= self.scaling
+            self.rd.k = ori_k
 
 
 def run(*args, **kwargs):

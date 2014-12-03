@@ -33,6 +33,10 @@ def main(logy=False, logt=False):
                           atol=[1e-8, 1e-8], rtol=1e-8, method='bdf')
     assert np.allclose(integr2.Cout[:, 0, :], Cref)
 
+    # rk4 - fixed step size with 42 steps will give poor accuracy
+    integr3 = Integration('rk4', rd, np.asarray(y0), np.asarray(tout))
+    assert np.allclose(integr3.Cout[:, 0, :], Cref, atol=5e-3, rtol=5e-3)
+
 
 if __name__ == '__main__':
     argh.dispatch_command(main)

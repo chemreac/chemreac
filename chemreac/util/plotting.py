@@ -26,7 +26,9 @@ def _init_axes(ax=None):
 
 def save_and_or_show_plot(show=None, savefig='None'):
     """
-    Convenience method
+    Convenience method for either showing or saving current matplotlib
+    figure.
+
     Parameters
     ----------
     show: bool or None
@@ -35,6 +37,7 @@ def save_and_or_show_plot(show=None, savefig='None'):
     savefig: string
         path to output file of figure. If extension is html, mpld3
         will be used to generate a d3 backed html output.
+
     """
     if savefig is not None and savefig != 'None':
         if savefig.endswith('.html'):
@@ -411,7 +414,7 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
     ----------
     rd: ReactionDiffusion
     ax: Axes instance or dict
-        if ax is a dict it is used as **kwargs passed to
+        if ax is a dict it is used as keyword arguments passed to
         matplotlib.pyplot.axes (default: None)
     indices: sequence of integers
         what factor sequences to plot
@@ -430,6 +433,43 @@ def plot_solver_linear_error(
         integration, Cref=0, ax=None, x=None, ti=slice(None), bi=0, si=0,
         plot_kwargs=None, fill_between_kwargs=None, scale_err=1.0, fill=True,
         **kwargs):
+    """
+    Parameters
+    ----------
+    integration: chemreac.integrate.Integration
+        result from integration.
+    Cref: array or float
+        analytic solution to compare with
+    ax: Axes instance or dict
+        if ax is a dict it is used as key word arguments passed to
+        matplotlib.pyplot.axes (default: None)
+    x: array
+        (optional) x-values, when None it is deduced to be
+        either t or x (when ti or bi are slices repecitvely)
+        (default: None)
+    ti: slice
+        time indices
+    bi: slice
+        bin indices
+    si: integer
+        specie index
+    plot_kwargs: dict
+        keyword arguments passed to matplotlib.pyplot.plot (default: None)
+    fill_between_kwargs: dict
+        keyword arguments passed to matplotlib.pyplot.fill_between
+        (default: None)
+    scale_err: float
+        value with which errors are scaled. (default: 1.0)
+    fill: bool
+        whether or not to fill error span
+    \*\*kwargs
+        common keyword arguments of plot_kwargs and fill_between_kwargs,
+        e.g. 'color', (default: None).
+
+    See Also
+    --------
+    plot_solver_linear_excess_error
+    """
     ax = _init_axes(ax)
     Cerr = integration.Cout - Cref
     if x is None:
@@ -451,10 +491,58 @@ def plot_solver_linear_error(
         plt.fill_between(x, scale_err*Cerr_l,
                          scale_err*Cerr_u, **dict_with_defaults(
                              fill_between_kwargs, {'alpha': 0.2}, kwargs))
+    return ax
 
 
-def plot_solver_linear_excess_error(
-        integration, Cref, ax=None, ti=slice(None), bi=0, si=0, **kwargs):
+def plot_solver_linear_excess_error(integration, Cref, ax=None, x=None,
+                                    ti=slice(None), bi=0, si=0, **kwargs):
+    """
+    Plots the excess error commited by the intergrator, divided by the span
+    of the tolerances (atol + rtol*|y_i|).
+
+    Parameters
+    ----------
+    integration: chemreac.integrate.Integration
+        result from integration.
+    Cref: array or float
+        analytic solution to compare with
+    ax: Axes instance or dict
+        if ax is a dict it is used as \*\*kwargs passed to
+        matplotlib.pyplot.axes (default: None)
+    x: array
+        (optional) x-values, when None it is deduced to be
+        either t or x (when ti or bi are slices repecitvely)
+        (default: None)
+    ti: slice
+        time indices
+    bi: slice
+        bin indices
+    si: integer
+        specie index
+    plot_kwargs: dict
+        keyword arguments passed to matplotlib.pyplot.plot (default: None)
+    fill_between_kwargs: dict
+        keyword arguments passed to matplotlib.pyplot.fill_between
+        (default: None)
+    scale_err: float
+        value with which errors are scaled. (default: 1.0)
+    fill: bool
+        whether or not to fill error span
+    \*\*kwargs:
+        common keyword arguments of plot_kwargs and fill_between_kwargs,
+        e.g. 'color', (default: None).
+
+    See Also
+    --------
+    plot_solver_linear_error
+    """
+    if x is None:
+        if isinstance(ti, slice):
+            x = integration.tout[ti]
+        elif isinstance(bi, slice):
+            x = integration.rd.xcenters[bi]
+        else:
+            raise NotImplementedError("Failed to deduce x-axis.")
     ax = _init_axes(ax)
     le_l, le_u = solver_linear_error_from_integration(integration, ti, bi, si)
     Eexcess_l = Cref[ti, bi, si] - le_l  # Excessive if negative
@@ -467,3 +555,4 @@ def plot_solver_linear_excess_error(
     Eexcess = fused[np.indices(indices.shape), indices][0, ...]
     le_span = le_u - le_l
     ax.plot(integration.tout, Eexcess/le_span, **kwargs)
+    return ax

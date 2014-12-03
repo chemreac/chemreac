@@ -141,12 +141,14 @@ class Reaction(object):
     Reaction with kinetics governed by the law of mass-action.
 
     Must honor:
-      A + R --> A + P
+
+        A + R --> A + P
+
     That is: law of massaction depend on [A]
 
     Also supports
 
-     5*C1 + C2 --> B;  r=k*C1*C2
+        5*C1 + C2 --> B;  r=k*C1*C2
 
     by specifying active reactants
 
@@ -272,7 +274,7 @@ class ReactionSystem(object):
          Name of ReactionSystem (e.g. model name / citation key)
     substances: sequence
          Sequence of Substance instances, will be used in doing
-         a sanity check and as default in method :method:`to_ReactionDiffusion`
+         a sanity check and as default in method :meth:`to_ReactionDiffusion`
 
     """
 
@@ -310,6 +312,18 @@ class ReactionSystem(object):
 
     def to_ReactionDiffusion(self, substances=None, ordered_names=None,
                              **kwargs):
+        """
+        Creates a :class:`ReactionDiffusion` instance from ``self``.
+
+        Parameters
+        ----------
+        substances: sequence of Substance instances
+            pass to override self.substances (optional)
+        ordered_names: sequence of names
+            pass to override self.ordered_names()
+        \*\*kwargs:
+            Keyword arguments passed on to :class:`ReactionDiffusion`
+        """
         ord_names = ordered_names or self.ordered_names()
         substs = substances or self.substances
 

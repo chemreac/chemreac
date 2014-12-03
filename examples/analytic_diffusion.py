@@ -84,8 +84,8 @@ def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
 
     .. math ::
 
-        \frac{\partial c(\mathbf{r}, t)]}{\partial t} = D\nabla^2 \
-            c(\mathbf{r}, t)  - \vec{v} \cdot c(\mathbf{r}, t)
+        \frac{\partial c(x, t)}{\partial t} = D\nabla^2 \
+            c(x, t)  - \vec{v} \cdot c(x, t)
 
     where :math:`\nabla` in cartesian coordinates with planar (yz-plane)
     symmetry is:
@@ -123,21 +123,21 @@ def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
 
     .. math ::
 
-        \frac{\partial c(\mathbf{r}, t)]}{\partial t} = D\nabla^2 \
-            c(\mathbf{r}, t) - \vec{v} \cdot c(\mathbf{r}, t)
+        \frac{\partial c(x, t)}{\partial t} = D\nabla^2 \
+            c(x, t) - \vec{v} \cdot c(x, t)
 
     where :math:`\nabla` in cylindrical coordinates with axial symmetry is:
 
     .. math ::
 
-        \nabla = \frac{1}{\rho}
+        \nabla = \frac{1}{x}
 
     and where :math:`\nabla^2` is:
 
     .. math ::
 
-        \nabla^2 = \frac{1}{\rho} \frac{\partial}{\partial \rho}
-            \left( \rho \frac{\partial}{\partial \rho} \right)
+        \nabla^2 = \frac{1}{x} \frac{\partial}{\partial x}
+            \left( x \frac{\partial}{\partial x} \right)
 
 
     """
@@ -163,21 +163,21 @@ def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
 
     .. math ::
 
-        \frac{\partial c(\mathbf{r}, t)]}{\partial t} = D\nabla^2
-            c(\mathbf{r}, t) - \vec{v} \cdot c(\mathbf{r}, t)
+        \frac{\partial c(x, t)}{\partial t} = D\nabla^2
+            c(x, t) - \vec{v} \cdot c(x, t)
 
     where :math:`\nabla` in spherical coordinates for a isotropic system is:
 
     .. math ::
 
-        \nabla = \frac{\partial}{\partial r}
+        \nabla = \frac{\partial}{\partial x}
 
     and where :math:`\nabla^2` is:
 
     .. math ::
 
-        \nabla^2 = \frac{1}{r^2} \frac{\partial}{\partial r}
-            \left( r^2 \frac{\partial}{\partial r} \right)
+        \nabla^2 = \frac{1}{x^2} \frac{\partial}{\partial x}
+            \left( x^2 \frac{\partial}{\partial x} \right)
 
 
     """
@@ -194,7 +194,7 @@ def _efield_cb(x):
     """
     Returns a flat efield (-1)
     """
-    return -(x**0)
+    return -np.ones_like(x)
 
 
 def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,

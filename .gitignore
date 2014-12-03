@@ -34,6 +34,9 @@ runtests.py
 src/exprs.pkl
 MANIFEST
 dist/
+chemreac/_chemreac.cpp
+src/chemreac.cpp
+.metadata_subsd
 
 # Generated files from docs
 docs/_build

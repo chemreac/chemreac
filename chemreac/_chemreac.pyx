@@ -92,44 +92,45 @@ cdef class CppReactionDiffusion:
     def __dealloc__(self):
         del self.thisptr
 
-    def f(self, double t, double [::1] y, double [::1] fout):
+    def f(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+          cnp.ndarray[cnp.float64_t, ndim=1] fout):
         assert y.size == fout.size
         assert y.size >= self.n
         self.thisptr.f(t, &y[0], &fout[0])
 
-    def dense_jac_rmaj(self, double t, double [::1] y,
-                       double [:, ::1] Jout):
+    def dense_jac_rmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+                       cnp.ndarray[cnp.float64_t, ndim=2, mode="c"] Jout):
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_rmaj(
             t, &y[0], &Jout[0, 0], Jout.shape[1])
 
-    def dense_jac_cmaj(self, double t, double [::1] y,
-                       double [::1, :] Jout):
+    def dense_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+                       cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_cmaj(
             t, &y[0], &Jout[0, 0], Jout.shape[0])
 
-    def banded_padded_jac_cmaj(self, double t, double [::1] y,
-                       double [::1, :] Jout):
+    def banded_padded_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+                       cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*3+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_padded_jac_cmaj(
             t, &y[0], &Jout[0, 0], Jout.shape[0])
 
-    def banded_packed_jac_cmaj(self, double t, double [::1] y,
-                       double [::1, :] Jout):
+    def banded_packed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+                       cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*2+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_packed_jac_cmaj(
             t, &y[0], &Jout[0, 0], Jout.shape[0])
 
-    def calc_efield(self, double[::1] linC):
+    def calc_efield(self, cnp.ndarray[cnp.float64_t, ndim=1] linC):
         self.thisptr.calc_efield(&linC[0])
         return self.efield  # convenience
 
@@ -286,7 +287,8 @@ cdef class CppReactionDiffusion:
             self.thisptr.neval_j = n
 
     # Extra convenience
-    def per_rxn_contrib_to_fi(self, double t, double[::1] y, int si, double[::1] out):
+    def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+                              int si, cnp.ndarray[cnp.float64_t, ndim=1] out):
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
 
     property xcenters:
@@ -322,7 +324,8 @@ cdef class CppReactionDiffusion:
 # sundials wrapper:
 
 def cvode_direct(
-        CppReactionDiffusion rd, double[::1] y0, double[::1] tout,
+        CppReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
+        cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N

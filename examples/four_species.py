@@ -48,13 +48,12 @@ import argh
 import numpy as np
 
 from chemreac import DENSE, BANDED, SPARSE
-from chemreac.serialization import load
 from chemreac.integrate import run
+from chemreac.serialization import load
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     save_and_or_show_plot
 )
-
 
 # A      -> B          k1=0.05
 # 2C + B -> D + B      k2=3.0
@@ -63,7 +62,10 @@ from chemreac.util.plotting import (
 def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
                  logy=False, logt=False, plot=False, savefig='None',
                  verbose=False):
-
+    """
+    Integrates the reaction system defined by
+    :download:`four_species.json <examples/four_species.json>`
+    """
     rd = load(os.path.join(os.path.dirname(
         __file__), 'four_species.json'), N=N, x=N, logy=logy, logt=logt)
 
