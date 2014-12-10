@@ -73,11 +73,13 @@ else:
     cmdclass_['sdist'] = pce_sdist
     subsd = {'USE_OPENMP': USE_OPENMP}
     pyx_path = 'chemreac/_chemreac.pyx'
+    using_pyx = os.path.exists(pyx_path)
+    pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
     sources = [
         template_path if USE_TEMPLATE else rendered_path,
         'src/finitediff/finitediff/fornberg.f90',
         'src/finitediff/finitediff/c_fornberg.f90',
-        pyx_path if os.path.exists(pyx_path) else pyx_path[:-3]+'cpp',
+        pyx_or_cpp,
     ]
 
     ext_modules_ = [
@@ -103,9 +105,11 @@ else:
                         'flags': flags,
                         'options': options
                     },
-                    'chemreac/_chemreac.pyx': {
+                    pyx_or_cpp: {
                         'cy_kwargs': {'annotate': True}
                         # , 'gdb_debug': not IS_RELEASE}
+                    } if using_pyx else {
+                        'std': 'c++0x',
                     }
                 },
                 'flags': flags,

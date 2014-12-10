@@ -7,6 +7,7 @@ PYTHON_VERSION="2.7"
 CONDA_PY="27"
 ENV_NAME="testenv"
 MINICONDA_PATH=$HOME/miniconda
+export DEBIAN_FRONTEND=noninteractive
 # Install prerequisities
 function finish {
     # Tell github that the shield cache has expired

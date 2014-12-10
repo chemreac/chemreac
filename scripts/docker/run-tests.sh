@@ -3,6 +3,5 @@
 wget "http://hera.physchem.kth.se/~bjorn/chemreac/$1.tar.gz"
 tar xvzf "$1.tar.gz"
 pushd "$1"
-#pip install -r requirements.txt
-./scripts/run_tests.sh
+CPLUS_INCLUDE_PATH=/usr/include/python2.7 ./scripts/run_tests.sh
 popd
