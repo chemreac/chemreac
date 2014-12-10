@@ -5,7 +5,7 @@ prune docs/_generated
 prune docs/examples/examples
 recursive-include docs/examples/examples *.py *.json
 recursive-include examples *.py *.json
-recursive-include src *.h *.pxd
+recursive-include src *.h *.pxd *.hpp
 
 recursive-include scripts *
 

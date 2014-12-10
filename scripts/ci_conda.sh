@@ -13,7 +13,7 @@ conda info
 python --version
 python setup.py --version
 export DISTUTILS_DEBUG=1
-conda build conda-recipe
+conda build --quiet conda-recipe
 conda install --quiet chemreac --use-local
 if [[ "$RUN_TESTS" == "1" ]]; then
     ./scripts/run_tests.sh
