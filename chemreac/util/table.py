@@ -18,7 +18,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
     Generates a table representation of a ReactionSystem.
 
     Parameters
-    ==========
+    ----------
     rsys: ReactionSystem
     substances: sequence of strings
     rref0: integer
@@ -28,9 +28,9 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
     tex: bool
         use latex formated output (default: True)
     rxnarrow: string
-        default: '$\rightarrow$'
+        default: '\$\\rightarrow\$'
     ref_fmt: string
-        format string of `ref` attribute of reactions
+        format string of ``ref`` attribute of reactions
 
     """
 

@@ -54,7 +54,7 @@ combos = list(product([True, False], [True, False], [1],
 @pytest.mark.parametrize("combo", combos)
 def test_integrate(combo):
     logy, logt, N, geom = combo
-    sys = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
 
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4]*N)
 
@@ -68,19 +68,14 @@ def test_integrate(combo):
     tout = np.linspace(t0, tend, nt+1)
     assert np.allclose(tout-t0, ref_t)
 
-    y = np.log(y0) if logy else y0
-    if logt:
-        tout = np.log(tout)
-    yout, info = run(sys, y, tout)
-    if logy:
-        yout = np.exp(yout)
+    integr = run(rd, y0, tout)
 
     for i in range(N):
-        assert np.allclose(yout[:, i, :], ref_y, atol=1e-5)
+        assert np.allclose(integr.Cout[:, i, :], ref_y, atol=1e-5)
 
 
-def _get_ref_f(sys, t0, y0, logy, logt):
-    k1, k2 = sys.k
+def _get_ref_f(rd, t0, y0, logy, logt):
+    k1, k2 = rd.k
     A, B, C, D = y0
 
     ref_f = np.array([-k1*A, k1*A, -2*k2*C*C*B, k2*C*C*B])
@@ -91,11 +86,11 @@ def _get_ref_f(sys, t0, y0, logy, logt):
     return ref_f
 
 
-def _get_ref_J(sys, t0, y0, logy, logt, order='C'):
-    k1, k2 = sys.k
+def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
+    k1, k2 = rd.k
     A, B, C, D = y0
     if logy:
-        f1, f2, f3, f4 = _get_ref_f(sys, t0, y0, logy, logt)
+        f1, f2, f3, f4 = _get_ref_f(rd, t0, y0, logy, logt)
         ref_J = np.array(
             [[0,    0,    0,   0],
              [f2, -f2,    0,   0],
@@ -119,16 +114,16 @@ def _get_ref_J(sys, t0, y0, logy, logt, order='C'):
 def test_f(log):
     logy, logt = log
     N = 1
-    sys = load(JSON_PATH, N=N, logy=logy, logt=logt)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     t0 = 42.0
 
-    ref_f = _get_ref_f(sys, t0, y0, logy, logt)
+    ref_f = _get_ref_f(rd, t0, y0, logy, logt)
     fout = np.empty_like(ref_f)
 
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
-    sys.f(t, y, fout)
+    rd.f(t, y, fout)
     assert np.allclose(fout, ref_f)
 
 
@@ -136,16 +131,16 @@ def test_f(log):
 def test_dense_jac_rmaj(log):
     logy, logt = log
     N = 1
-    sys = load(JSON_PATH, N=N, logy=logy, logt=logt)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     t0 = 42.0
 
-    ref_J = _get_ref_J(sys, t0, y0, logy, logt)
+    ref_J = _get_ref_J(rd, t0, y0, logy, logt)
     Jout = np.empty_like(ref_J)
 
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
-    sys.dense_jac_rmaj(t, y, Jout)
+    rd.dense_jac_rmaj(t, y, Jout)
 
     assert np.allclose(Jout, ref_J)
 
@@ -154,16 +149,16 @@ def test_dense_jac_rmaj(log):
 def test_dense_jac_cmaj(log):
     logy, logt = log
     N = 1
-    sys = load(JSON_PATH, N=N, logy=logy, logt=logt)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     t0 = 42.0
 
-    ref_J = _get_ref_J(sys, t0, y0, logy, logt, order='F')
+    ref_J = _get_ref_J(rd, t0, y0, logy, logt, order='F')
     Jout = np.empty_like(ref_J)
 
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0
-    sys.dense_jac_cmaj(t, y, Jout)
+    rd.dense_jac_cmaj(t, y, Jout)
 
     print(Jout)
     print(ref_J)
@@ -177,7 +172,7 @@ def test_chemistry():
     r2 = Reaction({'B': 1, 'C': 2}, {'D': 1, 'B': 1}, k=3.0)
     rsys = ReactionSystem([r1, r2])
     rd = rsys.to_ReactionDiffusion(sbstncs)
-    # how to compare equality of say: json loaded sys?
+    # how to compare equality of say: json loaded rd?
     # specie indices can be permuted in 4*3*2*1 = 24 ways
     # ...solution: canonical representation is alphabetically sorted on
     #              Substance.name

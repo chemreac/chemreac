@@ -14,8 +14,10 @@
   - Dirichlet
   - Neumann
   - Cauchy
+  - Look into logx+lrefl
 
 * avoid underflow/(overflow) in logy mode. Convolution?
+  - algebraic sigmoid used.
 
 * more tests for logx
 

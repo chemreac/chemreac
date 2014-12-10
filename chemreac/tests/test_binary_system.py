@@ -178,13 +178,10 @@ def _test_integrate(params):
     tout = np.linspace(t0, tend, nt+1)
     assert np.allclose(tout-t0, ref_t)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(tout) if logt else tout
-    _test_f_and_dense_jac_rmaj(rd, t0, y)
-    yout, info = run(rd, y, t, with_jacobian=True)
-    yout = np.exp(yout) if logy else yout
+    _test_f_and_dense_jac_rmaj(rd, t0, np.log(y0) if logy else y0)
+    integr = run(rd, y0, tout, with_jacobian=True)
     for i in range(N):
-        assert np.allclose(yout[:, i, :], ref_y, atol=1e-4)
+        assert np.allclose(integr.Cout[:, i, :], ref_y, atol=1e-4)
 
 
 @pytest.mark.parametrize("params", COMBOS)

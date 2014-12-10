@@ -1,9 +1,18 @@
-recurisve-include docs *
+recursive-include docs *
 prune docs/_build
-recurisve-include examples *.py *.json
+prune docs/_build.log
+prune docs/_generated
+prune docs/examples/examples
+recursive-include docs/examples/examples *.py *.json
+recursive-include examples *.py *.json
+recursive-include src *.h *.pxd
+
+recursive-include scripts *
 
 include chemreac/tests/*.json
 include chemreac/tests/*.txt
 
 include LICENSE.txt
 include README.rst
+include requirements.txt
+include conftest.py

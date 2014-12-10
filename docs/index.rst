@@ -39,9 +39,9 @@ The model is formulated as the Smoluchovski equation:
 
 .. math ::
 
-    \frac{\partial c_i}{\partial t} &= D \nabla^2c_i - \mu_i\vec{E}(\vec{c}) \cdot \nabla c_i + \sum_l r_l S_{il}
+    \frac{\partial c_i}{\partial t} &= D_i \nabla^2c_i - \mu_i\vec{E}(\vec{c}) \cdot \nabla c_i + \sum_l r_l S_{il}
 
-where :math:`t` is time, :math:`c_i` is the concentration of species :math:`i`, :math:`D` is the diffusion coefficient, :math:`\mu_i` is the electric mobility, :math:`\vec{E}` is the electric field, :math:`S_{il}` is the net stoichiometric coefficient of species :math:`i` in reaction :math:`l` and :math:`r_l` is the rate of reaction :math:`l`, which for a mass-action type of rate law i given by:
+where :math:`t` is time, :math:`c_i` is the concentration of species :math:`i`, :math:`D_i` is the diffusion coefficient of the same species, :math:`\mu_i` is the electric mobility, :math:`\vec{E}` is the electric field, :math:`S_{il}` is the net stoichiometric coefficient of species :math:`i` in reaction :math:`l` and :math:`r_l` is the rate of reaction :math:`l`, which for a mass-action type of rate law is given by:
 
 .. math ::
 

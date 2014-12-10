@@ -75,12 +75,12 @@ def fit_binary_eq_rd(tdata, ydata, c0, Keq, **kwargs):
         pconv.append((k_fw, tdelay, eps_l))
         rd.k = [k_fw, k_fw/Keq]
         if tdelay > 0.0:
-            c1, info = run(rd, c0, [0, tdelay])
-            c1 = c1[1, 0, :]
+            integr = run(rd, c0, [0, tdelay])
+            c1 = integr.Cout[1, 0, :]
         else:
             c1 = c0
-        yout, info = run(rd, c1, tdelay+tout)
-        return yout[:, 0, 2]*eps_l
+        integr = run(rd, c1, tdelay+tout)
+        return integr.Cout[:, 0, 2]*eps_l
     popt, pcov = curve_fit(fit_func, tdata, ydata, **kwargs)
     return popt, np.asarray(pconv)
 
@@ -202,8 +202,8 @@ def simulate_stopped_flow(rd, t, c0, k, noiselvl, eps_l, tdelay=None):
     if tdelay is None:
         tdelay = np.abs(np.random.normal(
             t[-1]/20, scale=t[-1]/20))
-    cout, info = run(rd, c0, t)
-    ytrue = eps_l*cout[:, 0, 2]
+    integr = run(rd, c0, t)
+    ytrue = eps_l*integr.Cout[:, 0, 2]
     skip_nt = np.argwhere(t >= tdelay)[0]
     tinp = t[:-skip_nt] if skip_nt > 0 else t
     yinp = ytrue[skip_nt:] + noiselvl*np.random.normal(
@@ -232,8 +232,8 @@ def main(tdelay=1.0, B0=0.6, noiselvl=3e-4, nt=200, eps_l=4200.0, plot=False):
         tinp, yinp, c0, Keq, True)
 
     rd_eq.k = [k_fw_opt, k_fw_opt/Keq]
-    yout, info = run(rd_eq, c0, ttrue)
-    yopt = yout[:, 0, 2]*eps_l_opt
+    integr = run(rd_eq, c0, ttrue)
+    yopt = integr.Cout[:, 0, 2]*eps_l_opt
 
     if plot:
         import matplotlib.pyplot as plt

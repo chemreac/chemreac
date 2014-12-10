@@ -7,7 +7,7 @@ import sys
 from distutils.core import setup, Command
 
 pkg_name = 'chemreac'
-# read __version__ and __doc__ attributes:
+# read __version__ attributes:
 exec(open(pkg_name+'/release.py').read())
 try:
     major, minor, micro = map(int, __version__.split('.'))
@@ -55,17 +55,29 @@ if on_rtd or IDEMPOTENT_INVOCATION:
     ext_modules_ = []
 else:
     import pickle
-    from pycodeexport.dist import pce_build_ext, PCEExtension
-    from pycompilation.dist import pc_sdist
     import numpy as np
+    template_path = 'src/chemreac_template.cpp'
+    rendered_path = 'src/chemreac.cpp'
+    USE_TEMPLATE = not os.path.exists(rendered_path)
+    try:
+        from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
+    except ImportError:
+        if USE_TEMPLATE:
+            print("This is not source distribution. pycodeexport is needed:", sys.exc_info()[0])
+            raise
+        # If building from sdist no need for more than pycompilation
+        from pycompilation.dist import PCExtension as PCEExtension
+        from pycompilation.dist import pc_build_ext as pce_build_ext
+        from pycompilation.dist import pc_sdist as pce_sdist
     cmdclass_['build_ext'] = pce_build_ext
-    cmdclass_['sdist'] = pc_sdist
+    cmdclass_['sdist'] = pce_sdist
     subsd = {'USE_OPENMP': USE_OPENMP}
+    pyx_path = 'chemreac/_chemreac.pyx'
     sources = [
-        'src/chemreac_template.cpp',
+        template_path if USE_TEMPLATE else rendered_path,
         'src/finitediff/finitediff/fornberg.f90',
         'src/finitediff/finitediff/c_fornberg.f90',
-        'chemreac/_chemreac.pyx',
+        pyx_path if os.path.exists(pyx_path) else pyx_path[:-3]+'cpp',
     ]
 
     ext_modules_ = [
@@ -74,7 +86,7 @@ else:
             sources=sources,
             template_regexps=[
                 (r'^(\w+)_template.(\w+)$', r'\1.\2', subsd),
-            ],
+            ] if USE_TEMPLATE else (),
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {
                     'src/chemreac.cpp': {

@@ -14,6 +14,7 @@ from chemreac import (
     ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
 )
 from chemreac.integrate import run
+from chemreac.util.plotting import plot_solver_linear_error
 
 
 def efield_cb(x, logx=False):
@@ -48,7 +49,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
                  nt=25, geom='f', logt=False, logy=False, logx=False,
                  random=False, nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
-                 atol=1e-6, rtol=1e-6, efield=False, random_seed=42):
+                 atol=1e-6, rtol=1e-6, efield=False, random_seed=42,
+                 verbose=False):
     if random_seed:
         np.random.seed(random_seed)
     n = 1
@@ -67,12 +69,11 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
 
     mob = 0.3
     # Initial conditions
-    if geom == FLAT:
-        y0 = y0_flat_cb(x, logx)
-    elif geom == CYLINDRICAL:
-        y0 = y0_cylindrical_cb(x, logx)
-    elif geom == SPHERICAL:
-        y0 = y0_spherical_cb(x, logx)
+    y0 = {
+        FLAT: y0_flat_cb,
+        CYLINDRICAL: y0_cylindrical_cb,
+        SPHERICAL: y0_spherical_cb
+    }[geom](x, logx)
 
     # Setup the system
     stoich_reac = []
@@ -83,7 +84,6 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     if lrefl:
         # isolated system is not stationary for linear conc profile with finite
         # slope, hence we add production reaction at left boundary
-        # assert geom == FLAT
         assert nstencil == 3  # k is derived for parabola through -x0, x0, x1
         stoich_reac.append([0])
         stoich_prod.append([0, 0])
@@ -97,7 +97,6 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     if rrefl:
         # for same reason as above, a consumption reaction is added at right
         # boundary
-        # assert geom == FLAT
         assert nstencil == 3
         stoich_reac.append([0])
         stoich_prod.append([])
@@ -126,7 +125,6 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         rrefl=rrefl,
     )
 
-    print(rd.geom)
     if efield:
         if geom != FLAT:
             raise ValueError("Only analytic sol. for flat drift implemented.")
@@ -134,29 +132,22 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
 
     # Analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = np.repeat(y0[np.newaxis, :, np.newaxis], nt, axis=0)
+    Cref = np.repeat(y0[np.newaxis, :, np.newaxis], nt, axis=0)
     if efield:
-        yref += t.reshape((nt, 1, 1))*mob
+        Cref += t.reshape((nt, 1, 1))*mob
 
     # Run the integration
-    t = np.log(tout) if logt else tout
-    yout, info = run(rd, np.log(y0).flatten() if logy else y0.flatten(),
-                     t, atol=atol, rtol=rtol, with_jacobian=(not num_jacobian),
-                     method=method)
-    yout = np.exp(yout) if logy else yout
+    integr = run(rd, y0, tout, atol=atol, rtol=rtol,
+                 with_jacobian=(not num_jacobian), method=method)
+    Cout, info = integr.Cout, integr.info
 
-    if logy:
-        def lin_err(i, j):
-            linref = np.exp(yref[i, :, j])
-            linerr = np.exp(yout[i, :, j])-linref
-            linatol = np.average(yref[i, :, j])
-            linrtol = linatol
-            return linerr/(linrtol*np.abs(linref)+linatol)
+    if verbose:
+        print(info)
 
-    if logy:
-        rmsd = np.sum(lin_err(slice(None), slice(None))**2 / N, axis=1)**0.5
-    else:
-        rmsd = np.sum((yref-yout)**2 / N, axis=1)**0.5
+    def lin_err(i=slice(None), j=slice(None)):
+        return integr.Cout[i, :, j] - Cref[i, :, j]
+
+    rmsd = np.sum(lin_err()**2 / N, axis=1)**0.5
     ave_rmsd_over_atol = np.average(rmsd, axis=0)/info['atol']
 
     # Plot results
@@ -175,23 +166,21 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
 
         for i in range(nt):
             c = 1-tout[i]/tend
-            c = (1.0-c, .5-c/2, .5-c/2)
+            c = (1.0-c, .5-c/2, .5-c/2)  # over time: dark red -> light red
 
             plt.subplot(4, 1, 1)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(rd.N),
+            _plot(Cout[i, :, 0], c, 'Simulation (N={})'.format(rd.N),
                   apply_exp_on_y=logy)
 
             plt.subplot(4, 1, 2)
-            _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
+            _plot(Cref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy)
 
-            plt.subplot(4, 1, 3)
-            if logy:
-                _plot(lin_err(i, 0)/info['atol'], c,
-                      'Linear rel error / Log abs. tol. (={})'.format(
-                          info['atol']))
-            else:
-                _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
-                      'Abs. err. / Abs. tol. (={})'.format(info['atol']))
+            ax_err = plt.subplot(4, 1, 3)
+            plot_solver_linear_error(integr, Cref, ax_err, ti=i,
+                                     bi=slice(None),
+                                     color=c, fill=(i == 0))
+            plt.title('Linear rel error / Log abs. tol. (={})'.format(
+                      info['atol']))
 
         plt.subplot(4, 1, 4)
         tspan = [tout[0], tout[-1]]
@@ -202,7 +191,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
         plt.show()
-    return tout, yout, info, ave_rmsd_over_atol, rd
+    return tout, Cout, info, ave_rmsd_over_atol, rd
 
 
 if __name__ == '__main__':

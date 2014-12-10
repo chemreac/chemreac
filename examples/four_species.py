@@ -48,22 +48,25 @@ import argh
 import numpy as np
 
 from chemreac import DENSE, BANDED, SPARSE
-from chemreac.serialization import load
 from chemreac.integrate import run
+from chemreac.serialization import load
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     save_and_or_show_plot
 )
-
 
 # A      -> B          k1=0.05
 # 2C + B -> D + B      k2=3.0
 
 
 def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
-                 logy=False, logt=False, plot=False, savefig='None'):
-
-    sys = load(os.path.join(os.path.dirname(
+                 logy=False, logt=False, plot=False, savefig='None',
+                 verbose=False):
+    """
+    Integrates the reaction system defined by
+    :download:`four_species.json <examples/four_species.json>`
+    """
+    rd = load(os.path.join(os.path.dirname(
         __file__), 'four_species.json'), N=N, x=N, logy=logy, logt=logt)
 
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
@@ -71,49 +74,48 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
     t0 = 1e-10
 
     if mode is None:
-        if sys.N == 1:
+        if rd.N == 1:
             mode = DENSE
-        elif sys.N > 1:
+        elif rd.N > 1:
             mode = BANDED
     else:
         mode = int(mode)
 
     import matplotlib.pyplot as plt
     if jac_spy:
-        fout = np.empty(sys.n*sys.N)
-        sys.f(t0, y0, fout)
+        fout = np.empty(rd.n*rd.N)
+        rd.f(t0, y0, fout)
         print(fout)
         if mode == DENSE:
-            jout = np.zeros((sys.n*sys.N, sys.n*sys.N), order='F')
-            sys.dense_jac_cmaj(t0, y0, jout)
+            jout = np.zeros((rd.n*rd.N, rd.n*rd.N), order='F')
+            rd.dense_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(np.abs(jout)))
         elif mode == BANDED:
-            # note sys.n*3 needed in call from scipy.integrate.ode
-            jout = np.zeros((sys.n*2+1, sys.n*sys.N), order='F')
-            sys.banded_packed_jac_cmaj(t0, y0, jout)
+            # note rd.n*3 needed in call from scipy.integrate.ode
+            jout = np.zeros((rd.n*2+1, rd.n*rd.N), order='F')
+            rd.banded_packed_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(np.abs(jout)))
         print(jout)
         plt.show()
     else:
         tout = np.linspace(t0, tend, nt)
-        y = np.log(y0) if logy else y0
-        t = np.log(tout) if logt else tout
-        yout, info = run(sys, y, t)
-        yout = np.exp(yout) if logy else yout
-
+        integr = run(rd, y0, tout)
+        Cout = integr.Cout
+        if verbose:
+            print(integr.info)
         if plot:
             plt.figure(figsize=(6, 4))
             for i, l in enumerate('ABCD'):
-                plt.plot(tout, yout[:, 0, i], label=l)
+                plt.plot(tout, Cout[:, 0, i], label=l)
             plt.title("Time evolution of concentrations")
             plt.legend()
             save_and_or_show_plot(savefig=savefig)
 
             plt.figure(figsize=(6, 10))
             plot_jacobian(
-                sys,
-                np.log(tout) if sys.logt else tout,
-                np.log(yout) if sys.logy else yout,
+                rd,
+                np.log(tout) if rd.logt else tout,
+                np.log(Cout) if rd.logy else Cout,
                 'ABCD',
                 lintreshy=1e-10
             )
@@ -125,9 +127,9 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
 
             plt.figure(figsize=(6, 10))
             plot_per_reaction_contribution(
-                sys,
-                np.log(tout) if sys.logt else tout,
-                np.log(yout) if sys.logy else yout,
+                rd,
+                np.log(tout) if rd.logt else tout,
+                np.log(Cout) if rd.logy else Cout,
                 'ABCD'
             )
             plt.tight_layout()

@@ -9,9 +9,12 @@ chemreac
    :target: https://coveralls.io/r/bjodah/chemreac?branch=master
    :alt: Test coverage
 
-chremreac aims to be a library collecting tools and utilities for
-modeling of chemical kinetics problems, primarily in the context of
-aqueous phase with external radiation fields. 
+chremreac is an open source library which aims to collect tools and utilities for
+modeling of chemical kinetics problems. It is primarily designed to
+be useful in the context of aqueous phase with external radiation fields.
+
+The (heavy) numerical processing is done in rountines written in C++/Fortran which have
+been wrapped in a Python interface using Cython.
 
 Documentation
 =============
@@ -25,24 +28,29 @@ Installation
 ============
 .. install-start
 
-Easiest way to install chemreac (on linux) is by using conda to pull it from
+Easiest way to install chemreac (on linux) is by using 
+`conda <http://docs.continuum.io/anaconda/index.html>`_ to pull it from:
 https://binstar.org/bjodah/chemreac
 
-Below you will find instructions for installation by building it from source.
+
+Building from source
+--------------------
+Below you will find instructions for installation by building chemreac from source.
 You may also look in ``scripts/`` folder for automated install scripts used
 by the continuous integration servers.
 
 Prerequisites
--------------
+~~~~~~~~~~~~~
 
-- C++ compiler with C++11 support (e.g. GCC >= 4.8)
-- Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. gfortran)
-- LAPACK
-- Sundials 2.5
-- Python (2.7 or >=3.3)
+- C++ compiler with C++11 support (e.g. `GCC <https://gcc.gnu.org/>`_ >= 4.8)
+- Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. `gfortran <https://gcc.gnu.org/fortran/>`_)
+- LAPACK (provided by e.g. `OpenBLAS <http://www.openblas.net/>`_)
+- `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.5
+- `Python <https://www.python.org>`_ (2.7 or >=3.3)
     
 In addition to python, the following python packages are required
-(versions indicate what is tested):
+(versions indicate what is tested, they are found on 
+`PyPI <https://pypi.python.org/pypi>`_ and may be installed using ``pip``):
 
 - argh>=0.25.0
 - numpy>=1.9.0
@@ -55,9 +63,9 @@ In addition to python, the following python packages are required
 - matplotlib>=1.4.0
 - periodictable>=1.4.1
 - future>=0.13.0
-- pycompilation>=0.3.6
-- pycodeexport>=0.0.5
-- https://github.com/sympy/sympy/archive/master.zip (will req. 0.7.6)
+- pycompilation>=0.4.0
+- pycodeexport>=0.1.0
+- sympy>=0.7.6
 
 For rendering the documentation you also need:
 
@@ -72,12 +80,12 @@ to run all the tests you also need:
 - dot2tex
 
 Building and installing
------------------------
+~~~~~~~~~~~~~~~~~~~~~~~
 Once non-python prerequisites are in installed, you may procede e.g. as:
 
 ::
 
-    $ git clone https://bitbucket.org/bjodah/chemreac.git
+    $ git clone https://github.com/bjodah/chemreac.git
     $ cd chemreac
     $ pip install --user --upgrade -r requirements.txt
     $ python setup.py install --user
@@ -99,9 +107,9 @@ Run ``py.test``, possibly with explicit ``PYTHONPATH`` (e.g. if ``build_ext --in
 
 ::
 
-    $ PYTHONPATH=`pwd`:$PYTHONPATH py.test
+    $ PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow
 
-All tests should pass (or xfail). If they are not, please `file an issue <https://github.com/bjodah/chemreac/issues>`_.
+All tests should pass (or xfail). If they do not, please `file an issue <https://github.com/bjodah/chemreac/issues>`_.
 
 .. install-end
 
@@ -135,19 +143,12 @@ above you can find build status shield for drone.io (Py 2.7, uses OpenMP, tests 
 
 .. ci-end
 
-TODO
-----
-- Better defined "isolating" boundary conditions for:
-    - logx
-    - cylindrical/spherical
-    - drift
-    - and combinations of above.
-- Look into logx+lrefl
 
 License
 =======
-Open Source. Released under the very permissive "simplified
-(2-clause) BSD license". See ``LICENSE.txt`` for further details.
+The source code is Open Source and is released under the very permissive
+"simplified (2-clause) BSD license". See ``LICENSE.txt`` for further details.
+Contributors are welcome to suggest improvements at https://github.com/bjodah/chemreac
 
 Author
 ======

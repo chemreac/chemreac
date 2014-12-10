@@ -9,12 +9,33 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
-    plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_bin_k_factors
+    plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_bin_k_factors,
+    plot_solver_linear_error, plot_solver_linear_excess_error
 )
 
 
 def _get_decay_rd(N):
     return ReactionDiffusion(2, [[0]], [[1]], [3.14], N, D=[0.0, 0.0])
+
+
+def _get_decay_Cref(N, y0, tout):
+    y0 = np.asarray(y0)
+    tout = tout.reshape((tout.size, 1))
+    factor = np.exp(-(tout-tout[0])*3.14)
+    Cref = np.hstack([
+        np.hstack((y0[i*2]*factor, y0[i*2]*(1 - factor) + y0[i*2+1]))
+        for i in range(N)])
+    return Cref.reshape((tout.size, N, 2))
+
+
+def test_get_decay_Cref():
+    N = 3
+    rd = _get_decay_rd(N)
+    tout = np.linspace(0, 3.0, 7)
+    y0 = [3.0, 1.0]*N
+    integr = run(rd, y0, tout)
+    Cref = _get_decay_Cref(N, y0, tout)
+    assert np.allclose(Cref, integr.yout)
 
 
 def test_coloured_spy():
@@ -33,8 +54,8 @@ def test_plot_jacobian():
     rd = _get_decay_rd(1)
     y0 = [3.0, 1.0]
     tout = np.linspace(0, 3.0, 7)
-    yout, info = run(rd, y0, tout)
-    axes = plot_jacobian(rd, tout, yout, [0, 1])
+    integr = run(rd, y0, tout)
+    axes = plot_jacobian(rd, integr.tout, integr.yout, [0, 1])
     for ax in axes:
         assert isinstance(ax, matplotlib.axes.Axes)
 
@@ -43,8 +64,8 @@ def test_plot_per_reaction_contribution():
     rd = _get_decay_rd(1)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]
-    yout, info = run(rd, y0, tout)
-    axes = plot_per_reaction_contribution(rd, tout, yout, [0, 1])
+    integr = run(rd, y0, tout)
+    axes = plot_per_reaction_contribution(rd, tout, integr.yout, [0, 1])
     for ax in axes:
         assert isinstance(ax, matplotlib.axes.Axes)
 
@@ -54,8 +75,8 @@ def test_plot_C_vs_t_in_bin():
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]*N
-    yout, info = run(rd, y0, tout)
-    ax = plot_C_vs_t_in_bin(rd, tout, yout, 0)
+    integr = run(rd, y0, tout)
+    ax = plot_C_vs_t_in_bin(rd, tout, integr.yout, 0)
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
@@ -64,8 +85,8 @@ def test_plot_C_vs_x():
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]*N
-    yout, info = run(rd, y0, tout)
-    ax = plot_C_vs_x(rd, tout, yout, [0, 1], 6)
+    integr = run(rd, y0, tout)
+    ax = plot_C_vs_x(rd, tout, integr.yout, [0, 1], 6)
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
@@ -74,8 +95,8 @@ def test_plot_C_vs_t_and_x():
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]*N
-    yout, info = run(rd, y0, tout)
-    ax = plot_C_vs_t_and_x(rd, tout, yout, 0)
+    integr = run(rd, y0, tout)
+    ax = plot_C_vs_t_and_x(rd, tout, integr.yout, 0)
     import mpl_toolkits.mplot3d
     assert isinstance(ax, mpl_toolkits.mplot3d.Axes3D)
 
@@ -103,4 +124,26 @@ def test_plot_bin_k_factors():
         bin_k_factor_span=bkf_span
     )
     ax = plot_bin_k_factors(rd, indices=[0, 1])
+    assert isinstance(ax, matplotlib.axes.Axes)
+
+
+def test_plot_solver_linear_error():
+    N = 3
+    rd = _get_decay_rd(N)
+    tout = np.linspace(0, 3.0, 7)
+    y0 = [3.0, 1.0]*N
+    integr = run(rd, y0, tout)
+    Cref = _get_decay_Cref(N, y0, tout)
+    ax = plot_solver_linear_error(integr, Cref)
+    assert isinstance(ax, matplotlib.axes.Axes)
+
+
+def test_plot_solver_linear_excess_error():
+    N = 3
+    rd = _get_decay_rd(N)
+    tout = np.linspace(0, 3.0, 7)
+    y0 = [3.0, 1.0]*N
+    integr = run(rd, y0, tout)
+    Cref = _get_decay_Cref(N, y0, tout)
+    ax = plot_solver_linear_excess_error(integr, Cref)
     assert isinstance(ax, matplotlib.axes.Axes)

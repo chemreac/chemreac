@@ -15,7 +15,7 @@ TR_FLS = (True, False)
 
 
 @pytest.mark.parametrize('params', list(product(TR_FLS, TR_FLS, TR_FLS, TR_FLS,
-                                                TR_FLS, [3], [1e-5])))
+                                                TR_FLS, [3], [1e-4])))
 def test_steady_state(params):
     ly, lt, r, lr, rr, ns, forgiveness = params
     # notice forgiveness << 1
