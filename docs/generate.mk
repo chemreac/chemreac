@@ -1,7 +1,7 @@
 
 .PHONY: images-png
 
-IMAGES=_generated/analytic_diffusion.png _generated/steady_state_approx.png _generated/steady_state_approx.html _generated/aqueous_radiolysis.png _generated/analytic_N_scaling.png _generated/auto_efield.png _generated/decay.png _generated/four_species.png _generated/equilibrium.png _generated/equilibrium_unscaled.png _generated/equilibrium_scaled.png
+IMAGES=_generated/analytic_diffusion.png _generated/steady_state_approx.png _generated/steady_state_approx.html _generated/aqueous_radiolysis.png _generated/analytic_N_scaling.png _generated/auto_efield.png _generated/decay.png _generated/four_species.png _generated/equilibrium.png _generated/equilibrium_unscaled.png _generated/equilibrium_scaled.png _generated/const_surf_conc.png _generated/const_surf_conc_logy_logx.png
 
 _generated/steady_state_approx.png: examples/examples/steady_state_approx.py
 	python $< --plot --savefig $@
@@ -35,6 +35,12 @@ _generated/equilibrium_unscaled.png: examples/examples/equilibrium.py
 
 _generated/equilibrium_scaled.png: examples/examples/equilibrium.py
 	python $<  --scaling 1e10 --A0 1.0 --B0 1e-10 --C0 1e-30 --kf 10 --kb 1 --t0 0 --tend 5 --plot --plotlogy --plotlogt --savefig $@
+
+_generated/const_surf_conc.png: examples/examples/const_surf_conc.py
+	python $< --plot --savefig $@
+
+_generated/const_surf_conc_logy_logx.png: examples/examples/const_surf_conc.py
+	python $< --plot --N 1024 --verbose --nstencil 3 --scaling 1e-20 --logx --logy --factor 1e12 --x0 1e-6 --atol 1e-8 --rtol 1e-8 --savefig $@
 
 
 images-png: $(IMAGES)

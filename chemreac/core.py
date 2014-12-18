@@ -106,22 +106,24 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         1-dimensional array ion charges
     mobility: sequence of floats
         mobility of ions
-    x: sequence of floats
-        compartment boundaries (of length N+1), default: linspace(1,2, N+1)
+    x: sequence of floats or pair of flats or float, optional
+        compartment boundaries (of length N+1), default: linspace(0, 1, N+1)
+        if x is a pair of floats it is expanded into linspace(x[0], x[1], N+1).
+        if x is a float it is expanded into linspace(0, x, N+1)
     stoich_actv: list of lists of integer indices
         list of ACTIVE reactant index lists per reaction.n, default: []
     bin_k_factor: sequence of sequences of floats
         per compartment modulation of rate coefficients
     bin_k_factor_span: sequence of integers
-        spans over reactions affected by bin_k_factor
+        spans over reaction indices affected by bin_k_factor
     geom: integer
         any of (FLAT, SPHERICAL, CYLINDRICAL)
     logy: bool
-        f and *_jac_* routines operate on log(concentration)
+        f and \*_jac_\* routines operate on log(concentration)
     logt: bool
-        f and *_jac_* routines operate on log(time)
+        f and \*_jac_\* routines operate on log(time)
     logx: bool
-        f and *_jac_* routines operate on log(space)
+        f and \*_jac_\* routines operate on log(space)
     nstencil: integer
         number of points used in finite difference scheme
     lrefl: bool
@@ -207,12 +209,17 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             x = 1.0
 
         if isinstance(x, float) or isinstance(x, int):
-            _x = np.linspace(1, 2, N+1)
+            _x = np.linspace(0, x, N+1)
         else:
-            assert len(x) == N+1
-            # monotonic:
-            assert all([x[i+1] > x[i] for i in range(len(x)-1)])
-            _x = x
+            if len(x) == N+1:
+                # monotonic:
+                assert all([x[i+1] > x[i] for i in range(len(x)-1)])
+                _x = x
+            elif len(x) == 2:
+                _x = np.linspace(x[0], x[1], N+1)
+            else:
+                raise ValueError("Don't know what to do with len(x) == %d" %
+                                 len(x))
 
         if stoich_actv is None:
             _stoich_actv = list([[]]*len(stoich_reac))

@@ -121,7 +121,7 @@ def _integrate_scipy(rd, y0, tout, mode=None,
     new_kwargs = {}
     y0 = np.asarray(y0)
     if y0.size != rd.n*rd.N:
-        fmstr = "y0.size (={})not compatible with rd.n*rd.N (={})"
+        fmtstr = "y0.size (={})not compatible with rd.n*rd.N (={})"
         raise ValueError(fmtstr.format(y0.size, rd.n*rd.N))
 
     if mode is None:

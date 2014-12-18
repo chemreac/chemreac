@@ -15,35 +15,44 @@ function finish {
 }
 trap finish EXIT
 
-# miniconda
+# install miniconda in the background in a subshell
+(
 source scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.7.0"
 conda config --add channels http://conda.binstar.org/bjodah
+) &
+miniconda_install_pid=$!
 
-# apt-get
+# Install compilers and dependencies
 scripts/ubuntu12.04/apt_get_gcc_48.sh
 scripts/ubuntu12.04/apt_get_g++_48.sh
 scripts/ubuntu12.04/apt_get_gfortran_48.sh
 scripts/aptget_debian.sh
 
-# sundials
+# Download and install sundials
 bash scripts/install_sundials_w_lapack.sh
 export LIBRARY_PATH=/usr/local/lib:$LIBRARY_PATH
 export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
 
+# Set non-interactive matplotlib backend
 mkdir -p $HOME/.config/matplotlib/
 cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 
+# Wait for miniconda installation
+wait $miniconda_install_pid
+export PATH="$MINICONDA_PATH/bin:$PATH"
+hash -r
+
 # Build extension module and run test suite
 export USE_OPENMP=1
+export CHEMREAC_SOLVER=cvode_direct
 source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 1
 if [[ $? != 0 ]]; then
     >&2 echo "./scripts/ci_conda.sh failed."
     exit 1
 fi
+# Archive the coverage report (for artifact)
 tar -jcf htmlcov.tar.bz2 htmlcov/
 
-CHEMREAC_SOLVER=sundials py.test --slow --veryslow --ignore build/
-
-# Build docs
+# Build docs and archive (for artifact)
 bash scripts/build_docs.sh
 tar -jcf html.tar.bz2 docs/_build/html/
