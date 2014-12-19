@@ -21,7 +21,7 @@ def efield_cb(x, logx=False):
     """
     Returns a flat efield (-1)
     """
-    return -(x**0)
+    return -np.ones_like(x)
 
 
 def y0_flat_cb(x, logx=False):

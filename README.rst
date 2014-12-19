@@ -29,9 +29,13 @@ Installation
 .. install-start
 
 Easiest way to install chemreac (on linux) is by using 
-`conda <http://docs.continuum.io/anaconda/index.html>`_ to pull it from:
-https://binstar.org/bjodah/chemreac
+`conda <http://docs.continuum.io/anaconda/index.html>`_ to pull it from
+https://binstar.org/bjodah/chemreac by first adding the appropriate channel:
 
+::
+
+    $ conda config --add channels http://conda.binstar.org/bjodah
+    $ conda install chemreac
 
 Building from source
 --------------------
@@ -138,7 +142,7 @@ gh-pages branch).
 .. image:: https://drone.io/github.com/bjodah/chemreac/status.png
    :target: https://drone.io/github.com/bjodah/chemreac/latest
 
-above you can find build status shield for drone.io (Py 2.7, uses OpenMP, tests sundials backend, build docs as artifact, html coverage report as artifact):
+above you can find build status shield for drone.io (Py 2.7, uses OpenMP and the Sundials backend, build docs as artifact, html coverage report as artifact):
 
 
 .. ci-end

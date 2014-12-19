@@ -68,8 +68,6 @@ from chemreac import (
 from chemreac.integrate import run
 from chemreac.util.plotting import save_and_or_show_plot
 
-np.random.seed(42)
-
 
 def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
     r"""
@@ -77,7 +75,7 @@ def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
 
     .. math ::
 
-        c = \frac{x_{end}-x_{0}}{\sqrt{4 \pi D t}} \
+        c(x, t) = \frac{x_{end}-x_{0}}{\sqrt{4 \pi D t}} \
             e^{-\frac{(x - \mu - vt)^2}{4Dt}}
 
     which satisfies:
@@ -117,7 +115,8 @@ def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
 
     .. math ::
 
-        c = \frac{x_{end}-x_{0}}{4 \pi D t} e^{-\frac{(x - \mu - vt)^2}{4Dt}}
+        c(x, t) = \frac{x_{end}-x_{0}}{4 \pi D t} \
+            e^{-\frac{(x - \mu - vt)^2}{4Dt}}
 
     which satisfies:
 
@@ -156,7 +155,7 @@ def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False):
 
     .. math ::
 
-        c = \frac{x_{end}-x_{0}}{\sqrt{4 \pi D t^3}} \
+        c(x, t) = \frac{x_{end}-x_{0}}{\sqrt{4 \pi D t^3}} \
             e^{-\frac{(x - \mu - vt)^2}{4Dt}}
 
     which satisfies:

@@ -43,3 +43,13 @@ def _test_rd_integration_run(cb, forgiveness=10, **kwargs):
                                      scale_err=forgiveness)
         assert np.all(lb < linCref[..., i])
         assert np.all(ub > linCref[..., i])
+
+
+def spat_ave_rmsd_vs_time(Cout, Cref):
+    """ Spatially averaged root mean square deviation versus time"""
+    if not Cout.shape == Cref.shape:
+        raise ValueError("Incompatible shapes: {}, {}".format(
+            Cout.shape, Cref.shape))
+    N = Cout.shape[1]
+    err = Cout - Cref
+    return np.sqrt(np.sum(err**2 / N, axis=1))

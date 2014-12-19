@@ -16,6 +16,7 @@ some of their output.
    analytic_N_scaling.rst
    aqueous_radiolysis.rst
    auto_efield.rst   
+   const_surf_conc.rst
    decay.rst
    equilibrium.rst
    four_species.rst
