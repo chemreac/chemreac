@@ -10,7 +10,8 @@ from chemreac.integrate import run
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_bin_k_factors,
-    plot_solver_linear_error, plot_solver_linear_excess_error
+    plot_solver_linear_error, plot_solver_linear_excess_error,
+    coloured_spy
 )
 
 
@@ -147,3 +148,12 @@ def test_plot_solver_linear_excess_error():
     Cref = _get_decay_Cref(N, y0, tout)
     ax = plot_solver_linear_excess_error(integr, Cref)
     assert isinstance(ax, matplotlib.axes.Axes)
+
+
+def test_coloured_spy():
+    from matplotlib.axes import Axes
+    A = np.arange(9).reshape((3, 3))
+    for log in (False, True, -5):
+        ax_im, ax_cb = coloured_spy(A, log=log)
+        assert isinstance(ax_im, Axes)
+        assert isinstance(ax_cb, Axes)

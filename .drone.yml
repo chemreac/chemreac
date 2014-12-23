@@ -1,13 +1,11 @@
-image: bjodah/trusty-drone-miniconda27  # contains git, wget, gcc, g++, gfortran, cmake, valgrind, miniconda
+image: bjodah/chemreac  # see scripts/docker_drone/Dockerfile
 git:
     path: github.com/bjodah/chemreac
 env:
   - BINSTAR_USER=bjodah
+  - USE_OPENMP=1
+  - CHEMREAC_SOLVER=cvode_direct
 script:
-  - ./scripts/aptget_debian.sh
-  - ./scripts/install_sundials_w_lapack.sh
-  - mkdir -p $HOME/.config/matplotlib/
-  - cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
   - export PATH=$MINICONDA_PATH/bin:$PATH
   - conda config --set always_yes yes --set changeps1 no
   - conda config --add channels http://conda.binstar.org/$BINSTAR_USER

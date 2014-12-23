@@ -30,7 +30,7 @@ def test_logy_logt():
 
 # Manually tweaking
 def test_logy_tweak():
-    _test_rd_integration_run(decay.integrate_rd, 10, rtol='1e-11', logy=True,
+    _test_rd_integration_run(decay.integrate_rd, 20, rtol='1e-11', logy=True,
                              small=1e-6)
 
 
