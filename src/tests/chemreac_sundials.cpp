@@ -3,7 +3,7 @@
 #include <numeric> // std::accumulate
 #include <algorithm> // min, max
 #include <cassert>
-#include "chemreac.h"
+#include "chemreac.hpp"
 
 #ifdef _OPENMP
   #include <omp.h>

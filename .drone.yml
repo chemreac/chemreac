@@ -4,7 +4,7 @@ git:
 env:
   - BINSTAR_USER=bjodah
   - USE_OPENMP=1
-  - CHEMREAC_SOLVER=cvode_direct
+  - CHEMREAC_SOLVER=sundials
 script:
   - export PATH=$MINICONDA_PATH/bin:$PATH
   - conda config --set always_yes yes --set changeps1 no

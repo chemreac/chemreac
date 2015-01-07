@@ -173,7 +173,7 @@ def test_integrators(log):
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8
         },
-        'cvode_direct': {
+        'sundials': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
             'method': 'bdf'

@@ -1,9 +1,11 @@
-#ifndef _PVHQOBGMVZECTIJSMOKFUXJXXM
-#define _PVHQOBGMVZECTIJSMOKFUXJXXM
+#ifndef CHEMREAC_PVHQOBGMVZECTIJSMOKFUXJXXM
+#define CHEMREAC_PVHQOBGMVZECTIJSMOKFUXJXXM
 
 #include <vector>
 #include <utility>
 #include <stdexcept>
+#include <memory> // unique_ptr
+#include "block_diag_ilu.hpp"
 
 enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 
@@ -11,10 +13,10 @@ namespace chemreac {
 
 using std::vector;
 using std::pair;
+using block_diag_ilu::make_unique;
 
 class ReactionDiffusion
 {
-//private:
 public:
     int * coeff_reac;
     int * coeff_prod;
@@ -57,9 +59,17 @@ public:
     const double eps;
     double * const efield; // v_d = mu_el*E
     double * const netchg;
+private:
+    block_diag_ilu::BlockDiagMat *jac_cache {nullptr};
+    block_diag_ilu::BlockDiagMat *prec_cache {nullptr};
+
+public:
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
     uint neval_f {0};
     uint neval_j {0};
+    uint nprec_setup {0};
+    uint nprec_solve {0};
+    uint njacvec_dot {0};
 
     ReactionDiffusion(uint, 
 		      const vector<vector<uint> >, 
@@ -85,14 +95,31 @@ public:
                       double eps=1.0);
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);
-    void dense_jac_rmaj(double, const double * const, double * const __restrict__, int);
-    void dense_jac_cmaj(double, const double * const, double * const __restrict__, int);
-    void banded_padded_jac_cmaj(double, const double * const, double * const __restrict__, int);
-    void banded_packed_jac_cmaj(double, const double * const, double * const __restrict__, int);
+    void dense_jac_rmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
+    void dense_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
+    void banded_padded_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
+    void banded_packed_jac_cmaj(double, const double * const __restrict__,  const double * const __restrict__, double * const __restrict__, int);
+    void compressed_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
+    // For iterative linear solver
+    // void local_reaction_jac(const uint, const double * const, double * const __restrict__, double) const;
+    void jac_times_vec(const double * const __restrict__ vec,
+                       double * const __restrict__ out,
+                       double t, const double * const __restrict__ y,
+                       const double * const __restrict__ fy
+                       );
+    void prec_setup(double t, const double * const __restrict__ y, 
+                    const double * const __restrict__ fy, 
+                    bool jok, bool& jac_recomputed, double gamma);
+    void prec_solve_left(const double t, const double * const __restrict__ y,
+                         const double * const __restrict__ fy, 
+                         const double * const __restrict__ r, 
+                         double * const __restrict__ z,
+                         double gamma);
+
     void per_rxn_contrib_to_fi(double, const double * const __restrict__, uint, double * const __restrict__) const;
     int get_geom_as_int() const;
     void calc_efield(const double * const);
 }; // class ReactionDiffusion
 
 } // namespace chemreac
-#endif // _PVHQOBGMVZECTIJSMOKFUXJXXM
+#endif // CHEMREAC_PVHQOBGMVZECTIJSMOKFUXJXXM

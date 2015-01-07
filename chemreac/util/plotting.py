@@ -60,7 +60,7 @@ def save_and_or_show_plot(show=None, savefig='None'):
 
 
 def coloured_spy(A, cmap_name='coolwarm', log=False,
-                 **kwargs):
+                 symmetric_colorbar=False, **kwargs):
     """
     Convenience function for using matplotlib to
     generate a spy plot for inspecting e.g. a jacobian
@@ -78,6 +78,8 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
         if isinstance(log, int):
             SymLogNorm(10**log)
         note: "norm" in kwargs overrides this.
+    symmetric_colorbar: bool
+        to make divergent colormaps pass through zero as intended.
 
     Returns
     -------
@@ -102,6 +104,9 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
     if log is not False and 'norm' not in kwargs:
         Amin = np.min(A[np.where(A != 0)])
         Amax = np.max(A[np.where(A != 0)])
+        if symmetric_colorbar:
+            Amin = -max(-Amin, Amax)
+            Amax = -Amin
         import matplotlib.colors
         if log is True:
             if np.any(A < 0):
@@ -128,7 +133,7 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
                 pass  # Ticks already reach 0
             else:
                 maxlog = int(ceil(np.log10(Amax)))
-                tick_locations.extend([10**x for x in range(log, maxlog)])
+                tick_locations.extend([10**x for x in range(log, maxlog+1)])
             kwargs['norm'] = SymLogNorm(10**log)
         else:
             raise TypeError("log kwarg not understood: {}".format(log))

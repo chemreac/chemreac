@@ -9,26 +9,21 @@ RUN locale-gen en_US.UTF-8
 
 # Install packages from distribution repo
 RUN apt-get update && \
-apt-get --quiet --assume-yes install gcc g++ gfortran valgrind cmake wget curl liblapack-dev libsundials-serial-dev graphviz dot2tex python-pip python-numpy python-scipy python-argh python-mako python-quantities python-matplotlib python-dev && \
+apt-get --quiet --assume-yes install git gcc g++ gfortran valgrind cmake wget curl liblapack-dev libsundials-serial-dev graphviz dot2tex && \
 apt-get clean && \
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install python packages from PyPI
-RUN pip install pytest pytest-pep8 periodictable future mpld3 sympy pycodeexport pycompilation pytest-cov sphinx && \
-rm -rf /tmp/* && \
-mkdir -p $HOME/.config/matplotlib/ && echo "backend: Agg" > $HOME/.config/matplotlib/matplotlibrc
-
-# Install miniconda
+# Install miniconda and install packages from binstar and PyPI
 RUN wget --quiet http://repo.continuum.io/miniconda/Miniconda-${MINICONDA_VERSION}-Linux-x86_64.sh -O miniconda.sh && \
 bash miniconda.sh -b -p $MINICONDA_PATH && \
 rm miniconda.sh && \
 export ORI_PATH=$PATH && \
 export PATH="$MINICONDA_PATH/bin:$PATH" && \
 conda config --set always_yes yes --set changeps1 no && \
-PATH="$MINICONDA_PATH/bin:$PATH" conda update --quiet conda && \
-PATH="$MINICONDA_PATH/bin:$PATH" conda install --quiet conda-build binstar jinja2 cython && \
-PATH="$MINICONDA_PATH/bin:$PATH" conda clean -t && \
-export PATH=$ORI_PATH
-
-# Oops, forgot about git
-RUN apt-get update && apt-get install --quiet --assume-yes git
+conda config --add channels http://conda.binstar.org/bjodah && \
+conda update --quiet conda && \
+conda install --quiet conda-build binstar jinja2 numpy=1.9.0 scipy=0.14.0 matplotlib=1.4.0 cython=0.21 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
+pip install --quiet argh pytest-pep8 pytest-cov python-coveralls sphinx_rtd_theme mpld3 && \
+rm -rf /tmp/* && \
+mkdir -p $HOME/.config/matplotlib/ && echo "backend: Agg" > $HOME/.config/matplotlib/matplotlibrc && \
+conda clean -t

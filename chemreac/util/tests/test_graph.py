@@ -5,6 +5,7 @@ import shutil
 import tempfile
 from chemreac.chemistry import Reaction, ReactionSystem, mk_sn_dict_from_names
 from chemreac.util.graph import rsys2dot, rsys2graph
+from chemreac.util.testing import slow
 
 
 def _get_rsys():
@@ -29,6 +30,7 @@ def test_rsys2dot():
     ]
 
 
+@slow
 def test_rsys2graph():
     rsys, sbstncs = _get_rsys()
     tempdir = tempfile.mkdtemp()

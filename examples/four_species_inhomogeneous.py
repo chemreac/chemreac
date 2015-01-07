@@ -4,6 +4,7 @@
 from __future__ import print_function, division
 
 import os
+from pprint import pprint
 
 import argh
 import numpy as np
@@ -11,7 +12,6 @@ import numpy as np
 from chemreac.serialization import load
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
-from chemreac.util.plotting import coloured_spy, save_and_or_show_plot
 
 
 """
@@ -41,6 +41,8 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
     y = np.log(y0) if logy else y0
     t = np.log(tout) if logt else tout
     integr = run(sys, y, t)
+    if verbose:
+        pprint(integr.info)
 
     cx = sys.x[:-1]+np.diff(sys.x)/2  # center x
     if plot:
@@ -48,6 +50,8 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
         from mpl_toolkits.mplot3d import Axes3D
         from matplotlib import cm
         from matplotlib import pyplot as plt
+
+        from chemreac.util.plotting import coloured_spy, save_and_or_show_plot
 
         fig = plt.figure()
 

@@ -33,12 +33,16 @@ if CONDA_BUILD:
 
 flags = []
 options = ['pic', 'warn']
-if not (ON_DRONE or ON_TRAVIS):
-    if CONDA_BUILD:
-        # -ffast-math buggy in anaconda
-        flags += ['-O2', '-funroll-loops'] if IS_RELEASE else ['-O1']
-    else:
-        options += ['fast']  # -ffast-math -funroll-loops
+if DEBUG:
+    print("Building chemreac with debugging enabled.")
+    options += ['debug']
+else:
+    if not (ON_DRONE or ON_TRAVIS):
+        if CONDA_BUILD:
+            # -ffast-math buggy in anaconda
+            flags += ['-O2', '-funroll-loops'] if IS_RELEASE else ['-O1']
+        else:
+            options += ['fast']  # -ffast-math -funroll-loops
 
 cmdclass_ = {}
 
@@ -121,7 +125,7 @@ else:
             },
             include_dirs=['src/', 'src/finitediff/finitediff/',
                           np.get_include()],
-            libraries=['sundials_cvode', LLAPACK, 'sundials_nvecserial', 'm'],
+            libraries=['sundials_cvodes', LLAPACK, 'sundials_nvecserial', 'm'],
             logger=True,
         )
     ]

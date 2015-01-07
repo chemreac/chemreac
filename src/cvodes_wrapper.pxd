@@ -1,3 +1,4 @@
+from libcpp cimport bool
 from libcpp.vector cimport vector
 
 cdef extern from "cvodes_wrapper.hpp" namespace "cvodes_wrapper":
@@ -8,4 +9,5 @@ cdef extern from "cvodes_wrapper.hpp" namespace "cvodes_wrapper":
         const T * const y0,
         size_t nout,
         const T * const tout,
-        T * const yout) except +
+        T * const yout,
+        bool with_jacobian) except +

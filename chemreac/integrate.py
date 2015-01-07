@@ -16,10 +16,6 @@ import time
 
 import numpy as np
 
-from scipy import __version__ as __scipy_version__
-from scipy.integrate import ode
-scipy_version = tuple(map(int, __scipy_version__.split('.')[:3]))
-
 from chemreac import DENSE, BANDED, SPARSE
 from chemreac.util.analysis import suggest_t0
 
@@ -30,7 +26,7 @@ DEFAULTS = {
 }
 
 
-def _integrate_cvode_direct(rd, y0, tout, mode=None, **kwargs):
+def _integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     """
     see integrate.
 
@@ -38,7 +34,7 @@ def _integrate_cvode_direct(rd, y0, tout, mode=None, **kwargs):
       method: linear multistep method: 'bdf' or 'adams'
 
     """
-    from ._chemreac import cvode_direct
+    from ._chemreac import sundials_integrate
 
     # Handle kwargs
     new_kwargs = {}
@@ -51,8 +47,8 @@ def _integrate_cvode_direct(rd, y0, tout, mode=None, **kwargs):
     new_kwargs['atol'] = atol
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
-    if kwargs.pop('with_jacobian', True) is False:
-        raise ValueError("CVODE(S) wrapper uses explicit jacobian")
+    new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
+    new_kwargs['iterative'] = kwargs.pop('iterative', 0)
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
@@ -61,9 +57,9 @@ def _integrate_cvode_direct(rd, y0, tout, mode=None, **kwargs):
     rd.neval_j = 0
     texec = time.time()
     try:
-        yout = cvode_direct(rd, np.asarray(y0).flatten(),
-                            np.asarray(tout).flatten(),
-                            **new_kwargs)
+        yout = sundials_integrate(rd, np.asarray(y0).flatten(),
+                                  np.asarray(tout).flatten(),
+                                  **new_kwargs)
     except RuntimeError:
         yout = np.ones((len(tout), rd.N, rd.n), order='C')/0  # NaN
         success = False
@@ -78,7 +74,11 @@ def _integrate_cvode_direct(rd, y0, tout, mode=None, **kwargs):
         'texec': texec,
         'success': success
     })
-    return yout, info
+    if info['iterative'] > 0:
+        info['nprec_setup'] = rd.nprec_setup
+        info['nprec_solve'] = rd.nprec_solve
+        info['njacvec_dot'] = rd.njacvec_dot
+    return yout, tout, info
 
 
 def _integrate_rk4(rd, y0, tout, **kwargs):
@@ -100,24 +100,35 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
         'texec': texec,
         'success': True,
     }
-    return yout, info
+    return yout, tout, info
 
 
 def _integrate_scipy(rd, y0, tout, mode=None,
-                     integrator_name='vode', **kwargs):
+                     integrator_name='vode', dense_output=False,
+                     **kwargs):
     """
     see integrate
 
+    Parameters
+    ----------
     tout: array-like
         at what times to report, e.g.:
         - np.linspace(t0, tend, nt+1)
         - np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt+1)
+    integrator_name: string (default: vode)
+    dense_output: bool (default: False)
+        if True, tout is taken to be length 2 tuple (t0, tend)
 
     Returns
     =======
     yout: numpy array of shape (len(tout), rd.N, rd.n)
 
     """
+
+    from scipy import __version__ as __scipy_version__
+    from scipy.integrate import ode
+    scipy_version = tuple(map(int, __scipy_version__.split('.')[:3]))
+
     new_kwargs = {}
     y0 = np.asarray(y0)
     if y0.size != rd.n*rd.N:
@@ -179,12 +190,30 @@ def _integrate_scipy(rd, y0, tout, mode=None,
     runner.set_integrator(integrator_name, **new_kwargs)
     runner.set_initial_value(y0.flatten(), tout[0])
 
-    yout = np.empty((len(tout), rd.n*rd.N), order='C')
-    yout[0, :] = y0
     texec = time.time()
-    for i in range(1, len(tout)):
-        runner.integrate(tout[i])
-        yout[i, :] = runner.y
+    if dense_output:
+        import warnings
+        if not len(tout) == 2:
+            raise ValueError("dense_output implies tout == (t0, tend)")
+        # suppress warning printed by Fortran
+        runner._integrator.iwork[2] = -1
+        warnings.filterwarnings("ignore", category=UserWarning)
+        yout = [y0]
+        tstep = [tout[0]]
+        while runner.t < tout[1]:
+            runner.integrate(tout[1], step=True)
+            tstep.append(runner.t)
+            yout.append(runner.y)
+        warnings.resetwarnings()
+        tout = np.array(tstep)
+        yout = np.array(yout)
+    else:
+        yout = np.empty((len(tout), rd.n*rd.N), order='C')
+        yout[0, :] = y0
+        for i in range(1, len(tout)):
+            runner.integrate(tout[i])
+            yout[i, :] = runner.y
+
     texec = time.time() - texec
 
     info = new_kwargs.copy()
@@ -195,7 +224,7 @@ def _integrate_scipy(rd, y0, tout, mode=None,
         'neval_f': f.neval,
         'neval_j': jac.neval,
     })
-    return yout.reshape((len(tout), rd.N, rd.n)), info
+    return yout.reshape((len(tout), rd.N, rd.n)), tout, info
 
 
 def sigm(x, lim=150., n=8):
@@ -213,7 +242,7 @@ class Integration(object):
     Parameters
     ----------
     solver: string
-        "cvode_direct" or "scipy" where scipy uses VODE
+        "sundials" or "scipy" where scipy uses VODE
         as the solver.
     rd: ReactionDiffusion instance
     C0: array
@@ -267,7 +296,7 @@ class Integration(object):
     """
 
     _callbacks = {
-        'cvode_direct': _integrate_cvode_direct,
+        'sundials': _integrate_sundials,
         'scipy': _integrate_scipy,
         'rk4': _integrate_rk4,
     }
@@ -294,7 +323,7 @@ class Integration(object):
 
     def _sanity_checks(self):
         if not self.C0_is_log:
-            if not np.all(self.C0 >= 0):
+            if np.any(self.C0 < 0):
                 raise ValueError("Negative concentrations encountered in C0")
 
     def _integrate(self):
@@ -350,10 +379,14 @@ class Integration(object):
             t = np.log(self.tout) if self.rd.logt else self.tout
 
         # Run the integration
-        self.yout, self.info = self._callbacks[self.solver](
+        self.yout, self.internal_t, self.info = self._callbacks[self.solver](
             self.rd, y0, t, **self.kwargs)
-        self.internal_t = t
         self.info['t0_set'] = t0 if t0_set else False
+
+        if self.rd.logt:
+            self.tout = np.exp(self.internal_t)
+        else:
+            self.tout = self.internal_t
 
         # Back-transform integration output into linear concentration
         self.Cout = np.exp(self.yout) if self.rd.logy else self.yout

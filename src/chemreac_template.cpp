@@ -8,7 +8,7 @@
 //#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
-#include "chemreac.h"
+#include "chemreac.hpp"
 #include "c_fornberg.h" // fintie differences (remember to link fortran object fornberg.o)
 
 #ifdef DEBUG
@@ -108,6 +108,8 @@ ReactionDiffusion::ReactionDiffusion(
         throw std::logic_error("Unknown geom.");
     }
 
+    jac_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
+    prec_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
 
     // Finite difference scheme
     D_weight = new double[nstencil*N];
@@ -178,11 +180,15 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []efield;
     delete []netchg;
     delete []A_weight;
+    // if (LU_blocks != nullptr)
+    //     delete []LU_blocks;
     delete []D_weight;
     delete []coeff_reac;
     delete []coeff_prod;
     delete []coeff_totl;
     delete []coeff_actv;
+    delete prec_cache;
+    delete jac_cache;
 }
 
 uint ReactionDiffusion::_stencil_bi_lbound(uint bi) const
@@ -404,10 +410,22 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
     ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
     ('banded_packed_jac_cmaj', '(bci)*n+ci', '(1+bri-(bci))*n+ri-ci'),\
     ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-(bci))*n+ri-ci'),\
+    ('compressed_jac_cmaj', None, None),\
     ]:
+%if token.startswith('compressed'):
+#include <iostream>
+#define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
+#define SUB(di, bri, ci) std::cout<< di << " " << bri << " " << ci << std::endl; ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
+#define SUP(di, bri, ci) ja[N*n*n + n*(N*nsidep - (nsidep*nsidep + nsidep)/2) + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri)*n + ci]
+%else:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
+#define SUB(di, bri, ci) JAC(bri, bri-di, ci, ci)
+#define SUP(di, bri, ci) JAC(bri, bri+di, ci, ci)
+%endif
 void
-ReactionDiffusion::${token}(double t, const double * const y,
+ReactionDiffusion::${token}(double t,
+                            const double * const __restrict__ y,
+                            const double * const __restrict__ fy,
                             double * const __restrict__ ja, int ldj)
 {
     // Note: does not return a strictly correct Jacobian for nstecil > 3
@@ -415,9 +433,15 @@ ReactionDiffusion::${token}(double t, const double * const y,
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
-    // `ldj`: leading dimension of ja (useful for padding)
-    double * const __restrict__ fout = (logy) ? new double[n*N] : nullptr;
-    if (fout != nullptr) f(t, y, fout);
+    // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
+    double * fout = nullptr;
+    if (logy) // fy useful..
+        if (fy){
+            fout = const_cast<double *>(fy);
+        } else {
+            fout = new double[n*N];
+            f(t, y, fout);
+        }
 
     // note condifiontal call to free at end of this function
     const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
@@ -462,8 +486,9 @@ ReactionDiffusion::${token}(double t, const double * const y,
         if (N > 1) {
             uint lbound = _stencil_bi_lbound(bi);
             for (uint si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
-                // Not a strict Jacobian only block diagonal plus closest bands...
+                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
+                // All versions expect the compressed Jacobian ignore any more sub/super
+                // diagonals than the innermost.
                 for (uint k=0; k<nstencil; ++k){
                     const uint sbi = _xc_bi_map(lbound+k);
                     JAC(bi, bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
@@ -471,19 +496,19 @@ ReactionDiffusion::${token}(double t, const double * const y,
                         JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
                         JAC(bi, bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
-                        if (bi > 0)
+                        if (bi >= 1)
                             if (sbi == bi-1){
                                 double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
-                                JAC(bi, bi-1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi-1, si, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
+                                SUB(1, bi, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
+                                SUB(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor;
                             }
                         if (bi < N-1)
                             if (sbi == bi+1){
                                 double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
-                                JAC(bi, bi+1, si, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                JAC(bi, bi+1, si, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
-                                    Cfactor; 
+                                SUP(1, bi, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
+                                SUP(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
+                                    Cfactor;
                             }
                     }
                 }
@@ -498,9 +523,9 @@ ReactionDiffusion::${token}(double t, const double * const y,
                     for (uint dsi=0; dsi<n; ++dsi)
                         JAC(bi, bi, si, dsi) *= exp(t);
                     if (bi>0)
-                        JAC(bi, bi - 1, si, si) *= exp(t);
+                        SUB(1, bi, si) *= exp(t);
                     if (bi<N-1)
-                        JAC(bi, bi + 1, si, si) *= exp(t);
+                        SUP(1, bi, si) *= exp(t);
                 }
                 if (logy)
                     JAC(bi, bi, si, si) -= FOUT(bi, si);
@@ -509,20 +534,94 @@ ReactionDiffusion::${token}(double t, const double * const y,
         ${'delete []local_r;' if USE_OPENMP else ''}
     }
     ${'delete []local_r;' if not USE_OPENMP else ''}
-    if (logy)
+    if (logy && !fy)
         delete []fout;
     if (logy)
         free((void*)linC);
     neval_j++;
 }
 #undef JAC
+#undef SUB
+#undef SUP
 %endfor
 
+// #define JAC(ri, ci) ja[ri*n + ci]
+// void ReactionDiffusion::local_reaction_jac(const uint bi, const double * const y,
+//                                            double * const __restrict__ ja) const
+// {
+//     const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
+//     std::unique_ptr<double[]> local_r {new double[nr]};
+//     _fill_local_r(bi, y, local_r);
+//     for (uint si=0; si<n; ++si){
+//         // species si
+//         for (uint dsi=0; dsi<n; ++dsi){
+//             // derivative wrt species dsi
+//             // j_i[si, dsi] = Sum_l(n_lj*Derivative(r[l], local_y[dsi]))
+//             JAC(si, dsi) = 0.0;
+//             for (uint rxni=0; rxni<nr; ++rxni){
+//                 // reaction rxni
+//                 if (coeff_totl[rxni*n + si] == 0)
+//                     continue; // species si unaffected by reaction
+//                 if (coeff_actv[rxni*n + dsi] == 0)
+//                     continue; // rate of reaction unaffected by species dsi
+//                 double tmp = coeff_totl[rxni*n + si]*\
+//                 coeff_actv[rxni*n + dsi]*local_r[rxni];
+//                 if (!logy)
+//                     tmp /= Y(bi, dsi);
+//                 JAC(si, dsi) += tmp;
+//             }
+//             if (logy)
+//                 //JAC(bi, bi, si, dsi) *= gamma*exp(-Y(bi, si));
+//                 JAC(si, dsi) /= LINC(bi, si);
+//             JAC(si, dsi) *= gamma;
+//         }
+//     }
+//     if (logy)
+//         free((void*)linC);
+// }
+// #undef JAC
+
+void ReactionDiffusion::jac_times_vec(const double * const __restrict__ vec,
+                                      double * const __restrict__ out,
+                                      double t, const double * const __restrict__ y,
+                                      const double * const __restrict__ fy
+                                      )
+{
+    compressed_jac_cmaj(t, y, fy, &(jac_cache->data[0]), 0);
+    jac_cache->dot_vec(vec, out);
+    njacvec_dot++;
+}
+
+void ReactionDiffusion::prec_setup(double t,
+                const double * const __restrict__ y,
+                const double * const __restrict__ fy,
+                bool compute_jac, bool& jac_recomputed, double gamma)
+{
+    if (compute_jac){
+        compressed_jac_cmaj(t, y, fy, &(jac_cache->data[0]), 0);
+        jac_recomputed = true;
+    }
+    nprec_setup++;
+}
 #undef FOUT
 #undef LINC
 #undef Y
 #undef D_WEIGHT
 #undef A_WEIGHT
+
+void ReactionDiffusion::prec_solve_left(const double t,
+                                        const double * const __restrict__ y,
+                                        const double * const __restrict__ fy,
+                                        const double * const __restrict__ r,
+                                        double * const __restrict__ z,
+                                        double gamma)
+{
+    // Solves P*z = r, where P ~= I - gamma*J
+    prec_cache->set_to_1_minus_gamma_times_other(gamma, *jac_cache);
+    block_diag_ilu::ILU ilu = prec_cache->ilu_inplace();
+    ilu.solve(r, z);
+    nprec_solve++;
+}
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __restrict__ y,
                                               uint si, double * const __restrict__ out) const

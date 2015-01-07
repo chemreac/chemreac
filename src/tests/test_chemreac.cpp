@@ -4,7 +4,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include "test_utils.h"
-#include "chemreac.h"
+#include "chemreac.hpp"
 
 #ifdef _OPENMP
   #include <omp.h>
@@ -50,6 +50,7 @@ int test_f(){
 #define RJ(i, j) ref_jac[(i)*12+j]
 int test_dense_jac(){
     ReactionDiffusion rd = get_four_species_system(3);
+
     const double dx = 1.0 / 3;
     vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
     double ref_jac[12*12];
@@ -103,7 +104,7 @@ int test_dense_jac(){
     RJ(11,10) =  2*3.0*y[10]*y[9];
     RJ(11,11) = -rd.D[3]/(dx*dx);
 
-    rd.dense_jac_rmaj(0.0, &y[0], dense_jac, 12);
+    rd.dense_jac_rmaj(0.0, &y[0], nullptr, dense_jac, 12);
     int exit2 = 0;
     for (uint i=0; i<12*12; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-14){
@@ -111,24 +112,59 @@ int test_dense_jac(){
             exit2 = 1;
         }
 
+    // Banded jacobian
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
     for (uint i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
-    rd.banded_packed_jac_cmaj(0.0, &y[0], bnd_jac, (2*rd.n+1));
+    rd.banded_packed_jac_cmaj(0.0, &y[0], nullptr, bnd_jac, (2*rd.n+1));
 #define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)
-	for (uint ci=max(0, ri-(int)rd.n); ci<min(rd.n*rd.N, ri+rd.n); ++ci)
+	for (uint ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
 	    if (dabs(BND(ri,ci) - DNS(ri,ci)) > 1e-14){
 		std::cout << ri << " " << ci << " " << BND(ri,ci) << " " << DNS(ri,ci) << std::endl;
-                exit2 = 1;
+                exit2 = 2;
             }
 #undef BND
-#undef DNS
     delete []bnd_jac;
-    if (exit2)
-        return 2;
-    else
-        return 0;
+
+    // Compressed jacobian
+    vector<double> cmprs_jac(rd.n*rd.n*rd.N + 2*rd.n*(rd.N-1), 0);
+    rd.compressed_jac_cmaj(0.0, &y[0], nullptr, &cmprs_jac[0], rd.n);
+#define CMPRS(bi, ri, ci) cmprs_jac[bi*rd.n*rd.n + ci*rd.n + ri]
+#define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi+ci]
+#define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi+ci]
+    // diagonal blocks
+    for (uint bi=0; bi<rd.N; ++bi)
+        for (uint ci=0; ci<rd.n; ++ci)
+            for (uint ri=0; ri<rd.n; ++ri)
+                if (dabs(CMPRS(bi, ri, ci) - DNS(bi*rd.n + ri, bi*rd.n + ci)) > 1e-14){
+                    std::cout << bi << " " << ci << " " << ri << " " << CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
+                    exit2 = 4;
+                }
+    for (int bi=0; bi<rd.N-1; ++bi)
+        for (int ci=0; ci<rd.n; ++ci){
+            // sub diagonal
+            if (dabs(SUB(bi, ci) - DNS((bi+1)*rd.n + ci, bi*rd.n + ci)) > 1e-14){
+                std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
+                exit2 = 4;
+            }
+            // sup diagonal
+            if (dabs(SUP(bi, ci) - DNS(bi*rd.n + ci, (bi+1)*rd.n + ci)) > 1e-14){
+                std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
+                exit2 = 4;
+            }
+        }
+#undef SUP
+#undef SUP
+#undef CMPRS
+#undef DNS
+
+    if (exit2){
+        printf("exit2: %d", exit2);
+        return 1;
+    }
+    return 0;
+
 }
 #undef RJ
 
@@ -179,8 +215,8 @@ void bench_f(){
 	    1e-9*(finish.tv_nsec-start.tv_nsec);
 #endif
 
-	best_timing = min(best_timing, timing);
-	worst_timing = max(worst_timing, timing);
+	best_timing = std::min(best_timing, timing);
+	worst_timing = std::max(worst_timing, timing);
 	timings.push_back(timing);
     }
     std::cout << "Best timing: " << best_timing << std::endl;

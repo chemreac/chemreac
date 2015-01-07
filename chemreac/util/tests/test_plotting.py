@@ -13,6 +13,7 @@ from chemreac.util.plotting import (
     plot_solver_linear_error, plot_solver_linear_excess_error,
     coloured_spy
 )
+from chemreac.util.testing import slow
 
 
 def _get_decay_rd(N):
@@ -39,6 +40,7 @@ def test_get_decay_Cref():
     assert np.allclose(Cref, integr.yout)
 
 
+@slow
 def test_coloured_spy():
     N = 6
     t = 0.0

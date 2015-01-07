@@ -12,6 +12,7 @@ import pytest
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
+from chemreac.util.compressed_jac_store import get_compressed
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
 
@@ -584,6 +585,11 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     rd.banded_packed_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
+
+    # jout_cmprs = rd.alloc_jout_compressed(1)
+    # rd.compressed_jac_cmaj(t, y, jout_cmprs)
+    # jref_cmprs = get_compressed(jref, 1, N, 1)
+    # assert np.allclose(jout_cmprs, jref_cmprs)
 
 
 @slow
