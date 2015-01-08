@@ -255,7 +255,7 @@ class Reaction(object):
     @classmethod
     def get_reactions_with_species(cls, species_name):
         res = []
-        for reaction in self.all_instances:
+        for reaction in cls.all_instances:
             if (species_name in reaction.reactants.keys() or
                species_name in reaction.products.keys()):
                 res.append(reaction)

@@ -8,7 +8,7 @@ import numpy as np
 
 from chemreac import (
     ReactionDiffusion, FLAT, SPHERICAL,
-    CYLINDRICAL, BANDED, Geom_names
+    CYLINDRICAL, Geom_names
 )
 from chemreac.integrate import run
 from chemreac.util.plotting import plot_C_vs_t_and_x, save_and_or_show_plot
@@ -44,7 +44,7 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
     if plot:
         # matplotlib
         from mpl_toolkits.mplot3d import Axes3D
-        import matplotlib
+        assert Axes3D  # silence pyflakes
         from matplotlib import cm
         from matplotlib import pyplot as plt
 

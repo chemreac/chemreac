@@ -5,9 +5,9 @@ env:
     - PYTHON_VERSION=3.4 CONDA_PY=34 BUILD_DOCS=0
   global:
     - BINSTAR_USER=bjodah
-    - GITHUB_USER=bjodah
+    - GITHUB_USER=chemreac
     - GITHUB_REPO=chemreac
-    - CONDA_VERSION="3.7.0"
+    - CONDA_VERSION="3.7.3"
     - ENV_NAME=testenv
     - secure: "bMCx+Ic2vzr9n+GB7V3p0SOTH/aTTJL4bSt4Bv7maT3DmgEoZSCR96DqruKKqLAkmBZ9lnDZP/V19XU9vtCCkaW6VsRpY1r2De7He4qdpeiEQdhRKsMV+SZ1Ys/UHm53WaXJKAbdya+IDQujkaPvyOdQNqLL9WDNpaKVHlQpEsg="
     - secure: "fFSCXFzVUPTLA0Dpx7eyqg3f+f4daeYKKMbpAmL4s944sFnJ62HFq43+2tQ1ZjV20dBEaWTlwXsfgPrcHWrbLNeWslcYYKoyRKk566v6kfMR2cuGIfQlGjKuzKbZQGBPGuSLFRgSGdw7ooKxXbRq55Yjpe+8rxtnD33WkjscB38="
@@ -24,6 +24,7 @@ before_install:
   - mkdir -p $HOME/.config/matplotlib/
   - cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 install:
+  - if [[ "$TRAVIS_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then export CHEMREAC_RELEASE_VERSION=$TRAVIS_BRANCH; fi
   - source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 0
 script:
   - LIBRARY_PATH=$CONDA_PATH/envs/$ENV_NAME/lib:$LIBRARY_PATH ./scripts/run_tests.sh

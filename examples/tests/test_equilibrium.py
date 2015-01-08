@@ -4,10 +4,6 @@ from __future__ import (absolute_import, division,
 from future.builtins import *
 
 
-from math import exp
-
-import pytest
-
 import equilibrium
 from chemreac.util.testing import _test_rd_integration_run
 

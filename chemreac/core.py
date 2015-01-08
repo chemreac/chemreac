@@ -243,9 +243,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         else:
             assert bin_k_factor_span is not None
             assert len(bin_k_factor) == N
-            assert all([len(x) == len(bin_k_factor_span) for
-                        x in bin_k_factor])
-            assert all([x >= 0 for x in bin_k_factor_span])
+            assert all([len(bkf) == len(bin_k_factor_span) for
+                        bkf in bin_k_factor])
+            assert all([bkfs >= 0 for bkfs in bin_k_factor_span])
 
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N,

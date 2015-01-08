@@ -7,14 +7,30 @@ import sys
 from distutils.core import setup, Command
 
 pkg_name = 'chemreac'
-# read __version__ attributes:
-exec(open(pkg_name+'/release.py').read())
+
+with open('pybestprac/__init__.py') as f:
+    long_description = f.read().split('"""')[1]
+
+# Reading the version is a bit tricky: the same commit could actually
+# correspond to multiple versions. e.g. a commit could be tagged
+# v0.1.0-rc1, v0.1.0-rc1, v0.1.0 Hence, the build environment needs a
+# way to override the version string found by setup.py (unless
+# setup.py is to depend on git) the solution right now is for setup.py
+# to look for the environment variable CHEMREAC_RELEASE_VERSION
+CHEMREAC_RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
+
+if len(CHEMREAC_RELEASE_VERSION) > 1:
+    __version__ = CHEMREAC_RELEASE_VERSION
+else:
+    # read __version__ attribute:
+    exec(open(pkg_name+'/release.py').read())
+
 try:
     major, minor, micro = map(int, __version__.split('.'))
 except ValueError:
-    IS_RELEASE = False
+    STABLE_RELEASE = False
 else:
-    IS_RELEASE = True
+    STABLE_RELEASE = True
 
 with open(pkg_name+'/__init__.py') as f:
     long_description = f.read().split('"""')[1]
@@ -40,7 +56,7 @@ else:
     if not (ON_DRONE or ON_TRAVIS):
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda
-            flags += ['-O2', '-funroll-loops'] if IS_RELEASE else ['-O1']
+            flags += ['-O2', '-funroll-loops'] if STABLE_RELEASE else ['-O1']
         else:
             options += ['fast']  # -ffast-math -funroll-loops
 
@@ -111,7 +127,7 @@ else:
                     },
                     pyx_or_cpp: {
                         'cy_kwargs': {'annotate': True}
-                        # , 'gdb_debug': not IS_RELEASE}
+                        # , 'gdb_debug': not STABLE_RELEASE}
                     } if using_pyx else {
                         'std': 'c++0x',
                     }
@@ -155,10 +171,11 @@ classifiers = [
 setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
-    description='Python extension for reaction diffusion.',
+    description='Python package for modeling chemical kinetics with diffusion and drift.',
+    long_description=long_description
     author='Björn Dahlgren',
     author_email='bjodah@DELETEMEgmail.com',
-    url='https://github.com/bjodah/' + pkg_name,
+    url='https://github.com/chemreac/' + pkg_name,
     packages=[pkg_name] + modules + tests,
     package_data=package_data,
     cmdclass=cmdclass_,

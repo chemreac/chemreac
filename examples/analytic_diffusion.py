@@ -63,7 +63,7 @@ import argh
 import numpy as np
 
 from chemreac import (
-    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
+    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL
 )
 from chemreac.integrate import run
 from chemreac.util.plotting import save_and_or_show_plot
@@ -227,7 +227,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
 
     sys = ReactionDiffusion(
-        2 if decay else 1,
+        n,
         [[0]] if decay else [],
         [[1]] if decay else [],
         [k] if decay else [],
@@ -288,7 +288,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     # Plot results
     if plot:
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(6, 10))
+        plt.figure(figsize=(6, 10))
 
         def _plot(y, c, ttl=None, apply_exp_on_y=False, vlines=False):
             plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y,

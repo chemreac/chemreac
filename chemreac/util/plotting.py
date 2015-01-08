@@ -107,7 +107,6 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
         if symmetric_colorbar:
             Amin = -max(-Amin, Amax)
             Amax = -Amin
-        import matplotlib.colors
         if log is True:
             if np.any(A < 0):
                 log = int(np.round(np.log10(np.max(np.abs(A))) - 13))

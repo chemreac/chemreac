@@ -47,7 +47,7 @@ import os
 import argh
 import numpy as np
 
-from chemreac import DENSE, BANDED, SPARSE
+from chemreac import DENSE, BANDED
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.util.plotting import (

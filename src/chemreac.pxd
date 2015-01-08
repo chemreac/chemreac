@@ -29,11 +29,11 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         const double eps
         double * xc
         double * const efield
-        uint neval_f
-        uint neval_j
-        uint nprec_setup
-        uint nprec_solve
-        uint njacvec_dot
+        long neval_f
+        long neval_j
+        long nprec_setup
+        long nprec_solve
+        long njacvec_dot
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],

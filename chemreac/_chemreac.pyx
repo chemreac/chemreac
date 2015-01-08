@@ -288,32 +288,39 @@ cdef class CppReactionDiffusion:
     property neval_f:
         def __get__(self):
             return self.thisptr.neval_f
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.neval_f = n
 
     property neval_j:
         def __get__(self):
             return self.thisptr.neval_j
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.neval_j = n
 
     property nprec_setup:
         def __get__(self):
             return self.thisptr.nprec_setup
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.nprec_setup = n
 
     property nprec_solve:
         def __get__(self):
             return self.thisptr.nprec_solve
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.nprec_solve = n
 
     property njacvec_dot:
         def __get__(self):
             return self.thisptr.njacvec_dot
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.njacvec_dot = n
+
+    def zero_out_counters(self):
+        self.neval_f = 0
+        self.neval_j = 0
+        self.nprec_setup = 0
+        self.nprec_solve = 0
+        self.njacvec_dot = 0
 
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
@@ -365,7 +372,8 @@ def sundials_integrate(
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
-# Below is an implementation of Runge Kutta 4th order stepper with fixed step size
+# Below is an implementation of the classic Runge Kutta 4th order stepper with fixed step size
+# it is only useful for debugging purposes (fixed step size isn't for production runs)
 
 cdef void _add_2_vecs(int n,  double * v1, double * v2,
                       double f1, double f2, double * out):
@@ -396,7 +404,6 @@ cdef void _rk4(ReactionDiffusion * rd,
     cdef double t, h
     cdef int ny = y0.size
     cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tmp = np.empty(ny, dtype=np.float64)
-    #cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k1 = np.empty(ny, dtype=np.float64)
     cdef double *k1
     cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k2 = np.empty(ny, dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k3 = np.empty(ny, dtype=np.float64)
@@ -419,7 +426,8 @@ cdef void _rk4(ReactionDiffusion * rd,
 
 def rk4(CppReactionDiffusion rd, y0, tout):
     """
-    simple explicit, fixed step size, Runge Kutta 4th order integrator:
+    simple explicit, fixed step size, Runge Kutta 4th order integrator.
+    Use for debugging/testing.
     """
     cdef cnp.ndarray[cnp.float64_t, ndim=2] y0out = np.empty((tout.size, y0.size), dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=2] y1out = np.empty((tout.size, y0.size), dtype=np.float64)

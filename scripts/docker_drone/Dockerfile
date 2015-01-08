@@ -22,7 +22,7 @@ export PATH="$MINICONDA_PATH/bin:$PATH" && \
 conda config --set always_yes yes --set changeps1 no && \
 conda config --add channels http://conda.binstar.org/bjodah && \
 conda update --quiet conda && \
-conda install --quiet conda-build binstar jinja2 numpy=1.9.0 scipy=0.14.0 matplotlib=1.4.0 cython=0.21 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
+conda install --quiet conda-build binstar jinja2 numpy=1.9.1 scipy=0.14.1 matplotlib=1.4.2 cython=0.21.2 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
 pip install --quiet argh pytest-pep8 pytest-cov python-coveralls sphinx_rtd_theme mpld3 && \
 rm -rf /tmp/* && \
 mkdir -p $HOME/.config/matplotlib/ && echo "backend: Agg" > $HOME/.config/matplotlib/matplotlibrc && \

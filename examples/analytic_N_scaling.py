@@ -41,7 +41,7 @@ from chemreac import FLAT, CYLINDRICAL, SPHERICAL, Geom_names
 from chemreac.util.plotting import save_and_or_show_plot
 
 from analytic_diffusion import (
-    flat_analytic, spherical_analytic, cylindrical_analytic, integrate_rd
+    integrate_rd
 )
 
 
@@ -52,7 +52,6 @@ def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1',
     nfit = [float(_) for _ in nfit.split(',')]
     c = 'rbk'
     m = 'osd'
-    ls = ['--', ':', '-.']
 
     if Ns is None:
         Ns = [8*(2**i) for i in range(nNs)]
@@ -61,7 +60,7 @@ def main(plot=False, savefig='None', nNs=7, Ns=None, rates='0,0.1',
         nNs = len(Ns)
 
     if plot:
-        fig = plt.figure(figsize=(8, 10))
+        plt.figure(figsize=(8, 10))
 
     rates = list(map(float, rates.split(',')))
     for gi, geom in enumerate([FLAT, CYLINDRICAL, SPHERICAL]):

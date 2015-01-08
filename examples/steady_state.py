@@ -11,7 +11,7 @@ import argh
 import numpy as np
 
 from chemreac import (
-    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
+    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL
 )
 from chemreac.integrate import run
 from chemreac.util.plotting import plot_solver_linear_error
@@ -109,7 +109,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         k.append(C*D*(y0[N-2]-y0[N-1])/(y0[N-1]*(xNm2**2 - xNm1**2)))
 
     rd = ReactionDiffusion(
-        1, stoich_reac, stoich_prod, k, N,
+        n, stoich_reac, stoich_prod, k, N,
         D=[D],
         z_chg=[1],
         mobility=[mob],

@@ -10,7 +10,6 @@ import argh
 import numpy as np
 
 from chemreac.serialization import load
-from chemreac import DENSE, BANDED, SPARSE
 from chemreac.integrate import run
 
 
@@ -48,10 +47,11 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
     if plot:
         # matplotlib
         from mpl_toolkits.mplot3d import Axes3D
+        assert Axes3D  # silence pyflakes
         from matplotlib import cm
         from matplotlib import pyplot as plt
 
-        from chemreac.util.plotting import coloured_spy, save_and_or_show_plot
+        from chemreac.util.plotting import save_and_or_show_plot
 
         fig = plt.figure()
 

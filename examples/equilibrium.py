@@ -87,7 +87,6 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
-from chemreac.util.analysis import solver_linear_error
 from chemreac.util.plotting import (
     save_and_or_show_plot, plot_solver_linear_error,
     plot_solver_linear_excess_error
@@ -165,6 +164,7 @@ def integrate_rd(
     Cout, yout, info = integr.Cout, integr.yout, integr.info
     try:
         import mpmath
+        assert mpmath  # silence pyflakes
     except ImportError:
         use_mpmath = False
     else:
@@ -177,7 +177,7 @@ def integrate_rd(
     if plot:
         npltcols = 3 if splitplots else 1
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(18 if splitplots else 6, 10))
+        plt.figure(figsize=(18 if splitplots else 6, 10))
 
         def subplot(row=0, idx=0, adapt_yscale=True, adapt_xscale=True,
                     span_all_x=False):

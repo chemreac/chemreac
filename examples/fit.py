@@ -1,27 +1,23 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+"""
+Demo of non-linear fit to rate of binary reaction.
+(e.g. stopped flow where one reactant is in excess)
+"""
+
 from __future__ import division
 
 from math import ceil
 
 import argh
 import numpy as np
+from numpy import exp
+from scipy.optimize import curve_fit
 
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
-
-"""
-Demo of non-linear fit to rate of binary reaction.
-(e.g. stopped flow where one reactant is in excess)
-"""
-
-
-import numpy as np
-from numpy import exp
-
-from scipy.optimize import curve_fit
 
 
 def binary_eq_analytic(t, kf, kb, d, eps_l, c0):

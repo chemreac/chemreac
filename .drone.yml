@@ -1,14 +1,12 @@
 image: bjodah/chemreac  # see scripts/docker_drone/Dockerfile
 git:
-    path: github.com/bjodah/chemreac
+    path: github.com/chemreac/chemreac
 env:
   - BINSTAR_USER=bjodah
   - USE_OPENMP=1
   - CHEMREAC_SOLVER=sundials
-  - MATPLOTLIBRC=$HOME/.config/matplotlib/matplotlibrc
+  - MATPLOTLIBRC=$HOME/.config/matplotlib
 script:
-  - export PATH=$MINICONDA_PATH/bin:$PATH
-  - conda config --set always_yes yes --set changeps1 no
-  - conda config --add channels http://conda.binstar.org/$BINSTAR_USER
+  - echo "backend: Agg" >matplotlibrc
   - /bin/bash -x ./scripts/ci_conda.sh 2.7 27 pybestprac_testenv27 1 0
   - /bin/bash -x ./scripts/ci_conda.sh 3.4 34 pybestprac_testenv34 1 0

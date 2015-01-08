@@ -259,10 +259,12 @@ namespace cvodes_wrapper {
                 y[i] = y0[i];
             y.dump(yout);
 
-            for(int iout=1; iout < nt; iout++) {
+            bool early_exit = false;
+            for(int iout=1; (iout < nt) && (!early_exit); iout++) {
                 status = CVode(this->mem, tout[iout], y.n_vec, &cur_t, CV_NORMAL);
                 if(status != CV_SUCCESS){
-                    throw std::runtime_error("Unsuccessful CVodes step.");
+                    early_exit = true;
+                    //throw std::runtime_error("Unsuccessful CVodes step.");
                 }
                 y.dump(&yout[ny*(iout*(nderiv+1))]);
                 for (int di=0; di<nderiv; ++di){

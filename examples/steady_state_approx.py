@@ -144,7 +144,7 @@ steady_state_approx.html
 
     if plot:
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(6, 10))
+        plt.figure(figsize=(6, 10))
 
         ax = plt.subplot(3, 1, 1)
         plot_C_vs_t_in_bin(rd, t, integr.Cout, ax=ax)

@@ -2,11 +2,11 @@
 chemreac
 ========
 
-.. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
-   :target: https://travis-ci.org/bjodah/chemreac
+.. image:: https://travis-ci.org/chemreac/chemreac.png?branch=master
+   :target: https://travis-ci.org/chemreac/chemreac
    :alt: Build status
-.. image:: https://coveralls.io/repos/bjodah/chemreac/badge.png?branch=master
-   :target: https://coveralls.io/r/bjodah/chemreac?branch=master
+.. image:: https://coveralls.io/repos/chemreac/chemreac/badge.png?branch=master
+   :target: https://coveralls.io/r/chemreac/chemreac?branch=master
    :alt: Test coverage
 
 chremreac is an open source library which aims to collect tools and utilities for
@@ -144,6 +144,11 @@ gh-pages branch).
 
 above you can find build status shield for drone.io (Py 2.7, uses OpenMP and the Sundials backend, build docs as artifact, html coverage report as artifact):
 
+.. image:: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac/status.svg?branch=master
+   :target: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac
+   :alt: Build status on hera
+
+above you can find build status shield for drone on hera.physchem.kth.se (uses Docker image from script/docker_drone/Dockerfile)
 
 .. ci-end
 

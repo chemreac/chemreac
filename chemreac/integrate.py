@@ -16,7 +16,7 @@ import time
 
 import numpy as np
 
-from chemreac import DENSE, BANDED, SPARSE
+from chemreac import DENSE, BANDED
 from chemreac.util.analysis import suggest_t0
 
 
@@ -53,8 +53,7 @@ def _integrate_sundials(rd, y0, tout, mode=None, **kwargs):
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
     # Run the integration
-    rd.neval_f = 0
-    rd.neval_j = 0
+    rd.zero_out_counters()
     texec = time.time()
     try:
         yout = sundials_integrate(rd, np.asarray(y0).flatten(),
@@ -264,7 +263,7 @@ class Integration(object):
         added to C0 when rd.logy==True and C0_is_log==False. Note that
         if you explicitly want to avoid adding tiny you need to set it
         to zero (e.g. when manually setting any C0==0 to some epsilon).
-    (default: numpy.finfo(np.float64).tiny)
+    (default: None => numpy.finfo(np.float64).tiny)
 
     **kwargs:
         mode: not supported by Sundials solver (current wrapper
