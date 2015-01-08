@@ -137,7 +137,7 @@ cdef class CppReactionDiffusion:
                             cnp.ndarray[cnp.float64_t, ndim=1] Jout):
         assert y.size >= self.n*self.N
         assert Jout.size >= self.n*self.n*self.N + 2*diag_data_len(
-            self.N, self.n, 1) #(self.nstencil-1)//2)
+            self.N, self.n, (self.nstencil-1)//2)
         self.thisptr.compressed_jac_cmaj(
             t, &y[0], NULL, <double *>Jout.data, self.n)
 

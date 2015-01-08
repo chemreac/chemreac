@@ -586,10 +586,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
 
-    # jout_cmprs = rd.alloc_jout_compressed(1)
-    # rd.compressed_jac_cmaj(t, y, jout_cmprs)
-    # jref_cmprs = get_compressed(jref, 1, N, 1)
-    # assert np.allclose(jout_cmprs, jref_cmprs)
+    jout_cmprs = rd.alloc_jout_compressed(nsidep)
+    rd.compressed_jac_cmaj(t, y, jout_cmprs)
+    jref_cmprs = get_compressed(jref, 1, N, nsidep)
+    assert np.allclose(jout_cmprs, jref_cmprs)
 
 
 @slow
