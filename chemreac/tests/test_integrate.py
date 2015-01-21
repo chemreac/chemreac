@@ -5,7 +5,6 @@ from __future__ import (
     print_function, division, absolute_import, unicode_literals
 )
 
-import os
 from itertools import product
 
 import numpy as np
@@ -13,7 +12,6 @@ import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.integrate import run, Integration
-from chemreac.serialization import load
 
 """
 Tests the integration routine for the
@@ -86,7 +84,7 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     )
     assert rd.n == n
     assert rd.N == N
-    assert rd.nr == 4
+    assert rd.nr == nr
     assert np.allclose(rd.D, D)
     assert np.allclose(rd.k, k)
     assert np.allclose(rd.xcenters, xc)
@@ -173,7 +171,7 @@ def test_integrators(log):
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8
         },
-        'cvode_direct': {
+        'sundials': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
             'method': 'bdf'

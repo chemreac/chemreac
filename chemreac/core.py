@@ -14,7 +14,7 @@ if os.environ.get('READTHEDOCS', None) == 'True':
     class CppReactionDiffusion(object):
         pass  # mockup
 else:
-    from ._chemreac import CppReactionDiffusion
+    from ._chemreac import CppReactionDiffusion, diag_data_len
 
 DENSE, BANDED, SPARSE = range(3)
 FLAT, CYLINDRICAL, SPHERICAL = range(3)
@@ -58,6 +58,11 @@ class ReactionDiffusionBase(object):
         else:
             return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
                             order=order)
+
+    def alloc_jout_compressed(self, ndiag):
+        # TODO: ndiag from nstencil
+        return np.zeros(self.n*self.n*self.N + 2*diag_data_len(
+            self.N, self.n, ndiag))
 
     @property
     def ny(self):
@@ -238,9 +243,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         else:
             assert bin_k_factor_span is not None
             assert len(bin_k_factor) == N
-            assert all([len(x) == len(bin_k_factor_span) for
-                        x in bin_k_factor])
-            assert all([x >= 0 for x in bin_k_factor_span])
+            assert all([len(bkf) == len(bin_k_factor_span) for
+                        bkf in bin_k_factor])
+            assert all([bkfs >= 0 for bkfs in bin_k_factor_span])
 
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod, k_val, N,

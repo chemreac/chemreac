@@ -7,7 +7,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+from chemreac import FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem

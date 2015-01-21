@@ -38,10 +38,9 @@ import argh
 import numpy as np
 
 from chemreac import (
-    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL, Geom_names
+    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL
 )
 from chemreac.integrate import run
-from chemreac.util.analysis import suggest_t0
 from chemreac.util.plotting import save_and_or_show_plot
 
 
@@ -149,7 +148,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
     if plot:
         # Plot initial E-field
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(6, 10))
+        plt.figure(figsize=(6, 10))
         rd.calc_efield((np.exp(y0) if logy else y0).flatten())
         plt.subplot(4, 1, 3)
         plt.plot(rd.xcenters, rd.efield, label="E at t=t0")

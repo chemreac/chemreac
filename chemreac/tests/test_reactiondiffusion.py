@@ -3,7 +3,6 @@
 from __future__ import division, print_function
 
 from itertools import product
-from math import exp
 import os
 
 import numpy as np
@@ -12,6 +11,7 @@ import pytest
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
+from chemreac.util.compressed_jac_store import get_compressed
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
 
@@ -139,7 +139,7 @@ def test_ReactionDiffusion__lrefl_3(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
                            lrefl=True, rrefl=False)
-    assert np.allclose(rd._xc, [3, 7, 11, 14, 16])
+    assert np.allclose(rd._xc, xc)
 
     # In [7]: xlst=[0, 3, 7, 11, 14]
     # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[2])[-1][-1])
@@ -216,7 +216,7 @@ def test_ReactionDiffusion__rrefl_3(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
                            lrefl=False, rrefl=True)
-    assert np.allclose(rd._xc, [3, 7, 11, 14, 16])
+    assert np.allclose(rd._xc, xc)
 
     # In [7]: xlst=[3, 7, 11, 14, 16]
     # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[1])[-1][-1])
@@ -448,12 +448,12 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     y0 = np.array([23.0, 27.0, 37.0])
     N = 3
     x = [5.0, 7.0, 13.0, 15.0]
-    xc = [6.0, 10.0, 14.0]
+    xc = [4.0, 6.0, 10.0, 14.0, 16.0]
     nstencil = 3
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, N=N, logy=logy,
                            logt=logt, lrefl=False, rrefl=False,
                            nstencil=nstencil)
-    assert np.allclose(rd._xc, [4, 6, 10, 14, 16])
+    assert np.allclose(rd._xc, xc)
 
     w = [1/16, -1/8, 1/16]  # finite diff. weights for 2nd order deriv
     for i in range(N):
@@ -466,7 +466,6 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     if logt:
         fref *= t0
 
-    jout = np.zeros((3, 3))
     if logy:
         jref = D*np.array([  # jref[i, k] = ...
             [w[k]*y0[k]/y0[i] if k != i else -1/y0[k]*sum([
@@ -584,6 +583,11 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     rd.banded_packed_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
+
+    jout_cmprs = rd.alloc_jout_compressed(nsidep)
+    rd.compressed_jac_cmaj(t, y, jout_cmprs)
+    jref_cmprs = get_compressed(jref, 1, N, nsidep)
+    assert np.allclose(jout_cmprs, jref_cmprs)
 
 
 @slow

@@ -8,7 +8,7 @@ from libcpp.utility cimport pair
 cdef extern from *:
     ctypedef unsigned int uint
 
-cdef extern from "chemreac.h" namespace "chemreac":
+cdef extern from "chemreac.hpp" namespace "chemreac":
     cdef cppclass ReactionDiffusion:
         # (Private)
         double * D_weight
@@ -29,9 +29,11 @@ cdef extern from "chemreac.h" namespace "chemreac":
         const double eps
         double * xc
         double * const efield
-        uint neval_f
-        uint neval_j
-
+        long neval_f
+        long neval_j
+        long nprec_setup
+        long nprec_solve
+        long njacvec_dot
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],
@@ -56,10 +58,11 @@ cdef extern from "chemreac.h" namespace "chemreac":
                           pair[double, double],
                           double) except +
         void f(double, const double * const, double * const)
-        void dense_jac_rmaj(double, const double * const, double * const, int)
-        void dense_jac_cmaj(double, const double * const, double * const, int)
-        void banded_padded_jac_cmaj(double, const double * const, double * const, int)
-        void banded_packed_jac_cmaj(double, const double * const, double * const, int)
+        void dense_jac_rmaj(double, const double * const, const double * const, double * const, int)
+        void dense_jac_cmaj(double, const double * const, const double * const, double * const, int)
+        void banded_padded_jac_cmaj(double, const double * const, const double * const, double * const, int)
+        void banded_packed_jac_cmaj(double, const double * const, const double * const, double * const, int)
+        void compressed_jac_cmaj(double, const double * const, const double * const, double * const, int)
 
         void per_rxn_contrib_to_fi(double, const double * const, uint, double * const)
         int get_geom_as_int()

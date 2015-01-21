@@ -7,9 +7,9 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-#from chemreac_sundials cimport cvode_direct as _cvode_direct
 from cvodes_wrapper cimport simple_integrate
 
+from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
 
@@ -38,6 +38,9 @@ cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
         strides=strides,
         version=3,
     ))
+
+def diag_data_len(N, n, ndiag):
+    return n*(N*ndiag - ((ndiag+1)*(ndiag+1) - (ndiag+1))//2)
 
 
 cdef class CppReactionDiffusion:
@@ -104,7 +107,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_rmaj(
-            t, &y[0], &Jout[0, 0], Jout.shape[1])
+            t, &y[0], NULL, &Jout[0, 0], Jout.shape[1])
 
     def dense_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
@@ -112,7 +115,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*self.N
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.dense_jac_cmaj(
-            t, &y[0], &Jout[0, 0], Jout.shape[0])
+            t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
 
     def banded_padded_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
@@ -120,7 +123,7 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*3+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_padded_jac_cmaj(
-            t, &y[0], &Jout[0, 0], Jout.shape[0])
+            t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
 
     def banded_packed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
@@ -128,7 +131,15 @@ cdef class CppReactionDiffusion:
         assert Jout.shape[0] >= self.n*2+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_packed_jac_cmaj(
-            t, &y[0], &Jout[0, 0], Jout.shape[0])
+            t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
+
+    def compressed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+                            cnp.ndarray[cnp.float64_t, ndim=1] Jout):
+        assert y.size >= self.n*self.N
+        assert Jout.size >= self.n*self.n*self.N + 2*diag_data_len(
+            self.N, self.n, (self.nstencil-1)//2)
+        self.thisptr.compressed_jac_cmaj(
+            t, &y[0], NULL, <double *>Jout.data, self.n)
 
     def calc_efield(self, cnp.ndarray[cnp.float64_t, ndim=1] linC):
         self.thisptr.calc_efield(&linC[0])
@@ -277,14 +288,39 @@ cdef class CppReactionDiffusion:
     property neval_f:
         def __get__(self):
             return self.thisptr.neval_f
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.neval_f = n
 
     property neval_j:
         def __get__(self):
             return self.thisptr.neval_j
-        def __set__(self, uint n):
+        def __set__(self, long n):
             self.thisptr.neval_j = n
+
+    property nprec_setup:
+        def __get__(self):
+            return self.thisptr.nprec_setup
+        def __set__(self, long n):
+            self.thisptr.nprec_setup = n
+
+    property nprec_solve:
+        def __get__(self):
+            return self.thisptr.nprec_solve
+        def __set__(self, long n):
+            self.thisptr.nprec_solve = n
+
+    property njacvec_dot:
+        def __get__(self):
+            return self.thisptr.njacvec_dot
+        def __set__(self, long n):
+            self.thisptr.njacvec_dot = n
+
+    def zero_out_counters(self):
+        self.neval_f = 0
+        self.neval_j = 0
+        self.nprec_setup = 0
+        self.nprec_solve = 0
+        self.njacvec_dot = 0
 
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
@@ -323,19 +359,21 @@ cdef class CppReactionDiffusion:
 
 # sundials wrapper:
 
-def cvode_direct(
+def sundials_integrate(
         CppReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
-        vector[double] atol, double rtol, basestring method):
+        vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
+        int iterative=0):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N
     simple_integrate[double, ReactionDiffusion](
         rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], tout.size, &tout[0], &yout[0])
+        &y0[0], tout.size, &tout[0], &yout[0], with_jacobian, iterative)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
-# Below is an implementation of Runge Kutta 4th order stepper with fixed step size
+# Below is an implementation of the classic Runge Kutta 4th order stepper with fixed step size
+# it is only useful for debugging purposes (fixed step size isn't for production runs)
 
 cdef void _add_2_vecs(int n,  double * v1, double * v2,
                       double f1, double f2, double * out):
@@ -366,7 +404,6 @@ cdef void _rk4(ReactionDiffusion * rd,
     cdef double t, h
     cdef int ny = y0.size
     cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tmp = np.empty(ny, dtype=np.float64)
-    #cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k1 = np.empty(ny, dtype=np.float64)
     cdef double *k1
     cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k2 = np.empty(ny, dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] k3 = np.empty(ny, dtype=np.float64)
@@ -389,7 +426,8 @@ cdef void _rk4(ReactionDiffusion * rd,
 
 def rk4(CppReactionDiffusion rd, y0, tout):
     """
-    simple explicit, fixed step size, Runge Kutta 4th order integrator:
+    simple explicit, fixed step size, Runge Kutta 4th order integrator.
+    Use for debugging/testing.
     """
     cdef cnp.ndarray[cnp.float64_t, ndim=2] y0out = np.empty((tout.size, y0.size), dtype=np.float64)
     cdef cnp.ndarray[cnp.float64_t, ndim=2] y1out = np.empty((tout.size, y0.size), dtype=np.float64)

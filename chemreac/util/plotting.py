@@ -8,6 +8,8 @@ convenience functions to create matplotlib plots
 of results.
 """
 
+from math import floor, ceil
+
 import numpy as np
 from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
@@ -57,46 +59,118 @@ def save_and_or_show_plot(show=None, savefig='None'):
         plt.show()
 
 
-def coloured_spy(A, cmap_name='gray', ax=None):
+def coloured_spy(A, cmap_name='coolwarm', log=False,
+                 symmetric_colorbar=False, **kwargs):
     """
     Convenience function for using matplotlib to
-    generate a spy plot for inspecting e.g. jacobian or
-    its LU decomposition.
+    generate a spy plot for inspecting e.g. a jacobian
+    matrix or its LU decomposition.
 
     Parameters
     ----------
     A: 2D array
         Array to inspect, populated e.g. by jacobian callback.
-    cmap_name: string (default: gray)
-        name of matplotlib colormap to use
-    ax: Axes instance (default: None)
-         Axes to plot to, if not given a new figure will be generated.
+    cmap_name: string (default: coolwarm)
+        name of matplotlib colormap to use, kwargs["cmap"] overrides this.
+    log: bool or int (default: False)
+        if True:
+            SymLogNorm if np.any(A<0) else LogNorm
+        if isinstance(log, int):
+            SymLogNorm(10**log)
+        note: "norm" in kwargs overrides this.
+    symmetric_colorbar: bool
+        to make divergent colormaps pass through zero as intended.
 
     Returns
     -------
-    Axes instance plotted to
+    Pair (tuple) of axes plotted to (spy, colorbar)
+
+    Note
+    ----
+    colorbar does not play nicely with SymLogNorm why a custom
+    colorbar axes is drawn.
     """
     from matplotlib.ticker import MaxNLocator
     from matplotlib.cm import get_cmap
+    from matplotlib.colors import LogNorm, SymLogNorm
+    from mpl_toolkits.axes_grid import make_axes_locatable
 
-    if ax is None:
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-    plt.imshow(A, cmap=get_cmap(cmap_name), interpolation='none')
-    ax = plt.gca()
+    if 'cmap' not in kwargs:
+        kwargs['cmap'] = get_cmap(cmap_name)
 
-    ya = ax.get_yaxis()
+    plt.figure()
+    ax_imshow = plt.subplot(111)
+
+    if log is not False and 'norm' not in kwargs:
+        Amin = np.min(A[np.where(A != 0)])
+        Amax = np.max(A[np.where(A != 0)])
+        if symmetric_colorbar:
+            Amin = -max(-Amin, Amax)
+            Amax = -Amin
+        if log is True:
+            if np.any(A < 0):
+                log = int(np.round(np.log10(np.max(np.abs(A))) - 13))
+            else:
+                minlog = int(floor(np.log10(Amin)))
+                maxlog = int(ceil(np.log10(Amax)))
+                tick_locations = [10**x for x in range(minlog, maxlog+1)]
+                kwargs['norm'] = LogNorm()
+
+        if isinstance(log, int):
+            tick_locations = []
+            if Amin < 0:
+                minlog = int(ceil(np.log10(-Amin)))
+                tick_locations.extend([-(10**x) for x in range(
+                    minlog, log-1, -1)])
+                tick_locations.extend([0])
+            else:
+                tick_locations.extend([0])
+                minlog = int(floor(np.log10(Amin)))
+                tick_locations.extend([10**x for x in range(minlog, log+1)])
+
+            if Amax < 0:
+                pass  # Ticks already reach 0
+            else:
+                maxlog = int(ceil(np.log10(Amax)))
+                tick_locations.extend([10**x for x in range(log, maxlog+1)])
+            kwargs['norm'] = SymLogNorm(10**log)
+        else:
+            raise TypeError("log kwarg not understood: {}".format(log))
+    else:
+        tick_locations = np.linspace(np.min(A), np.max(A), 10)
+
+    ax_imshow.imshow(A, interpolation='none', **kwargs)
+    ya = ax_imshow.get_yaxis()
     ya.set_major_locator(MaxNLocator(integer=True))
-    xa = ax.get_xaxis()
+    xa = ax_imshow.get_xaxis()
     xa.set_major_locator(MaxNLocator(integer=True))
-    plt.colorbar()
-    return ax
 
+    divider = make_axes_locatable(ax_imshow)
+    ax_colorbar = divider.append_axes("right", size="5%", pad=0.05)
 
-DEFAULT = dict(
-    ls=['-', ':', '--', '-.'],
-    c='krgbycm'
-)
+    def colorbar(ticks=None, norm=None, log10threshy=None):
+        if isinstance(norm, (LogNorm, SymLogNorm)):
+            levels = np.concatenate([
+                np.linspace(ticks[i], ticks[i+1], 9, endpoint=False) for i
+                in range(len(ticks)-1)
+            ]+[np.array([ticks[-1]])]).flatten()
+        else:
+            levels = ticks
+        xc = [np.zeros_like(levels), np.ones_like(levels)]
+        yc = [levels, levels]
+        ax_colorbar.contourf(xc, yc, yc, levels=levels, norm=norm,
+                             cmap=kwargs['cmap'])
+        if isinstance(norm, LogNorm):
+            ax_colorbar.set_yscale('log')
+        elif isinstance(norm, SymLogNorm):
+            ax_colorbar.set_yscale('symlog', linthreshy=10**log)
+        ax_colorbar.yaxis.tick_right()
+        ax_colorbar.set_xticks([])
+        ax_colorbar.set_yticks(ticks)
+
+    colorbar(ticks=tick_locations, norm=kwargs.get('norm', None))
+    plt.tight_layout()
+    return ax_imshow, ax_colorbar
 
 
 def _get_jac_row_over_t(rd, tout, yout, indices, bi=0):
@@ -116,6 +190,13 @@ def _get_per_func_out(rd, tout, yout, indices):
         for j, si in enumerate(indices):
             rd.per_rxn_contrib_to_fi(tout[i], flat_y, si, out[i, j, :])
     return out
+
+
+# It is bad practice to have global state in module, refactor this:
+DEFAULT = dict(
+    ls=['-', ':', '--', '-.'],
+    c='krgbycm'
+)
 
 
 def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
@@ -387,7 +468,7 @@ def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
     x_, t_, y_ = list(map(np.log10, xty)) if log10 else xty
     X, T = np.meshgrid(x_, t_)
     if 'cmap' not in plot_kwargs:
-        plot_kwargs['cmap'] = cm.gist_earth
+        plot_kwargs['cmap'] = cm.copper
     ax.plot_surface(X, T, y_[:, :, substance],
                     **plot_kwargs)
 

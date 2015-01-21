@@ -2,11 +2,11 @@
 chemreac
 ========
 
-.. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
-   :target: https://travis-ci.org/bjodah/chemreac
+.. image:: https://travis-ci.org/chemreac/chemreac.png?branch=master
+   :target: https://travis-ci.org/chemreac/chemreac
    :alt: Build status
-.. image:: https://coveralls.io/repos/bjodah/chemreac/badge.png?branch=master
-   :target: https://coveralls.io/r/bjodah/chemreac?branch=master
+.. image:: https://coveralls.io/repos/chemreac/chemreac/badge.png?branch=master
+   :target: https://coveralls.io/r/chemreac/chemreac?branch=master
    :alt: Test coverage
 
 chremreac is an open source library which aims to collect tools and utilities for
@@ -21,7 +21,7 @@ Documentation
 
 the documentation is hostad at
 
-- http://bjodah.github.io/chemreac/docs/
+- http://chemreac.github.io/docs/index.html
 
 
 Installation
@@ -29,19 +29,17 @@ Installation
 .. install-start
 
 Easiest way to install chemreac (on linux) is by using 
-`conda <http://docs.continuum.io/anaconda/index.html>`_ to pull it from
-https://binstar.org/bjodah/chemreac by first adding the appropriate channel:
-
+`conda <http://docs.continuum.io/anaconda/index.html>`_:
 ::
 
-    $ conda config --add channels http://conda.binstar.org/bjodah
-    $ conda install chemreac
+    $ conda install -c https://conda.binstar.org/chemreac chemreac
+
 
 Building from source
 --------------------
 Below you will find instructions for installation by building chemreac from source.
 You may also look in ``scripts/`` folder for automated install scripts used
-by the continuous integration servers.
+on the continuous integration servers.
 
 Prerequisites
 ~~~~~~~~~~~~~
@@ -89,7 +87,7 @@ Once non-python prerequisites are in installed, you may procede e.g. as:
 
 ::
 
-    $ git clone https://github.com/bjodah/chemreac.git
+    $ git clone https://github.com/chemreac/chemreac.git
     $ cd chemreac
     $ pip install --user --upgrade -r requirements.txt
     $ python setup.py install --user
@@ -113,7 +111,7 @@ Run ``py.test``, possibly with explicit ``PYTHONPATH`` (e.g. if ``build_ext --in
 
     $ PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow
 
-All tests should pass (or xfail). If they do not, please `file an issue <https://github.com/bjodah/chemreac/issues>`_.
+All tests should pass (or xfail). If they do not, please `file an issue <https://github.com/chemreac/chemreac/issues>`_. Before submitting a Pull Request you also want to pass ``--pep8`` to ``py.test`` (you need ``pytest-pep8`` for it to work).
 
 .. install-end
 
@@ -128,31 +126,41 @@ Continuous integration
 In order to minimize the risk of (re)introducing bugs into the code
 base, it is continuously built on two CI services:
 
-- `travis-ci.org <https://travis-ci.org/bjodah/chemreac>`_
-- `drone.io <https://drone.io/github.com/bjodah/chemreac>`_
+- `travis-ci.org <https://travis-ci.org/chemreac/chemreac>`_
+- `drone.io <https://drone.io/github.com/chemreac/chemreac>`_
 
-.. image:: https://travis-ci.org/bjodah/chemreac.png?branch=master
-   :target: https://travis-ci.org/bjodah/chemreac
+.. image:: https://travis-ci.org/chemreac/chemreac.png?branch=master
+   :target: https://travis-ci.org/chemreac/chemreac
 
 above you can find the build status shield for travis-ci (Py 2.7, Py
 3.4, no OpenMP, runs coveralls, builds docs and pushes them to the
-gh-pages branch).
+chemreac.github.io repo).
 
 
-.. image:: https://drone.io/github.com/bjodah/chemreac/status.png
-   :target: https://drone.io/github.com/bjodah/chemreac/latest
+.. image:: https://drone.io/github.com/chemreac/chemreac/status.png
+   :target: https://drone.io/github.com/chemreac/chemreac/latest
 
 above you can find build status shield for drone.io (Py 2.7, uses OpenMP and the Sundials backend, build docs as artifact, html coverage report as artifact):
 
+.. image:: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac/status.svg?branch=master
+   :target: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac
+   :alt: Build status on hera
+
+above you can find build status shield for drone on hera.physchem.kth.se (uses Docker image from script/docker_drone/Dockerfile)
 
 .. ci-end
+
+Performace tracking
+-------------------
+Benchmarks for tracking the performance of the library are kept at
+https://github.com/chemreac/chemreac-benchmarks
 
 
 License
 =======
 The source code is Open Source and is released under the very permissive
 "simplified (2-clause) BSD license". See ``LICENSE.txt`` for further details.
-Contributors are welcome to suggest improvements at https://github.com/bjodah/chemreac
+Contributors are welcome to suggest improvements at https://github.com/chemreac/chemreac
 
 Author
 ======

@@ -10,8 +10,9 @@ from chemreac.integrate import run
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_bin_k_factors,
-    plot_solver_linear_error, plot_solver_linear_excess_error
+    plot_solver_linear_error, plot_solver_linear_excess_error,
 )
+from chemreac.util.testing import slow
 
 
 def _get_decay_rd(N):
@@ -36,17 +37,6 @@ def test_get_decay_Cref():
     integr = run(rd, y0, tout)
     Cref = _get_decay_Cref(N, y0, tout)
     assert np.allclose(Cref, integr.yout)
-
-
-def test_coloured_spy():
-    N = 6
-    t = 0.0
-    rd = _get_decay_rd(6)
-    y0 = np.array([2.0, 3.0]*N)
-    jout = rd.alloc_jout(order='F')
-    rd.banded_packed_jac_cmaj(t, y0, jout)
-    ax = coloured_spy(np.log(np.abs(jout)))
-    assert isinstance(ax, matplotlib.axes.Axes)
 
 
 def test_plot_jacobian():
@@ -110,7 +100,6 @@ def test_plot_bin_k_factors():
     k = np.array([3.0, 7.0, 13.0, 22.0])
     N = 5
     n = 8
-    nr = 4
     D = np.zeros(n)
     x = np.linspace(3, 7, N+1)
     xc = x[:-1] + np.diff(x)/2
@@ -147,3 +136,13 @@ def test_plot_solver_linear_excess_error():
     Cref = _get_decay_Cref(N, y0, tout)
     ax = plot_solver_linear_excess_error(integr, Cref)
     assert isinstance(ax, matplotlib.axes.Axes)
+
+
+@slow
+def test_coloured_spy():
+    from matplotlib.axes import Axes
+    A = np.arange(9).reshape((3, 3))
+    for log in (False, True, -5):
+        ax_im, ax_cb = coloured_spy(A, log=log)
+        assert isinstance(ax_im, Axes)
+        assert isinstance(ax_cb, Axes)

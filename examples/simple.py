@@ -29,7 +29,7 @@ def main(logy=False, logt=False):
     assert np.allclose(integr1.Cout[:, 0, :], Cref)
 
     # sundials
-    integr2 = Integration('cvode_direct', rd, np.asarray(y0), np.asarray(tout),
+    integr2 = Integration('sundials', rd, np.asarray(y0), np.asarray(tout),
                           atol=[1e-8, 1e-8], rtol=1e-8, method='bdf')
     assert np.allclose(integr2.Cout[:, 0, :], Cref)
 

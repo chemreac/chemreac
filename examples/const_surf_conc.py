@@ -89,7 +89,6 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
         np.random.seed(random_seed)
-    n = 1
     tout = np.linspace(t0, tend, nt)
 
     # Setup the grid
@@ -139,7 +138,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
     if plot:
         # Plot results
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(6, 10))
+        plt.figure(figsize=(6, 10))
 
         def _plot(y, c, ttl=None, apply_exp_on_y=False, vlines=False,
                   smooth=True):

@@ -1,45 +1,43 @@
 #!/bin/bash -x
-if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$TRAVIS_BRANCH" == "master" ]; then
-    # Publish binary if version does not end with .dev
-    export DISTUTILS_DEBUG=  # less verbose setup.py --version
-    export VERSION=$(python setup.py --version 2>/dev/null)
-    if [[ "${VERSION}" != *.dev ]]; then
+if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ];
+    if [ "$TRAVIS_BRANCH" == "master" ]; then
+        if [ "$BUILD_DOCS" == "1" ]; then
+            # Build the documentation
+            echo -e "Building docs...\n"
+            set -x # Verbose
+            ./scripts/build_docs.sh
+
+            echo -e "Publishing pages...\n"
+            WORKDIR=`pwd`
+            cd $HOME
+            git config --global user.email "travis@travis-ci.org"
+            git config --global user.name "travis-ci"
+            set +x # Silent (protect GH_TOKEN)
+            echo "Cloning github repo: ${TRAVIS_REPO_SLUG}"
+            git clone --quiet https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG} chemreac.github.io > /dev/null
+            set -x # Verbose
+            cd chemreac.github.io/
+            git branch -D master
+            git checkout --orphan master
+            git rm -rf . > /dev/null
+            cp -R ${WORKDIR}/gh-pages-skeleton/* .
+            cp ${WORKDIR}/gh-pages-skeleton/.* .
+            cp -R ${WORKDIR}/docs/_build/html ./docs
+            cp -R ${WORKDIR}/htmlcov .
+            git add -f . > /dev/null
+            git commit -m "Lastest pages from successful travis build $TRAVIS_BUILD_NUMBER"
+            git push -f origin master
+            echo -e "...published to chemreac.github.io\n"
+        fi
+    fi
+    if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then
+        export DISTUTILS_DEBUG=  # less verbose setup.py --version
+        export VERSION=$(python setup.py --version 2>/dev/null)
         conda install binstar
         export MY_CONDA_PKG=$(conda build --output conda-recipe | tail -n 1)
         set +x # Silent (protect token in Travis log)
-        binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-$VERSION-}
+        binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-$CHEMREAC_RELEASE_VERSION-}
         set -x
     fi
 
-    if [ "$BUILD_DOCS" == "1" ]; then
-        # Build the documentation
-        echo -e "Building docs...\n"
-        set -x # Verbose
-        ./scripts/build_docs.sh
-
-        echo -e "Publishing docs...\n"
-        WORKDIR=`pwd`
-        cd $HOME
-        git config --global user.email "travis@travis-ci.org"
-        git config --global user.name "travis-ci"
-        set +x # Silent (protect GH_TOKEN)
-        echo "Cloning github repo: ${TRAVIS_REPO_SLUG}"
-        git clone --quiet https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG} ${GITHUB_REPO} > /dev/null
-        set -x # Verbose
-        cd ${GITHUB_REPO}
-        git branch -D gh-pages
-        git checkout --orphan gh-pages
-        git rm -rf . > /dev/null
-        cp -R ${WORKDIR}/gh-pages-skeleton/* .
-        cp ${WORKDIR}/gh-pages-skeleton/.* .
-        cp -R ${WORKDIR}/docs/_build/html ./docs
-        cp -R ${WORKDIR}/htmlcov .
-        git add -f . > /dev/null
-        git commit -m "Lastest docs from successful travis build $TRAVIS_BUILD_NUMBER"
-        git push -f origin gh-pages
-        echo -e "Published docs to gh-pages.\n"
-
-        # Not really building docs, but trigger drone build:
-        curl -X POST "https://drone.io/hook?id=github.com/bjodah/chemreac&token=LSWwdhBX47ZnYPs4gtrX"
-    fi
 fi

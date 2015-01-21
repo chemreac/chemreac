@@ -33,14 +33,12 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from future.builtins import *
 
-from itertools import chain
-
 import argh
 import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
-from chemreac.util.analysis import solver_linear_error, suggest_t0
+from chemreac.util.analysis import solver_linear_error
 from chemreac.util.plotting import save_and_or_show_plot
 
 """
@@ -107,7 +105,7 @@ def integrate_rd(tend=2.0, A0=1.0, nt=67, t0=0.0,
         y0 += float(small)
     tout = np.linspace(t0, tend, nt)
     integr = run(rd, y0, tout, atol=atol, rtol=rtol, method=method,
-                 with_jacobian=not num_jac, sigm_damp=True, tiny=0)
+                 with_jacobian=not num_jac, sigm_damp=True, tiny=tiny)
     Cout, yout, info = integr.Cout, integr.yout, integr.info
     Cref = get_Cref(k, y0, tout - tout[0]).reshape((nt, 1, n))
 
@@ -123,7 +121,7 @@ def integrate_rd(tend=2.0, A0=1.0, nt=67, t0=0.0,
             min_atol = info['atol']
 
         import matplotlib.pyplot as plt
-        fig = plt.figure(figsize=(6, 10))
+        plt.figure(figsize=(6, 10))
         c = 'rgb'
         for i, l in enumerate('ABC'[:nshow]):
             ax = plt.subplot(nshow+1, 1, 1)

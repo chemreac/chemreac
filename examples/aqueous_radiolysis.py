@@ -48,7 +48,7 @@ from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot
 
 def integrate_rd(t0=1e-7, tend=.1, doserate=15, N=1000, nt=512, plot=False,
                  logy=False, logt=False, name='aqueous_radiolysis',
-                 num_jacobian=False, savefig='None'):
+                 num_jacobian=False, savefig='None', verbose=False):
     """
     Integrates the reaction system defined by
     :download:`aqueous_radiolysis.json <examples/aqueous_radiolysis.json>`
@@ -72,8 +72,8 @@ def integrate_rd(t0=1e-7, tend=.1, doserate=15, N=1000, nt=512, plot=False,
     tout = np.logspace(log(t0), log(tend), nt+1, base=e)
     integr = run(rd, y0, tout, with_jacobian=(not num_jacobian))
 
-    print("texec={0}, f.neval={1}, jac.neval={2}".format(
-        integr.info['texec'], integr.info['neval_f'], integr.info['neval_j']))
+    if verbose:
+        print(integr.info)
 
     if plot:
         import matplotlib.pyplot as plt
