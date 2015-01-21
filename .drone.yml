@@ -5,8 +5,11 @@ env:
   - BINSTAR_USER=bjodah
   - USE_OPENMP=1
   - CHEMREAC_SOLVER=sundials
-  - MATPLOTLIBRC=$HOME/.config/matplotlib
+  - MATPLOTLIBRC_DIR=$HOME/.config/matplotlib
+  - PATH=$MINICONDA_PATH/bin:$PATH
 script:
-  - echo "backend: Agg" >matplotlibrc
+  - mkdir -p $MATPLOTLIBRC_DIR
+  - echo "backend: Agg" >$MATPLOTLIBRC_DIR/matplotlibrc
+  - sed -i 's/TkAgg/Agg/g' /etc/matplotlibrc
   - /bin/bash -x ./scripts/ci_conda.sh 2.7 27 pybestprac_testenv27 1 0
   - /bin/bash -x ./scripts/ci_conda.sh 3.4 34 pybestprac_testenv34 1 0

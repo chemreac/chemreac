@@ -4,7 +4,7 @@ env:
     - PYTHON_VERSION=2.7 CONDA_PY=27 BUILD_DOCS=1
     - PYTHON_VERSION=3.4 CONDA_PY=34 BUILD_DOCS=0
   global:
-    - BINSTAR_USER=bjodah
+    - BINSTAR_USER=chemreac
     - GITHUB_USER=chemreac
     - GITHUB_REPO=chemreac
     - CONDA_VERSION="3.7.3"

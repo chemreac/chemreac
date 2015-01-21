@@ -5,6 +5,7 @@
 #include "test_utils.h"
 
 using std::vector;
+using chemreac::ReactionDiffusion;
 
 int test_integration(int N){
     ReactionDiffusion rd = get_four_species_system(N);

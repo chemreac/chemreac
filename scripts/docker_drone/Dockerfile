@@ -25,5 +25,6 @@ conda update --quiet conda && \
 conda install --quiet conda-build binstar jinja2 numpy=1.9.1 scipy=0.14.1 matplotlib=1.4.2 cython=0.21.2 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
 pip install --quiet argh pytest-pep8 pytest-cov python-coveralls sphinx_rtd_theme mpld3 && \
 rm -rf /tmp/* && \
-mkdir -p $HOME/.config/matplotlib/ && echo "backend: Agg" > $HOME/.config/matplotlib/matplotlibrc && \
+mkdir -p /root/.config/matplotlib/ && echo "backend: Agg" > /root/.config/matplotlib/matplotlibrc && \
+sed -i 's/TkAgg/Agg/g' /etc/matplotlibrc && \
 conda clean -t

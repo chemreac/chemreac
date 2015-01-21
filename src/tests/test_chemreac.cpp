@@ -36,7 +36,7 @@ int test_f(){
     int exit1 = 0;
     for (uint i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-14){
-            std::cout << i << " " << f[i] << " " << ref_f[i] << std::endl;            
+            std::cout << i << " " << f[i] << " " << ref_f[i] << std::endl;
             exit1 = 1;
         }
     if (exit1)
@@ -48,7 +48,7 @@ int test_f(){
 // n = 4 species
 // N = 3 compartments
 #define RJ(i, j) ref_jac[(i)*12+j]
-int test_dense_jac(){
+int test_jac(){
     ReactionDiffusion rd = get_four_species_system(3);
 
     const double dx = 1.0 / 3;
@@ -109,7 +109,7 @@ int test_dense_jac(){
     for (uint i=0; i<12*12; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-14){
             printf("i=%d, dense_jac[i]=%.3f, ref_jac[i]=%.3f\n", i, dense_jac[i], ref_jac[i]);
-            exit2 = 1;
+            exit2 = exit2 | 1;
         }
 
     // Banded jacobian
@@ -122,7 +122,7 @@ int test_dense_jac(){
 	for (uint ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
 	    if (dabs(BND(ri,ci) - DNS(ri,ci)) > 1e-14){
 		std::cout << ri << " " << ci << " " << BND(ri,ci) << " " << DNS(ri,ci) << std::endl;
-                exit2 = 2;
+                exit2 = exit2 | 2;
             }
 #undef BND
     delete []bnd_jac;
@@ -139,28 +139,51 @@ int test_dense_jac(){
             for (uint ri=0; ri<rd.n; ++ri)
                 if (dabs(CMPRS(bi, ri, ci) - DNS(bi*rd.n + ri, bi*rd.n + ci)) > 1e-14){
                     std::cout << bi << " " << ci << " " << ri << " " << CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
-                    exit2 = 4;
+                    exit2 = exit2 | 4;
                 }
-    for (int bi=0; bi<rd.N-1; ++bi)
-        for (int ci=0; ci<rd.n; ++ci){
+    for (uint bi=0; bi<rd.N-1; ++bi)
+        for (uint ci=0; ci<rd.n; ++ci){
             // sub diagonal
             if (dabs(SUB(bi, ci) - DNS((bi+1)*rd.n + ci, bi*rd.n + ci)) > 1e-14){
                 std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
-                exit2 = 4;
+                exit2 = exit2 | 4;
             }
             // sup diagonal
             if (dabs(SUP(bi, ci) - DNS(bi*rd.n + ci, (bi+1)*rd.n + ci)) > 1e-14){
                 std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
-                exit2 = 4;
+                exit2 = exit2 | 4;
             }
         }
 #undef SUP
 #undef SUP
 #undef CMPRS
+
+    vector<double> vec(12);
+    for (int i=0; i<12; ++i) vec[i] = i+2.0;
+    vector<double> out(12);
+    for (int i=0; i<12; ++i) out[i] = 0.0;
+    rd.jac_times_vec(&vec[0], &out[0], 0.0, &y[0], nullptr);
+    for (int ri=0; ri<12; ++ri){
+        double val = 0.0;
+        for (int ci=0; ci<12; ++ci){
+            // std::cout << "ri=" << ri << " ci=" << ci << " => add: " <<
+            //     DNS(ri, ci)*vec[ci] << std::endl;
+            val += DNS(ri, ci)*vec[ci];
+        }
+        if (dabs(out[ri]-val) > 1e-13){
+            std::cout << "jac_times_vec failed for ri=" << ri << " ref[ri]=" << val <<
+                " out[ri]=" << out[ri] << " (difference = " << out[ri]-val << ")" << std::endl;
+            exit2 = exit2 | 8;
+        } else {
+            std::cout << "jac_times_vec   ok   for ri=" << ri << " ref[ri]=" << val <<
+                " out[ri]=" << out[ri] << " (difference = " << out[ri]-val << ")" << std::endl;
+        }
+
+    }
 #undef DNS
 
     if (exit2){
-        printf("exit2: %d", exit2);
+        printf("exit2: %d\n", exit2);
         return 1;
     }
     return 0;
@@ -271,8 +294,8 @@ int main(){
     try {
         std::cout << "test_f..." << std::endl;
         status += test_f();
-        std::cout << "test_dense_jac..." << std::endl;
-        status += test_dense_jac();
+        std::cout << "test_jac..." << std::endl;
+        status += test_jac();
         std::cout << "test_calc_efield..."  << std::endl;
         status += test_calc_efield();
 #ifdef BENCHMARK

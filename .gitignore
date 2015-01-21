@@ -23,6 +23,8 @@ build/
 */*.so
 src/tests/test_chemreac
 src/tests/test_chemreac_sundials
+src/tests/test_chemreac_catch
+src/tests/catch.hpp
 src/tests/*.mod
 src/tests/*.o
 
@@ -48,3 +50,4 @@ docs/_build.log
 .metadata_CompilerRunner
 .coverage
 htmlcov/
+scripts/chemreac_logo.*

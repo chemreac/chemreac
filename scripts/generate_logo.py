@@ -28,7 +28,7 @@ def main(tend=2.0, A0=1.0, nt=67, t0=0.0,
     plt.xkcd()
     fig = plt.figure(figsize=(2, 2), dpi=100)
     ax = plt.subplot(1, 1, 1)
-    for i, l in enumerate ('ABC'[:n]):
+    for i, l in enumerate('ABC'[:n]):
         ax.plot(tout, Cref[:, 0, i], label=l, color='rbg'[i])
     ax.xaxis.set_tick_params(width=1)
     ax.yaxis.set_tick_params(width=1)

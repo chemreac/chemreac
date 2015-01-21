@@ -1,3 +1,2 @@
 #include "chemreac.hpp"
-using chemreac::ReactionDiffusion;
-ReactionDiffusion get_four_species_system(int N);
+chemreac::ReactionDiffusion get_four_species_system(int N);

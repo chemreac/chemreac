@@ -57,6 +57,7 @@ public:
     const bool auto_efield;
     const pair<double, double> surf_chg;
     const double eps;
+    const double faraday_const;
     double * const efield; // v_d = mu_el*E
     double * const netchg;
 private:
@@ -92,7 +93,8 @@ public:
                       bool rrefl=false,
                       bool auto_efield=false,
                       pair<double, double> surf_chg={0, 0},
-                      double eps=1.0);
+                      double eps=1.0,
+                      double faraday_const=96485.3399); //  [C/mol]
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);
     void dense_jac_rmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);

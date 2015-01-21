@@ -37,6 +37,8 @@ using std::count;
 using std::min;
 using std::max;
 
+template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
+
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     uint n,
@@ -60,13 +62,15 @@ ReactionDiffusion::ReactionDiffusion(
     bool rrefl,
     bool auto_efield,
     pair<double, double> surf_chg,
-    double eps
+    double eps,
+    double faraday_const
     ):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
     bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), auto_efield(auto_efield),
-    surf_chg(surf_chg), eps(eps), efield(new double[N]), netchg(new double[N])
+    surf_chg(surf_chg), eps(eps), faraday_const(faraday_const), efield(new double[N]),
+    netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -107,9 +111,6 @@ ReactionDiffusion::ReactionDiffusion(
     default:
         throw std::logic_error("Unknown geom.");
     }
-
-    jac_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
-    prec_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
 
     // Finite difference scheme
     D_weight = new double[nstencil*N];
@@ -187,8 +188,10 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []coeff_prod;
     delete []coeff_totl;
     delete []coeff_actv;
-    delete prec_cache;
-    delete jac_cache;
+    if (prec_cache)
+        delete prec_cache;
+    if (jac_cache)
+        delete jac_cache;
 }
 
 uint ReactionDiffusion::_stencil_bi_lbound(uint bi) const
@@ -415,7 +418,8 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
 %if token.startswith('compressed'):
 #include <iostream>
 #define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
-#define SUB(di, bri, ci) std::cout<< di << " " << bri << " " << ci << std::endl; ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
+    //define SUB(di, bri, ci) std::cout<< di << " " << bri << " " << ci << std::endl; ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
+#define SUB(di, bri, ci) ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
 #define SUP(di, bri, ci) ja[N*n*n + n*(N*nsidep - (nsidep*nsidep + nsidep)/2) + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri)*n + ci]
 %else:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
@@ -434,14 +438,17 @@ ReactionDiffusion::${token}(double t,
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
+    ${'ignore(ldj);' if token.startswith('compressed') else ''}
+
     double * fout = nullptr;
-    if (logy) // fy useful..
+    if (logy){ // fy useful..
         if (fy){
             fout = const_cast<double *>(fy);
         } else {
             fout = new double[n*N];
             f(t, y, fout);
         }
+    }
 
     // note condifiontal call to free at end of this function
     const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
@@ -583,24 +590,35 @@ ReactionDiffusion::${token}(double t,
 
 void ReactionDiffusion::jac_times_vec(const double * const __restrict__ vec,
                                       double * const __restrict__ out,
-                                      double t, const double * const __restrict__ y,
+                                      double t,
+                                      const double * const __restrict__ y,
                                       const double * const __restrict__ fy
                                       )
 {
-    compressed_jac_cmaj(t, y, fy, &(jac_cache->data[0]), 0);
-    jac_cache->dot_vec(vec, out);
+    // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
+    block_diag_ilu::BlockDiagMat J(this->N, this->n, this->nsidep);
+    J.zero_out_diags();
+    const int dummy = 0;
+    compressed_jac_cmaj(t, y, fy, &(J.data[0]), dummy);
+    J.dot_vec(vec, out);
     njacvec_dot++;
 }
 
 void ReactionDiffusion::prec_setup(double t,
                 const double * const __restrict__ y,
                 const double * const __restrict__ fy,
-                bool compute_jac, bool& jac_recomputed, double gamma)
+                bool jok, bool& jac_recomputed, double gamma)
 {
-    if (compute_jac){
-        compressed_jac_cmaj(t, y, fy, &(jac_cache->data[0]), 0);
+    ignore(gamma);
+    // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
+    if (!jok){
+        if (jac_cache == nullptr)
+            jac_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
+        const int dummy = 0;
+        jac_cache->zero_out_diags();
+        compressed_jac_cmaj(t, y, fy, &(jac_cache->data[0]), dummy);
         jac_recomputed = true;
-    }
+    } else jac_recomputed = false;
     nprec_setup++;
 }
 #undef FOUT
@@ -616,7 +634,12 @@ void ReactionDiffusion::prec_solve_left(const double t,
                                         double * const __restrict__ z,
                                         double gamma)
 {
+    // See 4.6.8 on page 68 (78) in cvs_guide.pdf
     // Solves P*z = r, where P ~= I - gamma*J
+    // see page  in cvs_guide.pdf (Sundials 2.5)
+    ignore(t); ignore(fy); ignore(y);
+    if (prec_cache == nullptr)
+        prec_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
     prec_cache->set_to_1_minus_gamma_times_other(gamma, *jac_cache);
     block_diag_ilu::ILU ilu = prec_cache->ilu_inplace();
     ilu.solve(r, z);
@@ -626,6 +649,7 @@ void ReactionDiffusion::prec_solve_left(const double t,
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __restrict__ y,
                                               uint si, double * const __restrict__ out) const
 {
+    ignore(t);
     double * const local_r = new double[nr];
     _fill_local_r(0, y, local_r);
     for (uint ri=0; ri<nr; ++ri){
@@ -647,7 +671,7 @@ int ReactionDiffusion::get_geom_as_int() const
 void ReactionDiffusion::calc_efield(const double * const linC)
 {
     // Prototype for self-generated electric field
-    const double F = 96485.3399; // Faraday's constant, [C/mol]
+    const double F = this->faraday_const; // Faraday's constant
     const double pi = 3.14159265358979324;
     double nx, cx = logx ? exp(x[0]) : x[0];
     for (uint bi=0; bi<N; ++bi){

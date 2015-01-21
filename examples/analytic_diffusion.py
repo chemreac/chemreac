@@ -285,6 +285,12 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         rmsd = np.sum((yref-yout)**2 / N, axis=1)**0.5
     ave_rmsd_over_atol = np.average(rmsd, axis=0)/info['atol']
 
+    if verbose:
+        # Print statistics
+        from pprint import pprint
+        pprint(info)
+        pprint(ave_rmsd_over_atol)
+
     # Plot results
     if plot:
         import matplotlib.pyplot as plt
@@ -344,10 +350,6 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
-
-    if verbose:
-        print(info)
-        print(ave_rmsd_over_atol)
 
     return tout, yout, info, ave_rmsd_over_atol, sys
 

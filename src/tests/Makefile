@@ -45,7 +45,7 @@ else
   endif
 endif
 
-TARGETS=test_chemreac.out test_chemreac_sundials.out
+TARGETS=test_chemreac.out test_chemreac_sundials.out test_chemreac_catch.out
 GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o test_chemreac_sundials test_chemreac_sundials.out test_utils.o chemreac.o c_fornberg.o fornberg.mod c_fornberg.mod
 
 ifeq ($(PROFILING),1)
@@ -63,6 +63,7 @@ else
 endif
 
 FLAGS += $(EXTRA_FLAGS)
+
 
 LOCALLIB=/usr/local/lib
 LIBDIRS=-L${LOCALLIB}
@@ -97,7 +98,7 @@ test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o test_utils
 
 
 test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.cpp
-	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvode -llapack -lsundials_nvecserial
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvodes -llapack -lsundials_nvecserial
 
 gmon.out: test_chemreac
 	./$<
@@ -111,3 +112,12 @@ test_chemreac.out: test_chemreac
 
 test_chemreac_sundials.out: test_chemreac_sundials
 	$(CONTEXT) ./$< >$@
+
+test_chemreac_catch.out: test_chemreac_sundials
+	$(CONTEXT) ./$< >$@
+
+catch.hpp: catch.hpp.bz2
+	bunzip2 -k -f $<
+
+test_chemreac_catch: test_chemreac_catch.cpp catch.hpp
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $< chemreac.o fornberg.o c_fornberg.o test_utils.o $(LIBS) $(FORTCPPLIBS)

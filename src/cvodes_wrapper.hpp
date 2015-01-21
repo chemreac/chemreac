@@ -69,7 +69,7 @@ namespace cvodes_wrapper {
         void init(CVRhsFn cb, realtype t0, const realtype * const y, int ny) {
             nvector_serial_wrapper::Vector yvec (ny, const_cast<realtype*>(y));
             init(cb, t0, yvec.n_vec);
-            // it is ok that yvec is destructed here 
+            // it is ok that yvec is destructed here
             // (see CVodeInit in cvodes.c which at L843 calls cvAllocVectors (L3790) which )
         }
         void reinit(realtype t0, N_Vector y){
@@ -127,6 +127,7 @@ namespace cvodes_wrapper {
             switch (solver) {
             case IterLinSolEnum::GMRES:
                 flag = CVSpgmr(this->mem, (int)PrecType::LEFT, maxl);
+                CVSpilsSetGSType(this->mem, MODIFIED_GS); // FIX THIS
                 break;
             case IterLinSolEnum::BICGSTAB:
                 flag = CVSpbcg(this->mem, (int)PrecType::LEFT, maxl);
@@ -227,6 +228,82 @@ namespace cvodes_wrapper {
             return res;
         }
 
+
+        void cv_check_flag(int flag) {
+            switch (flag){
+            case CV_SUCCESS:
+                break;
+            case CV_MEM_NULL:
+                throw std::runtime_error("cvode_mem is NULL");
+            }
+        }
+
+        long int get_n_steps(){
+            long int res=0;
+            int flag = CVodeGetNumSteps(this->mem, &res);
+            cv_check_flag(flag);
+            return res;
+        }
+
+        long int get_n_rhs_evals(){
+            long int res=0;
+            int flag = CVodeGetNumRhsEvals(this->mem, &res);
+            cv_check_flag(flag);
+            return res;
+        }
+
+        long int get_n_lin_solv_setups(){
+            long int res=0;
+            int flag = CVodeGetNumLinSolvSetups(this->mem, &res);
+            cv_check_flag(flag);
+            return res;
+        }
+
+        long int get_n_err_test_fails(){
+            long int res=0;
+            int flag = CVodeGetNumErrTestFails(this->mem, &res);
+            cv_check_flag(flag);
+            return res;
+        }
+
+        long int get_n_nonlin_solv_iters(){
+            long int res=0;
+            int flag = CVodeGetNumNonlinSolvIters(this->mem, &res);
+            cv_check_flag(flag);
+            return res;
+        }
+
+        long int get_n_nonlin_solv_conv_fails(){
+            long int res=0;
+            int flag = CVodeGetNumNonlinSolvConvFails(this->mem, &res);
+            cv_check_flag(flag);
+            return res;
+        }
+
+        void cvdls_check_flag(int flag) {
+            switch (flag){
+            case CVDLS_SUCCESS:
+                break;
+            case CVDLS_MEM_NULL:
+                throw std::runtime_error("cvode_mem is NULL");
+            case CVDLS_LMEM_NULL:
+                throw std::runtime_error("CVDLS linear solver has not been initialized)");
+            }
+        }
+        long int get_n_dls_jac_evals(){
+            long int res=0;
+            int flag = CVDlsGetNumJacEvals(this->mem, &res);
+            cvdls_check_flag(flag);
+            return res;
+        }
+
+        long int get_n_dls_rhs_evals(){
+            long int res=0;
+            int flag = CVDlsGetNumRhsEvals(this->mem, &res);
+            cvdls_check_flag(flag);
+            return res;
+        }
+
         void get_dky(realtype t, int k, nvector_serial_wrapper::Vector &dky) {
             int flag = CVodeGetDky(this->mem, t, k, dky.n_vec);
             switch(flag){
@@ -278,7 +355,7 @@ namespace cvodes_wrapper {
             }
         }
 
-        void integrate(const std::vector<realtype> tout, const std::vector<realtype> y0, 
+        void integrate(const std::vector<realtype> tout, const std::vector<realtype> y0,
                        int nderiv, realtype * const yout){
             this->integrate(tout.size(), y0.size(), &tout[0], &y0[0], nderiv, yout);
         }
@@ -289,6 +366,7 @@ namespace cvodes_wrapper {
         }
     };
 
+
     template<class OdeSys>
     int f_cb(realtype t, N_Vector y, N_Vector ydot, void *user_data){
         OdeSys * odesys = (OdeSys*)user_data;
@@ -296,11 +374,14 @@ namespace cvodes_wrapper {
         return 0;
     }
 
+    template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
+
     template <class OdeSys>
     int jac_dense_cb(long int N, realtype t,
                      N_Vector y, N_Vector fy, DlsMat Jac, void *user_data,
                      N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
         // callback of req. signature wrapping OdeSys method.
+        ignore(N); ignore(tmp1); ignore(tmp2); ignore(tmp3);
         OdeSys * odesys = (OdeSys*)user_data;
         odesys->dense_jac_cmaj(t, NV_DATA_S(y), NV_DATA_S(fy), DENSE_COL(Jac, 0),
                            Jac->ldim);
@@ -312,6 +393,7 @@ namespace cvodes_wrapper {
                     N_Vector y, N_Vector fy, DlsMat Jac, void *user_data,
                     N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
         // callback of req. signature wrapping OdeSys method.
+        ignore(N); ignore(mupper); ignore(mlower); ignore(tmp1); ignore(tmp2); ignore(tmp3);
         OdeSys * odesys = (OdeSys*)user_data;
         if (Jac->s_mu != 2*(odesys->n))
             throw std::runtime_error("Mismatching size of padding.");
@@ -324,6 +406,7 @@ namespace cvodes_wrapper {
     int jac_times_vec_cb(N_Vector v, N_Vector Jv, realtype t, N_Vector y,
                          N_Vector fy, void *user_data, N_Vector tmp){
         // callback of req. signature wrapping OdeSys method.
+        ignore(tmp);
         OdeSys * odesys = (OdeSys*)user_data;
         odesys->jac_times_vec(NV_DATA_S(v), NV_DATA_S(Jv), t, NV_DATA_S(y), NV_DATA_S(fy));
         return 0;
@@ -334,6 +417,8 @@ namespace cvodes_wrapper {
                           N_Vector z, realtype gamma, realtype delta, int lr,
                           void *user_data, N_Vector tmp){
         // callback of req. signature wrapping OdeSys method.
+        //std::cout << "in jac_prec_solve_cb() with lr=" << lr << std::endl; // DEBUG
+        ignore(tmp); ignore(delta);
         OdeSys * odesys = (OdeSys*)user_data;
         if (lr != 1)
             throw std::runtime_error("Only left preconditioning implemented.");
@@ -347,10 +432,13 @@ namespace cvodes_wrapper {
                       booleantype *jcurPtr, realtype gamma, void *user_data,
                       N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
         // callback of req. signature wrapping OdeSys method.
+        //std::cout << "in prec_setup_cb()" << std::endl; // DEBUG
+        ignore(tmp1); ignore(tmp2); ignore(tmp3);
         OdeSys * odesys = (OdeSys*)user_data;
-        bool jac_recomputed = false;
-        bool compute_jac = (jok == TRUE) ? false : true;  // TRUE and FALSE are Macros defined by sundials..
-        odesys->prec_setup(t, NV_DATA_S(y), NV_DATA_S(fy), compute_jac, jac_recomputed, gamma);
+        bool jac_recomputed;
+        odesys->prec_setup(t, NV_DATA_S(y), NV_DATA_S(fy),
+                           (jok == TRUE) ? true : false,
+                           jac_recomputed, gamma);
         (*jcurPtr) = (jac_recomputed) ? TRUE : FALSE;
         return 0;
     }
@@ -371,7 +459,8 @@ namespace cvodes_wrapper {
         // iterative == 3 => iterative (TFQMR)
         const int ny = rd->n*rd->N;
         Integrator integr {(lmm == CV_BDF) ? LMM::BDF : LMM::ADAMS,
-                (iterative) ? IterType::FUNCTIONAL : IterType::NEWTON};
+                IterType::NEWTON};
+                //(iterative) ? IterType::FUNCTIONAL : IterType::NEWTON};
         integr.set_user_data((void *)rd);
         integr.init(f_cb<OdeSys>, tout[0], y0, ny);
         if (atol.size() == 1){
@@ -395,10 +484,11 @@ namespace cvodes_wrapper {
                 case 3:
                     integr.set_linear_solver_to_iterative(IterLinSolEnum::TFQMR); break;
                 }
+                integr.set_prec_type(PrecType::LEFT);
+                integr.set_iter_eps_lin(0); // 0 => default.
                 integr.set_jac_times_vec_fn(jac_times_vec_cb<OdeSys>);
                 integr.set_preconditioner(prec_setup_cb<OdeSys>,
                                           jac_prec_solve_cb<OdeSys>);
-                integr.set_iter_eps_lin(0); // 0 => default.
                 std::cout << "so we set it to iterative alright..." << std::endl;
                 // integr.set_gram_schmidt_type() // GMRES
                 // integr.set_krylov_max_len()  // BiCGStab, TFQMR
@@ -410,14 +500,25 @@ namespace cvodes_wrapper {
         }
         integr.integrate(nout, ny, tout, y0, 0, yout);
         // BEGIN DEBUG
+        std::cout << "n_steps=" << integr.get_n_steps() << std::endl;
+        std::cout << "n_rhs_evals=" << integr.get_n_rhs_evals() << std::endl;
+        std::cout << "n_lin_solv_setups=" << integr.get_n_lin_solv_setups() << std::endl;
+        std::cout << "n_err_test_fails=" << integr.get_n_err_test_fails() << std::endl;
+        std::cout << "n_nonlin_solv_iters=" << integr.get_n_nonlin_solv_iters() << std::endl;
+        std::cout << "n_nonlin_solv_conv_fails=" << integr.get_n_nonlin_solv_conv_fails() << std::endl;
         if (iterative) {
-            std::cout << "n_lin_iters=" << integr.get_n_lin_iters() << std::endl;
-            std::cout << "n_prec_evals=" << integr.get_n_prec_evals() << std::endl;
-            std::cout << "n_prec_solves=" << integr.get_n_prec_solves() << std::endl;
-            std::cout << "n_conv_fails=" << integr.get_n_conv_fails() << std::endl;
-            std::cout << "n_jac_times_evals=" << integr.get_n_jac_times_evals() << std::endl;
-            std::cout << "n_iter_rhs=" << integr.get_n_iter_rhs() << std::endl;
+            std::cout << "Krylov specific:" << std::endl;
+            std::cout << "  n_lin_iters=" << integr.get_n_lin_iters() << std::endl;
+            std::cout << "  n_prec_evals=" << integr.get_n_prec_evals() << std::endl;
+            std::cout << "  n_prec_solves=" << integr.get_n_prec_solves() << std::endl;
+            std::cout << "  n_conv_fails=" << integr.get_n_conv_fails() << std::endl;
+            std::cout << "  n_jac_times_evals=" << integr.get_n_jac_times_evals() << std::endl;
+            std::cout << "  n_iter_rhs=" << integr.get_n_iter_rhs() << std::endl;
             std::cout.flush();
+        } else {
+            std::cout << "Dense linear solver specific:" << std::endl;
+            std::cout << "  n_dls_jac_evals=" << integr.get_n_dls_jac_evals() << std::endl;
+            std::cout << "  n_dls_rhs_evals=" << integr.get_n_dls_rhs_evals() << std::endl;
         }
         // END DEBUG
     }

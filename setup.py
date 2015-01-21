@@ -8,7 +8,7 @@ from distutils.core import setup, Command
 
 pkg_name = 'chemreac'
 
-with open('pybestprac/__init__.py') as f:
+with open(os.path.join(pkg_name,'__init__.py')) as f:
     long_description = f.read().split('"""')[1]
 
 # Reading the version is a bit tricky: the same commit could actually
@@ -126,8 +126,9 @@ else:
                         'options': options
                     },
                     pyx_or_cpp: {
-                        'cy_kwargs': {'annotate': True}
-                        # , 'gdb_debug': not STABLE_RELEASE}
+                        'cy_kwargs': {'annotate': True},
+                        'std': 'c++0x',
+                        'gdb_debug': DEBUG
                     } if using_pyx else {
                         'std': 'c++0x',
                     }
@@ -172,7 +173,7 @@ setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
     description='Python package for modeling chemical kinetics with diffusion and drift.',
-    long_description=long_description
+    long_description=long_description,
     author='Björn Dahlgren',
     author_email='bjodah@DELETEMEgmail.com',
     url='https://github.com/chemreac/' + pkg_name,
