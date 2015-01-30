@@ -3,8 +3,8 @@
 #include <numeric> // std::accumulate
 #include <algorithm> // min, max
 #include <cassert>
-#include "test_utils.h"
 #include "chemreac.hpp"
+#include "test_utils.h"
 
 #ifdef _OPENMP
   #include <omp.h>
