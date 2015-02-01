@@ -53,3 +53,12 @@ def get_jac_row_from_banded(J, rows, n):
         for ci in range(n):
             out[rows.index(ri), ci] = J[n+ri-ci, ci]
     return out
+
+
+def get_dense(A, n, N, padded=False):
+    out = np.zeros((n*N, n*N))
+    diag_offset = 2*n if padded else n
+    for ri in range(n*N):
+        for ci in range(max(0, ri-n), min(n*N, ri+n+1)):
+            out[ri, ci] = A[diag_offset+ri-ci, ci]
+    return out

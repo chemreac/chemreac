@@ -38,6 +38,8 @@ with open(pkg_name+'/__init__.py') as f:
 DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
+WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
+WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
 
 CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
 on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
@@ -59,6 +61,9 @@ else:
             flags += ['-O2', '-funroll-loops'] if STABLE_RELEASE else ['-O1']
         else:
             options += ['fast']  # -ffast-math -funroll-loops
+
+if WITH_BLOCK_DIAG_ILU_OPENMP:
+    options += ['openmp']
 
 cmdclass_ = {}
 
@@ -117,8 +122,13 @@ else:
                         'flags': flags,
                         'options': options +
                         (['openmp'] if USE_OPENMP else []),
-                        'define': ['DEBUG'] +
-                        (['DEBUG'] if DEBUG else []),
+                        'define': [] +
+                        #(['DEBUG', 'WITH_DATA_DUMPING'] if DEBUG else []) +
+                        (['DEBUG'] if DEBUG else []) + # uncomment above line to dump prec data.
+                        (['WITH_BLOCK_DIAG_ILU_OPENMP'] if
+                         WITH_BLOCK_DIAG_ILU_OPENMP else []) +
+                        (['WITH_BLOCK_DIAG_ILU_DGETRF'] if
+                         WITH_BLOCK_DIAG_ILU_DGETRF else []),
                     },
                     'src/chemreac_sundials.cpp': {
                         'std': 'c++0x',

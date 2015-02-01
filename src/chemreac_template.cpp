@@ -11,10 +11,13 @@
 #include "chemreac.hpp"
 #include "c_fornberg.h" // fintie differences (remember to link fortran object fornberg.o)
 
-#ifdef DEBUG
+#if defined(WITH_DATA_DUMPING)
 #include <cstdio>
 #include <iostream>
+#include <sstream>
+#include <iomanip>
 #define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
+#include "chemreac_util.h"
 #endif
 
 %if USE_OPENMP:
@@ -181,16 +184,14 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []efield;
     delete []netchg;
     delete []A_weight;
-    // if (LU_blocks != nullptr)
-    //     delete []LU_blocks;
     delete []D_weight;
     delete []coeff_reac;
     delete []coeff_prod;
     delete []coeff_totl;
     delete []coeff_actv;
-    if (prec_cache)
+    if (prec_cache != nullptr)
         delete prec_cache;
-    if (jac_cache)
+    if (jac_cache != nullptr)
         delete jac_cache;
 }
 
@@ -416,7 +417,6 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
     ('compressed_jac_cmaj', None, None),\
     ]:
 %if token.startswith('compressed'):
-#include <iostream>
 #define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
     //define SUB(di, bri, ci) std::cout<< di << " " << bri << " " << ci << std::endl; ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
 #define SUB(di, bri, ci) ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
@@ -546,6 +546,11 @@ ReactionDiffusion::${token}(double t,
     if (logy)
         free((void*)linC);
     neval_j++;
+#if defined(WITH_DATA_DUMPING)
+    std::ostringstream fname;
+    fname << "jac_" << std::setfill('0') << std::setw(5) << neval_j << ".dat";
+    save_array(ja, ldj*n*N, fname.str());
+#endif
 }
 #undef JAC
 #undef SUB
@@ -596,11 +601,26 @@ void ReactionDiffusion::jac_times_vec(const double * const __restrict__ vec,
                                       )
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
-    block_diag_ilu::BlockDiagMat J(this->N, this->n, this->nsidep);
-    J.zero_out_diags();
-    const int dummy = 0;
-    compressed_jac_cmaj(t, y, fy, &(J.data[0]), dummy);
-    J.dot_vec(vec, out);
+    ignore(t);
+    // {
+    //     // Do we need a fresh jacobian?
+    //     block_diag_ilu::ColMajBlockDiagMat<double> jmat {this->N, this->n, this->nsidep};
+    //     jmat.view.zero_out_diags(); // compressed_jac_cmaj only increments diagonals
+    //     const int dummy = 0;
+    //     compressed_jac_cmaj(t, y, fy, jmat.get_block_data_raw_ptr(), dummy);
+    //     jmat.view.dot_vec(vec, out);
+    // }
+    {
+        // or can we do with the cache?
+        ignore(y); ignore(fy);
+        if (jac_cache == nullptr){
+            jac_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
+            jac_cache->view.zero_out_diags(); // compressed_jac_cmaj only increments diagonals
+            const int dummy = 0;
+            compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
+        }
+        jac_cache->view.dot_vec(vec, out);
+    }
     njacvec_dot++;
 }
 
@@ -613,10 +633,10 @@ void ReactionDiffusion::prec_setup(double t,
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
     if (!jok){
         if (jac_cache == nullptr)
-            jac_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
+            jac_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
         const int dummy = 0;
-        jac_cache->zero_out_diags();
-        compressed_jac_cmaj(t, y, fy, &(jac_cache->data[0]), dummy);
+        jac_cache->view.zero_out_diags();
+        compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
         jac_recomputed = true;
     } else jac_recomputed = false;
     nprec_setup++;
@@ -637,13 +657,58 @@ void ReactionDiffusion::prec_solve_left(const double t,
     // See 4.6.8 on page 68 (78) in cvs_guide.pdf
     // Solves P*z = r, where P ~= I - gamma*J
     // see page  in cvs_guide.pdf (Sundials 2.5)
-    ignore(t); ignore(fy); ignore(y);
-    if (prec_cache == nullptr)
-        prec_cache = new block_diag_ilu::BlockDiagMat(N, n, nsidep);
-    prec_cache->set_to_1_minus_gamma_times_other(gamma, *jac_cache);
-    block_diag_ilu::ILU ilu = prec_cache->ilu_inplace();
-    ilu.solve(r, z);
     nprec_solve++;
+
+    ignore(t); ignore(fy); ignore(y);
+    bool recompute = false;
+    if (prec_cache == nullptr){
+        prec_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
+        recompute = true;
+    } else {
+        if (old_gamma != gamma) // TODO: what about when jac_cahce updated?
+            recompute = true;
+    }
+    if (recompute){
+        old_gamma = gamma;
+        prec_cache->view.set_to_1_minus_gamma_times_view(gamma, jac_cache->view);
+#if defined(WITH_DATA_DUMPING)
+        {
+            std::ostringstream fname;
+            fname << "prec_M_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
+            const auto data_len = prec_cache->view.block_data_len + 2*prec_cache->view.diag_data_len;
+            save_array(prec_cache->get_block_data_raw_ptr(), data_len, fname.str());
+        }
+#endif
+    }
+
+#if defined(WITH_DATA_DUMPING)
+    {
+        std::ostringstream fname;
+        fname << "prec_r_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
+        save_array(r, n*N, fname.str());
+    }
+    {
+        std::ostringstream fname;
+        fname << "prec_g_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
+        save_array(&gamma, 1, fname.str());
+    }
+
+#endif
+
+    // {
+    //     block_diag_ilu::ILU_inplace ilu {prec_cache->view};
+    //     ilu.solve(r, z);
+    // }
+    {
+        // This section is for debuggging.
+        // The ILU preconditioning seem to be working
+        // so and so.
+        // This performs a full LU decomposition
+        // which should essentially be equivalent with
+        // the direct linear solver.
+        block_diag_ilu::LU lu {prec_cache->view};
+        lu.solve(r, z);
+    }
 }
 
 void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __restrict__ y,

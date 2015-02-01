@@ -15,6 +15,7 @@ before_install:
   - export CONDA_PATH=$HOME/miniconda
   - source ./scripts/install_miniconda.sh $PYTHON_VERSION $CONDA_PATH $CONDA_VERSION
   - conda config --add channels http://conda.binstar.org/$BINSTAR_USER
+  - conda config --add channels http://conda.binstar.org/bjodah  # migrate this later
   - ./scripts/ubuntu12.04/apt_get_gcc_48.sh
   - ./scripts/ubuntu12.04/apt_get_g++_48.sh
   - ./scripts/ubuntu12.04/apt_get_gfortran_48.sh

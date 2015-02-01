@@ -78,8 +78,9 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
         if isinstance(log, int):
             SymLogNorm(10**log)
         note: "norm" in kwargs overrides this.
-    symmetric_colorbar: bool
+    symmetric_colorbar: bool or float
         to make divergent colormaps pass through zero as intended.
+        if float: max abolute value of colormap (linear)
 
     Returns
     -------
@@ -102,21 +103,26 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
     ax_imshow = plt.subplot(111)
 
     if log is not False and 'norm' not in kwargs:
-        Amin = np.min(A[np.where(A != 0)])
-        Amax = np.max(A[np.where(A != 0)])
-        if symmetric_colorbar:
+        if symmetric_colorbar is True:
             Amin = -max(-Amin, Amax)
             Amax = -Amin
+        elif (isinstance(symmetric_colorbar, (float, int)) and
+              symmetric_colorbar is not False):
+            Amin = -symmetric_colorbar
+            Amax = symmetric_colorbar
+        else:
+            Amin = np.min(A[np.where(A != 0)])
+            Amax = np.max(A[np.where(A != 0)])
+
         if log is True:
             if np.any(A < 0):
-                log = int(np.round(np.log10(np.max(np.abs(A))) - 13))
+                log = int(np.round(np.log10(Amax) - 13))
             else:
                 minlog = int(floor(np.log10(Amin)))
                 maxlog = int(ceil(np.log10(Amax)))
                 tick_locations = [10**x for x in range(minlog, maxlog+1)]
                 kwargs['norm'] = LogNorm()
-
-        if isinstance(log, int):
+        elif isinstance(log, int):
             tick_locations = []
             if Amin < 0:
                 minlog = int(ceil(np.log10(-Amin)))

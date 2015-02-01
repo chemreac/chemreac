@@ -7,13 +7,13 @@
 #include <memory> // unique_ptr
 #include "block_diag_ilu.hpp"
 
-enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 
 namespace chemreac {
 
+enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
+
 using std::vector;
 using std::pair;
-using block_diag_ilu::make_unique;
 
 class ReactionDiffusion
 {
@@ -22,8 +22,8 @@ public:
     int * coeff_prod;
     int * coeff_totl;
     int * coeff_actv;
-    double * D_weight; // diffusion weights 
-    double * A_weight; // Advection weights 
+    double * D_weight; // diffusion weights
+    double * A_weight; // Advection weights
     vector<uint> i_bin_k;
     uint n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
@@ -52,7 +52,7 @@ public:
     vector<double> mobility; // electrical mobility
     const vector<double> x; // Bin edges (length = N+1)
     vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
-    vector<uint> bin_k_factor_span; // 
+    vector<uint> bin_k_factor_span; //
     const bool lrefl, rrefl;
     const bool auto_efield;
     const pair<double, double> surf_chg;
@@ -61,8 +61,9 @@ public:
     double * const efield; // v_d = mu_el*E
     double * const netchg;
 private:
-    block_diag_ilu::BlockDiagMat *jac_cache {nullptr};
-    block_diag_ilu::BlockDiagMat *prec_cache {nullptr};
+    block_diag_ilu::ColMajBlockDiagMat<double> *jac_cache {nullptr};
+    block_diag_ilu::ColMajBlockDiagMat<double> *prec_cache {nullptr};
+    double old_gamma;
 
 public:
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
@@ -72,16 +73,16 @@ public:
     long nprec_solve {0};
     long njacvec_dot {0};
 
-    ReactionDiffusion(uint, 
-		      const vector<vector<uint> >, 
-		      const vector<vector<uint> >, 
-		      vector<double>, 
+    ReactionDiffusion(uint,
+		      const vector<vector<uint> >,
+		      const vector<vector<uint> >,
+		      vector<double>,
 		      uint,
-		      vector<double>, 
+		      vector<double>,
                       vector<int>,
                       vector<double>,
 		      const vector<double>,
-		      vector<vector<uint> >, 
+		      vector<vector<uint> >,
 		      vector<vector<double> >,
 		      vector<uint>,
 		      int geom_=0,
@@ -109,12 +110,12 @@ public:
                        double t, const double * const __restrict__ y,
                        const double * const __restrict__ fy
                        );
-    void prec_setup(double t, const double * const __restrict__ y, 
-                    const double * const __restrict__ fy, 
+    void prec_setup(double t, const double * const __restrict__ y,
+                    const double * const __restrict__ fy,
                     bool jok, bool& jac_recomputed, double gamma);
     void prec_solve_left(const double t, const double * const __restrict__ y,
-                         const double * const __restrict__ fy, 
-                         const double * const __restrict__ r, 
+                         const double * const __restrict__ fy,
+                         const double * const __restrict__ r,
                          double * const __restrict__ z,
                          double gamma);
 
