@@ -40,9 +40,10 @@ USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
+WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'
 
 CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
-on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
+ON_RTD = os.environ.get('READTHEDOCS', None) == 'True'
 ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
 ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 
@@ -75,7 +76,7 @@ if len(sys.argv) > 1:
 elif len(sys.argv) == 1:
     IDEMPOTENT_INVOCATION = True
 
-if on_rtd or IDEMPOTENT_INVOCATION:
+if ON_RTD or IDEMPOTENT_INVOCATION:
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
 else:
@@ -123,8 +124,9 @@ else:
                         'options': options +
                         (['openmp'] if USE_OPENMP else []),
                         'define': [] +
-                        #(['DEBUG', 'WITH_DATA_DUMPING'] if DEBUG else []) +
-                        (['DEBUG'] if DEBUG else []) + # uncomment above line to dump prec data.
+                        (['DEBUG'] if DEBUG else []) +
+                        (['WITH_DATA_DUMPING'] if
+                         WITH_DATA_DUMPING else []) +
                         (['WITH_BLOCK_DIAG_ILU_OPENMP'] if
                          WITH_BLOCK_DIAG_ILU_OPENMP else []) +
                         (['WITH_BLOCK_DIAG_ILU_DGETRF'] if

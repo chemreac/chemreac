@@ -1,9 +1,10 @@
 <html>
 <head>
+<link rel="stylesheet" href="main.css">
 <title>chemreac</title>
 <body>
 <!-- This is a minimal navigation page (to be improved) -->
-<table align="center">
+<table id="main_tab">
   <tr>
     <td>
       <img src="chemreac_logo.svg">
@@ -13,13 +14,30 @@
         <li><a href="docs/index.html">Documentation</a></li>
         <li><a href="https://binstar.org/chemreac/">Binary download</a></li>
         <li><a href="http://hera.physchem.kth.se/~bjorn/chemreac/">Source download</a></li>
-        <li><a href="https://github.com/chemreac/chemreac">Source (github) repository</a></li>
+        <li><a href="https://github.com/chemreac/chemreac">Source repository (github)</a></li>
         <li><a href="htmlcov/index.html">Test coverage</a></li>
         <li><a href="http://hera.physchem.kth.se/~asv/chemreac-benchmarks">Performance tracking</a></li>
       </ul>
     </td>
   </tr>
 </table>
+<table id="main_tab">
+<tr><td>
+    <h1>About</h1>
+    <p>
+      <!-- Copy long_description -->
+chemreac is a python library for solving chemical kinetics problems
+with possible diffusion and drift contributions. It is implemented
+by solving the deterministic Smoluchovski equation for discretized
+1D symmetric systems. Wrappers around SciPy's ODE integrators and
+Sundials CVode package are provided.
+      <!-- end copy of long_description -->
+    </p>
+</td></tr>
+</table>
+<center>
+Copyright &copy; 2015 Bj&ouml;rn Dahlgren
+</center>
 </body>
 </head>
 </html>

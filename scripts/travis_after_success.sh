@@ -1,7 +1,7 @@
 #!/bin/bash -x
-if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ];
-    if [ "$TRAVIS_BRANCH" == "master" ]; then
-        if [ "$BUILD_DOCS" == "1" ]; then
+if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+    if [[ "$TRAVIS_BRANCH" == "master" ]]; then
+        if [[ "$BUILD_DOCS" == "1" ]]; then
             # Build the documentation
             echo -e "Building docs...\n"
             set -x # Verbose
@@ -39,5 +39,4 @@ if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL
         binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-$CHEMREAC_RELEASE_VERSION-}
         set -x
     fi
-
 fi
