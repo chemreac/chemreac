@@ -1,0 +1,16 @@
+#main_tab {
+    align: center;
+    margin-left: auto;
+    margin-right: auto;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    width: 600px;
+    background-color: #ddddcc;
+    padding: 2%;
+    border: 1px solid #000000;
+    border-radius: 3%;
+}
+
+a {
+    font-size: 130%;
+}

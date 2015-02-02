@@ -1,7 +1,7 @@
 #!/bin/bash -x
-if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL_REQUEST" == "false" ];
-    if [ "$TRAVIS_BRANCH" == "master" ]; then
-        if [ "$BUILD_DOCS" == "1" ]; then
+if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_PULL_REQUEST" == "false" ]]; then
+    if [[ "$TRAVIS_BRANCH" == "master" ]]; then
+        if [[ "$BUILD_DOCS" == "1" ]]; then
             # Build the documentation
             echo -e "Building docs...\n"
             set -x # Verbose
@@ -14,9 +14,9 @@ if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL
             git config --global user.name "travis-ci"
             set +x # Silent (protect GH_TOKEN)
             echo "Cloning github repo: ${TRAVIS_REPO_SLUG}"
-            git clone --quiet https://${GH_TOKEN}@github.com/${TRAVIS_REPO_SLUG} chemreac.github.io > /dev/null
+            git clone --quiet https://${GH_TOKEN}@github.com/${GITHUB_USER}/${GITHUB_USER}.github.io ${GITHUB_USER}.github.io > /dev/null
             set -x # Verbose
-            cd chemreac.github.io/
+            cd ${GITHUB_USER}.github.io/
             git branch -D master
             git checkout --orphan master
             git rm -rf . > /dev/null
@@ -27,7 +27,7 @@ if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL
             git add -f . > /dev/null
             git commit -m "Lastest pages from successful travis build $TRAVIS_BUILD_NUMBER"
             git push -f origin master
-            echo -e "...published to chemreac.github.io\n"
+            echo -e "...published to ${GITHUB_USER}.github.io\n"
         fi
     fi
     if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then
@@ -39,5 +39,4 @@ if [ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ] && [ "$TRAVIS_PULL
         binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-$CHEMREAC_RELEASE_VERSION-}
         set -x
     fi
-
 fi
