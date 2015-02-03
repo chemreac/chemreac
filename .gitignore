@@ -46,6 +46,7 @@ docs/_build.log
 
 
 # Various
+__conda_version__.txt
 .cache/
 .metadata_CompilerRunner
 .coverage

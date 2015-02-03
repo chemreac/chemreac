@@ -5,14 +5,28 @@ import json
 from . import ReactionDiffusion
 
 
-def dump(rd, path):
+def dump(rd, dest):
     """
+    Serializes ReactionDiffusion instance to json format.
+
+    Parameters
+    ----------
+    rd: ReactionDiffusion instance
+    dest: file object or path string
+
+    Notes
+    -----
     Attributes ignored are:
     N, x, bin_k_factor, geom, logy, logt
 
     (geometrical factors and choice of variables)
     """
-    fh = open(path, 'wt')
+
+    if not hasattr(dest, 'write'):
+        fh = open(dest, 'wt')
+    else:
+        fh = dest
+
     data = {
         'n': rd.n,
         'stoich_reac': rd.stoich_reac,
@@ -29,13 +43,25 @@ def dump(rd, path):
     json.dump(data, fh)
 
 
-def load(path, RD=None, **kwargs):
+def load(source, RD=None, **kwargs):
     """
-    Loads a ReactionDiffusion instance from implementation RD
-    and overwrites with kwargs if passed
+    Creates a `RD` instance from json serialized
+    data (where `RD` is an implementation of ReactionDiffusion)
+
+    Parameters
+    ----------
+    source: file object or path string
+    RD: subclass of ReactionDiffusion (default: ReactionDiffusion)
+    \*\*kwargs
+        override parameters in source with kwargs
     """
     RD = RD or ReactionDiffusion
-    fh = open(path, 'rt')
+
+    if not hasattr(source, 'read'):
+        fh = open(source, 'rt')
+    else:
+        fh = source
+
     data = json.load(fh)
     data.update(kwargs)
     extra_data = {}

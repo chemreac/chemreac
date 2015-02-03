@@ -3,6 +3,9 @@
 import shutil
 import tempfile
 
+import pytest
+
+
 from chemreac.util.table import rsys2tablines, rsys2table, rsys2pdf_table
 from .test_graph import _get_rsys
 
@@ -29,10 +32,11 @@ Id. & Reactants &  & Products & Rate constant & Ref \\
 \end{table}"""
 
 
-def test_rsys2pdf_table():
+@pytest.mark.parametrize('longtable', (True, False))
+def test_rsys2pdf_table(longtable):
     rsys, sbstncs = _get_rsys()
     tempdir = tempfile.mkdtemp()
     try:
-        rsys2pdf_table(rsys, sbstncs, tempdir)
+        rsys2pdf_table(rsys, sbstncs, tempdir, longtable=longtable)
     finally:
         shutil.rmtree(tempdir)

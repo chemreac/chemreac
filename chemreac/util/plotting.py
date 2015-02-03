@@ -180,6 +180,7 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
 
 
 def _get_jac_row_over_t(rd, tout, yout, indices, bi=0):
+    # Note that you really need yout - not Cout
     Jout = np.zeros((rd.n*2+1, rd.n*rd.N), order='F')
     row_out = np.zeros((yout.shape[0], len(indices), rd.n))
     for i, y in enumerate(yout):
@@ -190,6 +191,7 @@ def _get_jac_row_over_t(rd, tout, yout, indices, bi=0):
 
 
 def _get_per_func_out(rd, tout, yout, indices):
+    # Note that you really need yout - not Cout
     out = np.empty((yout.shape[0], len(indices), rd.nr))
     for i, y in enumerate(yout):
         flat_y = y.flatten()
@@ -274,7 +276,7 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
     tout: array_like
         output time from integration
     yout: array_like
-        output data from integration
+        output data from integration (differs from Cout for logy=True)
     substances: iterable of int or string
         indices or names of substances to plot jacobian values for
     """
@@ -299,7 +301,8 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
     ----------
     rd: ReactionDiffusion
     tout: 1D array of floats
-    yout: output from solver
+    yout: array_like
+        output data from integration (differs from Cout for logy=True)
     substances: sequence of Substance instances
     **kwargs: kwargs passed on to _plot_analysis
 
@@ -346,7 +349,7 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
 
 
 def plot_C_vs_t_in_bin(
-        rd, tout, yout, bi=0, ax=None, labels=None,
+        rd, tout, Cout, bi=0, ax=None, labels=None,
         xscale='log', yscale='log', substances=None,
         ttlfmt=(r"C(t) in bin: {0:.2g} m $\langle$" +
                 r" x $\langle$ {1:.2g} m"), legend_kwargs=None,
@@ -359,7 +362,7 @@ def plot_C_vs_t_in_bin(
     ----------
     rd: ReactionDiffusion
     tout: 1D array of floats
-    yout: output from solver
+    Cout: concentration trajectories from solver
     bi: bin index
     ax: Axes instance
     labels: sequence of strings
@@ -387,7 +390,7 @@ def plot_C_vs_t_in_bin(
     ax, substances, labels = _init_ax_substances_labels(
         rd, ax, substances, labels, xscale, yscale)
     for i, lbl in zip(substances, labels):
-        ax.plot(tout, yout[:, bi, i], label=lbl,
+        ax.plot(tout, Cout[:, bi, i], label=lbl,
                 ls=ls[i % len(ls)], c=c[i % len(c)])
     ax.set_xlabel("t / s")
     ax.set_ylabel("C / M")
@@ -398,7 +401,7 @@ def plot_C_vs_t_in_bin(
     return ax
 
 
-def plot_C_vs_x(rd, tout, yout, substances, ti, ax=None, labels=None,
+def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
                 xscale='log', yscale='log', basetitle="C(x)"):
     """
     Plots concentration as function of x for selected
@@ -408,7 +411,7 @@ def plot_C_vs_x(rd, tout, yout, substances, ti, ax=None, labels=None,
     ----------
     rd: ReactionDiffusion
     tout: 1D array of floats
-    yout: output from solver
+    Cout: concentration trajectories from solver
     substances: sequence of indies or names of substances
     ti: int
         time index
@@ -426,7 +429,7 @@ def plot_C_vs_x(rd, tout, yout, substances, ti, ax=None, labels=None,
         rd, ax, substances, labels, xscale, yscale)
     x_edges = np.repeat(rd.x, 2)[1:-1]
     for i, lbl in zip(substances, labels):
-        y_edges = np.repeat(yout[ti, :, i], 2)
+        y_edges = np.repeat(Cout[ti, :, i], 2)
         ax.plot(x_edges, y_edges, label=lbl)
     ax.set_xlabel("x / m")
     ax.set_ylabel("C / M")
@@ -435,7 +438,7 @@ def plot_C_vs_x(rd, tout, yout, substances, ti, ax=None, labels=None,
     return ax
 
 
-def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
+def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
                       **plot_kwargs):
     """
     Plots 3D surface of concentration as function of time and x for a
@@ -445,7 +448,7 @@ def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
     ----------
     rd: ReactionDiffusion
     tout: 1D array of floats
-    yout: output from solver
+    Cout: concentration trajectories from solver
     substance: int or string
         index or name of substance
     ax: Axes instance
@@ -470,12 +473,12 @@ def plot_C_vs_t_and_x(rd, tout, yout, substance, ax=None, log10=False,
     ax = ax or plt.subplot(1, 1, 1, projection='3d')
     assert isinstance(ax, Axes3D)
 
-    xty = [rd.xcenters, tout, yout]
-    x_, t_, y_ = list(map(np.log10, xty)) if log10 else xty
+    xtC = [rd.xcenters, tout, Cout]
+    x_, t_, C_ = list(map(np.log10, xtC)) if log10 else xtC
     X, T = np.meshgrid(x_, t_)
     if 'cmap' not in plot_kwargs:
         plot_kwargs['cmap'] = cm.copper
-    ax.plot_surface(X, T, y_[:, :, substance],
+    ax.plot_surface(X, T, C_[:, :, substance],
                     **plot_kwargs)
 
     fmtstr = "$log_{{10}}$({})" if log10 else "{}"

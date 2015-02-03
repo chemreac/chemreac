@@ -15,18 +15,31 @@ with open(os.path.join(pkg_name,'__init__.py')) as f:
 # Reading the version is a bit tricky: the same commit could actually
 # correspond to multiple versions. e.g. a commit could be tagged:
 # v0.1.0-rc1, v0.1.0-rc2, v0.1.0
+#
 # Hence, the build environment needs a way to override the version
-# string found by setup.py (unless setup.py is to depend on git)
-# the solution right now is for setup.py
-# to look for the environment variable CHEMREAC_RELEASE_VERSION
-# if not set it will exec the contents of: ./chemreac/release.py
+# string found by setup.py (unless setup.py is to depend on git).
+# The solution right now is for setup.py to look for the environment
+# variable $CHEMREAC_RELEASE_VERSION and match it against "v*"
+# If not set: it will exec the contents of: ./chemreac/release.py
+#
+# To complicate things further conda-build drops most environment
+# variables, so for conda based builds we look for '__conda_version__.txt'
+
 CHEMREAC_RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
+CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
+if CONDA_BUILD:
+    try:
+        CHEMREAC_RELEASE_VERSION = 'v' + open('__conda_version__.txt', 'rt').readline().rstrip()
+    except IOError:
+        pass
 
 release_py_path = os.path.join(pkg_name, 'release.py')
 
-if len(CHEMREAC_RELEASE_VERSION) > 1:
-    __version__ = CHEMREAC_RELEASE_VERSION
+if len(CHEMREAC_RELEASE_VERSION) > 1 and CHEMREAC_RELEASE_VERSION[0] == 'v':
+    TAGGED_RELEASE = True
+    __version__ = CHEMREAC_RELEASE_VERSION[1:]
 else:
+    TAGGED_RELEASE = False
     # read __version__ attribute:
     exec(open(release_py_path).read())
 
@@ -40,13 +53,9 @@ WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') =
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
 WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'
 
-CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
 ON_RTD = os.environ.get('READTHEDOCS', None) == 'True'
 ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
 ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
-
-if CONDA_BUILD:
-    open('__conda_version__.txt', 'w').write(__version__)
 
 flags = []
 options = ['pic', 'warn']
@@ -196,12 +205,12 @@ setup_kwargs = dict(
 
 if __name__ == '__main__':
     try:
-        if len(CHEMREAC_RELEASE_VERSION) > 1:
+        if TAGGED_RELEASE:
             # Same commit should generate different sdist
             # depending on tagged version (set CHEMREAC_RELEASE_VERSION)
             shutil.move(release_py_path, release_py_path+'__temp__')
             open(release_py_path, 'wt').write("__version__ = '{}'\n".format(__version__))
         setup(**setup_kwargs)
     finally:
-        if len(CHEMREAC_RELEASE_VERSION) > 1:
+        if TAGGED_RELEASE:
             shutil.move(release_py_path+'__temp__', release_py_path)

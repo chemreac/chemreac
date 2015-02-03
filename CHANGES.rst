@@ -9,4 +9,7 @@ v0.3
 - Removed unused code found by pyflakes
 - Updated logo and webpage
 - Updated setup.py for better automated releases.
-
+- Drop support for k_err and D_err attributes
+- Add support for longtable in chemreac.util.table.rsys2pdf_table(...)
+- Clarify if input data to plotting routines should be transformed or not.
+- Enable support for file objects in load/dump in serialization

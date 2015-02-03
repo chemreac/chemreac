@@ -29,7 +29,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         use latex formated output (default: True)
     rxnarrow: string
         default: '\$\\rightarrow\$'
-    ref_fmt: string
+    ref_fmt: string or callable
         format string of ``ref`` attribute of reactions
 
     """
@@ -47,7 +47,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
             ' + '.join([('' if num == 1 else str(num)) + _get_name(sn) for
                        sn, num in rxn.products.items()]),
             param_fmt.format(rxn.k),
-            ref_fmt.format(rxn.ref)
+            ref_fmt(rxn.ref) if callable(ref_fmt) else ref_fmt.format(rxn.ref)
         ]))
     return lines
 
@@ -67,28 +67,16 @@ def rsys2table(rsys, substances, table_template=None,
     substances: sequence of strings
     table_template: string
     table_tempalte_dict: dict used to render table_template (excl. "body")
+    longtable: bool
+        use longtable in defaults.
     **kwargs:
         passed onto rsys2tablines
     """
 
     line_term = r' \\'
-    if table_template is None:
-        table_template = r"""
-\begin{%(table_env)s}
-\centering
-\label{tab:%(label)s}
-\caption[%(short_cap)s]{%(long_cap)s}
-\begin{tabular}{%(alignment)s}
-\toprule
-%(header)s
-\midrule
-%(body)s
-\bottomrule
-\end{tabular}
-\end{%(table_env)s}"""
-
     defaults = {
-        'table_env': 'table',  # e.g. longtable
+        'table_env': 'longtable' if kwargs.pop(
+            'longtable', False) else 'table',
         'alignment': 'llllll',  # e.g. llllSl for siunitx
         'header': kwargs.get('coldelim', ' & ').join([
             'Id.', 'Reactants', '', 'Products', 'Rate constant', 'Ref'
@@ -109,11 +97,39 @@ def rsys2table(rsys, substances, table_template=None,
         raise KeyError("There is already a 'body' key in table_template_dict")
     table_template_dict['body'] = (line_term + '\n').join(rsys2tablines(
         rsys, substances, **kwargs)) + line_term
+
+    if table_template is None:
+        if table_template_dict['table_env'] == 'longtable':
+            table_template = r"""
+\begin{%(table_env)s}{%(alignment)s}
+\caption[%(short_cap)s]{%(long_cap)s
+\label{tab:%(label)s}}\\
+\toprule
+%(header)s
+\midrule
+%(body)s
+\bottomrule
+\end{%(table_env)s}"""
+        else:
+            table_template = r"""
+\begin{%(table_env)s}
+\centering
+\label{tab:%(label)s}
+\caption[%(short_cap)s]{%(long_cap)s}
+\begin{tabular}{%(alignment)s}
+\toprule
+%(header)s
+\midrule
+%(body)s
+\bottomrule
+\end{tabular}
+\end{%(table_env)s}"""
+
     return table_template % table_template_dict
 
 
 def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
-                   tex_template_dict=None, **kwargs):
+                   tex_template_dict=None, delete=True, **kwargs):
     """
     Convenience function to render a ReactionSystem as
     e.g. a pdf using e.g. pdflatex.
@@ -129,6 +145,8 @@ def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
         document environment etc.
     tex_template_dict: dict (string -> string)
         dict used to render temlpate (excl. 'table')
+    longtable: bool
+        use longtable in defaults.
     **kwargs:
         passed on to `rsys2table`
     """
@@ -136,17 +154,19 @@ def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
         tex_template = r"""
 \documentclass{article}
 \pagestyle{empty}
-\usepackage{booktabs}
-\usepackage{lscape}
+%(usepkg)s
 \begin{document}
 %(begins)s
 %(table)s
 %(ends)s
 \end{document}
 """
-
+    _pkgs = ['booktabs', 'lscape']
+    if kwargs.get('longtable', False):
+        _pkgs += ['longtable']
     _envs = ['landscape', 'tiny']
     defaults = {
+        'usepkg': '\n'.join([r'\usepackage{%s}' % pkg for pkg in _pkgs]),
         'begins': '\n'.join([r'\begin{%s}' % env for env in _envs]),
         'ends': '\n'.join([r'\end{%s}' % env for env in _envs[::-1]])
     }
@@ -159,13 +179,13 @@ def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
                 tex_template_dict[k] = v
 
     if 'table' in tex_template_dict:
-        raise KeyError("There is already a 'tex' key in tex_template_dict")
+        raise KeyError("There is already a 'table' key in tex_template_dict")
     tex_template_dict['table'] = rsys2table(rsys, substances, **kwargs)
 
     contents = tex_template % tex_template_dict
 
     with tempfile.NamedTemporaryFile(
-            'wt', suffix='.tex', dir=output_dir) as tmpfh:
+            'wt', suffix='.tex', dir=output_dir, delete=delete) as tmpfh:
         cmds = ['pdflatex', tmpfh.name]
         tmpfh.write(contents)
         tmpfh.flush()

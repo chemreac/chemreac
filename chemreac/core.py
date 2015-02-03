@@ -84,10 +84,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     some of which are used by chemreac.integrate.integrate_scipy
 
-    In addition error estimates (if provided by user) are stored as:
-    - k_err
-    - D_err
-
     Additional convenience attributes (not used by underlying C++ class):
     - substance_names
     - substance_tex_names
@@ -146,7 +142,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         (finite difference scheme works best for step-size ~1)
     """
     # not used by C++ class
-    extra_attrs = ['k_err', 'D_err', 'substance_names', 'substance_tex_names']
+    extra_attrs = ['substance_names', 'substance_tex_names']
 
     # subset of extra_attrs optionally passed by user
     kwarg_attrs = ['substance_names', 'substance_tex_names']
@@ -197,18 +193,11 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             D = D or list([0]*n)
 
         k_val = []
-        k_err = []
         D_val = []
-        D_err = []
-        for inp, val_lst, err_lst in [(k, k_val, k_err), (D, D_val, D_err)]:
+        for inp, val_lst in [(k, k_val), (D, D_val)]:
             for entry in inp:
-                try:
-                    val, err = entry
-                except TypeError:
-                    assert isinstance(entry, float) or isinstance(entry, int)
-                    val, err = entry, 0
-                val_lst.append(val)
-                err_lst.append(err)
+                assert isinstance(entry, float) or isinstance(entry, int)
+                val_lst.append(entry)
 
         if x is None:
             x = 1.0
@@ -253,8 +242,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             bin_k_factor_span, geom, logy, logt, logx,
             nstencil, lrefl, rrefl, auto_efield, surf_chg, eps, xscale
         )
-        rd.k_err = k_err
-        rd.D_err = D_err
 
         for attr in cls.kwarg_attrs:
             if attr in kwargs:
