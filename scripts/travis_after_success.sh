@@ -26,7 +26,9 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
             cp -R ${WORKDIR}/htmlcov .
             git add -f . > /dev/null
             git commit -m "Lastest pages from successful travis build $TRAVIS_BUILD_NUMBER"
-            git push -f origin master
+            set +x # Silent (protect GH_TOKEN)
+            git push -f origin master >/dev/null 2>&1
+            set -x
             echo -e "...published to ${GITHUB_USER}.github.io\n"
         fi
     fi
