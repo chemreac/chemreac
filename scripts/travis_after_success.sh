@@ -33,12 +33,12 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
         fi
     fi
     if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then
-        export DISTUTILS_DEBUG=  # less verbose setup.py --version
-        export VERSION=$(python setup.py --version 2>/dev/null)
         conda install binstar
+        cat __conda_version__.txt
+        ls /home/travis/miniconda/conda-bld/linux-64/ # DEBUGGING failed upload
         export MY_CONDA_PKG=$(conda build --output conda-recipe | tail -n 1)
         set +x # Silent (protect token in Travis log)
-        binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-$CHEMREAC_RELEASE_VERSION-}
+        binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-${CHEMREAC_RELEASE_VERSION#v}-}
         set -x
     fi
 fi
