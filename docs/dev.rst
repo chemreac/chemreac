@@ -4,7 +4,7 @@ Development
 As an open-source project other researchers/students are encouraged to improve upon
 the code/documentation. The code is released under the permissive `BSD 2-Clause
 License <http://opensource.org/licenses/BSD-2-Clause>`_. The source
-code repository is found at https://github.com/bjodah/chemreac which is also
+code repository is found at https://github.com/chemreac/chemreac which is also
 where issues and patches ("pull requests") are posted.
 
 
@@ -37,8 +37,8 @@ Continuous integration
 Test coverage
 ~~~~~~~~~~~~~
 
-.. image:: https://coveralls.io/repos/bjodah/chemreac/badge.png?branch=master
-   :target: https://coveralls.io/r/bjodah/chemreac?branch=master
+.. image:: https://coveralls.io/repos/chemreac/chemreac/badge.png?branch=master
+   :target: https://coveralls.io/r/chemreac/chemreac?branch=master
    :alt: Test coverage
 
 unit testing is a great tool provided they actually cover the majority
@@ -64,13 +64,13 @@ to the code:
 
 1. `Fork <https://help.github.com/articles/fork-a-repo/>`_ the repository on github
 2. Install the dependencies specified in the README.rst
-3. Clone you own repo:
+3. Clone your own repo to get a local copy:
 
 ::
 
     $ git clone https://bitbucket.org/YOUR_GITHUB_USERNAME/chemreac.git
 
-4. Set-up the pre-commit hook.
+4. Set-up the pre-commit hook (prevents commiting untested code).
 ::
 
     $ cd .git/hooks
@@ -82,7 +82,12 @@ to the code:
 
     $ git checkout -b fix_silly_bug
 
-6. Edit files, add test(s), make sure all tests pass.
+
+6. Edit files, add test(s), make sure all tests pass by running:
+::
+
+    $ ./scripts/run_tests.sh
+
 
 7. make a commit, and push your changes:
 ::
@@ -90,5 +95,5 @@ to the code:
     $ git commit -am "Fixed a silly bug in the complex-thingy."
     $ git push
 
-7. Go to your forked repo on github and create a `pull-request <https://help.github.com/articles/using-pull-requests/>`_ from there.
 
+8. Go to your forked repo on github and create a `pull-request <https://help.github.com/articles/using-pull-requests/>`_ from there.

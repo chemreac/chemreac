@@ -9,8 +9,8 @@ env:
     - GITHUB_REPO=chemreac
     - CONDA_VERSION="3.7.3"
     - ENV_NAME=testenv
-    - secure: "bMCx+Ic2vzr9n+GB7V3p0SOTH/aTTJL4bSt4Bv7maT3DmgEoZSCR96DqruKKqLAkmBZ9lnDZP/V19XU9vtCCkaW6VsRpY1r2De7He4qdpeiEQdhRKsMV+SZ1Ys/UHm53WaXJKAbdya+IDQujkaPvyOdQNqLL9WDNpaKVHlQpEsg="
-    - secure: "fFSCXFzVUPTLA0Dpx7eyqg3f+f4daeYKKMbpAmL4s944sFnJ62HFq43+2tQ1ZjV20dBEaWTlwXsfgPrcHWrbLNeWslcYYKoyRKk566v6kfMR2cuGIfQlGjKuzKbZQGBPGuSLFRgSGdw7ooKxXbRq55Yjpe+8rxtnD33WkjscB38="
+    - secure: "BT/3IhbCg5ctQ4Y8cvbb9FdgoGHcbmXFhRasBY2jwm5y6FtWlLeh0CB5dSN9b/Dei2C6g/v7InY1zc6/fjdDFEAMglPJb7Py5xRq20/UE86e1YtZKym/E4ULKl7UDlwlmOjpzm7uYdPHGjSqRb4W699snKwFP1es5TpGaauhBCU="
+    - secure: "bz1+ymp/bgF2FRiE7DzOGTuWWZ5TuXR+/LLBFiEfxE3aiXeyM6H3pLgVCBeiejW9lXdDJaSd7peMIX3qUAumHWwhXG/yPhI0eSp2PXhGCjh3Ed+RQskAFmhahg7UGfKe0O7MvAdnsNlF4xOc+lp3n4z6NZoIpLsfznDkjl0KVWg="
 before_install:
   - export CONDA_PATH=$HOME/miniconda
   - source ./scripts/install_miniconda.sh $PYTHON_VERSION $CONDA_PATH $CONDA_VERSION

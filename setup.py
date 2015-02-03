@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import shutil
 import sys
 
 from distutils.core import setup, Command
@@ -12,25 +13,22 @@ with open(os.path.join(pkg_name,'__init__.py')) as f:
     long_description = f.read().split('"""')[1]
 
 # Reading the version is a bit tricky: the same commit could actually
-# correspond to multiple versions. e.g. a commit could be tagged
-# v0.1.0-rc1, v0.1.0-rc1, v0.1.0 Hence, the build environment needs a
-# way to override the version string found by setup.py (unless
-# setup.py is to depend on git) the solution right now is for setup.py
+# correspond to multiple versions. e.g. a commit could be tagged:
+# v0.1.0-rc1, v0.1.0-rc2, v0.1.0
+# Hence, the build environment needs a way to override the version
+# string found by setup.py (unless setup.py is to depend on git)
+# the solution right now is for setup.py
 # to look for the environment variable CHEMREAC_RELEASE_VERSION
+# if not set it will exec the contents of: ./chemreac/release.py
 CHEMREAC_RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
+
+release_py_path = os.path.join(pkg_name, 'release.py')
 
 if len(CHEMREAC_RELEASE_VERSION) > 1:
     __version__ = CHEMREAC_RELEASE_VERSION
 else:
     # read __version__ attribute:
-    exec(open(pkg_name+'/release.py').read())
-
-try:
-    major, minor, micro = map(int, __version__.split('.'))
-except ValueError:
-    STABLE_RELEASE = False
-else:
-    STABLE_RELEASE = True
+    exec(open(release_py_path).read())
 
 with open(pkg_name+'/__init__.py') as f:
     long_description = f.read().split('"""')[1]
@@ -59,7 +57,7 @@ else:
     if not (ON_DRONE or ON_TRAVIS):
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda
-            flags += ['-O2', '-funroll-loops'] if STABLE_RELEASE else ['-O1']
+            flags += ['-O2', '-funroll-loops']
         else:
             options += ['fast']  # -ffast-math -funroll-loops
 
@@ -95,6 +93,7 @@ else:
         from pycompilation.dist import PCExtension as PCEExtension
         from pycompilation.dist import pc_build_ext as pce_build_ext
         from pycompilation.dist import pc_sdist as pce_sdist
+
     cmdclass_['build_ext'] = pce_build_ext
     cmdclass_['sdist'] = pce_sdist
     subsd = {'USE_OPENMP': USE_OPENMP}
@@ -196,4 +195,13 @@ setup_kwargs = dict(
 )
 
 if __name__ == '__main__':
-    setup(**setup_kwargs)
+    try:
+        if len(CHEMREAC_RELEASE_VERSION) > 1:
+            # Same commit should generate different sdist
+            # depending on tagged version (set CHEMREAC_RELEASE_VERSION)
+            shutil.move(release_py_path, release_py_path+'__temp__')
+            open(release_py_path, 'wt').write("__version__ = '{}'\n".format(__version__))
+        setup(**setup_kwargs)
+    finally:
+        if len(CHEMREAC_RELEASE_VERSION) > 1:
+            shutil.move(release_py_path+'__temp__', release_py_path)
