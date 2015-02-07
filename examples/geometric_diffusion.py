@@ -26,7 +26,9 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
          rinterpol=False, num_jacobian=False, plot=False,
          savefig='None', verbose=False):
     x = np.linspace(0.1, 1.0, N+1)
-    f = lambda x: 2*x**2/(x**4+1)  # f(0)=0, f(1)=1, f'(0)=0, f'(1)=0
+
+    def f(x):
+        return 2*x**2/(x**4+1)  # f(0)=0, f(1)=1, f'(0)=0, f'(1)=0
     y0 = f(x[1:])+x[0]  # (x[0]/2+x[1:])**2
 
     t0 = 1e-10

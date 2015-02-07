@@ -23,7 +23,8 @@ Demo of chemical reaction diffusion system.
 
 def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
          logy=False, logt=False, savefig='None', verbose=False):
-    mod1 = lambda x: x/(x**2+1)
+    def mod1(x):
+        return x/(x**2+1)
 
     # decay A->B is modulated with x
     sys = load(

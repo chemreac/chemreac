@@ -35,8 +35,9 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
     """
 
     param_fmt = '{0:.3g}'  # Could be taken from Reaction instance
-    _get_name = lambda sn: getattr(substances[sn],
-                                   'tex_name' if tex else 'name')
+
+    def _get_name(sn):
+        return getattr(substances[sn], 'tex_name' if tex else 'name')
     lines = []
     for ri, rxn in enumerate(rsys.rxns):
         lines.append(coldelim.join([

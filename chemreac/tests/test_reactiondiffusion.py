@@ -802,12 +802,16 @@ def test_integrated_conc(params):
                            x=np.log(x) if logx else x, geom=geom, logx=logx)
     xc = np.exp(rd.xcenters) if logx else rd.xcenters
     y = xc*np.exp(-xc)
-    if geom == FLAT:
-        primitive = lambda t: -(t+1)*np.exp(-t)
-    elif geom == CYLINDRICAL:
-        primitive = lambda t: 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
-    elif geom == SPHERICAL:
-        primitive = lambda t: 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
+
+    def primitive(t):
+        if geom == FLAT:
+            return -(t+1)*np.exp(-t)
+        elif geom == CYLINDRICAL:
+            return 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
+        elif geom == SPHERICAL:
+            return 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
+        else:
+            raise NotImplementedError
     res = rd.integrated_conc(y)
     ref = (primitive(xend) - primitive(x0))
     assert abs(res - ref) < 1e-8
