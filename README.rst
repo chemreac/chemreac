@@ -91,10 +91,12 @@ Once non-python prerequisites are in installed, you may procede e.g. as:
     $ cd chemreac
     $ pip install --user --upgrade -r requirements.txt
     $ python setup.py install --user
-    $ py.test
+    $ ./scripts/run_tests.sh
 
 
-the above procedure works on Ubuntu 14.04 for example. See the `Python docs <https://docs.python.org/2/install/index.html#install-index>`_ for more information on how to install e.g. system wide.
+the above procedure works on Ubuntu 14.04 for example. See the `Python
+docs <https://docs.python.org/2/install/index.html#install-index>`_
+for more information on how to install e.g. system wide.
 
 To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.:
 
@@ -111,7 +113,11 @@ Run ``py.test``, possibly with explicit ``PYTHONPATH`` (e.g. if ``build_ext --in
 
     $ PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow
 
-All tests should pass (or xfail). If they do not, please `file an issue <https://github.com/chemreac/chemreac/issues>`_. Before submitting a Pull Request you also want to pass ``--pep8`` to ``py.test`` (you need ``pytest-pep8`` for it to work).
+All tests should pass (or xfail). If they do not, please `file an
+issue <https://github.com/chemreac/chemreac/issues>`_. Before
+submitting a Pull Request you also want to pass ``--pep8`` to
+``py.test`` (it is done automatically by the ``run_tests.sh`` script
+but you need ``pytest-pep8`` for it to work).
 
 .. install-end
 
@@ -136,17 +142,14 @@ above you can find the build status shield for travis-ci (Py 2.7, Py
 3.4, no OpenMP, runs coveralls, builds docs and pushes them to the
 chemreac.github.io repo).
 
-
-.. image:: https://drone.io/github.com/chemreac/chemreac/status.png
-   :target: https://drone.io/github.com/chemreac/chemreac/latest
-
-above you can find build status shield for drone.io (Py 2.7, uses OpenMP and the Sundials backend, build docs as artifact, html coverage report as artifact):
-
 .. image:: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac/status.svg?branch=master
    :target: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac
    :alt: Build status on hera
 
-above you can find build status shield for drone on hera.physchem.kth.se (uses Docker image from script/docker_drone/Dockerfile)
+above you can find build status shield for drone on
+hera.physchem.kth.se (Py 2.7, uses OpenMP and the Sundials backend,
+build docs as artifact, html coverage report as artifact, uses Docker
+image from script/docker_drone/Dockerfile)
 
 .. ci-end
 
