@@ -32,12 +32,12 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
             echo -e "...published to ${GITHUB_USER}.github.io\n"
         fi
     fi
-    if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then
+    if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to binstar
         conda install binstar
-        cat __conda_version__.txt
+        cat __conda_version__.txt # DEBUGGING failed upload
         ls /home/travis/miniconda/conda-bld/linux-64/ # DEBUGGING failed upload
         export MY_CONDA_PKG=$(conda build --output conda-recipe | tail -n 1)
-        set +x # Silent (protect token in Travis log)
+        set +x  # Silent (protect token in Travis log)
         binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-${CHEMREAC_RELEASE_VERSION#v}-}
         set -x
     fi
