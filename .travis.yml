@@ -12,10 +12,7 @@ env:
     - secure: "Ky5ex4xD5PO+hb4lImymD1AWxxdnQibSjFvTLo5esG0DReAe77ZSP5Yu1MKSIAn073zxMDPYluz6batAApScGgRU1kTvN9RZfZy+zF+3aYYLPB9HDUAvg1tyMZ2SwvHF5wpbq1I5WSBG+zlyU6/6F+RLbrmZv2u2xm04oS5Xfb0="
     - secure: "O0AMPn73yvYGwUnRvCfpNUgwGu4Dfq/UxeKlnJcjg28eDsruGUXQXrzITruJASzkEo3Ogo4h29FKeYBAcBnGaF37ghLkhfuusUPtcoCV/5TLIJLqUecD918i7KiA1rEL5CLzaU1h2ktli4wk4vj9NCI7Jhw/tnWvy0fYxJOKb84="
 before_install:
-  - if [[ "$TRAVIS_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then \
-  export CHEMREAC_RELEASE_VERSION=$TRAVIS_BRANCH; \
-  echo ${CHEMREAC_RELEASE_VERSION | tail -c +2 > __conda_version__.txt; \
-fi
+  - if [[ "$TRAVIS_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then export CHEMREAC_RELEASE_VERSION=$TRAVIS_BRANCH; echo ${CHEMREAC_RELEASE_VERSION | tail -c +2 > __conda_version__.txt; fi
   - export CONDA_PATH=$HOME/miniconda
   - source ./scripts/install_miniconda.sh $PYTHON_VERSION $CONDA_PATH $CONDA_VERSION
   - conda config --add channels http://conda.binstar.org/bjodah  # migrate this later
