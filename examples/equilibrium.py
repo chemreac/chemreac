@@ -119,7 +119,8 @@ def _get_Cref(t, y0, k, use_mpmath=True):
         k = [mp.mpf(_) for _ in k]
         _exp = np.vectorize(mp.exp)
     else:
-        _exp = lambda x: np.exp(_algebraic_sigmoid(x, 8, 350))
+        def _exp(x):
+            return np.exp(_algebraic_sigmoid(x, 8, 350))
     A, B, C = y0
     kf, kb = k
     x = analytic_x(t, A, B, C, kf, kb, _exp).reshape((t.size, 1))

@@ -160,8 +160,9 @@ steady_state_approx.html
 
         save_and_or_show_plot(savefig=savefig)
 
-    ydot = lambda x, y: (-k1*y[0] - k3*y[0]*y[1], k1*y[0] - k2*y[1],
-                         k2*y[1] + k3*y[0]*y[1])
+    def ydot(x, y):
+        return (-k1*y[0] - k3*y[0]*y[1], k1*y[0] - k2*y[1],
+                k2*y[1] + k3*y[0]*y[1])
     return t, integr.Cout, A_ssB, A_ssB_2fast, ydot
 
 

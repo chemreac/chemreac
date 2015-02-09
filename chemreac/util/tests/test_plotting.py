@@ -2,7 +2,6 @@
 
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')  # travis-ci has no DISPLAY env var.
 import matplotlib.axes
 
 from chemreac import ReactionDiffusion
@@ -13,6 +12,8 @@ from chemreac.util.plotting import (
     plot_solver_linear_error, plot_solver_linear_excess_error,
 )
 from chemreac.util.testing import slow
+
+matplotlib.use('Agg')  # travis-ci has no DISPLAY env var.
 
 
 def _get_decay_rd(N):
