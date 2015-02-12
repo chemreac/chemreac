@@ -1,5 +1,6 @@
-util
-====
+chemreac.util
+=============
+Utilities used throughout the code base.
 
 .. toctree::
    :maxdepth: 2

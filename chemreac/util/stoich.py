@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-stoich
-------
+chemreac.util.stoich
+--------------------
 
-functions to decompose yield to linear
-combination of reactions.
+Collects stoichiometry related functions.
 
 """
 
@@ -14,6 +13,9 @@ import numpy as np
 
 def get_coeff_mtx(substances, stoichs):
     """
+    Create a net stoichiometry matrix from reactions
+    described by pairs of dictionaries.
+
     Parameters
     ==========
     substances: sequence of keys in stoichs dict pairs

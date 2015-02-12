@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 """
-testing
--------
-Utility module for unit testing.
+chemreac.util.testing
+---------------------
+Utility module for unit testing of chemreac library.
 """
 
 from __future__ import (absolute_import, division,
@@ -18,8 +18,7 @@ slow = pytest.mark.slow  # call time >~ 100 ms
 veryslow = pytest.mark.veryslow  # call time > a few seconds
 
 
-# _test... to avoid auto-detection by py.test
-def _test_rd_integration_run(cb, forgiveness=10, **kwargs):
+def check_rd_integration_run(cb, forgiveness=10, **kwargs):
     """
     Tests whether numerical solution is within error-bounds
     of reference solution. User provided callback "cb" needs

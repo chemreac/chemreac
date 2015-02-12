@@ -3,8 +3,8 @@ Examples
 
 In the source distribution of chemreac there is a directory named
 ``examples/`` which contain a dozen example python scripts of how
-the functions in chemreac can be used to model problems related to
-advection/diffusion/reaction
+the functions in chemreac can be used to model problems involving
+advection/diffusion/reaction.
 
 Here you will find a short explanation to each example along with
 some of their output.

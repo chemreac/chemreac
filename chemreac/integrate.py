@@ -1,11 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-integrate
-=========
+chemreac.integrate
+==================
 
 This module provides functions for integrating the
 system of ODEs which the ReactionDiffusion represent.
-Currently the user may choose from using a
+The main class representing a numerical integration of the system
+of ODEs is :py:class:`Integration`.
+
+If one does not want to hard code the choice of solver and solver parameters
+(e.g. tolerances), one may use :py:func:`run` which defers those choices to
+the user of the script through the use of environment variables.
 """
 
 from __future__ import (absolute_import, division,

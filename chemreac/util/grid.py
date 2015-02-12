@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 
 """
-grid
-----
-Grid related utilities.
+chemreac.util.grid
+------------------
+Grid related utilities for one dimensional grid of arbitrary spacing.
 """
 
 from __future__ import print_function, division

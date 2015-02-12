@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-chemistry
-=========
+chemreac.chemistry
+==================
 
-Classes to describe substances, reactions and reaction systems. The
-classes have methods to help with low-level conversion to parameters
-of the model.
+This module collects classes useful for describing substances,
+reactions and reaction systems. The classes have methods to help
+with consistent low-level conversion to numerical parameters of
+the model.
 
 """
 from __future__ import print_function, division, absolute_import
@@ -51,6 +52,11 @@ class Substance(object):
         for one medium.  default: 0.0
     **kwargs:
         additional freely chosen attributes
+
+    Attributes
+    ==========
+    all_substances
+        dictionary (name, insatnce) of all Substance instances.
 
     Examples
     ========
@@ -140,11 +146,11 @@ class Reaction(object):
     """
     Reaction with kinetics governed by the law of mass-action.
 
-    Must honor:
+    Must honour:
 
         A + R --> A + P
 
-    That is: law of massaction depend on [A]
+    That is: law of mass action depend on [A]
 
     Also supports
 
@@ -192,9 +198,9 @@ class Reaction(object):
         activation energy
     A: float
         preexponential prefactor (Arrhenius type eq.)
-    ref: string
+    ref: string (optional)
         Reference key
-    name: string
+    name: string (optional)
         Descriptive name of reaction
     """
 
@@ -269,12 +275,25 @@ class ReactionSystem(object):
     Parameters
     ----------
     rxns: sequence
-         Reaction instances in ReactionSystem
-    name: string
+         sequence of :py:class:`Reaction` instances
+    name: string (optional)
          Name of ReactionSystem (e.g. model name / citation key)
-    substances: sequence
+    substances: sequence (optional)
          Sequence of Substance instances, will be used in doing
          a sanity check and as default in method :meth:`to_ReactionDiffusion`
+
+    Attributes
+    ----------
+    rxns
+        sequence of :class:`Reaction` instances
+    species_names
+        names of occurring species
+    k
+        rates for rxns
+    ns
+        number of species
+    nr
+        number of reactions
 
     """
 
@@ -387,7 +406,9 @@ class ReactionSystem(object):
 
 class Henry(object):
     """
-    Henry's gas constant
+    Henry's gas constant. Note that the reference temperature
+    is set by the attribute :py:attr:`T0` which defaults to
+    298.15 * pq.kelvin.
 
     Parameters
     ----------
