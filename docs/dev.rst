@@ -11,9 +11,10 @@ where issues and patches ("pull requests") are posted.
 Coding standards
 ----------------
 The Python code should comply with `PEP8
-<http://legacy.python.org/dev/peps/pep-0008/>`_. It is also checked by
-the CI.
-For the C++ code, `PyNE's C/C++ style guide <http://pyne.io/devsguide/style_guide.html#c-c-style-guide>`_ is recommended.
+<http://legacy.python.org/dev/peps/pep-0008/>`_. PEP8 complience is
+also checked by the CI servers. For the C++ code, `PyNE's C/C++ style
+guide <http://pyne.io/devsguide/style_guide.html#c-c-style-guide>`_ is
+recommended.
 
 Documentation standard
 ----------------------
@@ -41,15 +42,15 @@ Test coverage
    :target: https://coveralls.io/r/chemreac/chemreac?branch=master
    :alt: Test coverage
 
-unit testing is a great tool provided they actually cover the majority
-of the code base. In order to keep track of the coverage coveralls is
+Unit testing is a great tool, provided the tests actually cover the majority
+of the code base. In order to keep track of the coverage "coveralls" is
 used (click the badge above to see detailed per-line breakdown).
 
 Environment
 -----------
 The documentation assumes a \*NIX like environment, or at
 least familiarity with this environment for tweaking build scripts
-etc. Feedback from users and developers on other platforms are most
+etc. Feedback from users and developers on other platforms is most
 welcome.
 
 If you are new to github and the like, a good start is SymPy's wiki
@@ -68,7 +69,7 @@ to the code:
 
 ::
 
-    $ git clone https://bitbucket.org/YOUR_GITHUB_USERNAME/chemreac.git
+    $ git clone https://github.com/YOUR_GITHUB_USERNAME/chemreac.git
 
 4. Set-up the pre-commit hook (prevents commiting untested code).
 ::

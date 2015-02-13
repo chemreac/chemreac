@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-banded
-------
+chemreac.util.banded
+--------------------
 
-Functions to deal with banded matrices.
+this module contains functions to deal with banded matrices.
 """
 
 import numpy as np

@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-table
------
+chemreac.util.table
+-------------------
 
-Convenience functions for representing reaction systems in tables.
+Convenience functions for presenting reaction systems in tables.
 
 """
 

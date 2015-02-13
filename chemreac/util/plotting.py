@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 
 """
-plotting
---------
+chemreac.util.plotting
+----------------------
 
-convenience functions to create matplotlib plots
+This module collects convenience functions to create matplotlib plots
 of results.
 """
 
@@ -86,10 +86,9 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
     -------
     Pair (tuple) of axes plotted to (spy, colorbar)
 
-    Note
-    ----
-    colorbar does not play nicely with SymLogNorm why a custom
-    colorbar axes is drawn.
+    .. note:: colorbar does not play nicely with \
+        SymLogNorm why a custom colorbar axes is drawn.
+
     """
     from matplotlib.ticker import MaxNLocator
     from matplotlib.cm import get_cmap

@@ -5,7 +5,7 @@ from future.builtins import *
 
 
 import equilibrium
-from chemreac.util.testing import _test_rd_integration_run
+from chemreac.util.testing import check_rd_integration_run
 
 
 def test_analytic_x():
@@ -14,19 +14,19 @@ def test_analytic_x():
 
 
 def test_linear():
-    _test_rd_integration_run(equilibrium.integrate_rd)
+    check_rd_integration_run(equilibrium.integrate_rd)
 
 
 def test_logt():
-    _test_rd_integration_run(equilibrium.integrate_rd, 10, logt=True)
+    check_rd_integration_run(equilibrium.integrate_rd, 10, logt=True)
 
 
 def test_logy_logt():
-    _test_rd_integration_run(equilibrium.integrate_rd, 40, rtol='1e-10',
+    check_rd_integration_run(equilibrium.integrate_rd, 40, rtol='1e-10',
                              logy=True, logt=True)
-    _test_rd_integration_run(equilibrium.integrate_rd, 20, tend=2.0,
+    check_rd_integration_run(equilibrium.integrate_rd, 20, tend=2.0,
                              atol='1e-6', rtol='1e-13', logy=True, logt=True)
 
 
 def test_logy():
-    _test_rd_integration_run(equilibrium.integrate_rd, 30, logy=True)
+    check_rd_integration_run(equilibrium.integrate_rd, 30, logy=True)

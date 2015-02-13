@@ -23,6 +23,7 @@ requirements:
     - matplotlib
     - future
     - sympy
+    - quantities
 
 test:
   requires:

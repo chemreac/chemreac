@@ -34,6 +34,15 @@ Easiest way to install chemreac (on linux) is by using
 
     $ conda install -c https://conda.binstar.org/chemreac chemreac
 
+and you're done! To check if it's installed you may run:
+
+::
+
+    $ python -c "import chemreac"
+
+which should exit silently. If you are not using the conda package
+manager you can still install chemreac from source. You will find the
+instructions for doing so below.
 
 Building from source
 --------------------
@@ -107,23 +116,36 @@ To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.
 
 Tests
 -----
-Run ``py.test``, possibly with explicit ``PYTHONPATH`` (e.g. if ``build_ext --inplace`` was used)
+If you have ``py.test`` installed you may run the test suite on the
+installed package:
+
+::
+
+    $ py.test --pyargs chemreac
+
+All tests should pass (or xfail). If they do not, please `file an
+issue <https://github.com/chemreac/chemreac/issues>`_.
+
+Note that you may need to modify ``$PYTHONPATH``. For example: if you
+have only built the package inplace with ``build_ext --inplace``, and
+you are standing in the root directory of the repository you may
+proceed as:
 
 ::
 
     $ PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow
 
-All tests should pass (or xfail). If they do not, please `file an
-issue <https://github.com/chemreac/chemreac/issues>`_. Before
-submitting a Pull Request you also want to pass ``--pep8`` to
-``py.test`` (it is done automatically by the ``run_tests.sh`` script
-but you need ``pytest-pep8`` for it to work).
+Before submitting a Pull Request you also want to pass ``--pep8`` to
+``py.test`` (it is done automatically by the
+``./scripts/run_tests.sh`` script but you need ``pytest-pep8`` for it
+to work).
 
 .. install-end
 
 Status
 ======
-
+Both the correctness (continuous integration) and the performance
+(benchmarks) of the code base is monitored continuously.
 
 Continuous integration
 ----------------------
@@ -138,7 +160,7 @@ base, it is continuously built on two CI services:
 .. image:: https://travis-ci.org/chemreac/chemreac.png?branch=master
    :target: https://travis-ci.org/chemreac/chemreac
 
-above you can find the build status shield for travis-ci (Py 2.7, Py
+Above you can find the build status shield for travis-ci (Py 2.7, Py
 3.4, no OpenMP, runs coveralls, builds docs and pushes them to the
 chemreac.github.io repo).
 
@@ -146,7 +168,7 @@ chemreac.github.io repo).
    :target: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac
    :alt: Build status on hera
 
-above you can find build status shield for drone on
+Above you can find build status shield for drone on
 hera.physchem.kth.se (Py 2.7, uses OpenMP and the Sundials backend,
 build docs as artifact, html coverage report as artifact, uses Docker
 image from script/docker_drone/Dockerfile)

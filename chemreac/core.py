@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
 
 """
-core
-====
-Provides core functinoality: ReactionDiffusion
+chemreac.core
+=============
+In chemreac.core you will find :py:class:`ReactionDiffusion` which
+is the class describing the system of ODEs.
+
 """
+
 import os
 import numpy as np
 
@@ -76,17 +79,18 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     The instance provides methods:
 
-    f(t, y, fout)
-    dense_jac_rmaj(t, y, Jout)
-    dense_jac_cmaj(t, y, Jout)
-    banded_jac_cmaj(t, y, Jout)
-    banded_packed_jac_cmaj(t, y, Jout)
+    - ``f(t, y, fout)``
+    - ``dense_jac_rmaj(t, y, jout)``
+    - ``dense_jac_cmaj(t, y, jout)``
+    - ``banded_jac_cmaj(t, y, jout)``
+    - ``banded_packed_jac_cmaj(t, y, jout)``
 
     some of which are used by chemreac.integrate.integrate_scipy
 
     Additional convenience attributes (not used by underlying C++ class):
-    - substance_names
-    - substance_tex_names
+
+    - :py:attr:`substance_names`
+    - :py:attr:`substance_tex_names`
 
     Parameters
     ----------
@@ -97,8 +101,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     stoich_prod: list of lists of integer indices
         product index lists per reaction.
     k: 1-dimensional array
-        reaction rate coefficients (if 2-tuples,
-        assumed (val, stddev) pairs)
+        reaction rate coefficients
     N: integer
         number of compartments (default: 1 if x==None else len(x)-1)
     D: sequence of floats

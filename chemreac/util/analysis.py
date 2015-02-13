@@ -1,9 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-analysis
---------
+chemreac.util.analysis
+----------------------
 
-Functions to analyze output.
+Functions to analyze numierc output from integration.
+
 """
 
 from __future__ import (absolute_import, division,
@@ -31,9 +32,12 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
 
     Returns
     =======
-    Length 2 tuple of arrays corrsponding to lower and upper bounds around y.
+    Array of shape (2, len(y)) with rows corresponding to lower and
+    upper bounds around y.
 
-    .. note:: Assumes maximum mangitude of error be: e_max = \|y*rtol\| + atol
+    .. note:: Assumes maximum mangitude of error be: \
+    :math:`\\boldsymbol{e}_{max} = \|\\boldsymbol{y} \
+    \\cdot \\mathrm{rtol}\| + \\mathrm{atol}`
     """
     solver_err = scale_err*(np.abs(y*rtol) + atol)
     if logy:
@@ -46,11 +50,11 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
 def solver_linear_error_from_integration(integration, ti=slice(None), bi=0,
                                          si=0, **kwargs):
     """
-    See solver_linear_error
+    Convenience function wrapping :func:`solver_linear_error`
 
     Parameters
     ----------
-    integration
+    integration: Integration instance
     """
     try:
         atol_i = integration.info['atol'][si]
