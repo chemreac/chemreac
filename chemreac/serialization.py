@@ -3,6 +3,10 @@
 import json
 
 from . import ReactionDiffusion
+from .units import (
+    unit_registry_to_human_readable,
+    unit_registry_from_human_readable
+)
 
 
 def dump(rd, dest):
@@ -37,6 +41,7 @@ def dump(rd, dest):
         'stoich_actv': rd.stoich_actv,
         # 'bin_k_factor': rd.bin_k_factor.,
         'bin_k_factor_span': rd.bin_k_factor_span.tolist(),
+        'units': unit_registry_to_human_readable(rd.units)
     }
     for attr in ReactionDiffusion.extra_attrs:
         data[attr] = getattr(rd, attr)

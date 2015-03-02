@@ -27,6 +27,7 @@ src/tests/test_chemreac_catch
 src/tests/catch.hpp
 src/tests/*.mod
 src/tests/*.o
+src/tests/.coverage*
 
 # Output files
 src/tests/*.out

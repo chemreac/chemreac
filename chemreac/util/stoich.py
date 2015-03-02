@@ -71,3 +71,27 @@ def decompose_yield_into_rate_coeffs(yields, stoichs, atol=1e-10):
     k, residuals, rank, s = np.linalg.lstsq(A, y)
     assert residuals < atol
     return k
+
+
+def get_reaction_orders(stoich_reac, stoich_actv=None):
+    """
+    Return the order of the reactions (assuming mass-action
+    behaviour).
+
+    Parameters
+    ----------
+    stoich_reac: list of lists of integer indices
+    stoichs: list of lists of integer indices (optional)
+
+    Returns
+    -------
+    iterable of integers corresponding to the total reaction orders
+
+    See also
+    --------
+    ``chemreac.ReactionDiffusion``
+
+    """
+    if stoich_actv is not None:
+        stoich_actv = stoich_reac
+    return [len(x) for x in stoich_actv]

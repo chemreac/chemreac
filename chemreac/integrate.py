@@ -350,6 +350,9 @@ class Integration(object):
                          zip(self.rd.k, self.rd.stoich_actv)]
         else:
             C0 = self.C0
+        conc_unit = (self.rd.units.get('amount', 1) /
+                     self.rd.units.get('length', 1)**3)
+        C0 = np.asarray(C0 / conc_unit)
 
         # Transform initial concentrations
         if self.rd.logy:
@@ -374,13 +377,14 @@ class Integration(object):
                 y0 = C0
 
         # Transform time
-        if self.tout[0] == 0.0 and self.rd.logt:
+        tout = np.asarray(self.tout / self.rd.units.get('time', 1))
+        if tout[0] == 0.0 and self.rd.logt:
             t0_set = True
             t0 = suggest_t0(self.rd, y0)
-            t = np.log(self.tout + t0)  # conserve total time
+            t = np.log(tout + t0)  # conserve total time
         else:
             t0_set = False
-            t = np.log(self.tout) if self.rd.logt else self.tout
+            t = np.log(tout) if self.rd.logt else tout
 
         # Run the integration
         self.yout, self.internal_t, self.info = self._callbacks[self.solver](
@@ -390,10 +394,11 @@ class Integration(object):
         if self.rd.logt:
             self.tout = np.exp(self.internal_t)
         else:
-            self.tout = self.internal_t
+            self.tout = self.internal_t * self.rd.units.get('time', 1)
 
         # Back-transform integration output into linear concentration
-        self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
+        self.Cout = (np.exp(self.yout) if self.rd.logy
+                     else self.yout)*conc_unit
         if self.scaling != 1.0:
             self.Cout /= self.scaling
             self.rd.k = ori_k
