@@ -102,16 +102,17 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
     ax_imshow = plt.subplot(111)
 
     if log is not False and 'norm' not in kwargs:
-        if symmetric_colorbar is True:
-            Amin = -max(-Amin, Amax)
-            Amax = -Amin
-        elif (isinstance(symmetric_colorbar, (float, int)) and
-              symmetric_colorbar is not False):
+        if (isinstance(symmetric_colorbar, (float, int)) and
+           symmetric_colorbar is not False):
             Amin = -symmetric_colorbar
             Amax = symmetric_colorbar
         else:
             Amin = np.min(A[np.where(A != 0)])
             Amax = np.max(A[np.where(A != 0)])
+
+        if symmetric_colorbar is True:
+            Amin = -max(-Amin, Amax)
+            Amax = -Amin
 
         if log is True:
             if np.any(A < 0):

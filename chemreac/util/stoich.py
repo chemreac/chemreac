@@ -69,7 +69,9 @@ def decompose_yield_into_rate_coeffs(yields, stoichs, atol=1e-10):
     y = np.array(list(yields.values()))
     A = get_coeff_mtx(sbstncs, stoichs)
     k, residuals, rank, s = np.linalg.lstsq(A, y)
-    assert residuals < atol
+    if len(residuals) > 0:
+        if np.any(residuals > atol):
+            raise ValueError("atol not satisfied")
     return k
 
 
@@ -92,6 +94,6 @@ def get_reaction_orders(stoich_reac, stoich_actv=None):
     ``chemreac.ReactionDiffusion``
 
     """
-    if stoich_actv is not None:
+    if stoich_actv is None:
         stoich_actv = stoich_reac
     return [len(x) for x in stoich_actv]

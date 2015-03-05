@@ -35,7 +35,7 @@ class SymRD(ReactionDiffusionBase):
                  bin_k_factor=None, bin_k_factor_span=None, geom=FLAT,
                  logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
-                 surf_chg=(0.0, 0.0), eps=1.0, **kwargs):
+                 surf_chg=(0.0, 0.0), eps_rel=1.0, **kwargs):
         # Save args
         self.n = n
         self.stoich_reac = stoich_reac
@@ -60,7 +60,7 @@ class SymRD(ReactionDiffusionBase):
         self.rrefl = rrefl
         self.auto_efield = auto_efield
         self.surf_chg = surf_chg
-        self.eps = eps
+        self.eps_rel = eps_rel
         if kwargs:
             raise KeyError("Don't know what to do with:", kwargs)
 

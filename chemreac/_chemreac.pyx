@@ -77,8 +77,10 @@ cdef class CppReactionDiffusion:
                   bint rrefl=True,
                   bint auto_efield=False,
                   pair[double, double] surf_chg=(0, 0),
-                  double eps=1.0,
-                  double xscale = 1.0,
+                  double eps_rel=1.0,
+                  double faraday_const=9.64853399e4,
+                  double vacuum_permittivity=8.854187817e-12,
+                  double xscale=1.0,
               ):
         cdef size_t i
         for i in range(x.size()):
@@ -90,7 +92,8 @@ cdef class CppReactionDiffusion:
             n, stoich_reac, stoich_prod, k, N,
             D, z_chg, mobility, x, stoich_actv, bin_k_factor,
             bin_k_factor_span, geom, logy, logt, logx, nstencil,
-            lrefl, rrefl, auto_efield, surf_chg, eps)
+            lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
+            vacuum_permittivity)
 
     def __dealloc__(self):
         del self.thisptr
@@ -281,9 +284,9 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.surf_chg
 
-    property eps:
+    property eps_rel:
         def __get__(self):
-            return self.thisptr.eps
+            return self.thisptr.eps_rel
 
     property neval_f:
         def __get__(self):

@@ -39,10 +39,6 @@ per100eV = pq.UnitQuantity('per_100_eV',  1/(100*pq.eV),  symbol='(100eV)**-1')
 umol = pq.UnitQuantity('micromole',  pq.mole/1e6,  u_symbol=u'μmol')
 umol_per_J = umol / pq.joule
 
-# Constants
-N_A = pq.constants.Avogadro_constant.rescale(1/pq.mol)
-unitless_old_G_value_to_SI_G_value = (per100eV/N_A).rescale(umol_per_J)
-
 
 # Utilities
 def isunitless(expr):

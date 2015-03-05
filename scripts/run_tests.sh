@@ -8,6 +8,7 @@ PYTEST_ARGS=()
 
 # py.test might use either 'python' or 'python3'
 PYTHON_EXE=$(head -1 $(which py.test) | cut -f2 -d!)
+echo "Python executable used: $PYTHON_EXE"
 
 # Check dependencies for the py.test test command below,
 # note that the package itself might depend on more packages

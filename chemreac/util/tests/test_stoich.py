@@ -54,3 +54,20 @@ def test_decompose_yield_into_rate_coeffs():
                 i, (reac, prod) in enumerate(stoichs))
 
     assert abs(G_H2O+4.64) < 1e-3
+
+
+def test_decompose_yield_into_rate_coeffs_2():
+    yields = OrderedDict([
+        ('B', 3.0),
+        ('C', 24.0)
+    ])
+    stoichs = [
+        ({'A': 2}, {'B': 1, 'C': 1}),
+        ({'A': 1}, {'C': 3})
+    ]
+    k = decompose_yield_into_rate_coeffs(yields, stoichs)
+    k_ref = [3, 7]
+
+    rtol = 1e-12
+    for a, b in zip(k, k_ref):
+        assert abs(a-b) < abs(a*rtol)

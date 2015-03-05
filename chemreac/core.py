@@ -14,6 +14,7 @@ from collections import defaultdict
 
 from .units import unitof
 from .util.stoich import get_reaction_orders
+from . import constants
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     # On readthedocs, cannot compile extension module.
@@ -141,7 +142,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         calculate electric field from concentrations (default: False)
     surf_chg: pair of floats
         total charge of surface (defaut: (0.0, 0.0))
-    eps: float
+    eps_rel: float
         relative permitivity of medium (dielectric constant)
     xscale: float
         use internal scaling of length (default: 1.0)
@@ -184,18 +185,26 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
                 bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
                 logx=False, nstencil=None, lrefl=True, rrefl=True,
-                auto_efield=False, surf_chg=(0.0, 0.0), eps=1.0,
+                auto_efield=False, surf_chg=(0.0, 0.0), eps_rel=1.0,
                 xscale=1.0, units=None, **kwargs):
         if units is None:
             units = defaultdict(lambda: 1)
             diffusion_unit = 1
             electrical_mobility_unit = 1
+            charge_per_amount_unit = 1
+            permittivity_unit = 1
+            charge_unit = 1
             k_units = [1]*len(stoich_reac)
         else:
             diffusion_unit = units['length']**2/units['time']
             electrical_mobility_unit = (  # SI: m**2/(Vs)
                 units['current']*units['time']**2/units['mass']
             )
+            charge_per_amount_unit = (units['current']*units['time'] /
+                                      units['amount'])
+            permittivity_unit = (units['current']**2*units['time']**4 /
+                                 (units['length']**3*units['mass']))
+            charge_unit = units['current']*units['time']
             k_units = [
                 (units['amount']/units['length']**3)**(1 - order)/units['time']
                 for order in get_reaction_orders(stoich_reac, stoich_actv)]
@@ -236,7 +245,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 raise ValueError("Don't know what to do with len(x) == %d" %
                                  len(x))
         except TypeError:
-            print(x, unitof(x))
             _x = np.linspace(0*unitof(x), x, N+1)
 
         if stoich_actv is None:
@@ -270,7 +278,12 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             np.asarray([xval/units.get('length', 1) for xval in _x]),
             _stoich_actv, bin_k_factor,
             bin_k_factor_span, geom, logy, logt, logx,
-            nstencil, lrefl, rrefl, auto_efield, surf_chg, eps, xscale
+            nstencil, lrefl, rrefl, auto_efield,
+            (surf_chg[0]/charge_unit, surf_chg[1]/charge_unit),
+            eps_rel,
+            constants.faraday/charge_per_amount_unit,
+            constants.vacuum_permittivity/permittivity_unit,
+            xscale
         )
 
         rd.units = units

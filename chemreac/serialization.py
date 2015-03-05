@@ -68,6 +68,7 @@ def load(source, RD=None, **kwargs):
         fh = source
 
     data = json.load(fh)
+    data['units'] = unit_registry_from_human_readable(data['units'])
     data.update(kwargs)
     extra_data = {}
     for attr in ReactionDiffusion.extra_attrs:
