@@ -93,7 +93,7 @@ def pair_of_gaussians(x, offsets, sigma, logy, logx, geom):
 
 
 def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
-                 base=0.5, offset=0.25, mobility=3e-8, nt=25, geom='f',
+                 base=0.5, offset=0.25, mobility=3e-1, nt=25, geom='f',
                  logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
@@ -134,7 +134,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         rrefl=rrefl,
         auto_efield=True,
         surf_chg=surf_chg,
-        eps=80.10,  # water at 20 deg C
+        eps_rel=80.10,  # water at 20 deg C
     )
 
     # Initial conditions

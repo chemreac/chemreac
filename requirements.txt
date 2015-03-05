@@ -12,4 +12,4 @@ future>=0.13.0
 mpld3>=0.2
 sympy>=0.7.6
 pycodeexport>=0.1.0
-pycompilation>=0.4.0
+pycompilation>=0.4.1

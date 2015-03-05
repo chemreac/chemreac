@@ -274,12 +274,12 @@ ReactionDiffusion _get_single_specie_system(int N, int z){
 int test_calc_efield(){
     ReactionDiffusion rd = _get_single_specie_system(5, 1);
     vector<double> y {1.0, 2.0, 3.0, 2.0, 1.0};
-    const double factor = 0.2*96485.3399;
+    const double factor = 0.2*96485.3399/8.854187817e-12;
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
     rd.calc_efield(&y[0]);
     int fail = 0;
     for (uint i=0; i<ref_efield.size(); ++i)
-	if (dabs(rd.efield[i]-ref_efield[i]) > 1e-10){
+	if (dabs((rd.efield[i]-ref_efield[i])/ref_efield[i]) > 1e-10){
             std::cout << i << " " << rd.efield[i] << " " << ref_efield[i] << std::endl;
             fail = 1;
         }

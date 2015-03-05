@@ -26,7 +26,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[vector[double]] bin_k_factor
         vector[uint] bin_k_factor_span
         const pair[double, double] surf_chg
-        const double eps
+        const double eps_rel
         double * xc
         double * const efield
         long neval_f
@@ -56,6 +56,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           bool,
                           bool,
                           pair[double, double],
+                          double,
+                          double,
                           double) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, const double * const, double * const, int)

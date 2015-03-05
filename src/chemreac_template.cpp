@@ -65,15 +65,15 @@ ReactionDiffusion::ReactionDiffusion(
     bool rrefl,
     bool auto_efield,
     pair<double, double> surf_chg,
-    double eps,
-    double faraday_const
-    ):
+    double eps_rel,
+    double faraday_const,
+    double vacuum_permittivity):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
     bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), auto_efield(auto_efield),
-    surf_chg(surf_chg), eps(eps), faraday_const(faraday_const), efield(new double[N]),
-    netchg(new double[N])
+    surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
+    vacuum_permittivity(vacuum_permittivity), efield(new double[N]), netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -738,6 +738,7 @@ void ReactionDiffusion::calc_efield(const double * const linC)
     // Prototype for self-generated electric field
     const double F = this->faraday_const; // Faraday's constant
     const double pi = 3.14159265358979324;
+    const double eps = eps_rel*vacuum_permittivity;
     double nx, cx = logx ? exp(x[0]) : x[0];
     for (uint bi=0; bi<N; ++bi){
         netchg[bi] = 0.0;
@@ -750,7 +751,7 @@ void ReactionDiffusion::calc_efield(const double * const linC)
         nx = logx ? exp(x[bi+1]) : x[bi+1];
         switch(geom){
         case Geom::FLAT:
-            efield[bi] = F*Q;
+            efield[bi] = F*Q/eps;
             Q += netchg[bi]*(nx - cx);
             break;
         case Geom::CYLINDRICAL:
@@ -768,7 +769,7 @@ void ReactionDiffusion::calc_efield(const double * const linC)
         Q = surf_chg.second;
         for (uint bi=N; bi>0; --bi){ // unsigned int..
             nx = logx ? exp(x[bi-1]) : x[bi-1];
-            efield[bi-1] -= F*Q;
+            efield[bi-1] -= F*Q/eps;
             Q += netchg[bi-1]*(cx - nx);
             cx = nx;
         }
