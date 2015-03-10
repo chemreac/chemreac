@@ -89,16 +89,15 @@ def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
     return ref_J
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS[::-1])
 def test_f(log):
     logy, logt = log
     N = 1
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
     y0 = np.array(C0)
     t0 = 42.0
-
     ref_f = _get_ref_f(rd, t0, y0, logy, logt)
-    fout = np.empty_like(ref_f)
+    fout = rd.alloc_fout()
 
     y = np.log(y0) if logy else y0
     t = np.log(t0) if logt else t0

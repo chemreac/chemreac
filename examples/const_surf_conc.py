@@ -43,7 +43,7 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from future.builtins import *
 
-
+from collections import defaultdict
 from math import log
 
 import argh
@@ -51,6 +51,7 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
+from chemreac.util.grid import generate_grid
 from chemreac.util.plotting import save_and_or_show_plot
 from chemreac.util.testing import spat_ave_rmsd_vs_time
 
@@ -75,7 +76,7 @@ def analytic(x, t, D, x0, xend, logx=False, c_s=1):
 
 def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
                  nt=42, logt=False, logy=False, logx=False,
-                 random=False, k=1, nstencil=3, linterpol=False,
+                 random=False, k=1.0, nstencil=3, linterpol=False,
                  rinterpol=False, num_jacobian=False, method='bdf',
                  plot=False, atol=1e-6, rtol=1e-6, factor=1e5,
                  random_seed=42, savefig='None', verbose=False,
@@ -91,16 +92,13 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
         np.random.seed(random_seed)
     tout = np.linspace(t0, tend, nt)
 
-    # Setup the grid
-    _x0 = log(x0) if logx else x0
-    _xend = log(xend) if logx else xend
-    x = np.linspace(_x0, _xend, N+1)
-    if random:
-        x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
+    units = defaultdict(lambda: 1)
+    units['amount'] = 1.0/scaling
 
-    # modulation = np.zeros((N, 1), dtype=np.int32)
-    # modulation[0, 0] = 1
-    modulation = [[1] if (i == 0) else [0] for i in range(N)]
+    # Setup the grid
+    x = generate_grid(x0, xend, N, logx, random=random)
+    if random:
+        x[1:-1] += (np.random.random(N-1)-0.5)*(_xend-_x0)/(N+2)
 
     rd = ReactionDiffusion(
         2,
@@ -113,25 +111,27 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
         logy=logy,
         logt=logt,
         logx=logx,
-        bin_k_factor=modulation,
-        bin_k_factor_span=[2],
         nstencil=nstencil,
         lrefl=not linterpol,
         rrefl=not rinterpol,
+        units=units,
+        faraday=1,
+        vacuum_permittivity=1
     )
 
     # Calc initial conditions / analytic reference values
-    Cref = analytic(rd.xcenters, tout, D, x0, xend, logx).reshape(nt, N, 1)
+    Cref = analytic(rd.xcenters, tout, D, x0, xend, logx).reshape(
+        nt, N, 1)
     source = np.zeros_like(Cref[0, ...])
     source[0, :] = factor
     y0 = np.concatenate((source, Cref[0, ...]), axis=1)
 
     # Run the integration
     integr = run(rd, y0, tout, atol=atol, rtol=rtol,
-                 with_jacobian=(not num_jacobian), method=method,
-                 scaling=scaling)
+                 with_jacobian=(not num_jacobian), method=method)
     Cout, info = integr.Cout, integr.info
-
+    print("integr.Cout[0, :, 1] = ", integr.Cout[0, :, 1])
+    print("integr.yout[0, :, 1] = ", integr.yout[0, :, 1])
     spat_ave_rmsd_over_atol = spat_ave_rmsd_vs_time(
         Cout[:, :, 1], Cref[:, :, 0]) / atol
     tot_ave_rmsd_over_atol = np.average(spat_ave_rmsd_over_atol)

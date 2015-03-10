@@ -9,9 +9,11 @@ Usage:
 
 """
 
+import codecs
+from os.path import basename
 import subprocess
 import sys
-from os.path import basename
+import traceback
 
 try:
     from StringIO import StringIO
@@ -41,14 +43,17 @@ class ExecDirective(Directive):
             for cmd in self.content:
                 output.append(subprocess.check_output(cmd, shell=True))
             lines = statemachine.string2lines(
-                '\n'.join(output), tab_width, convert_whitespace=False)
+                '\n'.join([codecs.decode(elem, 'utf-8') for elem in output]),
+                tab_width, convert_whitespace=False)
             self.state_machine.insert_input(lines, source)
             return []
         except Exception:
+            exc = sys.exc_info()
             return [nodes.error(None, nodes.paragraph(
                 text="Unable to run command at %s:%d:" % (
                     basename(source), self.lineno)
-            ), nodes.paragraph(text=str(sys.exc_info()[1])))]
+            ), nodes.paragraph(text=str(exc[1]) + '\n'.join(
+                [] + traceback.format_tb(exc[2]))))]
 
 
 def setup(app):

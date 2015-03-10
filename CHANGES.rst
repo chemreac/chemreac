@@ -1,5 +1,6 @@
 v0.3
 ====
+- bin_k_factor/bin_k_factor_span replaced with fields/g_values
 - Added support for units (.units, .constants), new serialization format.
 - Moved repository to github.com/chemreac/chemreac
 - Enabled use of Sundial's iterative linear solvers.

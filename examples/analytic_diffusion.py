@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""
+u"""
 Analytic diffusion
 ------------------
 
@@ -200,8 +200,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
                  nt=42, geom='f', logt=False, logy=False, logx=False,
                  random=False, k=0.0, nstencil=3, linterpol=False,
                  rinterpol=False, num_jacobian=False, method='bdf',
-                 scale_x=False, plot=False, atol=1e-6, rtol=1e-6,
-                 efield=False, random_seed=42, savefig='None', verbose=False):
+                 plot=False, atol=1e-6, rtol=1e-6, efield=False,
+                 random_seed=42, savefig='None', verbose=False):
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
@@ -242,8 +242,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         logx=logx,
         nstencil=nstencil,
         lrefl=not linterpol,
-        rrefl=not rinterpol,
-        xscale=1/(x[1]-x[0]) if scale_x else 1.0
+        rrefl=not rinterpol
     )
 
     if efield:

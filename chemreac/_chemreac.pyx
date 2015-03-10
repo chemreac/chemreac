@@ -46,14 +46,10 @@ def diag_data_len(N, n, ndiag):
 cdef class CppReactionDiffusion:
     """
     Wrapper around C++ class ReactionDiffusion,
-    In addition of being a thing wrapper it abstracts:
-        -`xscale`: scaling of length (affects D and mobility)
-
     """
     cdef ReactionDiffusion *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
-    cdef readonly double xscale
 
     def __cinit__(self,
                   uint n,
@@ -66,12 +62,13 @@ cdef class CppReactionDiffusion:
                   vector[double] mobility,
                   vector[double] x,
                   vector[vector[uint]] stoich_actv,
-                  vector[vector[double]] bin_k_factor,
-                  vector[uint] bin_k_factor_span,
                   int geom,
                   bint logy,
                   bint logt,
                   bint logx,
+                  vector[vector[double]] g_values,
+                  vector[int] g_value_parents,
+                  vector[vector[double]] fields,
                   uint nstencil=3,
                   bint lrefl=True,
                   bint rrefl=True,
@@ -80,20 +77,14 @@ cdef class CppReactionDiffusion:
                   double eps_rel=1.0,
                   double faraday_const=9.64853399e4,
                   double vacuum_permittivity=8.854187817e-12,
-                  double xscale=1.0,
               ):
         cdef size_t i
-        for i in range(x.size()):
-            x[i] *= xscale
-        for i in range(D.size()):
-            D[i] *= xscale**2
-        self.xscale = xscale
         self.thisptr = new ReactionDiffusion(
             n, stoich_reac, stoich_prod, k, N,
-            D, z_chg, mobility, x, stoich_actv, bin_k_factor,
-            bin_k_factor_span, geom, logy, logt, logx, nstencil,
+            D, z_chg, mobility, x, stoich_actv, geom,
+            logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
-            vacuum_permittivity)
+            vacuum_permittivity, g_values, g_value_parents, fields)
 
     def __dealloc__(self):
         del self.thisptr
@@ -206,12 +197,10 @@ cdef class CppReactionDiffusion:
 
     property D:
         def __get__(self):
-            return np.asarray(self.thisptr.D)/self.xscale**2
+            return np.asarray(self.thisptr.D)
 
         def __set__(self, vector[double] D):
             cdef size_t i
-            for i in range(D.size()):
-                D[i] *= self.xscale**2
             assert len(D) == self.n
             self.thisptr.D = D
 
@@ -225,32 +214,16 @@ cdef class CppReactionDiffusion:
 
     property mobility:
         def __get__(self):
-            return np.asarray(self.thisptr.mobility)/self.xscale**2
+            return np.asarray(self.thisptr.mobility)
 
         def __set__(self, vector[double] mobility):
             cdef size_t i
-            for i in range(mobility.size()):
-                mobility[i] *= self.xscale**2
             assert len(mobility) == self.n
             self.thisptr.mobility = mobility
 
     property x:
         def __get__(self):
-            return np.asarray(self.thisptr.x)/self.xscale
-
-    property bin_k_factor:
-        def __get__(self):
-            return np.asarray(self.thisptr.bin_k_factor)
-        def __set__(self, vector[vector[double]] bin_k_factor):
-            assert len(bin_k_factor) == self.N
-            self.thisptr.bin_k_factor = bin_k_factor
-
-    property bin_k_factor_span:
-        def __get__(self):
-            return np.asarray(self.thisptr.bin_k_factor_span, dtype=np.int32)
-        def __set__(self, vector[uint] bin_k_factor_span):
-            assert all([len(bin_k_factor_span) == len(x) for x in self.bin_k_factor])
-            self.thisptr.bin_k_factor_span = bin_k_factor_span
+            return np.asarray(self.thisptr.x)
 
     property logy:
         def __get__(self):
@@ -287,6 +260,25 @@ cdef class CppReactionDiffusion:
     property eps_rel:
         def __get__(self):
             return self.thisptr.eps_rel
+
+    property g_values:
+        def __get__(self):
+            return self.thisptr.g_values
+        def __set__(self, vector[vector[double]] g_values):
+            self.thisptr.g_values = g_values
+
+    property g_value_parents:
+        def __get__(self):
+            return self.thisptr.g_value_parents
+        def __set__(self, vector[int] g_value_parents):
+            self.thisptr.g_value_parents = g_value_parents
+
+    property _fields:
+        def __get__(self):
+            return self.thisptr.fields
+        def __set__(self, vector[vector[double]] fields):
+            assert len(fields) == len(self.g_values)
+            self.thisptr.fields = fields
 
     property neval_f:
         def __get__(self):
@@ -332,13 +324,14 @@ cdef class CppReactionDiffusion:
 
     property xcenters:
         def __get__(self):
-            return 1/self.xscale*fromaddress(
-                <long>(&self.thisptr.xc[(self.thisptr.nstencil-1)//2]), (self.N,))
+            return fromaddress(<long>(
+                &self.thisptr.xc[(self.thisptr.nstencil-1)//2]), (self.N,))
 
     # For debugging
     property _xc:
         def __get__(self):
-            return fromaddress(<long>self.thisptr.xc, (self.N+self.thisptr.nstencil-1,))
+            return fromaddress(<long>self.thisptr.xc,
+                               (self.N + self.thisptr.nstencil - 1,))
 
     property D_weight:  # (Private)
         def __get__(self):

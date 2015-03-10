@@ -91,9 +91,14 @@ def get_reaction_orders(stoich_reac, stoich_actv=None):
 
     See also
     --------
-    ``chemreac.ReactionDiffusion``
+    :class:`chemreac.core.ReactionDiffusion`
 
     """
+    res = []
     if stoich_actv is None:
-        stoich_actv = stoich_reac
-    return [len(x) for x in stoich_actv]
+        stoich_actv = [[]]*len(stoich_reac)
+    for reac, actv in zip(stoich_reac, stoich_actv):
+        if actv == []:
+            actv = reac
+        res.append(len(actv))
+    return res

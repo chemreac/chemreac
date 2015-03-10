@@ -4,7 +4,9 @@
 This file is an abstraction layer over ``quantities`` (makes it possible to
 use another underlying package in the future).
 """
+from __future__ import absolute_import, division, print_function
 
+import numpy as np
 import quantities as pq
 
 # Base units
@@ -26,16 +28,38 @@ SI_base = {
     'amount': mole
 }
 
+
+def get_derived_unit(registry, name):
+    if registry is None:
+        return 1.0
+    derived = {
+        'diffusion': registry['length']**2/registry['time'],
+        'electrical_mobility': (registry['current']*registry['time']**2 /
+                                registry['mass']),
+        'permittivity': (registry['current']**2*registry['time']**4 /
+                         (registry['length']**3*registry['mass'])),
+        'charge': registry['current']*registry['time'],
+        'energy': registry['mass']*registry['length']**2/registry['time']**2,
+        'concentration': registry['amount']/registry['length']**3
+    }
+    try:
+        return derived[name]
+    except KeyError:
+        return registry[name]
+
+
 # Convenience
 joule = pq.joule
 Gray = joule/kilogram
 MeV = pq.MeV
 centimetre = pq.centimetre
 gram = pq.gram
-dm = pq.UnitQuantity('decimeter',  pq.m / 10.0,  symbol='dm')
-molar = pq.UnitQuantity('molar',  pq.mole / dm ** 3,  symbol='M')
+decimetre = dm = pq.UnitQuantity('decimetre',  pq.m / 10.0,  u_symbol='dm')
+molar = pq.UnitQuantity('molar',  pq.mole / dm ** 3,  u_symbol='M')
 perMolar_perSecond = 1/molar/pq.s
-per100eV = pq.UnitQuantity('per_100_eV',  1/(100*pq.eV),  symbol='(100eV)**-1')
+per100eV = pq.UnitQuantity('per_100_eV',
+                           1/(100*pq.eV*pq.constants.Avogadro_constant),
+                           u_symbol='(100eV)**-1')
 umol = pq.UnitQuantity('micromole',  pq.mole/1e6,  u_symbol=u'μmol')
 umol_per_J = umol / pq.joule
 
@@ -54,7 +78,37 @@ def unitof(expr):
         return 1
 
 
+def to_unitless(value, new_unit):
+    if isinstance(value, (list, tuple)):
+        return np.array([to_unitless(elem, new_unit) for elem in value])
+    try:
+        result = (value*pq.dimensionless/new_unit).rescale(pq.dimensionless)
+        if result.ndim == 0:
+            return float(result)
+        else:
+            return np.asarray(result)
+    except TypeError:
+        return np.array([to_unitless(elem, new_unit) for elem in value])
+
+
+def rescale(value, new_unit):
+    if isinstance(new_unit, pq.quantity.Quantity):
+        return (value*pq.dimensionless/new_unit).rescale(
+            pq.dimensionless)*new_unit
+    else:
+        if isinstance(value, pq.quantity.Quantity):
+            raise ValueError("Cannot rescale {} to dimensionless".format(
+                value))
+        else:
+            try:
+                return value/new_unit
+            except TypeError:
+                return [elem/new_unit for elem in value]
+
+
 def unit_registry_to_human_readable(unit_registry):
+    if unit_registry is None:
+        return None
     new_registry = {}
     for k in SI_base:
         if unit_registry[k] is 1:
@@ -71,6 +125,8 @@ def unit_registry_to_human_readable(unit_registry):
 
 
 def unit_registry_from_human_readable(unit_registry):
+    if unit_registry is None:
+        return None
     new_registry = {}
     for k in SI_base:
         factor, u_symbol = unit_registry[k]

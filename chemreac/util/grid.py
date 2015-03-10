@@ -8,7 +8,30 @@ Grid related utilities for one dimensional grid of arbitrary spacing.
 
 from __future__ import print_function, division
 
+from math import log
+
 import numpy as np
+
+from ..units import get_derived_unit, to_unitless
+
+
+def generate_grid(x0, xend, N, logx=False, units=None, random=False):
+    length_unit = get_derived_unit(units, 'length')
+    _x0 = to_unitless(x0, length_unit)
+    _xend = to_unitless(xend, length_unit)
+    if logx:
+        low, high = log(_x0), log(_xend)
+    else:
+        low, high = _x0, _xend
+    result = np.linspace(low, high, N+1)
+    if random is False:
+        return result
+    elif random is True:
+        random = 1.0
+    elif random > 1.0 or random <= 0.0:
+        raise ValueError("0 < random <= 1.0, or True => 1.0")
+    result[1:-1] += random*(np.random.random(N-1)-0.5)*(_xend-_x0)/(N+2)
+    return result
 
 
 def padded_centers(x, nsidep):

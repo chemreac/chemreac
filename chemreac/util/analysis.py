@@ -60,12 +60,14 @@ def solver_linear_error_from_integration(integration, ti=slice(None), bi=0,
         atol_i = integration.info['atol'][si]
     except TypeError:
         atol_i = integration.info['atol']
-    return solver_linear_error(
-        integration.yout[ti, bi, si],
-        integration.info['rtol'],
-        atol_i,
-        integration.rd.logy,
-        **kwargs)
+    return integration.with_units(
+        solver_linear_error(
+            integration.yout[ti, bi, si],
+            integration.info['rtol'],
+            atol_i,
+            integration.rd.logy,
+            **kwargs),
+        'concentration')
 
 
 def suggest_t0(rd, y0, max_f=1.0):

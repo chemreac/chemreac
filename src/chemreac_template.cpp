@@ -42,6 +42,8 @@ using std::max;
 
 template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
 
+#include <cstdio>
+
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     uint n,
@@ -54,8 +56,6 @@ ReactionDiffusion::ReactionDiffusion(
     vector<double> mobility,
     const vector<double> x, // separation
     vector<vector<uint> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
-    vector<vector<double> > bin_k_factor, // per bin modulation of first k's
-    vector<uint> bin_k_factor_span, // modulation over reactions
     int geom_,
     bool logy,
     bool logt,
@@ -67,13 +67,18 @@ ReactionDiffusion::ReactionDiffusion(
     pair<double, double> surf_chg,
     double eps_rel,
     double faraday_const,
-    double vacuum_permittivity):
+    double vacuum_permittivity,
+    vector<vector<double>> g_values,
+    vector<int> g_value_parents,
+    vector<vector<double>> fields):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
-    k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), bin_k_factor(bin_k_factor),
-    bin_k_factor_span(bin_k_factor_span), lrefl(lrefl), rrefl(rrefl), auto_efield(auto_efield),
+    k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl), 
+    auto_efield(auto_efield),
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
-    vacuum_permittivity(vacuum_permittivity), efield(new double[N]), netchg(new double[N])
+    vacuum_permittivity(vacuum_permittivity), 
+    g_value_parents(g_value_parents),
+    efield(new double[N]), netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -171,11 +176,22 @@ ReactionDiffusion::ReactionDiffusion(
         }
     }
 
-    // Handle bin_k_factors:
-    for (uint i=0; i<bin_k_factor_span.size(); ++i)
-        for (uint j=0; j<bin_k_factor_span[i]; ++j)
-            i_bin_k.push_back(i);
-    n_factor_affected_k = i_bin_k.size();
+    // Handle g_values
+    if (fields.size() != g_values.size())
+        throw std::logic_error("fields and g_values need to be of equal length");
+    if (this->g_value_parents.size() != g_values.size())
+        throw std::logic_error("g_value_parents and g_values need to be of equal length");
+        
+    for (const auto& gs : g_values)
+        if (gs.size() != n)
+            throw std::logic_error("vectors in g_values need to be of length n");
+
+    for (const auto& fs : fields)
+        if (fs.size() != N)
+            throw std::logic_error("vectors in fields need to be of length N");
+
+    this->g_values = g_values;
+    this->fields = fields;
 }
 
 ReactionDiffusion::~ReactionDiffusion()
@@ -268,8 +284,6 @@ void ReactionDiffusion::_apply_fd(uint bi){
 #undef FDWEIGHT
 // D_WEIGHT still defined
 
-#define FACTOR(ri, bi) ( ((ri) < n_factor_affected_k) ? \
-            bin_k_factor[bi][i_bin_k[ri]] : 1 )
 void
 ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ y,
                  double * const __restrict__ local_r) const
@@ -277,26 +291,21 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ y,
     // intent(out) :: local_r
     for (uint rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-        if (logy)
-            local_r[rxni] = 0;
-        else
-            local_r[rxni] = 1;
+        double tmp = logy ? 0 : 1;
 
         for (uint rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
             if (logy)
-                local_r[rxni] += y[bi*n+si];
+                tmp += y[bi*n+si];
             else
-                local_r[rxni] *= y[bi*n+si];
+                tmp *= y[bi*n+si];
         }
         if (logy)
-            local_r[rxni] = exp(local_r[rxni]);
-
-        local_r[rxni] *= FACTOR(rxni, bi)*k[rxni];
+            tmp = exp(tmp);
+        local_r[rxni] = k[rxni]*tmp;
     }
 }
-#undef FACTOR
 // D_WEIGHT still defined
 
 // The indices of x, fluxes and bins
@@ -345,11 +354,22 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
             // reaction index rxni
             for (uint si=0; si<n; ++si){
                 // species index si
-                int overall = coeff_totl[rxni*n + si];
+                const int overall = coeff_totl[rxni*n + si];
                 if (overall != 0)
                     DYDT(bi, si) += overall*local_r[rxni];
             }
         }
+        // Contribution from particle/electromagnetic fields
+        for (uint fi=0; fi<this->fields.size(); ++fi){
+            if (fields[fi][bi] == 0)
+                continue; // exit early
+            const double gfact = (g_value_parents[fi] == -1) ? \
+                1.0 : LINC(bi, g_value_parents[fi]);
+            for (uint si=0; si<n; ++si)
+                if (g_values[fi][si] != 0)
+                    DYDT(bi, si) += fields[fi][bi]*g_values[fi][si]*gfact;
+        }
+
         if (N>1){
             // Contributions from diffusion and advection
             // ------------------------------------------
@@ -461,8 +481,8 @@ ReactionDiffusion::${token}(double t,
         // Conc. in `bi:th` compartment
         ${'double * const local_r = new double[nr];' if USE_OPENMP else ''}
 
-        // Contributions from reactions
-        // ----------------------------
+        // Contributions from reactions and fields
+        // ---------------------------------------
         _fill_local_r(bi, y, local_r);
         for (uint si=0; si<n; ++si){
             // species si
@@ -481,6 +501,30 @@ ReactionDiffusion::${token}(double t,
                     if (!logy)
                         tmp /= Y(bi, dsi);
                     JAC(bi, bi, si, dsi) += tmp;
+                }
+                // Contribution from particle/electromagnetic fields
+                for (uint fi=0; fi<(this->fields.size()); ++fi){
+                    if (logy){
+                        // <logy_radyield.png>
+                        int net_contrib;
+                        if ((int)si == g_value_parents[fi])
+                            net_contrib = 0;
+                        else
+                            if (dsi == si)
+                                net_contrib = -1;
+                            else if ((int)dsi == g_value_parents[fi])
+                                net_contrib = 1;
+                            else
+                                net_contrib = 0;
+                        if (si == dsi)
+                            net_contrib += 1; // -= FOUT at end of function.
+                        if (net_contrib != 0)
+                            JAC(bi, bi, si, dsi) += net_contrib * fields[fi][bi] * \
+                                g_values[fi][si] * LINC(bi, g_value_parents[fi]);
+                    } else {
+                        if ((int)dsi == g_value_parents[fi] && g_values[fi][si] != 0.0)
+                            JAC(bi, bi, si, dsi) += fields[fi][bi]*g_values[fi][si];
+                    }
                 }
                 if (logy)
                     //JAC(bi, bi, si, dsi) *= exp(-Y(bi, si));

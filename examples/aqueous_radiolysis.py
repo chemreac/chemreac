@@ -36,7 +36,7 @@ from __future__ import (absolute_import, division,
 # stdlib imports
 import json
 import os
-from math import log, e, exp
+from math import log, exp, log10
 
 # external imports
 import argh
@@ -46,11 +46,17 @@ import numpy as np
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
+from chemreac.units import (
+    kilogram, decimetre, Gray, second, molar, second, get_derived_unit,
+    to_unitless, metre
+)
+from chemreac.util.grid import generate_grid
 from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot
 
 
-def integrate_rd(t0=1e-7, tend=.1, doserate=15, N=1000, nt=512, nstencil=3,
-                 logy=False, logt=False, name='aqueous_radiolysis',
+def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
+                 doserate=15, N=1000, nt=512, nstencil=3,
+                 logy=False, logt=False, logx=False, name='aqueous_radiolysis',
                  num_jacobian=False, savefig='None', verbose=False,
                  plot=False, plot_jacobians=False):
     """
@@ -59,12 +65,16 @@ def integrate_rd(t0=1e-7, tend=.1, doserate=15, N=1000, nt=512, nstencil=3,
     """
     null_conc = 1e-24
 
-    mu = 1.0  # linear attenuation
-    rho = 1.0  # kg/dm3
+    mu = 50.0*metre**-1  # linear attenuation
+    x = generate_grid(x0, xend, N, logx)
+    _cb = (lambda arg: np.exp(arg)) if logx else (lambda arg: arg)
+    lin_xcenters = _cb(x[:-1]+np.diff(x)/2)*metre
+    doserate *= Gray / second
+    doseratefield = doserate*np.exp(-mu*lin_xcenters)
+    rho = 1.0*kilogram*decimetre**-3  # kg/dm3
     rd = load(os.path.join(os.path.dirname(__file__), name+'.json'),
               ReactionDiffusion, N=N, logy=logy,
-              logt=logt, bin_k_factor=[
-                  [doserate*rho*exp(-mu*i/N)] for i in range(N)],
+              logt=logt, logx=logx, fields=[doseratefield*rho],
               nstencil=nstencil)
     y0_by_name = json.load(open(os.path.join(os.path.dirname(__file__),
                                              name+'.y0.json'), 'rt'))
@@ -72,9 +82,9 @@ def integrate_rd(t0=1e-7, tend=.1, doserate=15, N=1000, nt=512, nstencil=3,
     # y0 with a H2 gradient
     y0 = np.array([[y0_by_name.get(k, null_conc) if k != 'H2' else
                     1e-3/(i+2) for k in rd.substance_names]
-                   for i in range(rd.N)])
+                   for i in range(rd.N)])*molar
 
-    tout = np.logspace(log(t0), log(tend), nt+1, base=e)
+    tout = np.logspace(log10(t0), log10(tend), nt+1)*second
     integr = run(rd, y0, tout, with_jacobian=(not num_jacobian))
 
     if verbose:
@@ -83,16 +93,21 @@ def integrate_rd(t0=1e-7, tend=.1, doserate=15, N=1000, nt=512, nstencil=3,
 
     if plot:
         import matplotlib.pyplot as plt
+        conc_unit = molar
         bt_fmtstr = ("C(t) in bin {{0:.2g}}-{{1:.2g}} "
                      "with local doserate {}")
         ax = plt.subplot(2, 1, 1)
         plot_C_vs_t_in_bin(
-            rd, tout, integr.Cout, 0, ax, substances=('H2', 'H2O2'),
-            ttlfmt=bt_fmtstr.format(rd.bin_k_factor[0][0]))
+            rd, tout, to_unitless(integr.Cout, conc_unit),
+            0, ax, substances=('H2', 'H2O2'),
+            ttlfmt=bt_fmtstr.format(rd.fields[0][0]),
+            ylabel="C / "+str(conc_unit))
         ax = plt.subplot(2, 1, 2)
         plot_C_vs_t_in_bin(
-            rd, tout, integr.Cout, N-1, ax, substances=('H2', 'H2O2'),
-            ttlfmt=bt_fmtstr.format(rd.bin_k_factor[N-1][0]))
+            rd, tout, to_unitless(integr.Cout, conc_unit),
+            N-1, ax, substances=('H2', 'H2O2'),
+            ttlfmt=bt_fmtstr.format(rd.fields[0][N-1]),
+            ylabel="C / "+str(conc_unit))
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
 
