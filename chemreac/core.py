@@ -10,11 +10,10 @@ is the class describing the system of ODEs.
 
 import os
 import numpy as np
-from collections import defaultdict
 
-from .units import unitof
+from .units import unitof, get_derived_unit, to_unitless
 from .util.stoich import get_reaction_orders
-from . import constants
+from .constants import get_unitless_constant
 
 if os.environ.get('READTHEDOCS', None) == 'True':
     # On readthedocs, cannot compile extension module.
@@ -76,6 +75,17 @@ class ReactionDiffusionBase(object):
         return self.N*self.n
 
 
+def get_unit(units, key):
+    try:
+        return get_derived_unit(units, key)
+    except KeyError:
+        return dict(
+            radyield=units['amount']/get_unit(units, 'energy'),
+            field=get_unit(units, 'energy')/(get_unit(units, 'time') *
+                                             get_unit(units, 'length')**3)
+        )[key]
+
+
 class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     """
     Object representing the numerical model, with callbacks for evaluating
@@ -120,10 +130,6 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if x is a float it is expanded into linspace(0, x, N+1)
     stoich_actv: list of lists of integer indices
         list of ACTIVE reactant index lists per reaction.n, default: []
-    bin_k_factor: sequence of sequences of floats
-        per compartment modulation of rate coefficients
-    bin_k_factor_span: sequence of integers
-        spans over reaction indices affected by bin_k_factor
     geom: integer
         any of (FLAT, SPHERICAL, CYLINDRICAL)
     logy: bool
@@ -144,9 +150,14 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         total charge of surface (defaut: (0.0, 0.0))
     eps_rel: float
         relative permitivity of medium (dielectric constant)
-    xscale: float
-        use internal scaling of length (default: 1.0)
-        (finite difference scheme works best for step-size ~1)
+    g_values: sequence of sequences of floats
+        per specie yields (amount / energy) per field type
+    g_value_parents: sequence of integers (optional)
+        indices of parents for each g_value. -1 denotes no concentration
+        dependence of g_values. default: [-1]*len(g_values)
+    fields: sequence of sequence of floats
+        per bin field strength (energy / (volume time)) per field type.
+        May be calculated as product between density and doserate
     units: dict (optional)
         default: None, see ``chemreac.units.SI_base`` for an
         example.
@@ -182,33 +193,14 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         self._substance_tex_names = tex_names
 
     def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
-                mobility=None, x=None, stoich_actv=None, bin_k_factor=None,
-                bin_k_factor_span=None, geom=FLAT, logy=False, logt=False,
-                logx=False, nstencil=None, lrefl=True, rrefl=True,
-                auto_efield=False, surf_chg=(0.0, 0.0), eps_rel=1.0,
-                xscale=1.0, units=None, **kwargs):
-        if units is None:
-            units = defaultdict(lambda: 1)
-            diffusion_unit = 1
-            electrical_mobility_unit = 1
-            charge_per_amount_unit = 1
-            permittivity_unit = 1
-            charge_unit = 1
-            k_units = [1]*len(stoich_reac)
-        else:
-            diffusion_unit = units['length']**2/units['time']
-            electrical_mobility_unit = (  # SI: m**2/(Vs)
-                units['current']*units['time']**2/units['mass']
-            )
-            charge_per_amount_unit = (units['current']*units['time'] /
-                                      units['amount'])
-            permittivity_unit = (units['current']**2*units['time']**4 /
-                                 (units['length']**3*units['mass']))
-            charge_unit = units['current']*units['time']
-            k_units = [
-                (units['amount']/units['length']**3)**(1 - order)/units['time']
-                for order in get_reaction_orders(stoich_reac, stoich_actv)]
-
+                mobility=None, x=None, stoich_actv=None, geom=FLAT,
+                logy=False, logt=False, logx=False, nstencil=None,
+                lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
+                eps_rel=1.0, g_values=None, g_value_parents=None,
+                fields=None, units=None,
+                faraday=None,  # deprecated
+                vacuum_permittivity=None,  # deprecated
+                **kwargs):
         if N == 0:
             if x is None:
                 N = 1
@@ -221,16 +213,17 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if z_chg is None:
             z_chg = list([0]*n)
         if mobility is None:
-            mobility = list([0*electrical_mobility_unit]*n)
+            mobility = np.zeros(n)*get_unit(units, 'electrical_mobility')
         if N > 1:
             assert n == len(D)
             assert n == len(z_chg)
             assert n == len(mobility)
         else:
-            D = D or list([0*diffusion_unit]*n)
+            if D is None:
+                D = np.zeros(n)*get_unit(units, 'diffusion')
 
         if x is None:
-            x = 1.0*units.get('length', 1)
+            x = 1.0*get_unit(units, 'length')
 
         try:
             if len(x) == N+1:
@@ -256,34 +249,61 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         assert len(stoich_reac) == len(stoich_prod) == len(k)
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
-        # Handle bin_k_factor
-        if bin_k_factor is None:
-            if bin_k_factor_span is None:
-                bin_k_factor_span = []
-            bin_k_factor = []
+        if surf_chg is None:
+            surf_chg = (0.0*get_unit(units, 'charge'),
+                        0.0*get_unit(units, 'charge'))
+
+        # Handle g_values
+        if g_values is None:
+            g_values = []
         else:
-            assert bin_k_factor_span is not None
-            assert len(bin_k_factor) == N
-            assert all([len(bkf) == len(bin_k_factor_span) for
-                        bkf in bin_k_factor])
-            assert all([bkfs >= 0 for bkfs in bin_k_factor_span])
+            if fields is not None:
+                assert len(g_values) == len(fields)
+            for gv in g_values:
+                assert len(gv) == n
+        if g_value_parents is None:
+            g_value_parents = [-1]*len(g_values)
+
+        if fields is None:
+            fields = [[0.0*get_unit(units, 'field')]*N]*len(g_values)
+        else:
+            assert len(fields) == len(g_values)
+            for fld in fields:
+                assert len(fld) == N
+
+        k_unitless = []
+        for order, kval in zip(get_reaction_orders(stoich_reac, stoich_actv),
+                               k):
+            k_unitless.append(to_unitless(kval, get_unit(
+                units, 'concentration')**(1-order)/get_unit(units, 'time')))
+        g_units = []
+        for parent in g_value_parents:
+            if parent == -1:
+                g_units.append(get_unit(units, 'radyield'))
+            else:
+                g_units.append(get_unit(units, 'radyield') /
+                               get_unit(units, 'concentration'))
 
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod,
-            np.asarray([kval/kunit for kval, kunit in zip(k, k_units)]),
+            np.asarray(k_unitless),
             N,
-            np.asarray([dval/diffusion_unit for dval in D]),
+            to_unitless(D, get_unit(units, 'diffusion')),
             z_chg,
-            np.asarray([mu_el/electrical_mobility_unit for mu_el in mobility]),
-            np.asarray([xval/units.get('length', 1) for xval in _x]),
-            _stoich_actv, bin_k_factor,
-            bin_k_factor_span, geom, logy, logt, logx,
+            to_unitless(mobility, get_unit(units, 'electrical_mobility')),
+            to_unitless(_x, get_unit(units, 'length')),
+            _stoich_actv, geom, logy, logt, logx,
+            [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for
+             gv, yld_unit in zip(g_values, g_units)],
+            g_value_parents,
+            [to_unitless(fld, get_unit(units, 'field')) for fld in fields],
             nstencil, lrefl, rrefl, auto_efield,
-            (surf_chg[0]/charge_unit, surf_chg[1]/charge_unit),
+            (to_unitless(surf_chg[0], get_unit(units, 'charge')),
+             to_unitless(surf_chg[1], get_unit(units, 'charge'))),
             eps_rel,
-            constants.faraday/charge_per_amount_unit,
-            constants.vacuum_permittivity/permittivity_unit,
-            xscale
+            faraday or get_unitless_constant(units, 'faraday'),
+            vacuum_permittivity or get_unitless_constant(
+                units, 'vacuum_permittivity')
         )
 
         rd.units = units
@@ -294,3 +314,11 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if kwargs:
             raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd
+
+    @property
+    def fields(self):
+        return np.asarray(self._fields)*get_unit(self.units, 'field')
+
+    @fields.setter
+    def fields(self, value):
+        self._fields = value/get_unit(self.units, 'field')

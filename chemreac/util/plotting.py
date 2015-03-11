@@ -315,9 +315,8 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
     print_names = rd.substance_tex_names or rd.substance_names
     axes = _plot_analysis(
         _get_per_func_out,
-        [('*R' if i < np.sum(rd.bin_k_factor_span) else 'R') +
-         str(i) + ': ' + rd.to_Reaction(i).render(dict(zip(
-             rd.substance_names, print_names))) for i in range(rd.nr)],
+        ['R' + str(i) + ': ' + rd.to_Reaction(i).render(dict(zip(
+            rd.substance_names, print_names))) for i in range(rd.nr)],
         rd, tout, yout, indices,
         titles=[print_names[i] for i in indices], **kwargs)
     for ax in axes:
@@ -353,7 +352,7 @@ def plot_C_vs_t_in_bin(
         xscale='log', yscale='log', substances=None,
         ttlfmt=(r"C(t) in bin: {0:.2g} m $\langle$" +
                 r" x $\langle$ {1:.2g} m"), legend_kwargs=None,
-        ls=None, c=None):
+        ls=None, c=None, xlabel="t / s", ylabel="C / M"):
     """
     Plots bin local concentration as function of time for selected
     substances.
@@ -392,8 +391,8 @@ def plot_C_vs_t_in_bin(
     for i, lbl in zip(substances, labels):
         ax.plot(tout, Cout[:, bi, i], label=lbl,
                 ls=ls[i % len(ls)], c=c[i % len(c)])
-    ax.set_xlabel("t / s")
-    ax.set_ylabel("C / M")
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
     if ttlfmt:
         ax.set_title(ttlfmt.format(rd.x[bi], rd.x[bi+1]))
     if legend_kwargs is not False:
@@ -495,9 +494,9 @@ def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
     return ax
 
 
-def plot_bin_k_factors(rd, ax=None, indices=None):
+def plot_fields(rd, ax=None, indices=None):
     """
-    Convenience function to inspect bin_k_factor in of
+    Convenience function to inspect fields in of
     ReactionDiffusion instance
 
     Parameters
@@ -507,14 +506,14 @@ def plot_bin_k_factors(rd, ax=None, indices=None):
         if ax is a dict it is used as keyword arguments passed to
         matplotlib.pyplot.axes (default: None)
     indices: sequence of integers
-        what factor sequences to plot
+        what field strengths sequences to plot
     """
     ax = _init_axes(ax)
-    indices = indices or range(len(rd.bin_k_factor_span))
-    factors = np.array(rd.bin_k_factor)
+    indices = indices or range(len(rd.fields))
+    factors = np.array(rd.fields)
     x_edges = np.repeat(rd.x, 2)[1:]
     for i in indices:
-        y_edges = np.pad(np.repeat(factors[:, i], 2), (0, 1), 'constant')
+        y_edges = np.pad(np.repeat(factors[i, :], 2), (0, 1), 'constant')
         ax.plot(x_edges, y_edges, label=i)
     return ax
 
@@ -570,8 +569,8 @@ def plot_solver_linear_error(
         else:
             raise NotImplementedError("Failed to deduce x-axis.")
 
-    plt.plot(x, scale_err*Cerr[ti, bi, si], **dict_with_defaults(
-        plot_kwargs, kwargs))
+    plt.plot(np.asarray(x), np.asarray(scale_err*Cerr[ti, bi, si]),
+             **dict_with_defaults(plot_kwargs, kwargs))
 
     if fill:
         le_l, le_u = solver_linear_error_from_integration(
@@ -637,8 +636,10 @@ def plot_solver_linear_excess_error(integration, Cref, ax=None, x=None,
     le_l, le_u = solver_linear_error_from_integration(integration, ti, bi, si)
     Eexcess_l = Cref[ti, bi, si] - le_l  # Excessive if negative
     Eexcess_u = Cref[ti, bi, si] - le_u  # Excessive if positive
-    Eexcess_l[np.argwhere(Eexcess_l >= 0)] = 0
-    Eexcess_u[np.argwhere(Eexcess_u <= 0)] = 0
+    Eexcess_l[np.argwhere(Eexcess_l >= 0)] = integration.with_units(
+        0, 'concentration')
+    Eexcess_u[np.argwhere(Eexcess_u <= 0)] = integration.with_units(
+        0, 'concentration')
     fused = np.concatenate((Eexcess_l[..., np.newaxis],
                             Eexcess_u[..., np.newaxis]), axis=-1)
     indices = np.argmax(abs(fused), axis=-1)

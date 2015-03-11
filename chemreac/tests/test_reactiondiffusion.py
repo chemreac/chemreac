@@ -390,45 +390,53 @@ def test_ReactionDiffusion__only_1_reaction__logy__logt(N):
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
-def test_ReactionDiffusion__only_1_reaction_bin_k_factor(N):
+def test_ReactionDiffusion__only_1_field_dep_reaction(N):
     y0 = np.concatenate([np.array([2.0, 3.0])/(x+1) for x in range(N)])
     k = 5.0
     # A -> B
-    rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
-                           bin_k_factor=[[x + 1] for x in range(N)],
-                           bin_k_factor_span=[1])
+    rd = ReactionDiffusion(2, [], [], [], N, D=[0.0, 0.0],
+                           fields=[[x + 1 for x in range(N)]],
+                           g_values=[[-k, k]],
+                           g_value_parents=[0])
     fref = [-10.0, 10.0]*N
     _test_f_and_dense_jac_rmaj(rd, 0.0, y0, fref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
-def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy(N):
+def test_ReactionDiffusion__only_1_field_dep_reaction_logy(N):
     y0 = np.concatenate([np.array([2.0, 3.0])/(x+1) for x in range(N)])
     k = 5.0
     # A -> B
 
-    rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
-                           bin_k_factor=[[x+1] for x in range(N)],
-                           bin_k_factor_span=[1], logy=True)
+    rd = ReactionDiffusion(2, [], [], [], N, D=[0.0, 0.0],
+                           fields=[[x+1 for x in range(N)]],
+                           g_values=[[-k, k]],
+                           g_value_parents=[0], logy=True)
 
     def k_(bi):
         return k*(bi+1)
 
     fref = np.array([(-k_(i), k_(i)*y0[i*2]/y0[i*2+1])
                      for i in range(N)]).flatten()
-    _test_f_and_dense_jac_rmaj(rd, 0, np.log(y0), fref)
+    if N == 1:
+        jref = np.array([[0, 0],
+                         [k*y0[0]/y0[1], -k*y0[0]/y0[1]]])
+    else:
+        jref = None
+    _test_f_and_dense_jac_rmaj(rd, 0, np.log(y0), fref, jref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
-def test_ReactionDiffusion__only_1_reaction_bin_k_factor_logy_logt(N):
+def test_ReactionDiffusion__only_1_field_dep_reaction_logy_logt(N):
     t0 = 3.0
     y0 = np.concatenate([np.array([2.0, 3.0])/(x+1) for x in range(N)])
     k = 5.0
     # A -> B
 
-    rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0],
-                           bin_k_factor=[[x+1] for x in range(N)],
-                           bin_k_factor_span=[1], logy=True, logt=True)
+    rd = ReactionDiffusion(2, [], [], [], N, D=[0.0, 0.0],
+                           fields=[[x+1 for x in range(N)]],
+                           g_values=[[-k, k]], g_value_parents=[0],
+                           logy=True, logt=True)
 
     def k_(bi):
         return k*(bi+1)
@@ -593,8 +601,55 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
 @slow
 @pytest.mark.parametrize("geom_refl", list(product(
     (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
-def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
-    # TODO: add logy, logt
+def test_diffusion_jac(geom_refl):
+    geom, refl = geom_refl
+    lrefl, rrefl = refl
+    N = 9
+    x = np.linspace(0.1, 1, N+1)
+    rd = ReactionDiffusion(1, [], [], [], D=[3], N=N, x=x, nstencil=3,
+                           lrefl=lrefl, rrefl=rrefl, geom=geom)
+    y0 = x[0]+2*x[1:]**2/(1+x[1:]**4)
+    # compare f and jac with Symbolic class:
+    _test_f_and_dense_jac_rmaj(rd, 0, y0)
+
+
+COMBOS = list(product((FLAT, CYLINDRICAL, SPHERICAL), TR_FLS))
+
+
+@pytest.mark.parametrize("params", COMBOS)
+def test_integrated_conc(params):
+    geom, logx = params
+    N = 8192
+    x0, xend = 0.11, 1.37
+    x = np.linspace(x0, xend, N+1)
+    rd = ReactionDiffusion(1, [], [], [], D=[0], N=N,
+                           x=np.log(x) if logx else x, geom=geom, logx=logx)
+    xc = np.exp(rd.xcenters) if logx else rd.xcenters
+    y = xc*np.exp(-xc)
+
+    def primitive(t):
+        if geom == FLAT:
+            return -(t+1)*np.exp(-t)
+        elif geom == CYLINDRICAL:
+            return 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
+        elif geom == SPHERICAL:
+            return 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
+        else:
+            raise NotImplementedError
+    res = rd.integrated_conc(y)
+    ref = (primitive(xend) - primitive(x0))
+    assert abs(res - ref) < 1e-8
+
+
+@slow
+@pytest.mark.parametrize("geom_refl", list(product(
+    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
+def UNSUPPORTED_test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
+        geom_refl):
+    # UNSUPPORTED since `bin_k_factor` was replaced with `fields`
+    # if a real world scenario need per bin modulation of binary
+    # reactions and the functionality is reintroduced, this test
+    # is useful
     from sympy import finite_diff_weights
     geom, refl = geom_refl
     lrefl, rrefl = refl
@@ -772,46 +827,3 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(geom_refl):
     jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
     rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
     assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
-
-
-@slow
-@pytest.mark.parametrize("geom_refl", list(product(
-    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
-def test_diffusion_jac(geom_refl):
-    geom, refl = geom_refl
-    lrefl, rrefl = refl
-    N = 9
-    x = np.linspace(0.1, 1, N+1)
-    rd = ReactionDiffusion(1, [], [], [], D=[3], N=N, x=x, nstencil=3,
-                           lrefl=lrefl, rrefl=rrefl, geom=geom)
-    y0 = x[0]+2*x[1:]**2/(1+x[1:]**4)
-    # compare f and jac with Symbolic class:
-    _test_f_and_dense_jac_rmaj(rd, 0, y0)
-
-
-COMBOS = list(product((FLAT, CYLINDRICAL, SPHERICAL), TR_FLS))
-
-
-@pytest.mark.parametrize("params", COMBOS)
-def test_integrated_conc(params):
-    geom, logx = params
-    N = 8192
-    x0, xend = 0.11, 1.37
-    x = np.linspace(x0, xend, N+1)
-    rd = ReactionDiffusion(1, [], [], [], D=[0], N=N,
-                           x=np.log(x) if logx else x, geom=geom, logx=logx)
-    xc = np.exp(rd.xcenters) if logx else rd.xcenters
-    y = xc*np.exp(-xc)
-
-    def primitive(t):
-        if geom == FLAT:
-            return -(t+1)*np.exp(-t)
-        elif geom == CYLINDRICAL:
-            return 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
-        elif geom == SPHERICAL:
-            return 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
-        else:
-            raise NotImplementedError
-    res = rd.integrated_conc(y)
-    ref = (primitive(xend) - primitive(x0))
-    assert abs(res - ref) < 1e-8

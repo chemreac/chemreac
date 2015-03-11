@@ -87,6 +87,9 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
+from chemreac.units import (
+    SI_base, second, molar, unitof, to_unitless, get_derived_unit
+)
 from chemreac.util.plotting import (
     save_and_or_show_plot, plot_solver_linear_error,
     plot_solver_linear_excess_error
@@ -120,7 +123,7 @@ def _get_Cref(t, y0, k, use_mpmath=True):
         _exp = np.vectorize(mp.exp)
     else:
         def _exp(x):
-            return np.exp(_algebraic_sigmoid(x, 8, 350))
+            return np.exp(_algebraic_sigmoid(np.asarray(x), 8, 350))
     A, B, C = y0
     kf, kb = k
     x = analytic_x(t, A, B, C, kf, kb, _exp).reshape((t.size, 1))
@@ -144,24 +147,33 @@ def integrate_rd(
     - Reaction Quotient vs. time (with equilibrium constant as reference)
     - Numerical error commited (with tolerance span plotted)
     - Excess error committed (deviation outside tolerance span)
+
+    Concentrations (A0, B0, C0) are taken to be in "M" (molar),
+    kf in "M**-1 s**-1" and kb in "s**-1", t0 and tend in "s"
     """
 
     rtol = float(rtol)
     atol = list(map(float, atol.split(',')))
     if len(atol) == 1:
         atol = atol[0]
+    registry = SI_base.copy()
+    registry['amount'] = 1.0/scaling*registry['amount']
+    registry['length'] = registry['length']/10  # decimetre
 
-    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb],
-                           logy=logy, logt=logt)
+    kf = kf/molar/second
+    kb = kb/second
 
-    y0 = np.array([A0, B0, C0])
+    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]],
+                           [kf, kb],
+                           logy=logy, logt=logt, units=registry)
+
+    y0 = np.array([A0, B0, C0])*molar
     if plotlogt:
         eps = 1e-16
-        tout = np.logspace(np.log10(t0+eps), np.log10(tend+eps), nt)
+        tout = np.logspace(np.log10(t0+eps), np.log10(tend+eps), nt)*second
     else:
-        tout = np.linspace(t0, tend, nt)
-    integr = run(rd, y0, tout, atol=atol, rtol=rtol, with_jacobian=not num_jac,
-                 scaling=scaling)
+        tout = np.linspace(t0, tend, nt)*second
+    integr = run(rd, y0, tout, atol=atol, rtol=rtol, with_jacobian=not num_jac)
     Cout, yout, info = integr.Cout, integr.yout, integr.info
     try:
         import mpmath
@@ -170,8 +182,15 @@ def integrate_rd(
         use_mpmath = False
     else:
         use_mpmath = True
-    Cref = _get_Cref(tout - tout[0], y0, [kf, kb],
-                     use_mpmath).reshape((nt, 1, 3))
+    time_unit = get_derived_unit(registry, 'time')
+    conc_unit = get_derived_unit(registry, 'concentration')
+    Cref = _get_Cref(
+        to_unitless(tout - tout[0], time_unit),
+        to_unitless(y0, conc_unit),
+        [to_unitless(kf, 1/time_unit/conc_unit),
+         to_unitless(kb, 1/time_unit)],
+        use_mpmath
+    ).reshape((nt, 1, 3))*conc_unit
     if verbose:
         print(info)
 
@@ -198,7 +217,8 @@ def integrate_rd(
         for i, l in enumerate('ABC'):
             # Plot solution trajectory for i:th species
             ax_sol = subplot(0, i)
-            ax_sol.plot(tout, Cout[:, 0, i], label=l, color=c[i])
+            ax_sol.plot(tout, to_unitless(Cout[:, 0, i], molar),
+                        label=l, color=c[i])
 
             if splitplots:
                 # Plot relative error
@@ -221,13 +241,14 @@ def integrate_rd(
                 atol_i = atol[i]
             except:
                 atol_i = atol
-            wtol_i = atol_i + rtol*Cout[:, 0, i]
+            wtol_i = integr.with_units(atol_i + rtol*yout[:, 0, i],
+                                       'concentration')
 
             if np.any(np.abs(linE/wtol_i) > 1000):
                 # Plot true curve in first plot when deviation is large enough
                 # to be seen visually
-                ax_sol.plot(tout, Cref[:, 0, i], label='true '+l,
-                            color=c[i], ls='--')
+                ax_sol.plot(tout, to_unitless(Cref[:, 0, i], molar),
+                            label='true '+l, color=c[i], ls='--')
 
             ax_err = subplot(2, i)
             plot_solver_linear_error(integr, Cref, ax_err, si=i,
@@ -241,14 +262,16 @@ def integrate_rd(
                        adapt_xscale=False)
         Qnum = Cout[:, 0, 2]/(Cout[:, 0, 0]*Cout[:, 0, 1])
         Qref = Cref[:, 0, 2]/(Cref[:, 0, 0]*Cref[:, 0, 1])
-        ax_q.plot(tout, Qnum, label='Q', color=c[i])
+        ax_q.plot(tout, to_unitless(Qnum, molar**-1), label='Q', color=c[i])
         if np.any(np.abs(Qnum/Qref-1) > 0.01):
             # If more than 1% error in Q, plot the reference curve too
-            ax_q.plot(tout, Qref, '--', label='Qref', color=c[i])
+            ax_q.plot(tout, to_unitless(Qref, molar**-1),
+                      '--', label='Qref', color=c[i])
         # Plot the
-        ax_q.plot((tout[0], tout[-1]), [kf/kb]*2, '--k', label='K')
+        ax_q.plot((tout[0], tout[-1]), [to_unitless(kf/kb, molar**-1)]*2,
+                  '--k', label='K')
         ax_q.set_xlabel('t')
-        ax_q.set_ylabel('[C]/([A][B])')
+        ax_q.set_ylabel('[C]/([A][B]) / M**-1')
         ax_q.set_title("Transient towards equilibrium")
         ax_q.legend(loc='best', prop={'size': 11})
 
@@ -278,7 +301,7 @@ def integrate_rd(
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
 
-    return yout, Cref, rd, info
+    return yout, to_unitless(Cref, conc_unit), rd, info
 
 
 if __name__ == '__main__':

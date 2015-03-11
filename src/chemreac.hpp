@@ -24,7 +24,6 @@ public:
     int * coeff_actv;
     double * D_weight; // diffusion weights
     double * A_weight; // Advection weights
-    vector<uint> i_bin_k;
     uint n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
 
@@ -51,14 +50,15 @@ public:
     vector<int> z_chg; // ion charge
     vector<double> mobility; // electrical mobility
     const vector<double> x; // Bin edges (length = N+1)
-    vector<vector<double> > bin_k_factor; // rate = FACTOR(ri, bi)*k[ri]*C[si1]*C[...]
-    vector<uint> bin_k_factor_span; //
     const bool lrefl, rrefl;
     const bool auto_efield;
     const pair<double, double> surf_chg;
     const double eps_rel; // relative permittivity
     const double faraday_const;
     const double vacuum_permittivity;
+    vector<vector<double>> g_values;
+    vector<int> g_value_parents;
+    vector<vector<double>> fields;
     double * const efield; // v_d = mu_el*E
     double * const netchg;
 private:
@@ -80,12 +80,10 @@ public:
 		      vector<double>,
 		      uint,
 		      vector<double>,
-                      vector<int>,
+                      const vector<int>,
                       vector<double>,
 		      const vector<double>,
 		      vector<vector<uint> >,
-		      vector<vector<double> >,
-		      vector<uint>,
 		      int geom_=0,
 		      bool logy=false,
 		      bool logt=false,
@@ -97,7 +95,11 @@ public:
                       pair<double, double> surf_chg={0, 0},
                       double eps_rel=1.0,
                       double faraday_const=9.64853399e4, // C/mol
-                      double vacuum_permittivity=8.854187817e-12); // F/m
+                      double vacuum_permittivity=8.854187817e-12, // F/m
+                      vector<vector<double> > g_values={},
+                      vector<int> g_value_parents={},
+                      vector<vector<double> > fields={}
+                      );
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);
     void dense_jac_rmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);

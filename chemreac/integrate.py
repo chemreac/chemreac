@@ -22,6 +22,7 @@ import time
 import numpy as np
 
 from chemreac import DENSE, BANDED
+from chemreac.units import get_derived_unit, to_unitless
 from chemreac.util.analysis import suggest_t0
 
 
@@ -65,7 +66,7 @@ def _integrate_sundials(rd, y0, tout, mode=None, **kwargs):
                                   np.asarray(tout).flatten(),
                                   **new_kwargs)
     except RuntimeError:
-        yout = np.ones((len(tout), rd.N, rd.n), order='C')/0  # NaN
+        yout = np.empty((len(tout), rd.N, rd.n), order='C')/0  # NaN
         success = False
     else:
         success = True
@@ -250,12 +251,9 @@ class Integration(object):
         as the solver.
     rd: ReactionDiffusion instance
     C0: array
-        initial concentrations (unscaled, untransformed)
+        initial concentrations (untransformed, i.e. linear)
     tout: array
         times for which to report solver results (untransformed)
-
-    scaling: float
-        Scale concentrations (and rate constants)
     sigm_damp: bool or tuple of (lim: float, n: int)
         conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
         s(x) = x/((x/lim)**n+1)**(1./n)
@@ -305,16 +303,16 @@ class Integration(object):
         'rk4': _integrate_rk4,
     }
 
-    def __init__(self, solver, rd, C0, tout, scaling=1.0,
-                 sigm_damp=False, C0_is_log=False, tiny=None,
-                 **kwargs):
+    def __init__(self, solver, rd, C0, tout, sigm_damp=False,
+                 C0_is_log=False, tiny=None, **kwargs):
         if solver not in self._callbacks:
             raise KeyError("Unknown solver %s" % solver)
         self.solver = solver
         self.rd = rd
-        self.C0 = np.asarray(C0).flatten()
-        self.tout = tout
-        self.scaling = scaling
+        self.C0 = to_unitless(C0, get_derived_unit(
+            rd.units, 'concentration')).flatten()
+        self.tout = to_unitless(tout, get_derived_unit(
+            rd.units, 'time'))
         self.sigm_damp = sigm_damp
         self.C0_is_log = C0_is_log
         self.tiny = tiny or np.finfo(np.float64).tiny
@@ -330,6 +328,9 @@ class Integration(object):
             if np.any(self.C0 < 0):
                 raise ValueError("Negative concentrations encountered in C0")
 
+    def with_units(self, value, key):
+        return value*get_derived_unit(self.rd.units, key)
+
     def _integrate(self):
         """
         Performs the integration by calling the callback chosen by
@@ -342,17 +343,7 @@ class Integration(object):
         from yout by calling exp if rd.logy==True) and yout is the unprocessed
         output from the solver.
         """
-        # Possibly scale the concentrations
-        if self.scaling != 1.0:
-            C0 = self.scaling*self.C0
-            ori_k = self.rd.k
-            self.rd.k = [k*self.scaling**-(len(sa) - 1) for k, sa in
-                         zip(self.rd.k, self.rd.stoich_actv)]
-        else:
-            C0 = self.C0
-        conc_unit = (self.rd.units.get('amount', 1) /
-                     self.rd.units.get('length', 1)**3)
-        C0 = np.asarray(C0 / conc_unit)
+        C0 = self.C0
 
         # Transform initial concentrations
         if self.rd.logy:
@@ -377,7 +368,7 @@ class Integration(object):
                 y0 = C0
 
         # Transform time
-        tout = np.asarray(self.tout / self.rd.units.get('time', 1))
+        tout = self.tout
         if tout[0] == 0.0 and self.rd.logt:
             t0_set = True
             t0 = suggest_t0(self.rd, y0)
@@ -391,17 +382,15 @@ class Integration(object):
             self.rd, y0, t, **self.kwargs)
         self.info['t0_set'] = t0 if t0_set else False
 
-        if self.rd.logt:
-            self.tout = np.exp(self.internal_t)
-        else:
-            self.tout = self.internal_t * self.rd.units.get('time', 1)
+        # Back-transform independent variable into linear time
+        self.tout = self.with_units(
+            np.exp(self.internal_t) if self.rd.logt else self.internal_t,
+            'time')
 
         # Back-transform integration output into linear concentration
-        self.Cout = (np.exp(self.yout) if self.rd.logy
-                     else self.yout)*conc_unit
-        if self.scaling != 1.0:
-            self.Cout /= self.scaling
-            self.rd.k = ori_k
+        self.Cout = self.with_units(
+            np.exp(self.yout) if self.rd.logy else self.yout,
+            'concentration')
 
 
 def run(*args, **kwargs):

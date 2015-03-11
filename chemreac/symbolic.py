@@ -15,7 +15,6 @@ from functools import reduce
 from operator import add
 from math import exp
 
-import numpy as np
 import sympy as sp
 
 from .core import FLAT, CYLINDRICAL, SPHERICAL, ReactionDiffusionBase
@@ -27,15 +26,15 @@ class SymRD(ReactionDiffusionBase):
     @classmethod
     def from_rd(cls, rd):
         import inspect
-        return cls(*(getattr(rd, attr) for attr in
-                     inspect.getargspec(cls.__init__).args[1:]))
+        return cls(*tuple(getattr(rd, attr) for attr in
+                          inspect.getargspec(cls.__init__).args[1:]))
 
     def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None,
                  z_chg=None, mobility=None, x=None, stoich_actv=None,
-                 bin_k_factor=None, bin_k_factor_span=None, geom=FLAT,
-                 logy=False, logt=False, logx=False, nstencil=None,
+                 geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
-                 surf_chg=(0.0, 0.0), eps_rel=1.0, **kwargs):
+                 surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
+                 g_value_parents=None, fields=None, **kwargs):
         # Save args
         self.n = n
         self.stoich_reac = stoich_reac
@@ -49,8 +48,6 @@ class SymRD(ReactionDiffusionBase):
         if N not in [None, 0]:
             assert self.N == N
         self.stoich_actv = stoich_actv or [[]*len(stoich_reac)]
-        self.bin_k_factor = bin_k_factor
-        self.bin_k_factor_span = bin_k_factor_span
         self.geom = geom
         self.logy = logy
         self.logt = logt
@@ -61,6 +58,9 @@ class SymRD(ReactionDiffusionBase):
         self.auto_efield = auto_efield
         self.surf_chg = surf_chg
         self.eps_rel = eps_rel
+        self.g_values = g_values or []
+        self.g_value_parents = g_value_parents or []
+        self.fields = [] if fields is None else fields
         if kwargs:
             raise KeyError("Don't know what to do with:", kwargs)
 
@@ -73,7 +73,6 @@ class SymRD(ReactionDiffusionBase):
                                         self.lrefl, self.rrefl)
         self._pxci2bi = pxci_to_bi(self.nstencil, self.N)
         self._f = [0]*self.n*self.N
-        self._cum_bin_k_factor_span = np.cumsum(self.bin_k_factor_span)
         self.efield = [0]*self.N
 
         # Reactions
@@ -86,11 +85,20 @@ class SymRD(ReactionDiffusionBase):
             if sactv == []:
                 sactv = sreac
             for bi in range(self.N):
-                r = k * self.factor(ri, bi)
+                r = k
                 for si in sactv:
                     r *= self.y(bi, si)
                 for si in range(self.n):
                     self._f[bi*self.n+si] += c_totl[si]*r
+        for fi, fld in enumerate(self.fields):
+            for bi in range(self.N):
+                if self.g_value_parents[fi] == -1:
+                    gfact = 1
+                else:
+                    gfact = self.y(bi, self.g_value_parents[fi])
+                for si in range(self.n):
+                    self._f[bi*self.n+si] += sp.S(
+                        fld[bi])*self.g_values[fi][si]*gfact
 
         if self.N > 1:
             # Diffusion
@@ -143,17 +151,6 @@ class SymRD(ReactionDiffusionBase):
                         self._f[bi*self.n+si] /= self.y(bi, si)
                     if self.logt:
                         self._f[bi*self.n+si] *= sp.exp(self._t)
-
-    def factor(self, ri, bi):
-        for i, ub in enumerate(self._cum_bin_k_factor_span):
-            if ub is None:
-                continue
-            if ri < ub:
-                idx = i
-                break
-        else:
-            return 1.0
-        return self.bin_k_factor[bi][idx]
 
     def y(self, bi, si):
         if self.logy:

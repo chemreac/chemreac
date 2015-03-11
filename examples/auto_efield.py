@@ -135,6 +135,8 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         auto_efield=True,
         surf_chg=surf_chg,
         eps_rel=80.10,  # water at 20 deg C
+        faraday=1.0,
+        vacuum_permittivity=1.0
     )
 
     # Initial conditions

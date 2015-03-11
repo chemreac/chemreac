@@ -58,7 +58,7 @@ def test_autodimerization():
 
 @pytest.mark.parametrize("log_geom", product(
     LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
-def test_ReactionDiffusion__bin_k_factor(log_geom):
+def test_ReactionDiffusion_fields_and_g_values(log_geom):
     # modulation in x means x_center
     # A -> B # mod1 (x**2)
     # C -> D # mod1 (x**2)
@@ -68,34 +68,37 @@ def test_ReactionDiffusion__bin_k_factor(log_geom):
     k = np.array([3.0, 7.0, 13.0, 22.0])
     N = 5
     n = 8
-    nr = 4
     D = np.zeros(n)
     x = np.linspace(3, 7, N+1)
     xc = x[:-1] + np.diff(x)/2
-    bkf = [(xc[i]*xc[i], xc[i]**0.5) for i in range(N)]
-    bkf_span = [2, 1]
+    fields = [[xc[i]*xc[i] for i in range(N)],
+              [xc[i]*xc[i] for i in range(N)],
+              [xc[i]**0.5 for i in range(N)]]
+    g_values = [[-k[0], k[0], 0, 0, 0, 0, 0, 0],
+                [0, 0, -k[1], k[1], 0, 0, 0, 0],
+                [0, 0, 0, 0, -k[2], k[2], 0, 0]]
+    g_value_parents = [0, 2, 4]
     rd = ReactionDiffusion(
         n,
-        [[i] for i in range(0, n, 2)],
-        [[i] for i in range(1, n, 2)],
-        k=k, N=N, D=D, x=x, bin_k_factor=bkf,
-        bin_k_factor_span=bkf_span,
+        [[i] for i in range(n-2, n, 2)],
+        [[i] for i in range(n-1, n, 2)],
+        k=k[3:], N=N, D=D, x=x, fields=fields,
+        g_values=g_values, g_value_parents=g_value_parents,
         logy=logy, logt=logt, geom=geom
     )
     assert rd.n == n
     assert rd.N == N
-    assert rd.nr == nr
     assert np.allclose(rd.D, D)
-    assert np.allclose(rd.k, k)
+    assert np.allclose(rd.k, k[3:])
     assert np.allclose(rd.xcenters, xc)
-    assert np.allclose(rd.bin_k_factor, bkf)
-    assert np.allclose(rd.bin_k_factor_span, bkf_span)
+    assert np.allclose(rd.fields, fields)
+    assert np.allclose(rd.g_values, g_values)
     y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N])
     y0 = y0.flatten()
     t0, tend, nt = 1.0, 1.1, 42
     tout = np.linspace(t0, tend, nt+1)
 
-    integr = run(rd, y0, tout, atol=1e-11, rtol=1e-11)
+    integr = run(rd, y0, tout, atol=1e-11, rtol=1e-11, with_jacobian=True)
 
     def _get_bkf(bi, ri):
         if ri < 2:

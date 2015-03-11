@@ -13,7 +13,8 @@ def test_solver_linear_error():
 @pytest.mark.parametrize("atol", (1.0, [1.0]))
 def test_solver_linear_error_from_integration(atol):
     class Dummy:
-        pass
+        def with_units(self, value, key):
+            return value
     integr = Dummy()
     integr.yout = np.array([1.0]).reshape((1, 1, 1))
     print(integr.yout[slice(None), 0, 0])

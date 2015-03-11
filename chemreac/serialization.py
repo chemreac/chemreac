@@ -2,7 +2,11 @@
 
 import json
 
+import numpy as np
+
 from . import ReactionDiffusion
+from .core import get_unit
+from .util.stoich import get_reaction_orders
 from .units import (
     unit_registry_to_human_readable,
     unit_registry_from_human_readable
@@ -37,11 +41,13 @@ def dump(rd, dest):
         'stoich_prod': rd.stoich_prod,
         'k': rd.k.tolist(),
         'D': rd.D.tolist(),
+        'mobility': rd.mobility.tolist(),
         # 'x': rd.x.tolist(),
         'stoich_actv': rd.stoich_actv,
-        # 'bin_k_factor': rd.bin_k_factor.,
-        'bin_k_factor_span': rd.bin_k_factor_span.tolist(),
-        'units': unit_registry_to_human_readable(rd.units)
+        'units': unit_registry_to_human_readable(rd.units),
+        'g_values': rd.g_values,
+        'g_value_parents': rd.g_value_parents,
+        # 'fields': fields
     }
     for attr in ReactionDiffusion.extra_attrs:
         data[attr] = getattr(rd, attr)
@@ -68,7 +74,28 @@ def load(source, RD=None, **kwargs):
         fh = source
 
     data = json.load(fh)
-    data['units'] = unit_registry_from_human_readable(data['units'])
+    units = data['units'] = unit_registry_from_human_readable(
+        data.get('units', None))
+    if 'D' in data:
+        data['D'] = np.array(data['D'])*get_unit(units, 'diffusion')
+    if 'mobility' in data:
+        data['mobility'] = np.array(data['mobility'])*get_unit(
+            units, 'electrical_mobility')
+    if 'g_values' in data:
+        g_units = []
+        for parent in data.get('g_value_parents', [-1]*len(data['g_values'])):
+            if parent == -1:
+                g_units.append(get_unit(units, 'radyield'))
+            else:
+                g_units.append(get_unit(units, 'radyield') /
+                               get_unit(units, 'concentration'))
+        data['g_values'] = [elem*g_unit for
+                            elem, g_unit in zip(data['g_values'], g_units)]
+
+    kunits = [get_unit(units, 'concentration')**(1-order) /
+              get_unit(units, 'time') for order in get_reaction_orders(
+                  data['stoich_reac'], data.get('stoich_actv', None))]
+    data['k'] = [kval*kunit for kval, kunit in zip(data['k'], kunits)]
     data.update(kwargs)
     extra_data = {}
     for attr in ReactionDiffusion.extra_attrs:

@@ -17,8 +17,9 @@ ReactionDiffusion get_four_species_system(int N){
     vector<int> z_chg {0, 0, 0, 0};
     vector<double> mobility {0, 0, 0, 0};
     vector<double> x;
-    vector<vector<double> > bin_k_factor;
-    vector<uint> bin_k_factor_span;
+    vector<vector<double> > g_values;
+    vector<int> g_value_parents;
+    vector<vector<double> > fields;
     vector<uint> v;
     int geom = 0;
     bool logy = false, logt = false, logx = false;
@@ -28,6 +29,5 @@ ReactionDiffusion get_four_species_system(int N){
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
     return ReactionDiffusion(n, stoich_reac, stoich_prod, k, N, D, z_chg,
-                             mobility, x, stoich_actv,	bin_k_factor,
-                             bin_k_factor_span, geom, logy, logt, logx, nstencil, true, true);
+                             mobility, x, stoich_actv, geom, logy, logt, logx, nstencil, true, true);
 }

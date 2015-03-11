@@ -1,8 +1,10 @@
+# -*- coding: utf-8 -*-
 from collections import defaultdict
 
 from chemreac.units import (
     isunitless, unitof, unit_registry_to_human_readable,
-    unit_registry_from_human_readable, SI_base,
+    get_derived_unit,
+    to_unitless, unit_registry_from_human_readable, SI_base,
     metre, kilogram, second, ampere, Kelvin, candela, mole,
     dm
 )
@@ -51,6 +53,37 @@ def test_unit_registry_to_human_readable():
         'luminous_intensity': (1e-3, 'cd'),
         'amount': (1e4, 'mol')
     }
+
+
+def test_to_unitless():
+    vals = [1.0*dm, 2.0*dm]
+    result = to_unitless(vals, metre)
+    assert result[0] == 0.1
+    assert result[1] == 0.2
+
+    vals = [1.0, 2.0]*dm
+    result = to_unitless(vals, metre)
+    assert result[0] == 0.1
+    assert result[1] == 0.2
+
+    length_unit = 1000*metre
+    result = to_unitless(1.0*metre, length_unit)
+    assert abs(result - 1e-3) < 1e-12
+
+    amount_unit = 1e-9  # nano
+    assert abs(to_unitless(1.0, amount_unit) - 1e9) < 1e-6
+
+
+def test_get_derived_unit():
+    registry = SI_base.copy()
+    registry['length'] = 1e-1*registry['length']
+    conc_unit = get_derived_unit(registry, 'concentration')
+    assert abs(conc_unit - 1*mole/(dm**3)) < 1e-12*mole/(dm**3)
+
+    registry = defaultdict(lambda: 1)
+    registry['amount'] = 1e-9  # nano
+    assert abs(to_unitless(1.0, get_derived_unit(
+        registry, 'concentration')) - 1e9) < 1e-6
 
 
 def test_unit_registry_from_human_readable():

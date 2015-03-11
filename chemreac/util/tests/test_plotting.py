@@ -8,7 +8,7 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
-    plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_bin_k_factors,
+    plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_fields,
     plot_solver_linear_error, plot_solver_linear_excess_error,
 )
 from chemreac.util.testing import slow
@@ -92,7 +92,7 @@ def test_plot_C_vs_t_and_x():
     assert isinstance(ax, mpl_toolkits.mplot3d.Axes3D)
 
 
-def test_plot_bin_k_factors():
+def test_plot_fields():
     # modulation in x means x_center
     # A -> B # mod1 (x**2)
     # C -> D # mod1 (x**2)
@@ -104,16 +104,24 @@ def test_plot_bin_k_factors():
     D = np.zeros(n)
     x = np.linspace(3, 7, N+1)
     xc = x[:-1] + np.diff(x)/2
-    bkf = [(xc[i]*xc[i], xc[i]**0.5) for i in range(N)]
-    bkf_span = [2, 1]
+    fields = [
+        [xc[i]*xc[i] for i in range(N)],
+        [xc[i]*xc[i] for i in range(N)],
+        [xc[i]**0.5 for i in range(N)]
+    ]
+    g_values = [
+        [-k[0], k[0], 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, -k[1], k[1], 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, -k[2], k[2], 0.0, 0.0],
+    ]
     rd = ReactionDiffusion(
         n,
-        [[i] for i in range(0, n, 2)],
-        [[i] for i in range(1, n, 2)],
-        k=k, N=N, D=D, x=x, bin_k_factor=bkf,
-        bin_k_factor_span=bkf_span
+        [[6]],
+        [[7]],
+        k=k[3:], N=N, D=D, x=x, fields=fields,
+        g_values=g_values
     )
-    ax = plot_bin_k_factors(rd, indices=[0, 1])
+    ax = plot_fields(rd, indices=[0, 2])
     assert isinstance(ax, matplotlib.axes.Axes)
 
 

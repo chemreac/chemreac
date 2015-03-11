@@ -20,6 +20,7 @@ import numpy as np
 import quantities as pq
 
 from chemreac import ReactionDiffusion
+from chemreac.util.physchem import electrical_mobility_from_D
 
 # TODO: somewhere: add check for massconservation and charge conservation
 
@@ -108,6 +109,10 @@ class Substance(object):
 
     def __lt__(self, other):
         return self.name < other.name
+
+    def get_mobility(self, Temp, kB=None):
+        """ See ``chemreac.util.physchem.electrical_mobility_from_D`` """
+        return electrical_mobility_from_D(self.D, self.charge, Temp, kB)
 
 
 def mk_sn_dict_from_names(names, **kwargs):
@@ -349,12 +354,16 @@ class ReactionSystem(object):
         def _kwargs_updater(key, attr):
             if attr in kwargs:
                 return
-            kwargs[attr] = [getattr(substs[sn], key) for sn in ord_names]
+            try:
+                kwargs[attr] = [getattr(substs[sn], key) for sn in ord_names]
+            except AttributeError:
+                pass
 
         if substs:
             for key, attr in zip(
-                    ['D', 'name', 'tex_name'],
-                    ['D', 'substance_names', 'substance_tex_names']):
+                    ['D', 'mobility', 'name', 'tex_name'],
+                    ['D', 'mobility', 'substance_names',
+                     'substance_tex_names']):
                 _kwargs_updater(key, attr)
 
         assert 'stoich_actv' not in kwargs
@@ -393,14 +402,17 @@ class ReactionSystem(object):
 
     @property
     def k(self):
+        """ List of rate constants """
         return [rxn.k for rxn in self._rxns]
 
     @property
     def ns(self):
+        """ Number of species """
         return len(self.species_names)
 
     @property
     def nr(self):
+        """ Number of reactions """
         return len(self._rxns)
 
 

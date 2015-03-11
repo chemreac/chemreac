@@ -59,6 +59,7 @@ Contents:
    :maxdepth: 4
 
    install.rst
+   derivations.rst
    modules.rst
    examples/index.rst
    dev.rst

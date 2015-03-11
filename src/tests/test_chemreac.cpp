@@ -257,8 +257,6 @@ ReactionDiffusion _get_single_specie_system(int N, int z){
     vector<int> z_chg {z};
     vector<double> mobility {1.0};
     vector<double> x;
-    vector<vector<double> > bin_k_factor;
-    vector<uint> bin_k_factor_span;
     vector<uint> v;
     int geom = 0;
     bool logy = false, logt = false, logx = false;
@@ -266,9 +264,8 @@ ReactionDiffusion _get_single_specie_system(int N, int z){
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
     return ReactionDiffusion(n, stoich_reac, stoich_prod, k, N, D, z_chg,
-                             mobility, x, stoich_actv,	bin_k_factor,
-                             bin_k_factor_span, geom, logy, logt, logx, nstencil, true, true,
-                             true, {0, 0}, 1.0);
+                             mobility, x, stoich_actv, geom, logy, logt, logx,
+                             nstencil, true, true, true, {0, 0}, 1.0);
 }
 
 int test_calc_efield(){

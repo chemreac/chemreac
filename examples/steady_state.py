@@ -79,34 +79,37 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     stoich_reac = []
     stoich_prod = []
     k = []
-    bin_k_factor = [[] for _ in range(N)]
-    bin_k_factor_span = []
-    if lrefl:
-        # isolated system is not stationary for linear conc profile with finite
-        # slope, hence we add production reaction at left boundary
-        assert nstencil == 3  # k is derived for parabola through -x0, x0, x1
-        stoich_reac.append([0])
-        stoich_prod.append([0, 0])
-        for i in range(N):
-            bin_k_factor[i].append(1 if i == 0 else 0)
-        bin_k_factor_span.append(1)
-        x0 = (x[0]+x[1])/2 - x[0]
-        x1 = (x[1]+x[2])/2 - x[0]
-        C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
-        k.append(C*D*(y0[0]-y0[1])/(y0[0]*(x1**2 - x0**2)))
-    if rrefl:
-        # for same reason as above, a consumption reaction is added at right
-        # boundary
-        assert nstencil == 3
-        stoich_reac.append([0])
-        stoich_prod.append([])
-        for i in range(N):
-            bin_k_factor[i].append(1 if i == (N-1) else 0)
-        bin_k_factor_span.append(1)
-        xNm1 = (x[N-1]+x[N])/2-x[N]
-        xNm2 = (x[N-2]+x[N-1])/2-x[N]
-        C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
-        k.append(C*D*(y0[N-2]-y0[N-1])/(y0[N-1]*(xNm2**2 - xNm1**2)))
+
+    assert not lrefl
+    assert not rrefl
+    # bin_k_factor = [[] for _ in range(N)]
+    # bin_k_factor_span = []
+    # if lrefl:
+    #     # isolated sys is not stationary for linear conc profile with finite
+    #     # slope, hence we add production reaction at left boundary
+    #     assert nstencil == 3  # k is derived for parabola through -x0, x0, x1
+    #     stoich_reac.append([0])
+    #     stoich_prod.append([0, 0])
+    #     for i in range(N):
+    #         bin_k_factor[i].append(1 if i == 0 else 0)
+    #     bin_k_factor_span.append(1)
+    #     x0 = (x[0]+x[1])/2 - x[0]
+    #     x1 = (x[1]+x[2])/2 - x[0]
+    #     C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
+    #     k.append(C*D*(y0[0]-y0[1])/(y0[0]*(x1**2 - x0**2)))
+    # if rrefl:
+    #     # for same reason as above, a consumption reaction is added at right
+    #     # boundary
+    #     assert nstencil == 3
+    #     stoich_reac.append([0])
+    #     stoich_prod.append([])
+    #     for i in range(N):
+    #         bin_k_factor[i].append(1 if i == (N-1) else 0)
+    #     bin_k_factor_span.append(1)
+    #     xNm1 = (x[N-1]+x[N])/2-x[N]
+    #     xNm2 = (x[N-2]+x[N-1])/2-x[N]
+    #     C = {FLAT: 2, CYLINDRICAL: 4, SPHERICAL: 6}[geom]
+    #     k.append(C*D*(y0[N-2]-y0[N-1])/(y0[N-1]*(xNm2**2 - xNm1**2)))
 
     rd = ReactionDiffusion(
         n, stoich_reac, stoich_prod, k, N,
@@ -114,8 +117,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         z_chg=[1],
         mobility=[mob],
         x=x,
-        bin_k_factor=bin_k_factor,
-        bin_k_factor_span=bin_k_factor_span,
+        # bin_k_factor=bin_k_factor,
+        # bin_k_factor_span=bin_k_factor_span,
         geom=geom,
         logy=logy,
         logt=logt,
