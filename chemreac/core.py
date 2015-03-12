@@ -203,6 +203,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 units=None,
                 faraday=None,  # deprecated
                 vacuum_permittivity=None,  # deprecated
+                k_unitless=None,
                 **kwargs):
         if N == 0:
             if x is None:
@@ -249,7 +250,11 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             _stoich_actv = stoich_actv
         assert len(_stoich_actv) == len(stoich_reac)
 
-        assert len(stoich_reac) == len(stoich_prod) == len(k)
+        assert len(stoich_reac) == len(stoich_prod)
+        if k is not None:
+            assert len(stoich_reac) == len(k)
+        else:
+            assert len(stoich_reac) == len(k_unitless)
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
         if surf_chg is None:
@@ -274,11 +279,18 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             for fld in fields:
                 assert len(fld) == N
 
-        k_unitless = []
-        for order, kval in zip(get_reaction_orders(stoich_reac, stoich_actv),
-                               k):
-            k_unitless.append(to_unitless(kval, get_unit(
-                units, 'concentration')**(1-order)/get_unit(units, 'time')))
+        if k_unitless is None:
+            k_unitless = []
+            for order, kval in zip(get_reaction_orders(
+                    stoich_reac, stoich_actv), k):
+                k_unitless.append(to_unitless(kval, get_unit(
+                    units, 'concentration')**(1-order)/get_unit(
+                        units, 'time')))
+        else:
+            if k is not None:
+                raise ValueError(
+                    "When passing k_unitless you must set k to None")
+
         g_units = []
         for parent in g_value_parents:
             if parent == -1:
