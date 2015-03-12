@@ -34,7 +34,8 @@ class SymRD(ReactionDiffusionBase):
                  geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
-                 g_value_parents=None, fields=None, **kwargs):
+                 g_value_parents=None, fields=None, modulated_rxns=None,
+                 modulation=None, **kwargs):
         # Save args
         self.n = n
         self.stoich_reac = stoich_reac
@@ -61,6 +62,8 @@ class SymRD(ReactionDiffusionBase):
         self.g_values = g_values or []
         self.g_value_parents = g_value_parents or []
         self.fields = [] if fields is None else fields
+        self.modulated_rxns = [] if modulated_rxns is None else modulated_rxns
+        self.modulation = [] if modulation is None else modulation
         if kwargs:
             raise KeyError("Don't know what to do with:", kwargs)
 
@@ -86,6 +89,8 @@ class SymRD(ReactionDiffusionBase):
                 sactv = sreac
             for bi in range(self.N):
                 r = k
+                if ri in self.modulated_rxns:
+                    r *= self.modulation[self.modulated_rxns.index(ri)][bi]
                 for si in sactv:
                     r *= self.y(bi, si)
                 for si in range(self.n):

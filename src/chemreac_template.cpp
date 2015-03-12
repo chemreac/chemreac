@@ -70,14 +70,16 @@ ReactionDiffusion::ReactionDiffusion(
     double vacuum_permittivity,
     vector<vector<double>> g_values,
     vector<int> g_value_parents,
-    vector<vector<double>> fields):
+    vector<vector<double>> fields,
+    vector<int> modulated_rxns,
+    vector<vector<double> > modulation):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
     logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl), 
     auto_efield(auto_efield),
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
     vacuum_permittivity(vacuum_permittivity), 
-    g_value_parents(g_value_parents),
+    g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
     efield(new double[N]), netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
@@ -192,6 +194,14 @@ ReactionDiffusion::ReactionDiffusion(
 
     this->g_values = g_values;
     this->fields = fields;
+
+    // Sanity check modulation
+    for (const auto rxni : this->modulated_rxns)
+        if (rxni >= (int)nr || rxni < 0)
+            throw std::logic_error("illegal reaction index in modulated_rxns");
+    for (const auto& mdltn : this->modulation)
+        if (mdltn.size() != N)
+            throw std::logic_error("illegally sized vector in modulation");
 }
 
 ReactionDiffusion::~ReactionDiffusion()
@@ -293,6 +303,7 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ y,
         // reaction rxni
         double tmp = logy ? 0 : 1;
 
+        // Kinetically active reactants (law of massaction)
         for (uint rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_actv[rxni][rnti];
@@ -301,8 +312,17 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ y,
             else
                 tmp *= y[bi*n+si];
         }
+        // Linearize if y is log(Concentration)
         if (logy)
             tmp = exp(tmp);
+        // Modulation
+        int enumer = -1;
+        for (auto mi : this->modulated_rxns){
+            enumer++;
+            if (mi == (int)rxni)
+                tmp *= this->modulation[enumer][bi];
+        }
+        // Rate constant
         local_r[rxni] = k[rxni]*tmp;
     }
 }

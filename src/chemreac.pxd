@@ -30,6 +30,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[vector[double]] g_values
         vector[int] g_value_parents
         vector[vector[double]] fields
+        vector[int] modulated_rxns
+        vector[vector[double]] modulation
         double * const efield
         double * xc
         long neval_f
@@ -60,6 +62,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           double,
                           double,
                           double,
+                          vector[vector[double]],
+                          vector[int],
                           vector[vector[double]],
                           vector[int],
                           vector[vector[double]]
