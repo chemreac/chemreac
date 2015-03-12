@@ -69,6 +69,8 @@ cdef class CppReactionDiffusion:
                   vector[vector[double]] g_values,
                   vector[int] g_value_parents,
                   vector[vector[double]] fields,
+                  vector[int] modulated_rxns,
+                  vector[vector[double]] modulation,
                   uint nstencil=3,
                   bint lrefl=True,
                   bint rrefl=True,
@@ -84,7 +86,8 @@ cdef class CppReactionDiffusion:
             D, z_chg, mobility, x, stoich_actv, geom,
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
-            vacuum_permittivity, g_values, g_value_parents, fields)
+            vacuum_permittivity, g_values, g_value_parents, fields,
+            modulated_rxns, modulation)
 
     def __dealloc__(self):
         del self.thisptr
@@ -279,6 +282,18 @@ cdef class CppReactionDiffusion:
         def __set__(self, vector[vector[double]] fields):
             assert len(fields) == len(self.g_values)
             self.thisptr.fields = fields
+
+    property modulated_rxns:
+        def __get__(self):
+            return self.thisptr.modulated_rxns
+        def __set__(self, vector[int] modulated_rxns):
+            self.thisptr.modulated_rxns = modulated_rxns
+
+    property modulation:
+        def __get__(self):
+            return self.thisptr.modulation
+        def __set__(self, vector[vector[double]] modulation):
+            self.thisptr.modulation = modulation
 
     property neval_f:
         def __get__(self):

@@ -644,7 +644,7 @@ def test_integrated_conc(params):
 @slow
 @pytest.mark.parametrize("geom_refl", list(product(
     (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
-def UNSUPPORTED_test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
+def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         geom_refl):
     # UNSUPPORTED since `bin_k_factor` was replaced with `fields`
     # if a real world scenario need per bin modulation of binary
@@ -677,15 +677,16 @@ def UNSUPPORTED_test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
     k = [31.0, 37.0, 41.0]
 
     # (r[0], r[1]) modulations over bins
-    bin_k_factor = [(i+3, i+4) for i in range(N)]
-    bin_k_factor_span = [1, 1]
+    modulated_rxns = [0, 1]
+    modulation = [[i+3 for i in range(N)],
+                  [i+4 for i in range(N)]]
     nstencil = 3
     nsidep = 1
     rd = ReactionDiffusion(
         4, stoich_reac, stoich_prod, k, N, D=D, x=x,
-        bin_k_factor=bin_k_factor,
-        bin_k_factor_span=bin_k_factor_span, geom=geom,
-        nstencil=nstencil, lrefl=lrefl, rrefl=rrefl)
+        geom=geom, nstencil=nstencil, lrefl=lrefl,
+        rrefl=rrefl, modulated_rxns=modulated_rxns,
+        modulation=modulation)
 
     assert np.allclose(xc_, rd._xc)
 
@@ -736,9 +737,9 @@ def UNSUPPORTED_test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         return D[si]*f
 
     r = [
-        [k[0]*bin_k_factor[bi][0]*y0[bi, 0]*y0[bi, 1] for
+        [k[0]*modulation[0][bi]*y0[bi, 0]*y0[bi, 1] for
          bi in range(N)],
-        [k[1]*bin_k_factor[bi][1]*y0[bi, 3]*y0[bi, 2] for
+        [k[1]*modulation[1][bi]*y0[bi, 3]*y0[bi, 2] for
          bi in range(N)],
         [k[2]*y0[bi, 1]**2 for bi in range(N)],
     ]

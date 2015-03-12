@@ -197,7 +197,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
                 eps_rel=1.0, g_values=None, g_value_parents=None,
-                fields=None, units=None,
+                fields=None,
+                modulated_rxns=None,
+                modulation=None,
+                units=None,
                 faraday=None,  # deprecated
                 vacuum_permittivity=None,  # deprecated
                 **kwargs):
@@ -297,13 +300,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
              gv, yld_unit in zip(g_values, g_units)],
             g_value_parents,
             [to_unitless(fld, get_unit(units, 'field')) for fld in fields],
+            modulated_rxns or [],
+            modulation or [],
             nstencil, lrefl, rrefl, auto_efield,
             (to_unitless(surf_chg[0], get_unit(units, 'charge')),
              to_unitless(surf_chg[1], get_unit(units, 'charge'))),
             eps_rel,
             faraday or get_unitless_constant(units, 'faraday'),
             vacuum_permittivity or get_unitless_constant(
-                units, 'vacuum_permittivity')
+                units, 'vacuum_permittivity'),
         )
 
         rd.units = units

@@ -59,6 +59,8 @@ public:
     vector<vector<double>> g_values;
     vector<int> g_value_parents;
     vector<vector<double>> fields;
+    vector<int> modulated_rxns;
+    vector<vector<double> > modulation;
     double * const efield; // v_d = mu_el*E
     double * const netchg;
 private:
@@ -98,7 +100,9 @@ public:
                       double vacuum_permittivity=8.854187817e-12, // F/m
                       vector<vector<double> > g_values={},
                       vector<int> g_value_parents={},
-                      vector<vector<double> > fields={}
+                      vector<vector<double> > fields={},
+                      vector<int> modulated_rxns={},
+                      vector<vector<double> > modulation={}
                       );
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);
