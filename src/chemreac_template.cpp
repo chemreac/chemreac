@@ -199,6 +199,8 @@ ReactionDiffusion::ReactionDiffusion(
     for (const auto rxni : this->modulated_rxns)
         if (rxni >= (int)nr || rxni < 0)
             throw std::logic_error("illegal reaction index in modulated_rxns");
+    if (this->modulation.size() != this->modulated_rxns.size())
+        throw std::logic_error("modulation size differs from modulated_rxns");
     for (const auto& mdltn : this->modulation)
         if (mdltn.size() != N)
             throw std::logic_error("illegally sized vector in modulation");

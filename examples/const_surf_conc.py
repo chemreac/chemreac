@@ -97,8 +97,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
 
     # Setup the grid
     x = generate_grid(x0, xend, N, logx, random=random)
-    if random:
-        x[1:-1] += (np.random.random(N-1)-0.5)*(_xend-_x0)/(N+2)
+    modulation = [1 if (i == 0) else 0 for i in range(N)]
 
     rd = ReactionDiffusion(
         2,
@@ -114,6 +113,8 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
         nstencil=nstencil,
         lrefl=not linterpol,
         rrefl=not rinterpol,
+        modulated_rxns=[0, 1],
+        modulation=[modulation, modulation],
         units=units,
         faraday=1,
         vacuum_permittivity=1

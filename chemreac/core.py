@@ -27,9 +27,6 @@ FLAT, CYLINDRICAL, SPHERICAL = range(3)
 Geom_names = {FLAT: 'Flat', CYLINDRICAL: 'Cylindrical', SPHERICAL: 'Spherical'}
 GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
 
-# Having a Python side wrapper for our Cython Extension (CppReactionDiffusion)
-# allows e.g. Jedi (Python IDE capabilities) to inspect and give help strings
-
 
 class ReactionDiffusionBase(object):
     def to_Reaction(self, ri):
@@ -158,6 +155,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     fields: sequence of sequence of floats
         per bin field strength (energy / (volume time)) per field type.
         May be calculated as product between density and doserate
+    modulated_rxns: sequence of integers
+        Indicies of reactions subject to per bin modulation
+    modulation: sequence of sequences of floats
+        Per bin modulation vectors for each index in modulated_rxns
     units: dict (optional)
         default: None, see ``chemreac.units.SI_base`` for an
         example.
@@ -298,6 +299,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             else:
                 g_units.append(get_unit(units, 'radyield') /
                                get_unit(units, 'concentration'))
+
+        if modulated_rxns is not None:
+            if len(modulated_rxns) != len(modulation):
+                raise ValueError("len(modulated_rxns) != len(modulation)")
+        if modulation is not None:
+            if modulated_rxns is None:
+                raise ValueError("modulated_rxns missing.")
+            if any(len(arr) != N for arr in modulation):
+                raise ValueError("An array in modulation of size != N")
 
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_reac, stoich_prod,
