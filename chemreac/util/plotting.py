@@ -494,7 +494,7 @@ def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
     return ax
 
 
-def plot_fields(rd, ax=None, indices=None):
+def plot_fields(rd, ax=None, indices=None, rho=None):
     """
     Convenience function to inspect fields in of
     ReactionDiffusion instance
@@ -507,10 +507,15 @@ def plot_fields(rd, ax=None, indices=None):
         matplotlib.pyplot.axes (default: None)
     indices: sequence of integers
         what field strengths sequences to plot
+    rho: float (optional)
+        density, with consistent unit. If passed doserate
+        will be plotted instead.
     """
     ax = _init_axes(ax)
     indices = indices or range(len(rd.fields))
     factors = np.array(rd.fields)
+    if rho is not None:
+        factors = factors/rho
     x_edges = np.repeat(rd.x, 2)[1:]
     for i in indices:
         y_edges = np.pad(np.repeat(factors[i, :], 2), (0, 1), 'constant')

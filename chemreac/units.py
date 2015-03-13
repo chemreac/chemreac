@@ -40,7 +40,8 @@ def get_derived_unit(registry, name):
                          (registry['length']**3*registry['mass'])),
         'charge': registry['current']*registry['time'],
         'energy': registry['mass']*registry['length']**2/registry['time']**2,
-        'concentration': registry['amount']/registry['length']**3
+        'concentration': registry['amount']/registry['length']**3,
+        'density': registry['mass']/registry['length']**3
     }
     try:
         return derived[name]
