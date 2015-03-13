@@ -79,7 +79,9 @@ def unitof(expr):
         return 1
 
 
-def to_unitless(value, new_unit):
+def to_unitless(value, new_unit=None):
+    if new_unit is None:
+        new_unit = pq.dimensionless
     if isinstance(value, (list, tuple)):
         return np.array([to_unitless(elem, new_unit) for elem in value])
     try:
