@@ -36,7 +36,7 @@ def binary_eq_analytic(t, kf, kb, d, eps_l, c0):
 
 def fit_binary_eq(tdata, ydata, c0, **kwargs):
     def f(t, kf, kb, d, eps_l):
-        binary_eq_analytic(t, kf, kb, d, eps_l, c0)
+        return binary_eq_analytic(t, kf, kb, d, eps_l, c0)
     popt, pcov = curve_fit(f, tdata, ydata, **kwargs)
     return popt
 
@@ -58,7 +58,7 @@ def fit_binary_fw(tdata, ydata, c0, **kwargs):
     Returns k, d, eps_l
     """
     def f(t, k, d, eps_l):
-        binary_fw_analytic(t, k, d, eps_l, c0)
+        return binary_fw_analytic(t, k, d, eps_l, c0)
     popt, pcov = curve_fit(f, tdata, ydata, **kwargs)
     return popt
 

@@ -95,6 +95,7 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
     from matplotlib.colors import LogNorm, SymLogNorm
     from mpl_toolkits.axes_grid import make_axes_locatable
 
+    A = np.asarray(A)
     if 'cmap' not in kwargs:
         kwargs['cmap'] = get_cmap(cmap_name)
 
@@ -291,6 +292,9 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
             "$\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")
     return axes
 
+def plot_jacobian_from_integration(integr, substances, **kwargs):
+    a = integr.rd.units
+    return plot_jacobian(integr.rd, )
 
 def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
     """
@@ -582,9 +586,11 @@ def plot_solver_linear_error(
             integration, ti=ti, bi=bi, si=si)
         Cerr_u = le_u - Cref[ti, bi, si]
         Cerr_l = le_l - Cref[ti, bi, si]
-        plt.fill_between(x, scale_err*Cerr_l,
-                         scale_err*Cerr_u, **dict_with_defaults(
-                             fill_between_kwargs, {'alpha': 0.2}, kwargs))
+        plt.fill_between(
+            np.asarray(x),
+            np.asarray(scale_err*Cerr_l),
+            np.asarray(scale_err*Cerr_u), **dict_with_defaults(
+                fill_between_kwargs, {'alpha': 0.2}, kwargs))
     return ax
 
 
@@ -650,5 +656,7 @@ def plot_solver_linear_excess_error(integration, Cref, ax=None, x=None,
     indices = np.argmax(abs(fused), axis=-1)
     Eexcess = fused[np.indices(indices.shape), indices][0, ...]
     le_span = le_u - le_l
-    ax.plot(integration.tout, Eexcess/le_span, **kwargs)
+    ax.plot(np.asarray(integration.tout),
+            np.asarray(Eexcess/le_span),
+            **kwargs)
     return ax
