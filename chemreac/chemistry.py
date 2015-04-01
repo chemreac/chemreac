@@ -220,15 +220,19 @@ class Reaction(object):
         self.products = defaultdict(int)
         self.products.update(products)
         self.active_reac = defaultdict(int)
-        if active_reac:
+        if active_reac is not None:
             assert inactive_reac is None
             self.active_reac.update(active_reac)
+            self.order = sum(self.active_reac.values())
         else:
-            if inactive_reac:
+            if inactive_reac is not None:
                 assert active_reac is None
                 self.active_reac.update(reactants)
                 for key, val in inactive_reac.items():
                     self.active_reac[key] -= val
+                self.order = sum(self.active_reac.values())
+            else:
+                self.order = sum(self.reactants.values())
 
         self.k = k
         self.T = T
@@ -271,6 +275,14 @@ class Reaction(object):
                species_name in reaction.products.keys()):
                 res.append(reaction)
         return res
+
+    def __str__(self):
+        return ' -> '.join([
+            ' + '.join([('' if num == 1 else str(num)) + name for
+                        name, num in self.reactants.items() if num > 0]),
+            ' + '.join([('' if num == 1 else str(num)) + name for
+                        name, num in self.products.items() if num > 0])
+        ])
 
 
 class ReactionSystem(object):

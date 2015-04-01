@@ -15,3 +15,6 @@ v0.3
 - Add support for longtable in chemreac.util.table.rsys2pdf_table(...)
 - Clarify if input data to plotting routines should be transformed or not.
 - Enable support for file objects in load/dump in serialization
+- Improvements to rsys2pdf_table (delete -> save, units)
+- Better line color / style selection in plotting functions (28 unique)
+- "order" attribute added to chemreac.chemistry.Reaction

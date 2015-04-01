@@ -13,19 +13,27 @@ with open(os.path.join(pkg_name,'__init__.py')) as f:
     long_description = f.read().split('"""')[1]
 
 # Reading the version is a bit tricky: the same commit could actually
-# correspond to multiple versions. e.g. a commit could be tagged:
-# v0.1.0-rc1, v0.1.0-rc2, v0.1.0
+# correspond to multiple versions. e.g. a commit could be tagged both:
+# v0.1.0-rc1, v0.1.0
 #
-# Hence, the build environment needs a way to override the version
-# string found by setup.py (unless setup.py is to depend on git).
-# The solution right now is for setup.py to look for the environment
-# variable $CHEMREAC_RELEASE_VERSION and match it against "v*"
-# If not set: it will exec the contents of: ./chemreac/release.py
+# Hence, the build environment needs a way to determine the version based
+# on meta data not contained in the version controlled files.
+# This could be done either by having setup.py inspect git tags
+# (which makes setup.py dependent on git), or have setup.py look for an
+# environment variable.
+#
+# The latter method is used for now:
+# The variable $CHEMREAC_RELEASE_VERSION is matched against "v*" and
+# if valid __version__ is set accordingly. If mathcing fails setup.py
+# will exec the contents of: ./chemreac/release.py
 #
 # To complicate things further conda-build drops most environment
-# variables, so for conda based builds we look for '__conda_version__.txt'
+# variables, so for conda based builds to work need setup.py to write
+# the version as a string to a file named '__conda_version__.txt'
 
 CHEMREAC_RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
+
+# http://conda.pydata.org/docs/build.html#environment-variables-set-during-the-build-process
 CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
 if CONDA_BUILD:
     try:
@@ -40,11 +48,8 @@ if len(CHEMREAC_RELEASE_VERSION) > 1 and CHEMREAC_RELEASE_VERSION[0] == 'v':
     __version__ = CHEMREAC_RELEASE_VERSION[1:]
 else:
     TAGGED_RELEASE = False
-    # read __version__ attribute:
+    # read __version__ attribute from release.py:
     exec(open(release_py_path).read())
-
-with open(pkg_name+'/__init__.py') as f:
-    long_description = f.read().split('"""')[1]
 
 DEBUG = True if os.environ.get('USE_DEBUG', False) else False
 USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
@@ -53,10 +58,10 @@ WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') =
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
 WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'
 
-ON_RTD = os.environ.get('READTHEDOCS', None) == 'True'
 ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
 ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 
+# See pycompilation for details on "options"
 flags = []
 options = ['pic', 'warn']
 if DEBUG:
@@ -83,7 +88,7 @@ if len(sys.argv) > 1:
 elif len(sys.argv) == 1:
     IDEMPOTENT_INVOCATION = True
 
-if ON_RTD or IDEMPOTENT_INVOCATION:
+if IDEMPOTENT_INVOCATION:
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
 else:
@@ -91,6 +96,7 @@ else:
     import numpy as np
     template_path = 'src/chemreac_template.cpp'
     rendered_path = 'src/chemreac.cpp'
+    # Source distributions contain rendered sources
     USE_TEMPLATE = not os.path.exists(rendered_path)
     try:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
@@ -107,7 +113,7 @@ else:
     cmdclass_['sdist'] = pce_sdist
     subsd = {'USE_OPENMP': USE_OPENMP}
     pyx_path = 'chemreac/_chemreac.pyx'
-    using_pyx = os.path.exists(pyx_path)
+    using_pyx = os.path.exists(pyx_path)  # Cython file missing in source distriubtion
     pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
     sources = [
         template_path if USE_TEMPLATE else rendered_path,
@@ -208,6 +214,7 @@ if __name__ == '__main__':
         if TAGGED_RELEASE:
             # Same commit should generate different sdist
             # depending on tagged version (set CHEMREAC_RELEASE_VERSION)
+            # this will ensure source distributions contain the correct version
             shutil.move(release_py_path, release_py_path+'__temp__')
             open(release_py_path, 'wt').write("__version__ = '{}'\n".format(__version__))
         setup(**setup_kwargs)

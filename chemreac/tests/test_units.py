@@ -6,7 +6,7 @@ from chemreac.units import (
     get_derived_unit,
     to_unitless, unit_registry_from_human_readable, SI_base,
     metre, kilogram, second, ampere, Kelvin, candela, mole,
-    dm
+    dm, molar
 )
 
 
@@ -72,6 +72,9 @@ def test_to_unitless():
 
     amount_unit = 1e-9  # nano
     assert abs(to_unitless(1.0, amount_unit) - 1e9) < 1e-6
+
+    assert abs(to_unitless(3/(second*molar),
+                           metre**3/mole/second) - 3e-3) < 1e-12
 
 
 def test_get_derived_unit():

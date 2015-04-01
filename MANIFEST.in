@@ -12,6 +12,7 @@ recursive-include scripts *
 include chemreac/tests/*.json
 include chemreac/tests/*.txt
 
+include CHANGES.rst
 include LICENSE.txt
 include README.rst
 include requirements.txt
