@@ -8,19 +8,24 @@ Convenience functions for presenting reaction systems in tables.
 
 """
 
+import os
+import shutil
 import subprocess
 import tempfile
 
+from chemreac.units import to_unitless, get_derived_unit
+
 
 def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
-                  tex=True, rxnarrow=r'$\rightarrow$', ref_fmt='{}'):
+                  tex=True, rxnarrow=r'$\rightarrow$', ref_fmt='{}',
+                  units=None):
     """
     Generates a table representation of a ReactionSystem.
 
     Parameters
     ----------
     rsys: ReactionSystem
-    substances: sequence of strings
+    substances: sequence of Substance instances
     rref0: integer
         default start of index counter (default: 1)
     coldelim: string
@@ -31,7 +36,8 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         default: '\$\\rightarrow\$'
     ref_fmt: string or callable
         format string of ``ref`` attribute of reactions
-
+    units: unit registry
+        optional (default: None)
     """
 
     param_fmt = '{0:.3g}'  # Could be taken from Reaction instance
@@ -40,14 +46,20 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         return getattr(substances[sn], 'tex_name' if tex else 'name')
     lines = []
     for ri, rxn in enumerate(rsys.rxns):
+        if units is not None:
+            kunit = (get_derived_unit(units, 'concentration')**(1-rxn.order) /
+                     get_derived_unit(units, 'time'))
+            k = to_unitless(rxn.k, kunit)
+        else:
+            k = rxn.k
         lines.append(coldelim.join([
             str(rref0+ri),
             ' + '.join([('' if num == 1 else str(num)) + _get_name(sn) for
-                        sn, num in rxn.reactants.items()]),
+                        sn, num in rxn.reactants.items() if num > 0]),
             rxnarrow,
             ' + '.join([('' if num == 1 else str(num)) + _get_name(sn) for
-                       sn, num in rxn.products.items()]),
-            param_fmt.format(rxn.k),
+                        sn, num in rxn.products.items() if num > 0]),
+            param_fmt.format(k),
             ref_fmt(rxn.ref) if callable(ref_fmt) else ref_fmt.format(rxn.ref)
         ]))
     return lines
@@ -65,11 +77,11 @@ def rsys2table(rsys, substances, table_template=None,
     Parameters
     ==========
     rsys: ReactionSystem
-    substances: sequence of strings
+    substances: sequence of Substance instances
     table_template: string
     table_tempalte_dict: dict used to render table_template (excl. "body")
     longtable: bool
-        use longtable in defaults.
+        use longtable in defaults. (default: False)
     **kwargs:
         passed onto rsys2tablines
     """
@@ -130,7 +142,7 @@ def rsys2table(rsys, substances, table_template=None,
 
 
 def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
-                   tex_template_dict=None, delete=True, **kwargs):
+                   tex_template_dict=None, save=True, **kwargs):
     """
     Convenience function to render a ReactionSystem as
     e.g. a pdf using e.g. pdflatex.
@@ -138,7 +150,7 @@ def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
     Parameters
     ==========
     rsys: ReactionSystem
-    substances: sequence of strings
+    substances: sequence of Substance instances
     output_dir: path to output directory
         (default: system's temporary folder)
     tex_template: string
@@ -147,7 +159,7 @@ def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
     tex_template_dict: dict (string -> string)
         dict used to render temlpate (excl. 'table')
     longtable: bool
-        use longtable in defaults.
+        use longtable in defaults. (default: False)
     **kwargs:
         passed on to `rsys2table`
     """
@@ -185,13 +197,35 @@ def rsys2pdf_table(rsys, substances, output_dir=None, tex_template=None,
 
     contents = tex_template % tex_template_dict
 
-    with tempfile.NamedTemporaryFile(
-            'wt', suffix='.tex', dir=output_dir, delete=delete) as tmpfh:
-        cmds = ['pdflatex', tmpfh.name]
-        tmpfh.write(contents)
-        tmpfh.flush()
-        p = subprocess.Popen(cmds + [tmpfh.name], cwd=output_dir)
-        retcode = p.wait()
+    created_tempdir = False
+    try:
+        texfname = (rsys.name or 'output') + '.tex'
+        pdffname = (rsys.name or 'output') + '.pdf'
+        if output_dir is None:
+            output_dir = tempfile.mkdtemp()
+            created_tempdir = True
+        texpath = os.path.join(output_dir, texfname)
+        pdfpath = os.path.join(output_dir, pdffname)
+        cmds = ['pdflatex', texfname]
+        with open(texpath, 'wt') as ofh:
+            ofh.write(contents)
+            ofh.flush()
+        with open(pdfpath + '.out', 'wb') as logfile:
+            p = subprocess.Popen(cmds, cwd=output_dir,
+                                 stdout=logfile, stderr=logfile)
+            retcode = p.wait()
         if retcode:
             fmtstr = "{}\n returned with exit status {}"
             raise RuntimeError(fmtstr.format(' '.join(cmds), retcode))
+        else:
+            return pdfpath
+    finally:
+        if save is True or save == 'True':
+            pass
+        else:
+            if save is False or save == 'False':
+                if created_tempdir:
+                    shutil.rmtree(output_dir)
+            else:
+                # interpret path to copy pdf to.
+                shutil.copy(pdfpath, save)

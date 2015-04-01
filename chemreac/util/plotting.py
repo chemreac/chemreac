@@ -251,11 +251,13 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
         ax.set_yscale('symlog', linthreshy=lintreshy)
         if logx:
             ax.set_xscale('log')
+        istl = 0  # style counter
         for j, lbl in enumerate(labels):
             if np.all(np.abs(row_out[:, i, j]) < lintreshy):
                 continue
-            ax.plot(tout, row_out[:, i, j], label=lbl, c=c[j % len(c)],
-                    ls=ls[j % len(ls)])
+            ax.plot(tout, row_out[:, i, j], label=lbl, c=c[istl % len(c)],
+                    ls=ls[istl % len(ls)])
+            istl += 1
         if legend_kwargs is not False:
             ax.legend(**legend_kwargs)
         if titles:
