@@ -224,8 +224,9 @@ def integrate_rd(
             if splitplots:
                 # Plot relative error
                 ax_relerr = subplot(1, 1)
-                ax_relerr.plot(tout_unitless, Cout[:, 0, i]/Cref[:, 0, i] - 1.0,
-                               label=l, color=c[i])
+                ax_relerr.plot(
+                    tout_unitless, Cout[:, 0, i]/Cref[:, 0, i] - 1.0,
+                    label=l, color=c[i])
                 ax_relerr.set_title("Relative error")
                 ax_relerr.legend(loc='best', prop={'size': 11})
 
@@ -263,13 +264,15 @@ def integrate_rd(
                        adapt_xscale=False)
         Qnum = Cout[:, 0, 2]/(Cout[:, 0, 0]*Cout[:, 0, 1])
         Qref = Cref[:, 0, 2]/(Cref[:, 0, 0]*Cref[:, 0, 1])
-        ax_q.plot(tout_unitless, to_unitless(Qnum, molar**-1), label='Q', color=c[i])
+        ax_q.plot(tout_unitless, to_unitless(Qnum, molar**-1),
+                  label='Q', color=c[i])
         if np.any(np.abs(Qnum/Qref-1) > 0.01):
             # If more than 1% error in Q, plot the reference curve too
             ax_q.plot(tout_unitless, to_unitless(Qref, molar**-1),
                       '--', label='Qref', color=c[i])
         # Plot the
-        ax_q.plot((tout_unitless[0], tout_unitless[-1]), [to_unitless(kf/kb, molar**-1)]*2,
+        ax_q.plot((tout_unitless[0], tout_unitless[-1]),
+                  [to_unitless(kf/kb, molar**-1)]*2,
                   '--k', label='K')
         ax_q.set_xlabel('t')
         ax_q.set_ylabel('[C]/([A][B]) / M**-1')

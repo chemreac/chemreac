@@ -294,9 +294,11 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
             "$\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")
     return axes
 
+
 def plot_jacobian_from_integration(integr, substances, **kwargs):
     a = integr.rd.units
     return plot_jacobian(integr.rd, )
+
 
 def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
     """
