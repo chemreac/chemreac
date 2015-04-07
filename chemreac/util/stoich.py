@@ -102,3 +102,36 @@ def get_reaction_orders(stoich_reac, stoich_actv=None):
             actv = reac
         res.append(len(actv))
     return res
+
+
+def identify_equilibria(stoich_reac, stoich_prod):
+    """
+    Identify equilibria from stoichiometry
+
+    Parameters
+    ----------
+    stoich_reac: iterable of iterables of integers
+        per reaction iterables of specie indices for reactants
+    stoich_prod: iterable of iterables of integers
+        per reaction iterables of specie indices for products
+
+    Returns
+    -------
+    Set of tuples of reaction indices forming equilibria
+
+    Examples
+    --------
+    >>> identify_equilibria([[0,0], [1]], [[1], [0,0]])
+    {(0, 1)}
+
+    """
+    equilibria = set()
+    for ri, cur_reac in enumerate(stoich_reac):
+        participants = [ri]
+        for pi, cur_prod in enumerate(stoich_prod):
+            if sorted(cur_reac) == sorted(cur_prod):
+                # this is an equilibria
+                participants.append(pi)
+        if len(participants) > 1:
+            equilibria.add(tuple(sorted(participants)))
+    return equilibria
