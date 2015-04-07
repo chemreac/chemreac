@@ -126,12 +126,9 @@ def identify_equilibria(stoich_reac, stoich_prod):
 
     """
     equilibria = set()
-    for ri, cur_reac in enumerate(stoich_reac):
-        participants = [ri]
-        for pi, cur_prod in enumerate(stoich_prod):
-            if sorted(cur_reac) == sorted(cur_prod):
-                # this is an equilibria
-                participants.append(pi)
-        if len(participants) > 1:
-            equilibria.add(tuple(sorted(participants)))
+    rxns = tuple(zip(stoich_reac, stoich_prod))
+    for ri, (cur_reac, cur_prod) in enumerate(rxns):
+        for oi, (other_reac, other_prod) in enumerate(rxns[ri+1:], start=ri+1):
+            if cur_reac == other_prod and cur_prod == other_reac:
+                equilibria.add((ri, oi))
     return equilibria
