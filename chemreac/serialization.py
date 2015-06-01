@@ -39,13 +39,13 @@ def dump(rd, dest):
         'n': rd.n,
         'stoich_reac': rd.stoich_reac,
         'stoich_prod': rd.stoich_prod,
-        'k': rd.k.tolist(),
-        'D': rd.D.tolist(),
-        'mobility': rd.mobility.tolist(),
+        'k': list(rd._k),
+        'D': list(rd._D),
+        'mobility': list(rd._mobility),
         # 'x': rd.x.tolist(),
         'stoich_actv': rd.stoich_actv,
         'units': unit_registry_to_human_readable(rd.units),
-        'g_values': rd.g_values,
+        'g_values': list(rd._g_values),
         'g_value_parents': rd.g_value_parents,
         # 'fields': fields
     }
@@ -82,15 +82,9 @@ def load(source, RD=None, **kwargs):
         data['mobility'] = np.array(data['mobility'])*get_unit(
             units, 'electrical_mobility')
     if 'g_values' in data:
-        g_units = []
-        for parent in data.get('g_value_parents', [-1]*len(data['g_values'])):
-            if parent == -1:
-                g_units.append(get_unit(units, 'radyield'))
-            else:
-                g_units.append(get_unit(units, 'radyield') /
-                               get_unit(units, 'concentration'))
-        data['g_values'] = [elem*g_unit for
-                            elem, g_unit in zip(data['g_values'], g_units)]
+        data['g_values'] = [elem*g_unit for elem, g_unit in
+                            zip(data['g_values'], RD.g_units(
+                                units, data['g_value_parents']))]
 
     kunits = [get_unit(units, 'concentration')**(1-order) /
               get_unit(units, 'time') for order in get_reaction_orders(

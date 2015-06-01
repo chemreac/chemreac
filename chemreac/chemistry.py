@@ -244,14 +244,15 @@ class Reaction(object):
     def __str__(self):
         return self.render({})
 
-    def render(self, tex_names):
-        if len(tex_names) > 0:
-            arrow = ' $\\rightarrow$ '
+    def render(self, names, tex=False, equilibrium=False):
+        if tex:
+            arrow = (' $\\rightleftharpoons$ ' if equilibrium
+                     else ' $\\rightarrow$ ')
         else:
-            arrow = ' -> '
+            arrow = ' <-> ' if equilibrium else ' -> '
 
         reac, prod = [[
-            ((str(v)+' ') if v > 1 else '') + tex_names.get(k, k) for
+            ((str(v)+' ') if v > 1 else '') + names.get(k, k) for
             k, v in filter(itemgetter(1), d.items())
         ] for d in (self.reactants, self.products)]
         return " + ".join(reac) + arrow + " + ".join(prod)

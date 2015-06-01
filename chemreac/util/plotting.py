@@ -191,13 +191,13 @@ def _get_jac_row_over_t(rd, tout, yout, indices, bi=0):
     return row_out
 
 
-def _get_per_func_out(rd, tout, yout, indices):
+def _get_per_rxn_out(rd, tout, yout, specie_indices):
     # Note that you really need yout - not Cout
-    out = np.empty((yout.shape[0], len(indices), rd.nr))
-    for i, y in enumerate(yout):
+    out = np.empty((yout.shape[0], len(specie_indices), rd.nr))
+    for ti, y in enumerate(yout):
         flat_y = y.flatten()
-        for j, si in enumerate(indices):
-            rd.per_rxn_contrib_to_fi(tout[i], flat_y, si, out[i, j, :])
+        for j, si in enumerate(specie_indices):
+            rd.per_rxn_contrib_to_fi(tout[ti], flat_y, si, out[ti, j, :])
     return out
 
 
@@ -222,10 +222,10 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     rd: ReactionDiffusion instance
     tout: 1-dimensional array of floats
     yout: solver output
-    indices: 4 arguments for callback
+    indices: 4th argument for callback
     axes: sequence of matplotlib Axes instances
         (default: len(indices) number of subplot axes)
-    titles: titles per axes
+    titles: titles per axis
     lintreshy: float
         symlog option 'linthreshy' (default: 1e-10)
     logx: set x scale to 'log'
@@ -255,6 +255,7 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
         istl = 0  # style counter
         for j, lbl in enumerate(labels):
             if np.all(np.abs(row_out[:, i, j]) < lintreshy):
+                print("skipping: ", lbl)
                 continue
             ax.plot(tout, row_out[:, i, j], label=lbl, c=c[istl % len(c)],
                     ls=ls[istl % len(ls)])
@@ -297,10 +298,11 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
 
 def plot_jacobian_from_integration(integr, substances, **kwargs):
     a = integr.rd.units
-    return plot_jacobian(integr.rd, )
+    return plot_jacobian(integr.rd, )  # TODO: finish this
 
 
-def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
+def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
+                                   field_yields=False, **kwargs):
     """
     Plots contributions to concentration derivatives of selected
     substances from individual reactions.
@@ -312,21 +314,95 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, **kwargs):
     yout: array_like
         output data from integration (differs from Cout for logy=True)
     substances: sequence of Substance instances
+    equilibria: set of tuples of reaction indices (optional)
+        When passed only net effect of equilibria reaction will be plotted
+    field_yields: bool (default: False)
+        If ``True`` contributions from g_values times field will be shown
     **kwargs: kwargs passed on to _plot_analysis
 
     Returns
     -------
     list of matplotlib.axes.Axes instances
     """
+    if rd.N != 1:
+        # should be quite straight forward to implement
+        raise NotImplementedError
+
     indices = [ri if isinstance(ri, int) else rd.substance_names.index(ri)
                for ri in substances]
-    print_names = rd.substance_tex_names or rd.substance_names
-    axes = _plot_analysis(
-        _get_per_func_out,
-        ['R' + str(i) + ': ' + rd.to_Reaction(i).render(dict(zip(
-            rd.substance_names, print_names))) for i in range(rd.nr)],
-        rd, tout, yout, indices,
-        titles=[print_names[i] for i in indices], **kwargs)
+    if rd.substance_tex_names is not None:
+        print_names = rd.substance_tex_names
+        use_tex = True
+    else:
+        print_names = rd.substance_names
+        use_tex = False
+
+    if field_yields:
+        # Let's use negative reaction indices for each field -1: 0, -2: 1
+        rxn_indices = range(-len(rd.fields), 0)
+    else:
+        rxn_indices = []
+
+    if equilibria is not None:
+        equilibria_participants = []
+        for rxnidxs in equilibria:
+            equilibria_participants.extend(rxnidxs)
+            rxn_indices.append(rxnidxs)
+        for ri in range(rd.nr):
+            if ri not in equilibria_participants:
+                rxn_indices.append(ri)
+    else:
+        rxn_indices += range(rd.nr)
+
+    labels = []
+    for rxns in rxn_indices:
+        if isinstance(rxns, int):
+            if rxns >= 0:
+                labels.append('R' + str(rxns) + ': ' +
+                              rd.to_Reaction(rxns).render(
+                                  dict(zip(rd.substance_names, print_names)),
+                                  use_tex
+                              ))
+            else:
+                # Field production!
+                fi = -rxns - 1
+                if rd.g_value_parents[fi] == -1:
+                    # No parents
+                    parent = ''
+                else:
+                    parent = (print_names[g_value_parents[fi]] +
+                              '$\\rightsquigarrow$' if use_tex else ' ~~~> ')
+                labels.append('G_' + str(fi) + ': ' + parent + ', '.join(
+                    [print_names[si] for si in range(rd.n) if
+                     rd.g_values[fi][si] != 0]))
+        else:
+            labels.append('R(' + ', '.join(map(str, rxns)) + '): ' +
+                          rd.to_Reaction(rxns[0]).render(
+                              dict(zip(rd.substance_names, print_names)),
+                              use_tex,
+                              equilibrium=True
+                          ))
+
+    def cb(rd_, tout_, yout_, specie_indices_):
+        bi = 0  # bin index, N=1 only implemented for now
+        per_rxn = _get_per_rxn_out(rd_, tout_, yout_, specie_indices_)
+        out = np.zeros((yout.shape[0], len(specie_indices_), len(rxn_indices)))
+        for i, rxns in enumerate(rxn_indices):
+            if isinstance(rxns, int):
+                if rxns >= 0:
+                    out[:, :, i] = per_rxn[:, :, rxns]
+                else:
+                    fi = -rxns - 1
+                    for sii, si in enumerate(specie_indices_):
+                        out[:, sii, i] = rd.g_values[fi][si]*rd.fields[fi][bi]
+            else:
+                for rxn_idx in rxns:
+                    out[:, :, i] += per_rxn[:, :, rxn_idx]
+        return out
+
+    axes = _plot_analysis(cb, labels,
+                          rd, tout, yout, indices,
+                          titles=[print_names[i] for i in indices], **kwargs)
     for ax in axes:
         ax.set_ylabel(r"Reaction rate / $M\cdot s^{-1}$")
     return axes

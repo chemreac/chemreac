@@ -191,14 +191,14 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.stoich_actv
 
-    property k:
+    property _k:
         def __get__(self):
             return np.asarray(self.thisptr.k)
         def __set__(self, vector[double] k):
             assert len(k) == self.nr
             self.thisptr.k = k
 
-    property D:
+    property _D:
         def __get__(self):
             return np.asarray(self.thisptr.D)
 
@@ -215,7 +215,7 @@ cdef class CppReactionDiffusion:
             assert len(z_chg) == self.n
             self.thisptr.z_chg = z_chg
 
-    property mobility:
+    property _mobility:
         def __get__(self):
             return np.asarray(self.thisptr.mobility)
 
@@ -264,7 +264,7 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.eps_rel
 
-    property g_values:
+    property _g_values:
         def __get__(self):
             return self.thisptr.g_values
         def __set__(self, vector[vector[double]] g_values):
@@ -335,6 +335,25 @@ cdef class CppReactionDiffusion:
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                               int si, cnp.ndarray[cnp.float64_t, ndim=1] out):
+        """
+        Decomposes the rate of change of a species concentration into per
+        reaction contributions.
+
+        Parameters
+        ----------
+        t: float
+            time
+        y: 1-dimensional numpy array
+            dependent variables
+        si: int
+            specie index to analyse for
+        out: 1-dimensional numpy array (slice)
+            output argument, of length ``nr`` (per reaction contribution)
+
+        Returns
+        -------
+        None, see ``out`` parameter
+        """
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
 
     property xcenters:

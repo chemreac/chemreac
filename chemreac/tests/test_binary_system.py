@@ -48,7 +48,7 @@ def test_serialization():
     assert rd.n == 3
     assert rd.stoich_reac == [[0, 1]]
     assert rd.stoich_prod == [[2]]
-    assert rd.k.tolist() == [0.3]
+    assert list(rd.k) == [0.3]
     assert rd.D.tolist() == [0.1, 0.2, 0.3]
 
 

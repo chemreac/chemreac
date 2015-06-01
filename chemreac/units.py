@@ -52,8 +52,11 @@ def get_derived_unit(registry, name):
 # Convenience
 joule = pq.joule
 Gray = joule/kilogram
+eV = pq.eV
 MeV = pq.MeV
 centimetre = pq.centimetre
+micrometre = pq.micrometre
+nanometre = pq.nanometre
 gram = pq.gram
 decimetre = dm = pq.UnitQuantity('decimetre',  pq.m / 10.0,  u_symbol='dm')
 molar = pq.UnitQuantity('molar',  pq.mole / dm ** 3,  u_symbol='M')

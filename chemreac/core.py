@@ -281,24 +281,13 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 assert len(fld) == N
 
         if k_unitless is None:
-            k_unitless = []
-            for order, kval in zip(get_reaction_orders(
-                    stoich_reac, stoich_actv), k):
-                k_unitless.append(to_unitless(kval, get_unit(
-                    units, 'concentration')**(1-order)/get_unit(
-                        units, 'time')))
+            k_unitless = [to_unitless(kval, kunit) for kval, kunit in
+                          zip(k, cls.k_units(units, get_reaction_orders(
+                              stoich_reac, stoich_actv)))]
         else:
             if k is not None:
                 raise ValueError(
                     "When passing k_unitless you must set k to None")
-
-        g_units = []
-        for parent in g_value_parents:
-            if parent == -1:
-                g_units.append(get_unit(units, 'radyield'))
-            else:
-                g_units.append(get_unit(units, 'radyield') /
-                               get_unit(units, 'concentration'))
 
         if modulated_rxns is not None:
             if len(modulated_rxns) != len(modulation):
@@ -318,8 +307,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             to_unitless(mobility, get_unit(units, 'electrical_mobility')),
             to_unitless(_x, get_unit(units, 'length')),
             _stoich_actv, geom, logy, logt, logx,
-            [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for
-             gv, yld_unit in zip(g_values, g_units)],
+            [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
+             yld_unit in zip(g_values, cls.g_units(units, g_value_parents))],
             g_value_parents,
             [to_unitless(fld, get_unit(units, 'field')) for fld in fields],
             modulated_rxns or [],
@@ -348,4 +337,52 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @fields.setter
     def fields(self, value):
-        self._fields = value/get_unit(self.units, 'field')
+        self._fields = to_unitless(value, get_unit(self.units, 'field'))
+
+    @staticmethod
+    def g_units(units, g_value_parents):
+        g_units = []
+        for parent in g_value_parents:
+            if parent == -1:
+                g_units.append(get_unit(units, 'radyield'))
+            else:
+                g_units.append(get_unit(units, 'radyield') /
+                               get_unit(units, 'concentration'))
+        return g_units
+
+    @property
+    def g_values(self):
+        return [np.asarray(gv)*gu for gv, gu in zip(
+            self._g_values, self.g_units(self.units, self.g_value_parents))]
+
+    @staticmethod
+    def k_units(units, reaction_orders):
+        return [get_unit(units, 'concentration')**(
+            1-order)/get_unit(units, 'time') for order in reaction_orders]
+
+    @property
+    def k(self):
+        return [kv*ku for kv, ku in zip(self._k, self.k_units(
+            self.units, get_reaction_orders(
+                self.stoich_reac, self.stoich_actv)))]
+
+    @k.setter
+    def k(self, value):
+        self._k = [to_unitless(kv, ku) for kv, ku in zip(value, self.k_units(
+            get_reaction_orders(self.stoich_reac, self.stoich_actv)))]
+
+    @property
+    def D(self):
+        return np.asarray(self._D)*get_unit(self.units, 'diffusion')
+
+    @D.setter
+    def D(self, value):
+        self._D = to_unitless(value, get_unit(self.units, 'diffusion'))
+
+    @property
+    def mobility(self):
+        return np.asarray(self._mobility)*get_unit(self.units, 'mobility')
+
+    @mobility.setter
+    def mobility(self, value):
+        self._mobility = to_unitless(value, get_unit(self.units, 'mobility'))
