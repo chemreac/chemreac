@@ -121,8 +121,8 @@ def identify_equilibria(stoich_reac, stoich_prod):
 
     Examples
     --------
-    >>> identify_equilibria([[0,0], [1]], [[1], [0,0]])
-    {(0, 1)}
+    >>> identify_equilibria([[0,0], [1]], [[1], [0,0]]) == set([(0, 1)])
+    True
 
     """
     equilibria = set()
