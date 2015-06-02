@@ -361,8 +361,7 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
                 labels.append('R' + str(rxns) + ': ' +
                               rd.to_Reaction(rxns).render(
                                   dict(zip(rd.substance_names, print_names)),
-                                  use_tex
-                              ))
+                                  use_tex))
             else:
                 # Field production!
                 fi = -rxns - 1
@@ -380,8 +379,7 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
                           rd.to_Reaction(rxns[0]).render(
                               dict(zip(rd.substance_names, print_names)),
                               use_tex,
-                              equilibrium=True
-                          ))
+                              equilibrium=True))
 
     def cb(rd_, tout_, yout_, specie_indices_):
         bi = 0  # bin index, N=1 only implemented for now
