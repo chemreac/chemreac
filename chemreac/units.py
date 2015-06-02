@@ -54,12 +54,14 @@ joule = pq.joule
 Gray = joule/kilogram
 eV = pq.eV
 MeV = pq.MeV
+metre = pq.metre
+decimetre = dm = pq.UnitQuantity('decimetre',  pq.m / 10.0,  u_symbol='dm')
 centimetre = pq.centimetre
 micrometre = pq.micrometre
 nanometre = pq.nanometre
 gram = pq.gram
-decimetre = dm = pq.UnitQuantity('decimetre',  pq.m / 10.0,  u_symbol='dm')
 molar = pq.UnitQuantity('molar',  pq.mole / dm ** 3,  u_symbol='M')
+hour = pq.hour
 perMolar_perSecond = 1/molar/pq.s
 per100eV = pq.UnitQuantity('per_100_eV',
                            1/(100*pq.eV*pq.constants.Avogadro_constant),
@@ -146,3 +148,11 @@ def unit_registry_from_human_readable(unit_registry):
         else:
             new_registry[k] = factor*unit_quants[0]
     return new_registry
+
+
+def allclose(a, b, rtol=1e-8, atol=None):
+    d = np.abs(a - b)
+    lim = np.abs(a)*rtol
+    if atol is not None:
+        lim += atol
+    return np.all(d < lim)

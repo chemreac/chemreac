@@ -1,12 +1,15 @@
 # -*- coding: utf-8 -*-
+
 from collections import defaultdict
+
+import numpy as np
 
 from chemreac.units import (
     isunitless, unitof, unit_registry_to_human_readable,
     get_derived_unit,
     to_unitless, unit_registry_from_human_readable, SI_base,
-    metre, kilogram, second, ampere, Kelvin, candela, mole,
-    dm, molar
+    metre, kilogram, second, hour, ampere, Kelvin, candela, mole,
+    dm, molar, allclose
 )
 
 
@@ -155,3 +158,9 @@ def test_unit_registry_from_human_readable():
         'luminous_intensity': 1e-2*candela,
         'amount': 1e3*mole
     }
+
+
+def test_allclose():
+    a = np.linspace(2*second, 3*second)
+    b = np.linspace(2/3600.*hour, 3/3600.*hour)
+    assert allclose(a, b)

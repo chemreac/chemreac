@@ -256,7 +256,7 @@ def rsys2pdf_table(rsys, substances, output_dir=None, doc_template=None,
 
 
 def radyields2pdf_table(rd, output_dir=None, save=True, units=None,
-                        siunitx=False, fmtstr='{0:.3f}'):
+                        siunitx=False, fmtstr='{0:.3f}', **kwargs):
     line_term = r' \\'
     col_delim = ' & '
     header = (col_delim.join(rd.substance_tex_names or rd.substance_names) +
@@ -271,13 +271,14 @@ def radyields2pdf_table(rd, output_dir=None, save=True, units=None,
             lambda v: fmtstr.format(v), cur_gs)) + line_term)
     table_template_dict = {
         'table_env': 'table',
-        'alignment': ('S' if siunitx else 'l')*rd.n,
+        'alignment': ('@{}S' if siunitx else '@{}l')*rd.n,
         'header': header,
         'short_cap': 'G-values',
         'long_cap': 'G-values',
         'label': 'none',
         'body': '\n'.join(lines)
     }
+    table_template_dict.update(kwargs)
     table = tex_templates['table']['default'] % table_template_dict
 
     _envs = ['landscape', 'tiny']
