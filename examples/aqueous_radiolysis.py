@@ -47,7 +47,7 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.units import (
-    kilogram, decimetre, Gray, second, molar, second, get_derived_unit,
+    kilogram, decimetre, gray, second, molar, second, get_derived_unit,
     to_unitless, metre
 )
 from chemreac.util.grid import generate_grid
@@ -69,7 +69,7 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
     x = generate_grid(x0, xend, N, logx)
     _cb = (lambda arg: np.exp(arg)) if logx else (lambda arg: arg)
     lin_xcenters = _cb(x[:-1]+np.diff(x)/2)*metre
-    doserate *= Gray / second
+    doserate *= gray / second
     doseratefield = doserate*np.exp(-mu*lin_xcenters)
     rho = 1.0*kilogram*decimetre**-3  # kg/dm3
     rd = load(os.path.join(os.path.dirname(__file__), name+'.json'),

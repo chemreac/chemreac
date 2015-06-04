@@ -13,6 +13,7 @@ from __future__ import print_function, division, absolute_import
 
 from collections import defaultdict, OrderedDict
 from functools import total_ordering
+from itertools import chain
 from operator import itemgetter
 import weakref
 
@@ -36,7 +37,7 @@ class Substance(object):
     Parameters
     ==========
     name: string
-        unique string representation e.g. "CNO-", "ONC-"
+        unique string representation e.g. "H2O", "CNO-", "OCN-"
     charge: integer
         charge of substance
     mass: float
@@ -150,18 +151,15 @@ def mk_sn_dict_from_names(names, **kwargs):
 class Reaction(object):
     """
     Reaction with kinetics governed by the law of mass-action.
+    Example:
 
-    Must honour:
-
-        A + R --> A + P
-
-    That is: law of mass action depend on [A]
+        A + R --> A + P; r = k*A*R
 
     Also supports
 
-        5*C1 + C2 --> B;  r=k*C1*C2
+        5*C1 + C2 --> B; r = k*C1*C2
 
-    by specifying active reactants
+    by specifying active reactants C1, C2 and inactive reaktants 4*C1.
 
     reactants and products are dictionaries with substance names
     as keys and positive integers giving their stoichiometric coeffecients
@@ -177,24 +175,14 @@ class Reaction(object):
 
     Parameters
     ----------
-    reactants: dict
+    active_reac: dict
         dictionary mapping substance name (string) to stoichiometric
-        coefficient (integer)
+        coefficient (integer) of reactant, these affect rate expression.
     products: dict
         dictionary mapping substance name (string) to stoichiometric
         coefficient (integer)
-    active_reac: dict (optional)
-        if the rate expression contains a reactant to the power of a
-        number different than its stoichiometric coefficient it may be
-        overridden here. For example: active_reac={'H2O': 1} makes the rate
-        expression linear in H2O concentration even though reactants['H2O']
-        could be equal to 4 (say)
-    inactive_reac: dict (optional)
-        semantically different but provides same functionality as active_reac
-        (only one of these may be passed). Here you specify a positive number <
-        the stoichiometric coefficient of the reactant not to be counted. The
-        corresponding example to active_reac may be achieved by passing
-        inactive_reac={'H2O': 3}
+    inactv_reac: dict (optional)
+        Same as active_reac but does not affect rate expression.
     k: float
         rate coefficient
     T: float
@@ -209,31 +197,22 @@ class Reaction(object):
         Descriptive name of reaction
     """
 
-    all_instances = weakref.WeakSet()
+    # all_instances = weakref.WeakSet()
 
-    def __init__(self, reactants, products, active_reac=None,
-                 inactive_reac=None, k=None, T=None, Ea=None, A=None,
-                 ref=None, name=None):
-        self.all_instances.add(self)
-        self.reactants = defaultdict(int)
-        self.reactants.update(reactants)
-        self.products = defaultdict(int)
-        self.products.update(products)
-        self.active_reac = defaultdict(int)
-        if active_reac is not None:
-            assert inactive_reac is None
-            self.active_reac.update(active_reac)
-            self.order = sum(self.active_reac.values())
-        else:
-            if inactive_reac is not None:
-                assert active_reac is None
-                self.active_reac.update(reactants)
-                for key, val in inactive_reac.items():
-                    self.active_reac[key] -= val
-                self.order = sum(self.active_reac.values())
-            else:
-                self.order = sum(self.reactants.values())
+    @property
+    def reactants(self):
+        d = defaultdict(int)
+        for k, v in chain(self.inactv_reac.items(),
+                          self.active_reac.items()):
+            d[k] += v
+        return d
 
+    def __init__(self, active_reac, products, inactv_reac=None,
+                 k=None, T=None, Ea=None, A=None, ref=None, name=None):
+        self.active_reac = defaultdict(int, active_reac)
+        self.products = defaultdict(int, products)
+        self.inactv_reac = defaultdict(int, inactv_reac or {})
+        self.order = sum(self.active_reac.values())
         self.k = k
         self.T = T
         self.Ea = Ea
@@ -250,17 +229,18 @@ class Reaction(object):
                      else ' $\\rightarrow$ ')
         else:
             arrow = ' <-> ' if equilibrium else ' -> '
-
-        reac, prod = [[
+        active, inactv, prod = [[
             ((str(v)+' ') if v > 1 else '') + names.get(k, k) for
             k, v in filter(itemgetter(1), d.items())
-        ] for d in (self.reactants, self.products)]
-        return " + ".join(reac) + arrow + " + ".join(prod)
+        ] for d in (self.active_reac, self.inactv_reac, self.products)]
+        fmtstr = "{}" + (" + ({})" if len(inactv) > 0 else "{}") + arrow + "{}"
+        return fmtstr.format(" + ".join(active),
+                             " + ".join(inactv),
+                             " + ".join(prod))
 
     @property
     def species_names(self):
-        return set(list(self.reactants.keys()) + list(self.products.keys()) +
-                   list((self.active_reac or {}).keys()))
+        return set(list(self.reactants.keys()) + list(self.products.keys()))
 
     def reactant_stoich_coeffs(self, species_names):
         return [self.reactants[n] for n in species_names]
@@ -268,22 +248,22 @@ class Reaction(object):
     def product_stoich_coeffs(self, species_names):
         return [self.products[n] for n in species_names]
 
-    @classmethod
-    def get_reactions_with_species(cls, species_name):
-        res = []
-        for reaction in cls.all_instances:
-            if (species_name in reaction.reactants.keys() or
-               species_name in reaction.products.keys()):
-                res.append(reaction)
-        return res
+    # @classmethod
+    # def get_reactions_with_species(cls, species_name):
+    #     res = []
+    #     for reaction in cls.all_instances:
+    #         if (species_name in reaction.reactants.keys() or
+    #            species_name in reaction.products.keys()):
+    #             res.append(reaction)
+    #     return res
 
-    def __str__(self):
-        return ' -> '.join([
-            ' + '.join([('' if num == 1 else str(num)) + name for
-                        name, num in self.reactants.items() if num > 0]),
-            ' + '.join([('' if num == 1 else str(num)) + name for
-                        name, num in self.products.items() if num > 0])
-        ])
+    # def __str__(self):
+    #     return ' -> '.join([
+    #         ' + '.join([('' if num == 1 else str(num)) + name for
+    #                     name, num in self.reactants.items() if num > 0]),
+    #         ' + '.join([('' if num == 1 else str(num)) + name for
+    #                     name, num in self.products.items() if num > 0])
+    #     ])
 
 
 class ReactionSystem(object):

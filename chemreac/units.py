@@ -41,8 +41,9 @@ def get_derived_unit(registry, name):
         'charge': registry['current']*registry['time'],
         'energy': registry['mass']*registry['length']**2/registry['time']**2,
         'concentration': registry['amount']/registry['length']**3,
-        'density': registry['mass']/registry['length']**3
+        'density': registry['mass']/registry['length']**3,
     }
+    derived['radiolytic_yield'] = registry['amount']/derived['energy']
     try:
         return derived[name]
     except KeyError:
@@ -51,7 +52,7 @@ def get_derived_unit(registry, name):
 
 # Convenience
 joule = pq.joule
-Gray = joule/kilogram
+gray = pq.gray
 eV = pq.eV
 MeV = pq.MeV
 metre = pq.metre

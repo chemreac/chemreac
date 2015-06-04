@@ -264,8 +264,7 @@ def radyields2pdf_table(rd, output_dir=None, save=True, units=None,
     lines = []
     for cur_gs in rd.g_values:
         if units is not None:
-            gunit = (get_derived_unit(units, 'amount') /
-                     get_derived_unit(units, 'energy'))
+            gunit = get_derived_unit(units, 'radiolytic_yield')
             cur_gs = to_unitless(cur_gs, gunit)
         lines.append(col_delim.join(map(
             lambda v: fmtstr.format(v), cur_gs)) + line_term)

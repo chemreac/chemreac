@@ -43,7 +43,7 @@ export PATH="$MINICONDA_PATH/bin:$PATH"
 hash -r
 
 # Build extension module and run test suite
-export USE_OPENMP=1
+export WITH_OPENMP=1
 export CHEMREAC_SOLVER=cvode_direct
 source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 1
 if [[ $? != 0 ]]; then

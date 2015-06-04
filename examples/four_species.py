@@ -127,9 +127,7 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
 
             plt.figure(figsize=(6, 10))
             plot_per_reaction_contribution(
-                rd,
-                np.log(tout) if rd.logt else tout,
-                np.log(Cout) if rd.logy else Cout,
+                integr,
                 'ABCD'
             )
             plt.tight_layout()

@@ -13,7 +13,7 @@ from math import floor, ceil
 import numpy as np
 from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
-from chemreac.util.pyutil import dict_with_defaults
+from chemreac.util.pyutil import set_dict_defaults_inplace
 import matplotlib.pyplot as plt
 
 
@@ -238,8 +238,9 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     c: sequence of strings
         colors
     """
-    legend_kwargs = dict_with_defaults(legend_kwargs,
-                                       dict(loc=None, prop={'size': 11}))
+    legend_kwargs = legend_kwargs or {}
+    set_dict_defaults_inplace(legend_kwargs,
+                              dict(loc=None, prop={'size': 11}))
     if axes is None:
         axes = [plt.subplot(len(indices), 1, i+1) for i in range(
             len(indices))]
@@ -301,7 +302,7 @@ def plot_jacobian_from_integration(integr, substances, **kwargs):
     return plot_jacobian(integr.rd, )  # TODO: finish this
 
 
-def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
+def plot_per_reaction_contribution(integr, substances, equilibria=None,
                                    field_yields=False, **kwargs):
     """
     Plots contributions to concentration derivatives of selected
@@ -309,10 +310,7 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
 
     Parameters
     ----------
-    rd: ReactionDiffusion
-    tout: 1D array of floats
-    yout: array_like
-        output data from integration (differs from Cout for logy=True)
+    integr: Integration instance
     substances: sequence of Substance instances
     equilibria: set of tuples of reaction indices (optional)
         When passed only net effect of equilibria reaction will be plotted
@@ -324,6 +322,7 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
     -------
     list of matplotlib.axes.Axes instances
     """
+    rd = integr.rd
     if rd.N != 1:
         # should be quite straight forward to implement
         raise NotImplementedError
@@ -384,7 +383,8 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
     def cb(rd_, tout_, yout_, specie_indices_):
         bi = 0  # bin index, N=1 only implemented for now
         per_rxn = _get_per_rxn_out(rd_, tout_, yout_, specie_indices_)
-        out = np.zeros((yout.shape[0], len(specie_indices_), len(rxn_indices)))
+        out = np.zeros((yout_.shape[0], len(specie_indices_),
+                        len(rxn_indices)))
         for i, rxns in enumerate(rxn_indices):
             if isinstance(rxns, int):
                 if rxns >= 0:
@@ -398,8 +398,7 @@ def plot_per_reaction_contribution(rd, tout, yout, substances, equilibria=None,
                     out[:, :, i] += per_rxn[:, :, rxn_idx]
         return out
 
-    axes = _plot_analysis(cb, labels,
-                          rd, tout, yout, indices,
+    axes = _plot_analysis(cb, labels, rd, integr.tout, integr.yout, indices,
                           titles=[print_names[i] for i in indices], **kwargs)
     for ax in axes:
         ax.set_ylabel(r"Reaction rate / $M\cdot s^{-1}$")
@@ -434,7 +433,7 @@ def plot_C_vs_t_in_bin(
         xscale='log', yscale='log', substances=None,
         ttlfmt=(r"C(t) in bin: {0:.2g} m $\langle$" +
                 r" x $\langle$ {1:.2g} m"), legend_kwargs=None,
-        ls=None, c=None, xlabel="t / s", ylabel="C / M"):
+        ls=None, c=None, xlabel=None, ylabel=None):
     """
     Plots bin local concentration as function of time for selected
     substances.
@@ -464,8 +463,9 @@ def plot_C_vs_t_in_bin(
     =======
     Axes instance
     """
-    legend_kwargs = dict_with_defaults(legend_kwargs,
-                                       dict(loc='best', prop={'size': 11}))
+    legend_kwargs = legend_kwargs or {}
+    set_dict_defaults_inplace(legend_kwargs,
+                              dict(loc='best', prop={'size': 11}))
     ls = ls or DEFAULT['ls']
     c = c or DEFAULT['c']
     ax, substances, labels = _init_ax_substances_labels(
@@ -473,8 +473,11 @@ def plot_C_vs_t_in_bin(
     for i, lbl in zip(substances, labels):
         ax.plot(tout, Cout[:, bi, i], label=lbl,
                 ls=ls[i % len(ls)], c=c[i % len(c)])
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
+    try:
+        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex))
+        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex))
+    except AttributeError:
+        pass
     if ttlfmt:
         ax.set_title(ttlfmt.format(rd.x[bi], rd.x[bi+1]))
     if legend_kwargs is not False:
@@ -656,19 +659,22 @@ def plot_solver_linear_error(
         else:
             raise NotImplementedError("Failed to deduce x-axis.")
 
+    plot_kwargs = plot_kwargs or {}
+    set_dict_defaults_inplace(plot_kwargs, kwargs)
     plt.plot(np.asarray(x), np.asarray(scale_err*Cerr[ti, bi, si]),
-             **dict_with_defaults(plot_kwargs, kwargs))
+             **plot_kwargs)
 
     if fill:
         le_l, le_u = solver_linear_error_from_integration(
             integration, ti=ti, bi=bi, si=si)
         Cerr_u = le_u - Cref[ti, bi, si]
         Cerr_l = le_l - Cref[ti, bi, si]
+        fill_between_kwargs = fill_between_kwargs or {}
+        set_dict_defaults_inplace(fill_between_kwargs, {'alpha': 0.2}, kwargs)
         plt.fill_between(
             np.asarray(x),
             np.asarray(scale_err*Cerr_l),
-            np.asarray(scale_err*Cerr_u), **dict_with_defaults(
-                fill_between_kwargs, {'alpha': 0.2}, kwargs))
+            np.asarray(scale_err*Cerr_u), **fill_between_kwargs)
     return ax
 
 

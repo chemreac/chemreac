@@ -20,7 +20,7 @@
 #include "chemreac_util.h"
 #endif
 
-%if USE_OPENMP:
+%if WITH_OPENMP:
 #ifndef _OPENMP
   #error "Have you forgotten -fopenmp flag?"
 #endif
@@ -342,7 +342,7 @@ ReactionDiffusion::_alloc_and_populate_linC(const double * const __restrict__ y)
     int nlinC = n*N;
     double * const linC = (double * const)malloc(nlinC*sizeof(double));
     // TODO: Tune 42...
-    ${"#pragma omp parallel for if (N > 42)" if USE_OPENMP else ""}
+    ${"#pragma omp parallel for if (N > 42)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi)
         for (uint si=0; si<n; ++si)
             LINC(bi, si) = exp(Y(bi, si));
@@ -360,11 +360,11 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         calc_efield(linC);
     }
 
-    ${"double * const local_r = new double[nr];" if not USE_OPENMP else ""}
-    ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
+    ${"double * const local_r = new double[nr];" if not WITH_OPENMP else ""}
+    ${"#pragma omp parallel for if (N > 2)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         // compartment bi
-        ${"double * const local_r = new double[nr];" if USE_OPENMP else ""}
+        ${"double * const local_r = new double[nr];" if WITH_OPENMP else ""}
 
         for (uint si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
@@ -438,10 +438,10 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                 for (uint si=0; si<n; ++si)
                     DYDT(bi, si) *= exp(t);
         }
-        ${"delete []local_r;" if USE_OPENMP else ""}
+        ${"delete []local_r;" if WITH_OPENMP else ""}
 
     }
-    ${"delete []local_r;" if not USE_OPENMP else ""}
+    ${"delete []local_r;" if not WITH_OPENMP else ""}
 
     if (logy)
         free((void*)linC);
@@ -497,11 +497,11 @@ ReactionDiffusion::${token}(double t,
     if (auto_efield)
         calc_efield(linC);
 
-    ${'double * const local_r = new double[nr];' if not USE_OPENMP else ''}
-    ${'#pragma omp parallel for' if USE_OPENMP else ''}
+    ${'double * const local_r = new double[nr];' if not WITH_OPENMP else ''}
+    ${'#pragma omp parallel for' if WITH_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
-        ${'double * const local_r = new double[nr];' if USE_OPENMP else ''}
+        ${'double * const local_r = new double[nr];' if WITH_OPENMP else ''}
 
         // Contributions from reactions and fields
         // ---------------------------------------
@@ -604,9 +604,9 @@ ReactionDiffusion::${token}(double t,
                     JAC(bi, bi, si, si) -= FOUT(bi, si);
             }
         }
-        ${'delete []local_r;' if USE_OPENMP else ''}
+        ${'delete []local_r;' if WITH_OPENMP else ''}
     }
-    ${'delete []local_r;' if not USE_OPENMP else ''}
+    ${'delete []local_r;' if not WITH_OPENMP else ''}
     if (logy && !fy)
         delete []fout;
     if (logy)

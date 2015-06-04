@@ -9,6 +9,7 @@ Utilities used throughout the code base.
    banded.rst
    grid.rst
    plotting.rst
+   pyutil.rst
    stoich.rst
    table.rst
    testing.rst

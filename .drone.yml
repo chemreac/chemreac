@@ -3,7 +3,7 @@ git:
     path: github.com/chemreac/chemreac
 env:
   - BINSTAR_USER=bjodah
-  - USE_OPENMP=1
+  - WITH_OPENMP=1
   - CHEMREAC_SOLVER=sundials
   - PATH=$MINICONDA_PATH/bin:$PATH
 script:
