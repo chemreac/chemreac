@@ -84,7 +84,7 @@ clean:
 	rm $(GENERATED)
 
 chemreac.cpp: ../chemreac_template.cpp
-	python enmako.py -g "{\"WITH_OPENMP\": $(USE_OPENMP_TRFL)}" -o $@ $<
+	python enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
 
 fornberg.o: ../finitediff/finitediff/fornberg.f90
 	$(FC) $(FORTFLAGS) -c -o $@ $^
