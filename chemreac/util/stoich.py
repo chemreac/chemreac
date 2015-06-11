@@ -75,33 +75,33 @@ def decompose_yield_into_rate_coeffs(yields, stoichs, atol=1e-10):
     return k
 
 
-def get_reaction_orders(stoich_reac, stoich_actv=None):
-    """
-    Return the order of the reactions (assuming mass-action
-    behaviour).
+# def get_reaction_orders(stoich_reac, stoich_actv=None):
+#     """
+#     Return the order of the reactions (assuming mass-action
+#     behaviour).
 
-    Parameters
-    ----------
-    stoich_reac: list of lists of integer indices
-    stoichs: list of lists of integer indices (optional)
+#     Parameters
+#     ----------
+#     stoich_reac: list of lists of integer indices
+#     stoichs: list of lists of integer indices (optional)
 
-    Returns
-    -------
-    iterable of integers corresponding to the total reaction orders
+#     Returns
+#     -------
+#     iterable of integers corresponding to the total reaction orders
 
-    See also
-    --------
-    :class:`chemreac.core.ReactionDiffusion`
+#     See also
+#     --------
+#     :class:`chemreac.core.ReactionDiffusion`
 
-    """
-    res = []
-    if stoich_actv is None:
-        stoich_actv = [[]]*len(stoich_reac)
-    for reac, actv in zip(stoich_reac, stoich_actv):
-        if actv == []:
-            actv = reac
-        res.append(len(actv))
-    return res
+#     """
+#     res = []
+#     if stoich_actv is None:
+#         stoich_actv = [[]]*len(stoich_reac)
+#     for reac, actv in zip(stoich_reac, stoich_actv):
+#         if actv == []:
+#             actv = reac
+#         res.append(len(actv))
+#     return res
 
 
 def identify_equilibria(stoich_reac, stoich_prod):

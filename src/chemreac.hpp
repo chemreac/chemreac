@@ -18,10 +18,10 @@ using std::pair;
 class ReactionDiffusion
 {
 public:
-    int * coeff_reac;
+    int * coeff_active;
     int * coeff_prod;
-    int * coeff_totl;
-    int * coeff_actv;
+    int * coeff_total;
+    int * coeff_inactv;
     double * D_weight; // diffusion weights
     double * A_weight; // Advection weights
     uint n_factor_affected_k;
@@ -42,8 +42,8 @@ public:
     const bool logy; // use logarithmic concenctraction
     const bool logt; // use logarithmic time
     const bool logx; // use logarithmic x (space coordinate)
-    const vector<vector<uint> > stoich_reac; // Reactants per reaction
-    vector<vector<uint> > stoich_actv; // Active reactants per reaction
+    const vector<vector<uint> > stoich_active; // Reactants per reaction
+    const vector<vector<uint> > stoich_inactv; // Active reactants per reaction
     const vector<vector<uint> > stoich_prod; // Products per reaction
     vector<double> k; // Rate coefficients (law of mass action)
     vector<double> D; // Diffusion coefficients

@@ -76,7 +76,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     }[geom](x, logx)
 
     # Setup the system
-    stoich_reac = []
+    stoich_active = []
     stoich_prod = []
     k = []
 
@@ -88,7 +88,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     #     # isolated sys is not stationary for linear conc profile with finite
     #     # slope, hence we add production reaction at left boundary
     #     assert nstencil == 3  # k is derived for parabola through -x0, x0, x1
-    #     stoich_reac.append([0])
+    #     stoich_active.append([0])
     #     stoich_prod.append([0, 0])
     #     for i in range(N):
     #         bin_k_factor[i].append(1 if i == 0 else 0)
@@ -101,7 +101,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     #     # for same reason as above, a consumption reaction is added at right
     #     # boundary
     #     assert nstencil == 3
-    #     stoich_reac.append([0])
+    #     stoich_active.append([0])
     #     stoich_prod.append([])
     #     for i in range(N):
     #         bin_k_factor[i].append(1 if i == (N-1) else 0)
@@ -112,7 +112,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     #     k.append(C*D*(y0[N-2]-y0[N-1])/(y0[N-1]*(xNm2**2 - xNm1**2)))
 
     rd = ReactionDiffusion(
-        n, stoich_reac, stoich_prod, k, N,
+        n, stoich_active, stoich_prod, k, N,
         D=[D],
         z_chg=[1],
         mobility=[mob],

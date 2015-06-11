@@ -115,12 +115,12 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
 
     # Setup the system
-    stoich_reac = []
+    stoich_active = []
     stoich_prod = []
     k = []
 
     rd = ReactionDiffusion(
-        n, stoich_reac, stoich_prod, k, N,
+        n, stoich_active, stoich_prod, k, N,
         D=[D, D],
         z_chg=[1, -1],
         mobility=[mobility, -mobility],

@@ -12,7 +12,6 @@ import os
 import numpy as np
 
 from .units import unitof, get_derived_unit, to_unitless
-from .util.stoich import get_reaction_orders
 from .constants import get_unitless_constant
 
 if os.environ.get('READTHEDOCS', None) == 'True':
@@ -36,11 +35,11 @@ class ReactionDiffusionBase(object):
         """
         from .chemistry import Reaction
         return Reaction(
-            {self.substance_names[i]: self.stoich_reac[ri].count(i) for
+            {self.substance_names[i]: self.stoich_active[ri].count(i) for
              i in range(self.n)},
             {self.substance_names[i]: self.stoich_prod[ri].count(i) for
              i in range(self.n)},
-            {self.substance_names[i]: self.stoich_actv[ri].count(i) for
+            {self.substance_names[i]: self.stoich_inactv[ri].count(i) for
              i in range(self.n)},
             k=self.k[ri])
 
@@ -107,7 +106,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     ----------
     n: integer
         number of species
-    stoich_reac: list of lists of integer indices
+    stoich_active: list of lists of integer indices
         reactant index lists per reaction.
     stoich_prod: list of lists of integer indices
         product index lists per reaction.
@@ -125,8 +124,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         compartment boundaries (of length N+1), default: linspace(0, 1, N+1)
         if x is a pair of floats it is expanded into linspace(x[0], x[1], N+1).
         if x is a float it is expanded into linspace(0, x, N+1)
-    stoich_actv: list of lists of integer indices
-        list of ACTIVE reactant index lists per reaction.n, default: []
+    stoich_inactv: list of lists of integer indices
+        list of inactive reactant index lists per reaction.n, default: []
     geom: integer
         any of (FLAT, SPHERICAL, CYLINDRICAL)
     logy: bool
@@ -193,8 +192,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     def substance_tex_names(self, tex_names):
         self._substance_tex_names = tex_names
 
-    def __new__(cls, n, stoich_reac, stoich_prod, k, N=0, D=None, z_chg=None,
-                mobility=None, x=None, stoich_actv=None, geom=FLAT,
+    def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
+                mobility=None, x=None, stoich_inactv=None, geom=FLAT,
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
                 eps_rel=1.0, g_values=None, g_value_parents=None,
@@ -245,17 +244,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         except TypeError:
             _x = np.linspace(0*unitof(x), x, N+1)
 
-        if stoich_actv is None:
-            _stoich_actv = list([[]]*len(stoich_reac))
-        else:
-            _stoich_actv = stoich_actv
-        assert len(_stoich_actv) == len(stoich_reac)
+        if stoich_inactv is None:
+            stoich_inactv = list([[]]*len(stoich_active))
+        assert len(stoich_inactv) == len(stoich_active)
+        assert len(stoich_active) == len(stoich_prod)
 
-        assert len(stoich_reac) == len(stoich_prod)
         if k is not None:
-            assert len(stoich_reac) == len(k)
+            assert len(stoich_active) == len(k)
         else:
-            assert len(stoich_reac) == len(k_unitless)
+            assert len(stoich_active) == len(k_unitless)
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
         if surf_chg is None:
@@ -280,10 +277,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             for fld in fields:
                 assert len(fld) == N
 
+        reac_orders = map(len, stoich_active)
         if k_unitless is None:
             k_unitless = [to_unitless(kval, kunit) for kval, kunit in
-                          zip(k, cls.k_units(units, get_reaction_orders(
-                              stoich_reac, stoich_actv)))]
+                          zip(k, cls.k_units(units, reac_orders))]
         else:
             if k is not None:
                 raise ValueError(
@@ -299,14 +296,14 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 raise ValueError("An array in modulation of size != N")
 
         rd = super(ReactionDiffusion, cls).__new__(
-            cls, n, stoich_reac, stoich_prod,
+            cls, n, stoich_active, stoich_prod,
             np.asarray(k_unitless),
             N,
             to_unitless(D, get_unit(units, 'diffusion')),
             z_chg,
             to_unitless(mobility, get_unit(units, 'electrical_mobility')),
             to_unitless(_x, get_unit(units, 'length')),
-            _stoich_actv, geom, logy, logt, logx,
+            stoich_inactv, geom, logy, logt, logx,
             [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
              yld_unit in zip(g_values, cls.g_units(units, g_value_parents))],
             g_value_parents,
@@ -362,14 +359,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @property
     def k(self):
+        reac_orders = map(len, self.stoich_active)
         return [kv*ku for kv, ku in zip(self._k, self.k_units(
-            self.units, get_reaction_orders(
-                self.stoich_reac, self.stoich_actv)))]
+            self.units, reac_orders))]
 
     @k.setter
     def k(self, value):
+        reac_orders = map(len, self.stoich_active)
         self._k = [to_unitless(kv, ku) for kv, ku in zip(value, self.k_units(
-            get_reaction_orders(self.stoich_reac, self.stoich_actv)))]
+            reac_orders))]
 
     @property
     def D(self):

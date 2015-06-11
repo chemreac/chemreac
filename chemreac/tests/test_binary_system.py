@@ -46,7 +46,7 @@ D = [0.1, 0.2, 0.3]
 def test_serialization():
     rd = load(JSON_PATH)
     assert rd.n == 3
-    assert rd.stoich_reac == [[0, 1]]
+    assert rd.stoich_active == [[0, 1]]
     assert rd.stoich_prod == [[2]]
     assert list(rd.k) == [0.3]
     assert rd.D.tolist() == [0.1, 0.2, 0.3]
@@ -147,9 +147,9 @@ def test_chemistry():
     rsys = ReactionSystem([r1])
     rd = rsys.to_ReactionDiffusion(sbstncs)
     serialized_rd = load(JSON_PATH)
-    assert rd.stoich_reac == serialized_rd.stoich_reac
+    assert rd.stoich_active == serialized_rd.stoich_active
     assert rd.stoich_prod == serialized_rd.stoich_prod
-    assert rd.stoich_actv == serialized_rd.stoich_actv
+    assert rd.stoich_inactv == serialized_rd.stoich_inactv
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
 

@@ -296,11 +296,9 @@ class ReactionSystem(object):
     """
 
     def __init__(self, rxns=None, name=None, substances=None):
-        self._rxns = rxns
-        self.name = name
         self.substances = substances
-
-        self._do_sanity_check()
+        self.name = name
+        self.rxns = rxns
 
     @property
     def rxns(self):
@@ -308,14 +306,14 @@ class ReactionSystem(object):
 
     @rxns.setter
     def rxns(self, val):
+        self._do_sanity_check(val)
         self._rxns = val
-        self._do_sanity_check()
 
-    def _do_sanity_check(self):
+    def _do_sanity_check(self, rxns):
         """ Check for conservation of mass and charge. """
         if self.substances is None:
             return
-        for rxn in self._rxns:
+        for rxn in rxns:
             net_chg = 0
             net_mass = 0.0
             for reac, n in rxn.reactants.items():
@@ -326,6 +324,14 @@ class ReactionSystem(object):
                 net_mass += self.substances[reac].mass
             assert net_chg == 0
             assert abs(net_mass) < 0.01
+
+    @classmethod
+    def from_ReactionDiffusion(cls, rd):
+        rxns = []
+        for ri in range(rd.nr):
+            rxn = rd.to_Reaction(ri)
+            rxns.append(rxn)
+        return cls(rxns)
 
     def to_ReactionDiffusion(self, substances=None, ordered_names=None,
                              **kwargs):
@@ -359,11 +365,10 @@ class ReactionSystem(object):
                      'substance_tex_names']):
                 _kwargs_updater(key, attr)
 
-        assert 'stoich_actv' not in kwargs
         return ReactionDiffusion(
-            self.ns, self.stoich_reac(ordered_names),
+            self.ns, self.stoich_active(ordered_names),
             self.stoich_prod(ordered_names), self.k,
-            stoich_actv=self.stoich_actv(ordered_names), **kwargs)
+            stoich_inactv=self.stoich_inactv(ordered_names), **kwargs)
 
     @property
     def species_names(self):
@@ -381,17 +386,17 @@ class ReactionSystem(object):
             result.append(l)
         return result
 
-    def stoich_reac(self, ordered_names=None):
+    def stoich_active(self, ordered_names=None):
         return self._get_repeating_indices_list(
-            'reactants', ordered_names or self.ordered_names())
+            'active_reac', ordered_names or self.ordered_names())
 
     def stoich_prod(self, ordered_names=None):
         return self._get_repeating_indices_list(
             'products', ordered_names or self.ordered_names())
 
-    def stoich_actv(self, ordered_names=None):
+    def stoich_inactv(self, ordered_names=None):
         return self._get_repeating_indices_list(
-            'active_reac', ordered_names or self.ordered_names())
+            'inactv_reac', ordered_names or self.ordered_names())
 
     @property
     def k(self):
@@ -407,38 +412,3 @@ class ReactionSystem(object):
     def nr(self):
         """ Number of reactions """
         return len(self._rxns)
-
-
-class Henry(object):
-    """
-    Henry's gas constant. Note that the reference temperature
-    is set by the attribute :py:attr:`T0` which defaults to
-    298.15 * pq.kelvin.
-
-    Parameters
-    ----------
-    k_H0: float
-        Henry's constant [M/atm]
-    derivative: float
-        -dln(k_H)/d(1/T) [K]
-    ref: object
-        Note about origin of parameters
-
-    """
-
-    T0 = 298.15 * pq.kelvin
-
-    def __init__(self, k_H0, derivative, ref=None):
-        self._k_H0 = k_H0
-        self._derivative = derivative
-        self._ref = ref
-
-    def get_k_H_at_T(self, T):
-        return self._k_H0 * np.exp(
-            self._derivative*(1/T - 1/self.T0))
-
-    def get_c_at_T_and_P(self, T, P):
-        return P * self.get_k_H_at_T(T)
-
-    def get_P_at_T_and_c(self, T, c):
-        return c / self.get_k_H_at_T(T)

@@ -53,7 +53,7 @@ cdef class CppReactionDiffusion:
 
     def __cinit__(self,
                   uint n,
-                  vector[vector[uint]] stoich_reac,
+                  vector[vector[uint]] stoich_active,
                   vector[vector[uint]] stoich_prod,
                   vector[double] k,
                   uint N,
@@ -61,7 +61,7 @@ cdef class CppReactionDiffusion:
                   vector[int] z_chg,
                   vector[double] mobility,
                   vector[double] x,
-                  vector[vector[uint]] stoich_actv,
+                  vector[vector[uint]] stoich_inactv,
                   int geom,
                   bint logy,
                   bint logt,
@@ -82,8 +82,8 @@ cdef class CppReactionDiffusion:
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion(
-            n, stoich_reac, stoich_prod, k, N,
-            D, z_chg, mobility, x, stoich_actv, geom,
+            n, stoich_active, stoich_prod, k, N,
+            D, z_chg, mobility, x, stoich_inactv, geom,
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
@@ -179,17 +179,17 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.get_geom_as_int()
 
-    property stoich_reac:
+    property stoich_active:
         def __get__(self):
-            return self.thisptr.stoich_reac
+            return self.thisptr.stoich_active
 
     property stoich_prod:
         def __get__(self):
             return self.thisptr.stoich_prod
 
-    property stoich_actv:
+    property stoich_inactv:
         def __get__(self):
-            return self.thisptr.stoich_actv
+            return self.thisptr.stoich_inactv
 
     property _k:
         def __get__(self):

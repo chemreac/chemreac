@@ -74,7 +74,8 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
     rho = 1.0*kilogram*decimetre**-3  # kg/dm3
     rd = load(os.path.join(os.path.dirname(__file__), name+'.json'),
               ReactionDiffusion, N=N, logy=logy,
-              logt=logt, logx=logx, fields=[doseratefield*rho],
+              logt=logt, logx=logx, fields=[doseratefield*rho,
+                                            0*doseratefield*rho],
               nstencil=nstencil)
     y0_by_name = json.load(open(os.path.join(os.path.dirname(__file__),
                                              name+'.y0.json'), 'rt'))
