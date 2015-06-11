@@ -86,7 +86,7 @@ def test_mass_conservation_flat_extended(params):
 
 
 @pytest.mark.parametrize('params', list(product(COMBOS, 'cs', [False])))
-@pytest.mark.xfail
+# @pytest.mark.xfail
 def test_mass_conservation_cyl_sph(params):
     _test_mass_conservation(params)
 

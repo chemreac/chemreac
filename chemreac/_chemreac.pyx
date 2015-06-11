@@ -53,7 +53,7 @@ cdef class CppReactionDiffusion:
 
     def __cinit__(self,
                   uint n,
-                  vector[vector[uint]] stoich_reac,
+                  vector[vector[uint]] stoich_active,
                   vector[vector[uint]] stoich_prod,
                   vector[double] k,
                   uint N,
@@ -61,7 +61,7 @@ cdef class CppReactionDiffusion:
                   vector[int] z_chg,
                   vector[double] mobility,
                   vector[double] x,
-                  vector[vector[uint]] stoich_actv,
+                  vector[vector[uint]] stoich_inactv,
                   int geom,
                   bint logy,
                   bint logt,
@@ -82,8 +82,8 @@ cdef class CppReactionDiffusion:
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion(
-            n, stoich_reac, stoich_prod, k, N,
-            D, z_chg, mobility, x, stoich_actv, geom,
+            n, stoich_active, stoich_prod, k, N,
+            D, z_chg, mobility, x, stoich_inactv, geom,
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
@@ -179,26 +179,26 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.get_geom_as_int()
 
-    property stoich_reac:
+    property stoich_active:
         def __get__(self):
-            return self.thisptr.stoich_reac
+            return self.thisptr.stoich_active
 
     property stoich_prod:
         def __get__(self):
             return self.thisptr.stoich_prod
 
-    property stoich_actv:
+    property stoich_inactv:
         def __get__(self):
-            return self.thisptr.stoich_actv
+            return self.thisptr.stoich_inactv
 
-    property k:
+    property _k:
         def __get__(self):
             return np.asarray(self.thisptr.k)
         def __set__(self, vector[double] k):
             assert len(k) == self.nr
             self.thisptr.k = k
 
-    property D:
+    property _D:
         def __get__(self):
             return np.asarray(self.thisptr.D)
 
@@ -215,7 +215,7 @@ cdef class CppReactionDiffusion:
             assert len(z_chg) == self.n
             self.thisptr.z_chg = z_chg
 
-    property mobility:
+    property _mobility:
         def __get__(self):
             return np.asarray(self.thisptr.mobility)
 
@@ -264,7 +264,7 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.eps_rel
 
-    property g_values:
+    property _g_values:
         def __get__(self):
             return self.thisptr.g_values
         def __set__(self, vector[vector[double]] g_values):
@@ -335,6 +335,25 @@ cdef class CppReactionDiffusion:
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                               int si, cnp.ndarray[cnp.float64_t, ndim=1] out):
+        """
+        Decomposes the rate of change of a species concentration into per
+        reaction contributions.
+
+        Parameters
+        ----------
+        t: float
+            time
+        y: 1-dimensional numpy array
+            dependent variables
+        si: int
+            specie index to analyse for
+        out: 1-dimensional numpy array (slice)
+            output argument, of length ``nr`` (per reaction contribution)
+
+        Returns
+        -------
+        None, see ``out`` parameter
+        """
         self.thisptr.per_rxn_contrib_to_fi(t, &y[0], si, &out[0])
 
     property xcenters:

@@ -41,8 +41,9 @@ def get_derived_unit(registry, name):
         'charge': registry['current']*registry['time'],
         'energy': registry['mass']*registry['length']**2/registry['time']**2,
         'concentration': registry['amount']/registry['length']**3,
-        'density': registry['mass']/registry['length']**3
+        'density': registry['mass']/registry['length']**3,
     }
+    derived['radiolytic_yield'] = registry['amount']/derived['energy']
     try:
         return derived[name]
     except KeyError:
@@ -51,12 +52,17 @@ def get_derived_unit(registry, name):
 
 # Convenience
 joule = pq.joule
-Gray = joule/kilogram
+gray = pq.gray
+eV = pq.eV
 MeV = pq.MeV
-centimetre = pq.centimetre
-gram = pq.gram
+metre = pq.metre
 decimetre = dm = pq.UnitQuantity('decimetre',  pq.m / 10.0,  u_symbol='dm')
+centimetre = pq.centimetre
+micrometre = pq.micrometre
+nanometre = pq.nanometre
+gram = pq.gram
 molar = pq.UnitQuantity('molar',  pq.mole / dm ** 3,  u_symbol='M')
+hour = pq.hour
 perMolar_perSecond = 1/molar/pq.s
 per100eV = pq.UnitQuantity('per_100_eV',
                            1/(100*pq.eV*pq.constants.Avogadro_constant),
@@ -143,3 +149,11 @@ def unit_registry_from_human_readable(unit_registry):
         else:
             new_registry[k] = factor*unit_quants[0]
     return new_registry
+
+
+def allclose(a, b, rtol=1e-8, atol=None):
+    d = np.abs(a - b)
+    lim = np.abs(a)*rtol
+    if atol is not None:
+        lim += atol
+    return np.all(d < lim)

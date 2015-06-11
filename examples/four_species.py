@@ -48,8 +48,10 @@ import argh
 import numpy as np
 
 from chemreac import DENSE, BANDED
+from chemreac.chemistry import ReactionSystem, mk_sn_dict_from_names
 from chemreac.integrate import run
 from chemreac.serialization import load
+from chemreac.util.graph import rsys2graph
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     save_and_or_show_plot
@@ -61,7 +63,7 @@ from chemreac.util.plotting import (
 
 def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
                  logy=False, logt=False, plot=False, savefig='None',
-                 verbose=False):
+                 verbose=False, graph=False):
     """
     Integrates the reaction system defined by
     :download:`four_species.json <examples/four_species.json>`
@@ -127,15 +129,17 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
 
             plt.figure(figsize=(6, 10))
             plot_per_reaction_contribution(
-                rd,
-                np.log(tout) if rd.logt else tout,
-                np.log(Cout) if rd.logy else Cout,
+                integr,
                 'ABCD'
             )
             plt.tight_layout()
             if savefig != 'None':
                 savefig = base + '_per_reaction' + ext
             save_and_or_show_plot(savefig=savefig)
+    if graph:
+        print(rsys2graph(ReactionSystem.from_ReactionDiffusion(rd),
+                         mk_sn_dict_from_names('ABCD'),
+                         'four_species_graph.png', save='.'))
 
 
 if __name__ == '__main__':

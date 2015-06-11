@@ -177,9 +177,9 @@ def test_chemistry():
     # ...solution: canonical representation is alphabetically sorted on
     #              Substance.name
     serialized_rd = load(JSON_PATH)
-    assert rd.stoich_reac == serialized_rd.stoich_reac
+    assert rd.stoich_active == serialized_rd.stoich_active
     assert rd.stoich_prod == serialized_rd.stoich_prod
-    assert rd.stoich_actv == serialized_rd.stoich_actv
+    assert rd.stoich_inactv == serialized_rd.stoich_inactv
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
 
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     import sympy as sp
     rd = load(JSON_PATH, N=3, lrefl=True, rrefl=True)
     print(rd.x)
-    print(rd.stoich_reac)
+    print(rd.stoich_active)
     print(rd.stoich_prod)
     srd = SymRD.from_rd(rd)
     print('===   f ====')

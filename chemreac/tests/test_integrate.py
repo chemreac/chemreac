@@ -92,7 +92,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     assert np.allclose(rd.k, k[3:])
     assert np.allclose(rd.xcenters, xc)
     assert np.allclose(rd.fields, fields)
-    assert np.allclose(rd.g_values, g_values)
+    assert np.allclose(rd._g_values, g_values)
     y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N])
     y0 = y0.flatten()
     t0, tend, nt = 1.0, 1.1, 42

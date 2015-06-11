@@ -56,7 +56,7 @@ def test_plot_per_reaction_contribution():
     tout = np.linspace(0, 3.0, 7)
     y0 = [3.0, 1.0]
     integr = run(rd, y0, tout)
-    axes = plot_per_reaction_contribution(rd, tout, integr.yout, [0, 1])
+    axes = plot_per_reaction_contribution(integr, [0, 1])
     for ax in axes:
         assert isinstance(ax, matplotlib.axes.Axes)
 

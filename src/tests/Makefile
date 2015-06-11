@@ -54,12 +54,12 @@ ifeq ($(PROFILING),1)
   TARGETS += profile_test_chemreac.out
   GENERATED += profile_test_chemreac.out gmon.out
 endif
-ifeq ($(USE_OPENMP),1)
+ifeq ($(WITH_OPENMP),1)
   FLAGS += $(OPENMPFLAG)
   LIBS += $(OPENMPLIBS)
-  USE_OPENMP_TRFL="True"
+  WITH_OPENMP_TRFL="True"
 else
-  USE_OPENMP_TRFL="False"
+  WITH_OPENMP_TRFL="False"
 endif
 
 FLAGS += $(EXTRA_FLAGS)
@@ -84,7 +84,7 @@ clean:
 	rm $(GENERATED)
 
 chemreac.cpp: ../chemreac_template.cpp
-	python enmako.py -g "{\"USE_OPENMP\": $(USE_OPENMP_TRFL)}" -o $@ $<
+	python enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
 
 fornberg.o: ../finitediff/finitediff/fornberg.f90
 	$(FC) $(FORTFLAGS) -c -o $@ $^

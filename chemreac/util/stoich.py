@@ -75,30 +75,60 @@ def decompose_yield_into_rate_coeffs(yields, stoichs, atol=1e-10):
     return k
 
 
-def get_reaction_orders(stoich_reac, stoich_actv=None):
+# def get_reaction_orders(stoich_reac, stoich_actv=None):
+#     """
+#     Return the order of the reactions (assuming mass-action
+#     behaviour).
+
+#     Parameters
+#     ----------
+#     stoich_reac: list of lists of integer indices
+#     stoichs: list of lists of integer indices (optional)
+
+#     Returns
+#     -------
+#     iterable of integers corresponding to the total reaction orders
+
+#     See also
+#     --------
+#     :class:`chemreac.core.ReactionDiffusion`
+
+#     """
+#     res = []
+#     if stoich_actv is None:
+#         stoich_actv = [[]]*len(stoich_reac)
+#     for reac, actv in zip(stoich_reac, stoich_actv):
+#         if actv == []:
+#             actv = reac
+#         res.append(len(actv))
+#     return res
+
+
+def identify_equilibria(stoich_reac, stoich_prod):
     """
-    Return the order of the reactions (assuming mass-action
-    behaviour).
+    Identify equilibria from stoichiometry
 
     Parameters
     ----------
-    stoich_reac: list of lists of integer indices
-    stoichs: list of lists of integer indices (optional)
+    stoich_reac: iterable of iterables of integers
+        per reaction iterables of specie indices for reactants
+    stoich_prod: iterable of iterables of integers
+        per reaction iterables of specie indices for products
 
     Returns
     -------
-    iterable of integers corresponding to the total reaction orders
+    Set of tuples of reaction indices forming equilibria
 
-    See also
+    Examples
     --------
-    :class:`chemreac.core.ReactionDiffusion`
+    >>> identify_equilibria([[0,0], [1]], [[1], [0,0]]) == set([(0, 1)])
+    True
 
     """
-    res = []
-    if stoich_actv is None:
-        stoich_actv = [[]]*len(stoich_reac)
-    for reac, actv in zip(stoich_reac, stoich_actv):
-        if actv == []:
-            actv = reac
-        res.append(len(actv))
-    return res
+    equilibria = set()
+    rxns = tuple(zip(stoich_reac, stoich_prod))
+    for ri, (cur_reac, cur_prod) in enumerate(rxns):
+        for oi, (other_reac, other_prod) in enumerate(rxns[ri+1:], start=ri+1):
+            if cur_reac == other_prod and cur_prod == other_reac:
+                equilibria.add((ri, oi))
+    return equilibria

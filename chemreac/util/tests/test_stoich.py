@@ -5,7 +5,8 @@ from collections import OrderedDict
 import numpy as np
 
 from chemreac.util.stoich import (
-    get_coeff_mtx, decompose_yield_into_rate_coeffs
+    get_coeff_mtx, decompose_yield_into_rate_coeffs,
+    identify_equilibria
 )
 
 
@@ -71,3 +72,17 @@ def test_decompose_yield_into_rate_coeffs_2():
     rtol = 1e-12
     for a, b in zip(k, k_ref):
         assert abs(a-b) < abs(a*rtol)
+
+
+def test_identify_equilibria():
+    assert identify_equilibria([[0, 0], [1]], [[1], [0, 0]]) == set([(0, 1)])
+    assert identify_equilibria([
+        [0], [0, 1], [2, 3]
+    ], [
+        [1], [2, 3], [0, 1]
+    ]) == set([(1, 2)])
+    assert identify_equilibria([
+        [0, 1], [2], [3, 4]
+    ], [
+        [2], [3, 4], [2]
+    ]) == set([(1, 2)])

@@ -15,8 +15,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
 
         const uint n, N, nr, nstencil
         const bool logy, logt, logx, lrefl, rrefl, auto_efield
-        const vector[vector[uint]] stoich_reac
-        vector[vector[uint]] stoich_actv
+        const vector[vector[uint]] stoich_active
+        vector[vector[uint]] stoich_inactv
         const vector[vector[uint]] stoich_prod
         vector[double] k
         vector[double] D

@@ -51,8 +51,8 @@ else:
     # read __version__ attribute from release.py:
     exec(open(release_py_path).read())
 
-DEBUG = True if os.environ.get('USE_DEBUG', False) else False
-USE_OPENMP = True if os.environ.get('USE_OPENMP', False) else False
+WITH_DEBUG = True if os.environ.get('WITH_DEBUG', False) else False
+WITH_OPENMP = True if os.environ.get('WITH_OPENMP', False) else False
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
@@ -64,7 +64,7 @@ ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 # See pycompilation for details on "options"
 flags = []
 options = ['pic', 'warn']
-if DEBUG:
+if WITH_DEBUG:
     print("Building chemreac with debugging enabled.")
     options += ['debug']
 else:
@@ -111,7 +111,7 @@ else:
 
     cmdclass_['build_ext'] = pce_build_ext
     cmdclass_['sdist'] = pce_sdist
-    subsd = {'USE_OPENMP': USE_OPENMP}
+    subsd = {'WITH_OPENMP': WITH_OPENMP}
     pyx_path = 'chemreac/_chemreac.pyx'
     using_pyx = os.path.exists(pyx_path)  # Cython file missing in source distriubtion
     pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
@@ -136,9 +136,9 @@ else:
                         # 'fast' doesn't work on drone.io
                         'flags': flags,
                         'options': options +
-                        (['openmp'] if USE_OPENMP else []),
+                        (['openmp'] if WITH_OPENMP else []),
                         'define': [] +
-                        (['DEBUG'] if DEBUG else []) +
+                        (['WITH_DEBUG'] if WITH_DEBUG else []) +
                         (['WITH_DATA_DUMPING'] if
                          WITH_DATA_DUMPING else []) +
                         (['WITH_BLOCK_DIAG_ILU_OPENMP'] if
@@ -154,7 +154,7 @@ else:
                     pyx_or_cpp: {
                         'cy_kwargs': {'annotate': True},
                         'std': 'c++0x',
-                        'gdb_debug': DEBUG
+                        'gdb_debug': WITH_DEBUG
                     } if using_pyx else {
                         'std': 'c++0x',
                     }
@@ -163,7 +163,7 @@ else:
                 'options': options,
             },
             pycompilation_link_kwargs={
-                'options': (['openmp'] if USE_OPENMP else []),
+                'options': (['openmp'] if WITH_OPENMP else []),
                 'std': 'c++0x',
             },
             include_dirs=['src/', 'src/finitediff/finitediff/',

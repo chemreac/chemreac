@@ -6,7 +6,6 @@ import numpy as np
 
 from . import ReactionDiffusion
 from .core import get_unit
-from .util.stoich import get_reaction_orders
 from .units import (
     unit_registry_to_human_readable,
     unit_registry_from_human_readable
@@ -37,15 +36,15 @@ def dump(rd, dest):
 
     data = {
         'n': rd.n,
-        'stoich_reac': rd.stoich_reac,
+        'stoich_active': rd.stoich_active,
         'stoich_prod': rd.stoich_prod,
-        'k': rd.k.tolist(),
-        'D': rd.D.tolist(),
-        'mobility': rd.mobility.tolist(),
+        'k': list(rd._k),
+        'D': list(rd._D),
+        'mobility': list(rd._mobility),
         # 'x': rd.x.tolist(),
-        'stoich_actv': rd.stoich_actv,
+        'stoich_inactv': rd.stoich_inactv,
         'units': unit_registry_to_human_readable(rd.units),
-        'g_values': rd.g_values,
+        'g_values': list(rd._g_values),
         'g_value_parents': rd.g_value_parents,
         # 'fields': fields
     }
@@ -82,19 +81,12 @@ def load(source, RD=None, **kwargs):
         data['mobility'] = np.array(data['mobility'])*get_unit(
             units, 'electrical_mobility')
     if 'g_values' in data:
-        g_units = []
-        for parent in data.get('g_value_parents', [-1]*len(data['g_values'])):
-            if parent == -1:
-                g_units.append(get_unit(units, 'radyield'))
-            else:
-                g_units.append(get_unit(units, 'radyield') /
-                               get_unit(units, 'concentration'))
-        data['g_values'] = [elem*g_unit for
-                            elem, g_unit in zip(data['g_values'], g_units)]
-
+        data['g_values'] = [elem*g_unit for elem, g_unit in
+                            zip(data['g_values'], RD.g_units(
+                                units, data['g_value_parents']))]
+    reaction_orders = map(len, data['stoich_active'])
     kunits = [get_unit(units, 'concentration')**(1-order) /
-              get_unit(units, 'time') for order in get_reaction_orders(
-                  data['stoich_reac'], data.get('stoich_actv', None))]
+              get_unit(units, 'time') for order in reaction_orders]
     data['k'] = [kval*kunit for kval, kunit in zip(data['k'], kunits)]
     data.update(kwargs)
     extra_data = {}

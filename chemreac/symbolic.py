@@ -29,8 +29,8 @@ class SymRD(ReactionDiffusionBase):
         return cls(*tuple(getattr(rd, attr) for attr in
                           inspect.getargspec(cls.__init__).args[1:]))
 
-    def __init__(self, n, stoich_reac, stoich_prod, k, N=0, D=None,
-                 z_chg=None, mobility=None, x=None, stoich_actv=None,
+    def __init__(self, n, stoich_active, stoich_prod, k, N=0, D=None,
+                 z_chg=None, mobility=None, x=None, stoich_inactv=None,
                  geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
@@ -38,7 +38,7 @@ class SymRD(ReactionDiffusionBase):
                  modulation=None, **kwargs):
         # Save args
         self.n = n
-        self.stoich_reac = stoich_reac
+        self.stoich_active = stoich_active
         self.stoich_prod = stoich_prod
         self.k = k
         self.D = D if D is not None else [0]*n
@@ -48,7 +48,7 @@ class SymRD(ReactionDiffusionBase):
         self.N = len(self.x) - 1
         if N not in [None, 0]:
             assert self.N == N
-        self.stoich_actv = stoich_actv or [[]*len(stoich_reac)]
+        self.stoich_inactv = stoich_inactv or [[]*len(stoich_active)]
         self.geom = geom
         self.logy = logy
         self.logt = logt
@@ -79,14 +79,14 @@ class SymRD(ReactionDiffusionBase):
         self.efield = [0]*self.N
 
         # Reactions
-        for ri, (k, sreac, sactv, sprod) in enumerate(zip(
-                self.k, self.stoich_reac, self.stoich_actv,
+        for ri, (k, sactv, sinactv, sprod) in enumerate(zip(
+                self.k, self.stoich_active, self.stoich_inactv,
                 self.stoich_prod)):
-            c_reac = map(sreac.count, range(self.n))
+            c_actv = map(sactv.count, range(self.n))
+            c_inactv = map(sinactv.count, range(self.n))
             c_prod = map(sprod.count, range(self.n))
-            c_totl = [nprd - nrct for nrct, nprd in zip(c_reac, c_prod)]
-            if sactv == []:
-                sactv = sreac
+            c_totl = [nprd - nactv - ninactv for nactv, ninactv, nprd in zip(
+                c_actv, c_inactv, c_prod)]
             for bi in range(self.N):
                 r = k
                 if ri in self.modulated_rxns:
@@ -94,7 +94,7 @@ class SymRD(ReactionDiffusionBase):
                 for si in sactv:
                     r *= self.y(bi, si)
                 for si in range(self.n):
-                    self._f[bi*self.n+si] += c_totl[si]*r
+                    self._f[bi*self.n + si] += c_totl[si]*r
         for fi, fld in enumerate(self.fields):
             for bi in range(self.N):
                 if self.g_value_parents[fi] == -1:
@@ -102,7 +102,7 @@ class SymRD(ReactionDiffusionBase):
                 else:
                     gfact = self.y(bi, self.g_value_parents[fi])
                 for si in range(self.n):
-                    self._f[bi*self.n+si] += sp.S(
+                    self._f[bi*self.n + si] += sp.S(
                         fld[bi])*self.g_values[fi][si]*gfact
 
         if self.N > 1:

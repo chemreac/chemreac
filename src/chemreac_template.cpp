@@ -20,7 +20,7 @@
 #include "chemreac_util.h"
 #endif
 
-%if USE_OPENMP:
+%if WITH_OPENMP:
 #ifndef _OPENMP
   #error "Have you forgotten -fopenmp flag?"
 #endif
@@ -47,7 +47,7 @@ template<class T> void ignore( const T& ) { } // ignore compiler warnings about 
 // 1D discretized reaction diffusion
 ReactionDiffusion::ReactionDiffusion(
     uint n,
-    const vector<vector<uint> > stoich_reac,
+    const vector<vector<uint> > stoich_active,
     const vector<vector<uint> > stoich_prod,
     vector<double> k,
     uint N,
@@ -55,7 +55,7 @@ ReactionDiffusion::ReactionDiffusion(
     const vector<int> z_chg,
     vector<double> mobility,
     const vector<double> x, // separation
-    vector<vector<uint> > stoich_actv_, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
+    vector<vector<uint> > stoich_inactv, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     int geom_,
     bool logy,
     bool logt,
@@ -73,8 +73,9 @@ ReactionDiffusion::ReactionDiffusion(
     vector<vector<double>> fields,
     vector<int> modulated_rxns,
     vector<vector<double> > modulation):
-    n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_reac.size()),
-    logy(logy), logt(logt), logx(logx), stoich_reac(stoich_reac), stoich_prod(stoich_prod),
+    n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
+    logy(logy), logt(logt), logx(logx), stoich_active(stoich_active), 
+    stoich_inactv(stoich_inactv), stoich_prod(stoich_prod), 
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl), 
     auto_efield(auto_efield),
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
@@ -87,9 +88,9 @@ ReactionDiffusion::ReactionDiffusion(
     if (nstencil % 2 == 0) throw std::logic_error("Only odd number of stencil points supported");
     if ((N == 1) && (nstencil != 1)) throw std::logic_error("You must set nstencil=1 for N=1");
     if ((N > 1) && (nstencil <= 1)) throw std::logic_error("You must set nstencil>1 for N>1");
-    if (stoich_reac.size() != stoich_prod.size())
+    if (stoich_active.size() != stoich_prod.size())
         throw std::length_error(
-            "stoich_reac and stoich_prod of different sizes.");
+            "stoich_active and stoich_prod of different sizes.");
     if (k.size() != stoich_prod.size())
         throw std::length_error(
             "k and stoich_prod of different sizes.");
@@ -143,38 +144,33 @@ ReactionDiffusion::ReactionDiffusion(
 
     // Stoichiometry
     for (uint ri=0; ri<nr; ++ri){
-        for (auto si=stoich_reac[ri].begin(); si != stoich_reac[ri].end(); ++si)
+        for (auto si=stoich_active[ri].begin(); si != stoich_active[ri].end(); ++si)
             if (*si > n-1)
-                throw std::logic_error("At least one species index in stoich_reac > (n-1)");
+                throw std::logic_error("At least one species index in stoich_active > (n-1)");
         for (auto si=stoich_prod[ri].begin(); si != stoich_prod[ri].end(); ++si)
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_prod > (n-1)");
-        for (auto si=stoich_actv_[ri].begin(); si != stoich_actv_[ri].end(); ++si)
+        for (auto si=stoich_inactv[ri].begin(); si != stoich_inactv[ri].end(); ++si)
             if (*si > n-1)
-                throw std::logic_error("At least one species index in stoich_actv > (n-1)");
+                throw std::logic_error("At least one species index in stoich_inactv > (n-1)");
     }
 
-    coeff_reac = new int[nr*n];
+    coeff_active = new int[nr*n];
     coeff_prod = new int[nr*n];
-    coeff_totl = new int[nr*n];
-    coeff_actv = new int[nr*n];
+    coeff_total = new int[nr*n];
+    coeff_inactv = new int[nr*n];
 
-    stoich_actv.reserve(nr);
+    stoich_inactv.reserve(nr);
     for (uint rxni=0; rxni<nr; ++rxni){ // reaction index
-        if (stoich_actv_[rxni].size() == 0)
-            stoich_actv.push_back(stoich_reac[rxni]); // massaction
-        else
-            stoich_actv.push_back(stoich_actv_[rxni]);
-
         for (uint si=0; si<n; ++si){ // species index
-            coeff_reac[rxni*n+si] = count(stoich_reac[rxni].begin(),
-                                        stoich_reac[rxni].end(), si);
-            coeff_actv[rxni*n+si] = count(stoich_actv[rxni].begin(),
-                                        stoich_actv[rxni].end(), si);
+            coeff_active[rxni*n+si] = count(stoich_active[rxni].begin(),
+                                          stoich_active[rxni].end(), si);
+            coeff_inactv[rxni*n+si] = count(stoich_inactv[rxni].begin(),
+                                            stoich_inactv[rxni].end(), si);
             coeff_prod[rxni*n+si] = count(stoich_prod[rxni].begin(),
                                         stoich_prod[rxni].end(), si);
-            coeff_totl[rxni*n+si] = coeff_prod[rxni*n+si] -\
-                coeff_reac[rxni*n+si];
+            coeff_total[rxni*n+si] = coeff_prod[rxni*n+si] -\
+                coeff_active[rxni*n+si] - coeff_inactv[rxni*n+si];
         }
     }
 
@@ -213,10 +209,10 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []netchg;
     delete []A_weight;
     delete []D_weight;
-    delete []coeff_reac;
+    delete []coeff_active;
     delete []coeff_prod;
-    delete []coeff_totl;
-    delete []coeff_actv;
+    delete []coeff_total;
+    delete []coeff_inactv;
     if (prec_cache != nullptr)
         delete prec_cache;
     if (jac_cache != nullptr)
@@ -306,9 +302,9 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ y,
         double tmp = logy ? 0 : 1;
 
         // Kinetically active reactants (law of massaction)
-        for (uint rnti=0; rnti<stoich_actv[rxni].size(); ++rnti){
+        for (uint rnti=0; rnti<stoich_active[rxni].size(); ++rnti){
             // reactant index rnti
-            int si = stoich_actv[rxni][rnti];
+            int si = stoich_active[rxni][rnti];
             if (logy)
                 tmp += y[bi*n+si];
             else
@@ -342,7 +338,7 @@ ReactionDiffusion::_alloc_and_populate_linC(const double * const __restrict__ y)
     int nlinC = n*N;
     double * const linC = (double * const)malloc(nlinC*sizeof(double));
     // TODO: Tune 42...
-    ${"#pragma omp parallel for if (N > 42)" if USE_OPENMP else ""}
+    ${"#pragma omp parallel for if (N > 42)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi)
         for (uint si=0; si<n; ++si)
             LINC(bi, si) = exp(Y(bi, si));
@@ -360,11 +356,11 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         calc_efield(linC);
     }
 
-    ${"double * const local_r = new double[nr];" if not USE_OPENMP else ""}
-    ${"#pragma omp parallel for if (N > 2)" if USE_OPENMP else ""}
+    ${"double * const local_r = new double[nr];" if not WITH_OPENMP else ""}
+    ${"#pragma omp parallel for if (N > 2)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         // compartment bi
-        ${"double * const local_r = new double[nr];" if USE_OPENMP else ""}
+        ${"double * const local_r = new double[nr];" if WITH_OPENMP else ""}
 
         for (uint si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
@@ -376,7 +372,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
             // reaction index rxni
             for (uint si=0; si<n; ++si){
                 // species index si
-                const int overall = coeff_totl[rxni*n + si];
+                const int overall = coeff_total[rxni*n + si];
                 if (overall != 0)
                     DYDT(bi, si) += overall*local_r[rxni];
             }
@@ -438,10 +434,10 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
                 for (uint si=0; si<n; ++si)
                     DYDT(bi, si) *= exp(t);
         }
-        ${"delete []local_r;" if USE_OPENMP else ""}
+        ${"delete []local_r;" if WITH_OPENMP else ""}
 
     }
-    ${"delete []local_r;" if not USE_OPENMP else ""}
+    ${"delete []local_r;" if not WITH_OPENMP else ""}
 
     if (logy)
         free((void*)linC);
@@ -497,11 +493,11 @@ ReactionDiffusion::${token}(double t,
     if (auto_efield)
         calc_efield(linC);
 
-    ${'double * const local_r = new double[nr];' if not USE_OPENMP else ''}
-    ${'#pragma omp parallel for' if USE_OPENMP else ''}
+    ${'double * const local_r = new double[nr];' if not WITH_OPENMP else ''}
+    ${'#pragma omp parallel for' if WITH_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
-        ${'double * const local_r = new double[nr];' if USE_OPENMP else ''}
+        ${'double * const local_r = new double[nr];' if WITH_OPENMP else ''}
 
         // Contributions from reactions and fields
         // ---------------------------------------
@@ -514,12 +510,12 @@ ReactionDiffusion::${token}(double t,
                 JAC(bi, bi, si, dsi) = 0.0;
                 for (uint rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
-                    if (coeff_totl[rxni*n + si] == 0)
+                    if (coeff_total[rxni*n + si] == 0)
                         continue; // species si unaffected by reaction
-                    if (coeff_actv[rxni*n + dsi] == 0)
+                    if (coeff_active[rxni*n + dsi] == 0)
                         continue; // rate of reaction unaffected by species dsi
-                    double tmp = coeff_totl[rxni*n + si]*\
-                    coeff_actv[rxni*n + dsi]*local_r[rxni];
+                    double tmp = coeff_total[rxni*n + si]*\
+                    coeff_active[rxni*n + dsi]*local_r[rxni];
                     if (!logy)
                         tmp /= Y(bi, dsi);
                     JAC(bi, bi, si, dsi) += tmp;
@@ -604,9 +600,9 @@ ReactionDiffusion::${token}(double t,
                     JAC(bi, bi, si, si) -= FOUT(bi, si);
             }
         }
-        ${'delete []local_r;' if USE_OPENMP else ''}
+        ${'delete []local_r;' if WITH_OPENMP else ''}
     }
-    ${'delete []local_r;' if not USE_OPENMP else ''}
+    ${'delete []local_r;' if not WITH_OPENMP else ''}
     if (logy && !fy)
         delete []fout;
     if (logy)
@@ -638,12 +634,12 @@ ReactionDiffusion::${token}(double t,
 //             JAC(si, dsi) = 0.0;
 //             for (uint rxni=0; rxni<nr; ++rxni){
 //                 // reaction rxni
-//                 if (coeff_totl[rxni*n + si] == 0)
+//                 if (coeff_total[rxni*n + si] == 0)
 //                     continue; // species si unaffected by reaction
-//                 if (coeff_actv[rxni*n + dsi] == 0)
+//                 if (coeff_active[rxni*n + dsi] == 0)
 //                     continue; // rate of reaction unaffected by species dsi
-//                 double tmp = coeff_totl[rxni*n + si]*\
-//                 coeff_actv[rxni*n + dsi]*local_r[rxni];
+//                 double tmp = coeff_total[rxni*n + si]*\
+//                 coeff_active[rxni*n + dsi]*local_r[rxni];
 //                 if (!logy)
 //                     tmp /= Y(bi, dsi);
 //                 JAC(si, dsi) += tmp;
@@ -784,7 +780,7 @@ void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __r
     double * const local_r = new double[nr];
     _fill_local_r(0, y, local_r);
     for (uint ri=0; ri<nr; ++ri){
-	out[ri] = coeff_totl[ri*n+si]*local_r[ri];
+	out[ri] = coeff_total[ri*n+si]*local_r[ri];
     }
     delete []local_r;
 }

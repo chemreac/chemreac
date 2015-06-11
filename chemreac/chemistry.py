@@ -13,6 +13,7 @@ from __future__ import print_function, division, absolute_import
 
 from collections import defaultdict, OrderedDict
 from functools import total_ordering
+from itertools import chain
 from operator import itemgetter
 import weakref
 
@@ -36,7 +37,7 @@ class Substance(object):
     Parameters
     ==========
     name: string
-        unique string representation e.g. "CNO-", "ONC-"
+        unique string representation e.g. "H2O", "CNO-", "OCN-"
     charge: integer
         charge of substance
     mass: float
@@ -150,18 +151,15 @@ def mk_sn_dict_from_names(names, **kwargs):
 class Reaction(object):
     """
     Reaction with kinetics governed by the law of mass-action.
+    Example:
 
-    Must honour:
-
-        A + R --> A + P
-
-    That is: law of mass action depend on [A]
+        A + R --> A + P; r = k*A*R
 
     Also supports
 
-        5*C1 + C2 --> B;  r=k*C1*C2
+        5*C1 + C2 --> B; r = k*C1*C2
 
-    by specifying active reactants
+    by specifying active reactants C1, C2 and inactive reaktants 4*C1.
 
     reactants and products are dictionaries with substance names
     as keys and positive integers giving their stoichiometric coeffecients
@@ -177,24 +175,14 @@ class Reaction(object):
 
     Parameters
     ----------
-    reactants: dict
+    active_reac: dict
         dictionary mapping substance name (string) to stoichiometric
-        coefficient (integer)
+        coefficient (integer) of reactant, these affect rate expression.
     products: dict
         dictionary mapping substance name (string) to stoichiometric
         coefficient (integer)
-    active_reac: dict (optional)
-        if the rate expression contains a reactant to the power of a
-        number different than its stoichiometric coefficient it may be
-        overridden here. For example: active_reac={'H2O': 1} makes the rate
-        expression linear in H2O concentration even though reactants['H2O']
-        could be equal to 4 (say)
-    inactive_reac: dict (optional)
-        semantically different but provides same functionality as active_reac
-        (only one of these may be passed). Here you specify a positive number <
-        the stoichiometric coefficient of the reactant not to be counted. The
-        corresponding example to active_reac may be achieved by passing
-        inactive_reac={'H2O': 3}
+    inactv_reac: dict (optional)
+        Same as active_reac but does not affect rate expression.
     k: float
         rate coefficient
     T: float
@@ -209,31 +197,22 @@ class Reaction(object):
         Descriptive name of reaction
     """
 
-    all_instances = weakref.WeakSet()
+    # all_instances = weakref.WeakSet()
 
-    def __init__(self, reactants, products, active_reac=None,
-                 inactive_reac=None, k=None, T=None, Ea=None, A=None,
-                 ref=None, name=None):
-        self.all_instances.add(self)
-        self.reactants = defaultdict(int)
-        self.reactants.update(reactants)
-        self.products = defaultdict(int)
-        self.products.update(products)
-        self.active_reac = defaultdict(int)
-        if active_reac is not None:
-            assert inactive_reac is None
-            self.active_reac.update(active_reac)
-            self.order = sum(self.active_reac.values())
-        else:
-            if inactive_reac is not None:
-                assert active_reac is None
-                self.active_reac.update(reactants)
-                for key, val in inactive_reac.items():
-                    self.active_reac[key] -= val
-                self.order = sum(self.active_reac.values())
-            else:
-                self.order = sum(self.reactants.values())
+    @property
+    def reactants(self):
+        d = defaultdict(int)
+        for k, v in chain(self.inactv_reac.items(),
+                          self.active_reac.items()):
+            d[k] += v
+        return d
 
+    def __init__(self, active_reac, products, inactv_reac=None,
+                 k=None, T=None, Ea=None, A=None, ref=None, name=None):
+        self.active_reac = defaultdict(int, active_reac)
+        self.products = defaultdict(int, products)
+        self.inactv_reac = defaultdict(int, inactv_reac or {})
+        self.order = sum(self.active_reac.values())
         self.k = k
         self.T = T
         self.Ea = Ea
@@ -244,22 +223,24 @@ class Reaction(object):
     def __str__(self):
         return self.render({})
 
-    def render(self, tex_names):
-        if len(tex_names) > 0:
-            arrow = ' $\\rightarrow$ '
+    def render(self, names, tex=False, equilibrium=False):
+        if tex:
+            arrow = (' $\\rightleftharpoons$ ' if equilibrium
+                     else ' $\\rightarrow$ ')
         else:
-            arrow = ' -> '
-
-        reac, prod = [[
-            ((str(v)+' ') if v > 1 else '') + tex_names.get(k, k) for
+            arrow = ' <-> ' if equilibrium else ' -> '
+        active, inactv, prod = [[
+            ((str(v)+' ') if v > 1 else '') + names.get(k, k) for
             k, v in filter(itemgetter(1), d.items())
-        ] for d in (self.reactants, self.products)]
-        return " + ".join(reac) + arrow + " + ".join(prod)
+        ] for d in (self.active_reac, self.inactv_reac, self.products)]
+        fmtstr = "{}" + (" + ({})" if len(inactv) > 0 else "{}") + arrow + "{}"
+        return fmtstr.format(" + ".join(active),
+                             " + ".join(inactv),
+                             " + ".join(prod))
 
     @property
     def species_names(self):
-        return set(list(self.reactants.keys()) + list(self.products.keys()) +
-                   list((self.active_reac or {}).keys()))
+        return set(list(self.reactants.keys()) + list(self.products.keys()))
 
     def reactant_stoich_coeffs(self, species_names):
         return [self.reactants[n] for n in species_names]
@@ -267,22 +248,22 @@ class Reaction(object):
     def product_stoich_coeffs(self, species_names):
         return [self.products[n] for n in species_names]
 
-    @classmethod
-    def get_reactions_with_species(cls, species_name):
-        res = []
-        for reaction in cls.all_instances:
-            if (species_name in reaction.reactants.keys() or
-               species_name in reaction.products.keys()):
-                res.append(reaction)
-        return res
+    # @classmethod
+    # def get_reactions_with_species(cls, species_name):
+    #     res = []
+    #     for reaction in cls.all_instances:
+    #         if (species_name in reaction.reactants.keys() or
+    #            species_name in reaction.products.keys()):
+    #             res.append(reaction)
+    #     return res
 
-    def __str__(self):
-        return ' -> '.join([
-            ' + '.join([('' if num == 1 else str(num)) + name for
-                        name, num in self.reactants.items() if num > 0]),
-            ' + '.join([('' if num == 1 else str(num)) + name for
-                        name, num in self.products.items() if num > 0])
-        ])
+    # def __str__(self):
+    #     return ' -> '.join([
+    #         ' + '.join([('' if num == 1 else str(num)) + name for
+    #                     name, num in self.reactants.items() if num > 0]),
+    #         ' + '.join([('' if num == 1 else str(num)) + name for
+    #                     name, num in self.products.items() if num > 0])
+    #     ])
 
 
 class ReactionSystem(object):
@@ -315,11 +296,9 @@ class ReactionSystem(object):
     """
 
     def __init__(self, rxns=None, name=None, substances=None):
-        self._rxns = rxns
-        self.name = name
         self.substances = substances
-
-        self._do_sanity_check()
+        self.name = name
+        self.rxns = rxns
 
     @property
     def rxns(self):
@@ -327,14 +306,14 @@ class ReactionSystem(object):
 
     @rxns.setter
     def rxns(self, val):
+        self._do_sanity_check(val)
         self._rxns = val
-        self._do_sanity_check()
 
-    def _do_sanity_check(self):
+    def _do_sanity_check(self, rxns):
         """ Check for conservation of mass and charge. """
         if self.substances is None:
             return
-        for rxn in self._rxns:
+        for rxn in rxns:
             net_chg = 0
             net_mass = 0.0
             for reac, n in rxn.reactants.items():
@@ -345,6 +324,14 @@ class ReactionSystem(object):
                 net_mass += self.substances[reac].mass
             assert net_chg == 0
             assert abs(net_mass) < 0.01
+
+    @classmethod
+    def from_ReactionDiffusion(cls, rd):
+        rxns = []
+        for ri in range(rd.nr):
+            rxn = rd.to_Reaction(ri)
+            rxns.append(rxn)
+        return cls(rxns)
 
     def to_ReactionDiffusion(self, substances=None, ordered_names=None,
                              **kwargs):
@@ -378,11 +365,10 @@ class ReactionSystem(object):
                      'substance_tex_names']):
                 _kwargs_updater(key, attr)
 
-        assert 'stoich_actv' not in kwargs
         return ReactionDiffusion(
-            self.ns, self.stoich_reac(ordered_names),
+            self.ns, self.stoich_active(ordered_names),
             self.stoich_prod(ordered_names), self.k,
-            stoich_actv=self.stoich_actv(ordered_names), **kwargs)
+            stoich_inactv=self.stoich_inactv(ordered_names), **kwargs)
 
     @property
     def species_names(self):
@@ -400,17 +386,17 @@ class ReactionSystem(object):
             result.append(l)
         return result
 
-    def stoich_reac(self, ordered_names=None):
+    def stoich_active(self, ordered_names=None):
         return self._get_repeating_indices_list(
-            'reactants', ordered_names or self.ordered_names())
+            'active_reac', ordered_names or self.ordered_names())
 
     def stoich_prod(self, ordered_names=None):
         return self._get_repeating_indices_list(
             'products', ordered_names or self.ordered_names())
 
-    def stoich_actv(self, ordered_names=None):
+    def stoich_inactv(self, ordered_names=None):
         return self._get_repeating_indices_list(
-            'active_reac', ordered_names or self.ordered_names())
+            'inactv_reac', ordered_names or self.ordered_names())
 
     @property
     def k(self):
@@ -426,38 +412,3 @@ class ReactionSystem(object):
     def nr(self):
         """ Number of reactions """
         return len(self._rxns)
-
-
-class Henry(object):
-    """
-    Henry's gas constant. Note that the reference temperature
-    is set by the attribute :py:attr:`T0` which defaults to
-    298.15 * pq.kelvin.
-
-    Parameters
-    ----------
-    k_H0: float
-        Henry's constant [M/atm]
-    derivative: float
-        -dln(k_H)/d(1/T) [K]
-    ref: object
-        Note about origin of parameters
-
-    """
-
-    T0 = 298.15 * pq.kelvin
-
-    def __init__(self, k_H0, derivative, ref=None):
-        self._k_H0 = k_H0
-        self._derivative = derivative
-        self._ref = ref
-
-    def get_k_H_at_T(self, T):
-        return self._k_H0 * np.exp(
-            self._derivative*(1/T - 1/self.T0))
-
-    def get_c_at_T_and_P(self, T, P):
-        return P * self.get_k_H_at_T(T)
-
-    def get_P_at_T_and_c(self, T, c):
-        return c / self.get_k_H_at_T(T)

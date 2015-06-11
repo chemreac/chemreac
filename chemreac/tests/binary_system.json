@@ -1,6 +1,6 @@
 {"D": [0.1, 0.2, 0.3],
  "k": [0.3], 
- "stoich_reac": [[0, 1]], 
+ "stoich_active": [[0, 1]], 
  "stoich_prod": [[2]],
  "n": 3
 }

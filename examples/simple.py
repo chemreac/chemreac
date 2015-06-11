@@ -5,7 +5,6 @@ from __future__ import (absolute_import, division,
                         print_function, unicode_literals)
 from future.builtins import *
 
-import argh
 import numpy as np
 
 from chemreac import ReactionDiffusion
@@ -35,8 +34,12 @@ def main(logy=False, logt=False):
 
     # rk4 - fixed step size with 42 steps will give poor accuracy
     integr3 = Integration('rk4', rd, np.asarray(y0), np.asarray(tout))
-    assert np.allclose(integr3.Cout[:, 0, :], Cref, atol=5e-3, rtol=5e-3)
+    if logt:
+        assert np.allclose(integr3.Cout[:, 0, :], Cref, atol=4e-2, rtol=4e-2)
+    else:
+        assert np.allclose(integr3.Cout[:, 0, :], Cref, atol=5e-3, rtol=5e-3)
 
 
 if __name__ == '__main__':
+    import argh
     argh.dispatch_command(main)

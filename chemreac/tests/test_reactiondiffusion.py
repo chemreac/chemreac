@@ -109,7 +109,7 @@ def test_ReactionDiffusion__actv_1():
     y0 = np.array([2.0, 3.0, 7.0])
     k = 5.0
     # A + C -(+A)-> B + C
-    rd = ReactionDiffusion(3, [[0, 0, 2]], [[1, 2]], [k], stoich_actv=[[0, 2]])
+    rd = ReactionDiffusion(3, [[0, 2]], [[1, 2]], [k], stoich_inactv=[[0]])
     r = k*y0[0]*y0[2]
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, 0])
 
@@ -118,8 +118,8 @@ def test_ReactionDiffusion__actv_2():
     y0 = np.array([2.0, 3.0, 9.0])
     k = 5.0
     # A + C --(+A+5*C)--> B
-    rd = ReactionDiffusion(3, [[0, 0, 2, 2, 2, 2, 2, 2]], [[1]], [k],
-                           stoich_actv=[[0, 2]])
+    rd = ReactionDiffusion(3, [[0, 2]], [[1]], [k],
+                           stoich_inactv=[[0, 2, 2, 2, 2, 2]])
     r = k*y0[0]*y0[2]
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, -6*r])
 
@@ -657,9 +657,8 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
     # r[1]: D + C -> D + A + B
     # r[2]: B + B -> D
     #              r[0]     r[1]       r[2]
-    stoich_reac = [[0, 1], [2, 3],    [1, 1]]
+    stoich_active = [[0, 1], [2, 3],    [1, 1]]
     stoich_prod = [[2],    [0, 1, 3], [3]]
-    stoich_actv = stoich_reac
     n = 4
     N = 5
     D = np.array([2.6, 3.7, 5.11, 7.13])*213
@@ -683,7 +682,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
     nstencil = 3
     nsidep = 1
     rd = ReactionDiffusion(
-        4, stoich_reac, stoich_prod, k, N, D=D, x=x,
+        4, stoich_active, stoich_prod, k, N, D=D, x=x,
         geom=geom, nstencil=nstencil, lrefl=lrefl,
         rrefl=rrefl, modulated_rxns=modulated_rxns,
         modulation=modulation)
@@ -754,12 +753,12 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
     # Now let's check that the Jacobian is correctly computed.
     def dfdC(bi, lri, lci):
         v = 0.0
-        for ri in range(len(stoich_reac)):
+        for ri in range(len(stoich_active)):
             totl = (stoich_prod[ri].count(lri) -
-                    stoich_reac[ri].count(lri))
+                    stoich_active[ri].count(lri))
             if totl == 0:
                 continue
-            actv = stoich_actv[ri].count(lci)
+            actv = stoich_active[ri].count(lci)
             if actv == 0:
                 continue
             v += actv*totl*r[ri][bi]/y0[bi, lci]
