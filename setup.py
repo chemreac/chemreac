@@ -51,8 +51,8 @@ else:
     # read __version__ attribute from release.py:
     exec(open(release_py_path).read())
 
-WITH_DEBUG = True if os.environ.get('WITH_DEBUG', False) else False
-WITH_OPENMP = True if os.environ.get('WITH_OPENMP', False) else False
+WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'
+WITH_OPENMP = os.environ.get('WITH_OPENMP', '0') == '1'
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
 WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
