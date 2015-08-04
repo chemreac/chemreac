@@ -111,9 +111,9 @@ class Substance(object):
     def __lt__(self, other):
         return self.name < other.name
 
-    def get_mobility(self, Temp, kB=None):
+    def get_mobility(self, Temp, **kwargs):
         """ See ``chemreac.util.physchem.electrical_mobility_from_D`` """
-        return electrical_mobility_from_D(self.D, self.charge, Temp, kB)
+        return electrical_mobility_from_D(self.D, self.charge, Temp, **kwargs)
 
 
 def mk_sn_dict_from_names(names, **kwargs):
@@ -197,8 +197,6 @@ class Reaction(object):
         Descriptive name of reaction
     """
 
-    # all_instances = weakref.WeakSet()
-
     @property
     def reactants(self):
         d = defaultdict(int)
@@ -221,16 +219,19 @@ class Reaction(object):
         self.name = name
 
     def __str__(self):
-        return self.render({})
+        return self.render()
 
-    def render(self, names, tex=False, equilibrium=False):
+    def render(self, names=None, tex=False, equilibrium=False):
+        if names is None:
+            names = {}
         if tex:
             arrow = (' $\\rightleftharpoons$ ' if equilibrium
                      else ' $\\rightarrow$ ')
         else:
             arrow = ' <-> ' if equilibrium else ' -> '
         active, inactv, prod = [[
-            ((str(v)+' ') if v > 1 else '') + names.get(k, k) for
+            ((str(v)+' ') if v > 1 else '') + names.get(
+                k, getattr(k, 'tex_name', str(k)) if tex else str(k)) for
             k, v in filter(itemgetter(1), d.items())
         ] for d in (self.active_reac, self.inactv_reac, self.products)]
         fmtstr = "{}" + (" + ({})" if len(inactv) > 0 else "{}") + arrow + "{}"
@@ -247,23 +248,6 @@ class Reaction(object):
 
     def product_stoich_coeffs(self, species_names):
         return [self.products[n] for n in species_names]
-
-    # @classmethod
-    # def get_reactions_with_species(cls, species_name):
-    #     res = []
-    #     for reaction in cls.all_instances:
-    #         if (species_name in reaction.reactants.keys() or
-    #            species_name in reaction.products.keys()):
-    #             res.append(reaction)
-    #     return res
-
-    # def __str__(self):
-    #     return ' -> '.join([
-    #         ' + '.join([('' if num == 1 else str(num)) + name for
-    #                     name, num in self.reactants.items() if num > 0]),
-    #         ' + '.join([('' if num == 1 else str(num)) + name for
-    #                     name, num in self.products.items() if num > 0])
-    #     ])
 
 
 class ReactionSystem(object):

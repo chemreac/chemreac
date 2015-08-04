@@ -44,6 +44,11 @@ def test_rsys2pdf_table(longtable):
         shutil.rmtree(tempdir)
 
 
+def test_rsys2pdf_table_no_output_dir():
+    rsys, sbstncs = _get_rsys()
+    rsys2pdf_table(rsys, sbstncs, save=False)
+
+
 def test_radyields2pdf_table():
     rsys, sbstncs = _get_rsys()
     rd = rsys.to_ReactionDiffusion(sbstncs)

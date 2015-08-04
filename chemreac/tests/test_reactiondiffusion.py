@@ -88,6 +88,13 @@ def test_ReactionDiffusion__too_few_species():
         ReactionDiffusion(n, [[0]], [[1]], [5.0])
 
 
+# @pytest.mark.parametrize("logx", [1, 3, 4])
+def test_ReactionDiffusion__lenx_2():
+    N = 27
+    rd = ReactionDiffusion(2, [[0]], [[1]], [5.0], N=N, x=(1, 5), D=(1, 1))
+    assert rd.x.size == N + 1
+
+
 @pytest.mark.parametrize("N", [1, 3, 4])
 def test_ReactionDiffusion__only_1_reaction(N):
     t0 = 3.0

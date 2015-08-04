@@ -11,15 +11,11 @@ is the class describing the system of ODEs.
 import os
 import numpy as np
 
+from .util.pyutil import monotonic
 from .units import unitof, get_derived_unit, to_unitless
 from .constants import get_unitless_constant
 
-if os.environ.get('READTHEDOCS', None) == 'True':
-    # On readthedocs, cannot compile extension module.
-    class CppReactionDiffusion(object):
-        pass  # mockup
-else:
-    from ._chemreac import CppReactionDiffusion, diag_data_len
+from ._chemreac import CppReactionDiffusion, diag_data_len
 
 DENSE, BANDED, SPARSE = range(3)
 FLAT, CYLINDRICAL, SPHERICAL = range(3)
@@ -231,8 +227,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
         try:
             if len(x) == N+1:
-                # monotonic:
-                assert all([x[i+1] > x[i] for i in range(len(x)-1)])
+                if not monotonic(x, 1, True):
+                    raise ValueError("x must be strictly positive monotonic")
                 _x = x
             elif len(x) == 2:
                 _x = np.linspace(x[0], x[1], N+1)
