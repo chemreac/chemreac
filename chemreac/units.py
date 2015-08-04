@@ -14,16 +14,17 @@ metre = pq.metre
 kilogram = pq.kilogram
 ampere = pq.ampere
 second = pq.second
-Kelvin = pq.Kelvin
+kelvin = pq.kelvin
 candela = pq.candela
 mole = pq.mole
+coulomb = pq.coulomb
 
 SI_base = {
     'length': metre,
     'mass': kilogram,
     'time': second,
     'current': ampere,
-    'temperature': Kelvin,
+    'temperature': kelvin,
     'luminous_intensity': candela,
     'amount': mole
 }
