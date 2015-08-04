@@ -13,14 +13,14 @@ apt-get --quiet --assume-yes install git gcc g++ gfortran valgrind cmake wget cu
 apt-get clean && \
 rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
-# Install miniconda and install packages from binstar and PyPI
+# Install miniconda and install packages from anaconda.org and PyPI
 RUN wget --quiet http://repo.continuum.io/miniconda/Miniconda-${MINICONDA_VERSION}-Linux-x86_64.sh -O miniconda.sh && \
 bash miniconda.sh -b -p $MINICONDA_PATH && \
 rm miniconda.sh && \
 export ORI_PATH=$PATH && \
 export PATH="$MINICONDA_PATH/bin:$PATH" && \
 conda config --set always_yes yes --set changeps1 no && \
-conda config --add channels http://conda.binstar.org/bjodah && \
+conda config --add channels http://conda.anaconda.org/bjodah && \
 conda update --quiet conda && \
 conda install --quiet conda-build binstar jinja2 numpy=1.9.1 scipy=0.14 matplotlib=1.4.2 cython=0.21.2 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
 pip install --quiet argh pytest-pep8 pytest-cov python-coveralls sphinx_rtd_theme mpld3 && \

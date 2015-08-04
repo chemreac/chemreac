@@ -1,3 +1,11 @@
+"""
+chemreac.util.pyutil
+--------------------
+
+Utility functions used throughout chemreac.
+
+"""
+
 
 def set_dict_defaults_inplace(dct, *args):
     """

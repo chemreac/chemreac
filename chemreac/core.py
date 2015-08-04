@@ -314,7 +314,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             (to_unitless(surf_chg[0], get_unit(units, 'charge')),
              to_unitless(surf_chg[1], get_unit(units, 'charge'))),
             eps_rel,
-            faraday or get_unitless_constant(units, 'faraday'),
+            faraday or get_unitless_constant(units, 'Faraday_constant'),
             vacuum_permittivity or get_unitless_constant(
                 units, 'vacuum_permittivity'),
         )
