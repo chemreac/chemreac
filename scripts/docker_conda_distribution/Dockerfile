@@ -1,4 +1,5 @@
 FROM ubuntu:trusty
+MAINTAINER Björn Dahlgren <bjodah@DELETEMEgmail.com>
 ENV DEBIAN_FRONTEND noninteractive
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en

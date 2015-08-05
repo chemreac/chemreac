@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 import pytest
-import quantities as pq
 from periodictable import formula
 
 from chemreac import ReactionDiffusion
 from chemreac.units import molar, second
 from chemreac.chemistry import (
-    molar, Substance, Reaction, ReactionSystem,
+    Substance, Reaction, ReactionSystem,
     mk_sn_dict_from_names
 )
 

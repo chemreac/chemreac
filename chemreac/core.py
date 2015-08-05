@@ -8,7 +8,6 @@ is the class describing the system of ODEs.
 
 """
 
-import os
 import numpy as np
 
 from .util.pyutil import monotonic

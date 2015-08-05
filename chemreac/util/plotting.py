@@ -368,7 +368,7 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
                     # No parents
                     parent = ''
                 else:
-                    parent = (print_names[g_value_parents[fi]] +
+                    parent = (print_names[rd.g_value_parents[fi]] +
                               '$\\rightsquigarrow$' if use_tex else ' ~~~> ')
                 labels.append('G_' + str(fi) + ': ' + parent + ', '.join(
                     [print_names[si] for si in range(rd.n) if

@@ -17,7 +17,6 @@ from itertools import chain
 from operator import itemgetter
 import weakref
 
-import numpy as np
 import quantities as pq
 
 from chemreac import ReactionDiffusion
