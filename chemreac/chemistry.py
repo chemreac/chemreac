@@ -76,7 +76,15 @@ class Substance(object):
 
     def __init__(self, name, charge=None, mass=None, formula=None,
                  tex_name=None, multiplicity=None, D=0.0, **kwargs):
-        self.name = name
+        if name in self.__class__.all_substances:
+            colliding_occurance = self.__class__.all_substances[name]
+            if not self == colliding_occurance:
+                raise KeyError(
+                    'Substance name already exists: ' + name + ' id=' +
+                    str(id(self.__class__.all_substances[name])))
+        else:
+            self.__class__.all_substances[name] = self
+        self._name = name
         self.charge = charge
         if mass is None and hasattr(formula, 'mass'):
             mass = formula.mass
@@ -87,14 +95,9 @@ class Substance(object):
         self.D = D
         self.__dict__.update(kwargs)
 
-        if name in self.__class__.all_substances:
-            colliding_occurance = self.__class__.all_substances[name]
-            if not self == colliding_occurance:
-                raise KeyError(
-                    'Substance name already exists: ' + name + ' id=' +
-                    str(id(self.__class__.all_substances[name])))
-        else:
-            self.__class__.all_substances[name] = self
+    @property
+    def name(self):
+        return self._name
 
     def __repr__(self, ):
         return "<" + self.__class__.__name__ + " '" + self.name + "'>"
