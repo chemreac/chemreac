@@ -39,16 +39,18 @@ def test_decay(log):
     assert np.allclose(integr.Cout[:, 0, :], yref)
 
 
-# def test_decay_solver_kwargs_env():
-#     key = 'CHEMREAC_SOLVER_KWARGS'
-#     try:
-#         ori_val = os.environ.pop(key)
-#     except KeyError:
-#         ori_val = None
-#     os.environ[key] = "{'rtol': 1e-7}"
-#     test_decay(LOG_COMOBS[0])
-#     if ori_val is not None:
-#         os.environ[key] = ori_val
+def test_decay_solver_kwargs_env():
+    key = 'CHEMREAC_SOLVER_KWARGS'
+    try:
+        ori_val = os.environ.pop(key)
+    except KeyError:
+        ori_val = None
+    os.environ[key] = "{'rtol': 1e-9}"
+    test_decay(LOG_COMOBS[0])
+    if ori_val is not None:
+        os.environ[key] = ori_val
+    else:
+        os.environ.pop(key)
 
 
 def test_autodimerization():
