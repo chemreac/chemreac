@@ -76,6 +76,7 @@ class Substance(object):
 
     def __init__(self, name, charge=None, mass=None, formula=None,
                  tex_name=None, multiplicity=None, D=0.0, **kwargs):
+        self._name = name
         if name in self.__class__.all_substances:
             colliding_occurance = self.__class__.all_substances[name]
             if not self == colliding_occurance:
@@ -84,7 +85,6 @@ class Substance(object):
                     str(id(self.__class__.all_substances[name])))
         else:
             self.__class__.all_substances[name] = self
-        self._name = name
         self.charge = charge
         if mass is None and hasattr(formula, 'mass'):
             mass = formula.mass

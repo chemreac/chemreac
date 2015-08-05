@@ -606,15 +606,15 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
 
 
 @slow
-@pytest.mark.parametrize("geom_refl", list(product(
-    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
-def test_diffusion_jac(geom_refl):
-    geom, refl = geom_refl
+@pytest.mark.parametrize("geom_refl_logx", list(product(
+    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS, TR_FLS)))
+def test_diffusion_jac(geom_refl_logx):
+    geom, refl, logx = geom_refl_logx
     lrefl, rrefl = refl
     N = 9
     x = np.linspace(0.1, 1, N+1)
     rd = ReactionDiffusion(1, [], [], [], D=[3], N=N, x=x, nstencil=3,
-                           lrefl=lrefl, rrefl=rrefl, geom=geom)
+                           lrefl=lrefl, rrefl=rrefl, geom=geom, logx=logx)
     y0 = x[0]+2*x[1:]**2/(1+x[1:]**4)
     # compare f and jac with Symbolic class:
     _test_f_and_dense_jac_rmaj(rd, 0, y0)
