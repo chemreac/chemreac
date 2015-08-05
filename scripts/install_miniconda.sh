@@ -28,5 +28,5 @@ export PATH="$MINICONDA_PATH/bin:$PATH"
 hash -r
 conda config --set always_yes yes --set changeps1 no
 conda update --quiet conda
-conda install --quiet conda-build binstar jinja2
+conda install --quiet conda-build anaconda-client jinja2
 conda info -a

@@ -19,12 +19,15 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
             cd ${GITHUB_USER}.github.io/
             if [[ "$(git log -1 --pretty=%B)" == Latest* ]]; then
                 # overwrite previous docs
-                git reset --hard HEAD~1 # was: git branch -D master
+                git reset --hard HEAD~1
             fi
+            mv docs /tmp/
             git rm -rf . > /dev/null
+            mv /tmp/docs .
+            git rm -rf doc/master > /dev/null
             cp -R ${WORKDIR}/gh-pages-skeleton/* .
             cp ${WORKDIR}/gh-pages-skeleton/.* .
-            cp -R ${WORKDIR}/docs/_build/html ./docs
+            cp -R ${WORKDIR}/docs/_build/html ./docs/master
             if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to anaconda.org
                 cp -R ${WORKDIR}/docs/_build/html ./docs/${CHEMREAC_RELEASE_VERSION}
             fi
@@ -33,7 +36,7 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
             if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to anaconda.org
                 git commit -m "Release docs for ${CHEMREAC_RELEASE_VERSION} from travis build $TRAVIS_BUILD_NUMBER"
             else
-                git commit -m "Latest dev docs from successful travis build $TRAVIS_BUILD_NUMBER"
+                git commit -m "Latest (master) docs from successful travis build $TRAVIS_BUILD_NUMBER"
             fi
             set +x # Silent (protect GH_TOKEN)
             git push -f origin master >/dev/null 2>&1
@@ -42,12 +45,12 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
         fi
     fi
     if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to anaconda.org
-        conda install binstar
+        conda install anaconda-client
         cat __conda_version__.txt # DEBUGGING failed upload
         ls /home/travis/miniconda/conda-bld/linux-64/ # DEBUGGING failed upload
         export MY_CONDA_PKG=$(conda build --output conda-recipe | tail -n 1)
         set +x  # Silent (protect token in Travis log)
-        binstar -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-${CHEMREAC_RELEASE_VERSION#v}-}
+        anaconda -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-${CHEMREAC_RELEASE_VERSION#v}-}
         set -x
     fi
 fi

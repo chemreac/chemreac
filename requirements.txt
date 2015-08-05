@@ -1,12 +1,12 @@
 argh>=0.25.0
-numpy>=1.9.0
-cython>=0.21.0
+numpy>=1.9.2
+cython>=0.22.1
 mako>=1.0.0
 quantities>=0.10.1
 pytest>=2.6.0
 pytest-pep8>=1.0.6
-scipy>=0.14.0
-matplotlib>=1.4.0
+scipy>=0.16.0
+matplotlib>=1.4.3
 periodictable>=1.4.1
 future>=0.13.0
 mpld3>=0.2

@@ -1,3 +1,0 @@
-# Mass conservation:
-python auto_efield.py --plot --geom c --mobility 3e-5 --nstencil 7
-python auto_efield.py --plot --geom s --mobility 3e-5 --nstencil 3

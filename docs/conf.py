@@ -283,6 +283,7 @@ context = {
     'github_repo': 'chemreac',
     'github_version': 'master',
     'display_github': True,
+    'source_suffix': '.rst',
 }
 
 if 'html_context' in globals():

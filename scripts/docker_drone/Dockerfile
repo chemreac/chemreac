@@ -1,5 +1,6 @@
-FROM ubuntu:trusty
-ENV DEBIAN_FRONTEND noninteractive
+FROM bjodah/dockerfile-bjodah-scicomp
+# FROM ubuntu:trusty
+# ENV DEBIAN_FRONTEND noninteractive
 ENV LANG en_US.UTF-8
 ENV LANGUAGE en_US:en
 ENV LC_ALL en_US.UTF-8
@@ -22,7 +23,7 @@ export PATH="$MINICONDA_PATH/bin:$PATH" && \
 conda config --set always_yes yes --set changeps1 no && \
 conda config --add channels http://conda.anaconda.org/bjodah && \
 conda update --quiet conda && \
-conda install --quiet conda-build binstar jinja2 numpy=1.9.1 scipy=0.14 matplotlib=1.4.2 cython=0.21.2 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
+conda install --quiet conda-build anaconda-client jinja2 numpy=1.9.1 scipy=0.14 matplotlib=1.4.2 cython=0.21.2 mako periodictable quantities pytest future pip sphinx numpydoc pycompilation pycodeexport sympy && \
 pip install --quiet argh pytest-pep8 pytest-cov python-coveralls sphinx_rtd_theme mpld3 && \
 rm -rf /tmp/* && \
 mkdir -p /root/.config/matplotlib/ && echo "backend: Agg" > /root/.config/matplotlib/matplotlibrc && \
