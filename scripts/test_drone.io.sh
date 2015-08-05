@@ -17,8 +17,8 @@ trap finish EXIT
 
 # install miniconda in the background in a subshell
 (
-source scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.7.0"
-conda config --add channels http://conda.binstar.org/bjodah
+source scripts/install_miniconda.sh $PYTHON_VERSION $MINICONDA_PATH "3.10.1"
+conda config --add channels http://conda.anaconda.org/bjodah
 ) &
 miniconda_install_pid=$!
 

@@ -6,6 +6,7 @@ from __future__ import (
 )
 
 from itertools import product
+import os
 
 import numpy as np
 import pytest
@@ -36,6 +37,20 @@ def test_decay(log):
     yref = np.array([y0[0]*np.exp(-k0*(tout-t0)),
                      y0[1]+y0[0]*(1-np.exp(-k0*(tout-t0)))]).transpose()
     assert np.allclose(integr.Cout[:, 0, :], yref)
+
+
+def test_decay_solver_kwargs_env():
+    key = 'CHEMREAC_SOLVER_KWARGS'
+    try:
+        ori_val = os.environ.pop(key)
+    except KeyError:
+        ori_val = None
+    os.environ[key] = "{'rtol': 1e-9}"
+    test_decay(LOG_COMOBS[0])
+    if ori_val is not None:
+        os.environ[key] = ori_val
+    else:
+        os.environ.pop(key)
 
 
 def test_autodimerization():
@@ -168,16 +183,34 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 @pytest.mark.parametrize("log", LOG_COMOBS)
 def test_integrators(log):
     logy, logt = log
+    t0, tend, nt = 5.0, 17.0, 42
+    tout = np.linspace(t0, tend, nt+1)
+
     # Update the dict if more integrators are added:
     solver_kwargs = {
-        'scipy': {
-            'atol': [1e-8, 1e-8],
-            'rtol': 1e-8
-        },
-        'sundials': {
+        'scipy1': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
-            'method': 'bdf'
+            'tout': tout
+        },
+        'scipy2': {
+            'atol': 1e-8,
+            'rtol': 1e-8,
+            'tout': (t0, tend),
+            'dense_output': True
+        },
+        'sundials1': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8,
+            'method': 'bdf',
+            'tout': tout
+        },
+        'sundials2': {
+            'atol': 1e-8,
+            'rtol': 1e-8,
+            'method': 'adams',
+            'tout': tout,
+            'C0_is_log': True
         }
     }
 
@@ -186,13 +219,13 @@ def test_integrators(log):
     k0 = 0.13
     rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt)
     y0 = [3.0, 1.0]
-    t0, tend, nt = 5.0, 17.0, 42
-    tout = np.linspace(t0, tend, nt+1)
 
     results = []
     for solver, kwargs in solver_kwargs.items():
-        integr = Integration(solver, rd, y0, tout, **kwargs)
-        results.append(integr.yout)
+        _y0 = np.log(y0) if kwargs.get('C0_is_log', False) else y0
+        integr = Integration(solver[:-1], rd, _y0, **kwargs)
+        if not kwargs.get('dense_output', False):
+            results.append(integr.Cout)
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])

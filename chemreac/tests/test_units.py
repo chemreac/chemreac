@@ -8,7 +8,7 @@ from chemreac.units import (
     isunitless, unitof, unit_registry_to_human_readable,
     get_derived_unit,
     to_unitless, unit_registry_from_human_readable, SI_base,
-    metre, kilogram, second, hour, ampere, Kelvin, candela, mole,
+    metre, kilogram, second, hour, ampere, kelvin, candela, mole,
     dm, molar, allclose
 )
 
@@ -34,7 +34,7 @@ def test_unit_registry_to_human_readable():
         'mass': 1e-2*kilogram,
         'time': 1e4*second,
         'current': 1e-1*ampere,
-        'temperature': 1e1*Kelvin,
+        'temperature': 1e1*kelvin,
         'luminous_intensity': 1e-3*candela,
         'amount': 1e4*mole
     }
@@ -125,7 +125,7 @@ def test_unit_registry_from_human_readable():
         'mass': kilogram,
         'time': second,
         'current': ampere,
-        'temperature': Kelvin,
+        'temperature': kelvin,
         'luminous_intensity': candela,
         'amount': mole
     }
@@ -144,7 +144,7 @@ def test_unit_registry_from_human_readable():
         'mass': 1e-2*kilogram,
         'time': 1e4*second,
         'current': 1e-1*ampere,
-        'temperature': 1e1*Kelvin,
+        'temperature': 1e1*kelvin,
         'luminous_intensity': 1e-3*candela,
         'amount': 1e4*mole
     }
@@ -154,7 +154,7 @@ def test_unit_registry_from_human_readable():
         'mass': 1e-3*kilogram,
         'time': 1e2*second,
         'current': 1e-2*ampere,
-        'temperature': 1e0*Kelvin,
+        'temperature': 1e0*kelvin,
         'luminous_intensity': 1e-2*candela,
         'amount': 1e3*mole
     }

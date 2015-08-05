@@ -1,5 +1,7 @@
 import numpy as np
-from chemreac.util.grid import stencil_pxci_lbounds, padded_centers, pxci_to_bi
+from chemreac.util.grid import (
+    stencil_pxci_lbounds, padded_centers, pxci_to_bi, generate_grid
+)
 
 
 def test_stencil_pxci_lbounds():
@@ -37,3 +39,13 @@ def test_padded_centers():
     xc_ = padded_centers(b, 2)
     print(xc_)
     assert np.allclose(xc_, np.linspace(8.5, 21.5, 14))
+
+
+def test_generate_grid():
+    g1 = generate_grid(0, 1, 2)
+    assert np.allclose(g1, [0, 0.5, 1])
+
+    g2 = generate_grid(0, 1, 2, random=True)
+    assert g2[0] == 0
+    assert g2[1] > 0 and g2[1] < 1
+    assert g2[2] == 1

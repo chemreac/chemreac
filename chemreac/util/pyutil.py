@@ -1,3 +1,59 @@
+"""
+chemreac.util.pyutil
+--------------------
+
+Utility functions used throughout chemreac.
+
+"""
+
+import numpy as np
+
+
+def monotonic(arr, positive=0, strict=False):
+    """
+    Check monotonicity of a serie
+
+    Parameters
+    ----------
+    arr: array_like
+        Array to be checked for monotonicity
+    positive: -1, 0 or 1 (default: 0)
+        -1: negative, 1: positive, 0: either
+    strict: bool (default: False)
+        Disallow zero difference between neighboring instances
+
+    Examples
+    --------
+    >>> monotonic([0, 0, -1, -2])
+    True
+    >>> monotonic([0, 0, 1, 2], strict=True)
+    False
+    >>> monotonic([1, 2, 3], -1)
+    False
+
+    Returns
+    -------
+    bool
+    """
+    if positive not in (-1, 0, 1):
+        raise ValueError("positive should be either -1, 0 or 1")
+    delta = np.diff(arr)
+    if positive in (0, 1):
+        if strict:
+            if np.all(delta > 0):
+                return True
+        else:
+            if np.all(delta >= 0):
+                return True
+    if positive in (0, -1):
+        if strict:
+            if np.all(delta < 0):
+                return True
+        else:
+            if np.all(delta <= 0):
+                return True
+    return False
+
 
 def set_dict_defaults_inplace(dct, *args):
     """

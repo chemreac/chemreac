@@ -32,7 +32,7 @@ Easiest way to install chemreac (on linux) is by using
 `conda <http://docs.continuum.io/anaconda/index.html>`_:
 ::
 
-    $ conda install -c https://conda.binstar.org/chemreac chemreac
+    $ conda install -c https://conda.anaconda.org/chemreac chemreac
 
 and you're done! To check if it's installed you may run:
 

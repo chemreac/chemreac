@@ -25,12 +25,12 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
             cp -R ${WORKDIR}/gh-pages-skeleton/* .
             cp ${WORKDIR}/gh-pages-skeleton/.* .
             cp -R ${WORKDIR}/docs/_build/html ./docs
-            if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to binstar
+            if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to anaconda.org
                 cp -R ${WORKDIR}/docs/_build/html ./docs/${CHEMREAC_RELEASE_VERSION}
             fi
             cp -R ${WORKDIR}/htmlcov .
             git add -f . > /dev/null
-            if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to binstar
+            if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to anaconda.org
                 git commit -m "Release docs for ${CHEMREAC_RELEASE_VERSION} from travis build $TRAVIS_BUILD_NUMBER"
             else
                 git commit -m "Latest dev docs from successful travis build $TRAVIS_BUILD_NUMBER"
@@ -41,7 +41,7 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
             echo -e "...published to ${GITHUB_USER}.github.io\n"
         fi
     fi
-    if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to binstar
+    if [[ "$CHEMREAC_RELEASE_VERSION" == v* ]]; then  # version-tagged release => upload to anaconda.org
         conda install binstar
         cat __conda_version__.txt # DEBUGGING failed upload
         ls /home/travis/miniconda/conda-bld/linux-64/ # DEBUGGING failed upload
