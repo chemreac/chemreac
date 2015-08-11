@@ -2,12 +2,13 @@
 # Usage, e.g.:
 # ./scripts/run_tests.sh --ignore examples/
 
+PYTEST_EXE=${1:-py.test}
 export PKG_NAME=chemreac
 
 PYTEST_ARGS=()
 
 # py.test might use either 'python' or 'python3'
-PYTHON_EXE=$(head -1 $(which py.test) | cut -f2 -d!)
+PYTHON_EXE=$(head -1 $(which $PYTEST_EXE) | cut -f2 -d!)
 echo "Python executable used: $PYTHON_EXE"
 
 # Check dependencies for the py.test test command below,

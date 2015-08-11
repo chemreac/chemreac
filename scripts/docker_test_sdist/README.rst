@@ -1,8 +1,7 @@
 Quickly test chemreac
 =====================
 
-You have docker setup and want to test the chemreac sdist in Ubuntu 14.04::
+If you have docker installed and want to test the (uploaded) chemreac sdist in Ubuntu 14.04::
 
-    ./build_and_run_docker.sh
-
+    ./run_sdist_test.sh
 

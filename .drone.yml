@@ -1,11 +1,9 @@
-image: bjodah/chemreac  # see scripts/docker_drone/Dockerfile
+image: bjodah/dockerfile-bjodah-scicomp
 git:
     path: github.com/chemreac/chemreac
 env:
-  - BINSTAR_USER=bjodah
   - WITH_OPENMP=1
   - CHEMREAC_SOLVER=sundials
-  - PATH=$MINICONDA_PATH/bin:$PATH
+  - CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
 script:
-  - /bin/bash -x ./scripts/ci_conda.sh 2.7 27 pybestprac_testenv27 1 0
-  - /bin/bash -x ./scripts/ci_conda.sh 3.4 34 pybestprac_testenv34 1 0
+  - ./scripts/run_tests.sh

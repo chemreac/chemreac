@@ -1,6 +1,7 @@
 #!/bin/bash
 
-ROOT=.
+ROOT=$(dirname $0)
+cd $ROOT
 OUTPUT="index.html" 
 
 HTML_HEADER="<html><head><title>chemreac source distributions</title><body>"
