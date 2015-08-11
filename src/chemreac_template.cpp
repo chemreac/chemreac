@@ -17,7 +17,7 @@
 #include <sstream>
 #include <iomanip>
 #define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
-#include "chemreac_util.h"
+#include "chemreac_util.h" // save_array, load_array
 #endif
 
 %if WITH_OPENMP:
@@ -74,12 +74,12 @@ ReactionDiffusion::ReactionDiffusion(
     vector<int> modulated_rxns,
     vector<vector<double> > modulation):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
-    logy(logy), logt(logt), logx(logx), stoich_active(stoich_active), 
-    stoich_inactv(stoich_inactv), stoich_prod(stoich_prod), 
-    k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl), 
+    logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
+    stoich_inactv(stoich_inactv), stoich_prod(stoich_prod),
+    k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl),
     auto_efield(auto_efield),
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
-    vacuum_permittivity(vacuum_permittivity), 
+    vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
     efield(new double[N]), netchg(new double[N])
 {
@@ -179,7 +179,7 @@ ReactionDiffusion::ReactionDiffusion(
         throw std::logic_error("fields and g_values need to be of equal length");
     if (this->g_value_parents.size() != g_values.size())
         throw std::logic_error("g_value_parents and g_values need to be of equal length");
-        
+
     for (const auto& gs : g_values)
         if (gs.size() != n)
             throw std::logic_error("vectors in g_values need to be of length n");

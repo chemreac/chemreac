@@ -4,30 +4,37 @@ env:
     - PYTHON_VERSION=2.7 CONDA_PY=27 BUILD_DOCS=1
     - PYTHON_VERSION=3.4 CONDA_PY=34 BUILD_DOCS=0
   global:
-    - BINSTAR_USER=chemreac
+    - ANACONDA_USER=chemreac
     - GITHUB_USER=chemreac
     - GITHUB_REPO=chemreac
     - CONDA_VERSION="3.10.1"
-    - ENV_NAME=testenv
+    - CONDA_NPY=19
+    - DISTUTILS_DEBUG=1
     - secure: "Ky5ex4xD5PO+hb4lImymD1AWxxdnQibSjFvTLo5esG0DReAe77ZSP5Yu1MKSIAn073zxMDPYluz6batAApScGgRU1kTvN9RZfZy+zF+3aYYLPB9HDUAvg1tyMZ2SwvHF5wpbq1I5WSBG+zlyU6/6F+RLbrmZv2u2xm04oS5Xfb0="
     - secure: "O0AMPn73yvYGwUnRvCfpNUgwGu4Dfq/UxeKlnJcjg28eDsruGUXQXrzITruJASzkEo3Ogo4h29FKeYBAcBnGaF37ghLkhfuusUPtcoCV/5TLIJLqUecD918i7KiA1rEL5CLzaU1h2ktli4wk4vj9NCI7Jhw/tnWvy0fYxJOKb84="
 before_install:
   - if [[ "$TRAVIS_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then export CHEMREAC_RELEASE_VERSION=$TRAVIS_BRANCH; echo ${CHEMREAC_RELEASE_VERSION} | tail -c +2 > __conda_version__.txt; fi
   - export CONDA_PATH=$HOME/miniconda
   - source ./scripts/install_miniconda.sh $PYTHON_VERSION $CONDA_PATH $CONDA_VERSION
-  - conda config --add channels http://conda.anaconda.org/$BINSTAR_USER
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update --quiet conda
+  - conda install --quiet conda-build anaconda-client jinja2
+  - conda info -a
+  - conda config --add channels http://conda.anaconda.org/$ANACONDA_USER
   - ./scripts/ubuntu12.04/apt_get_gcc_48.sh
   - ./scripts/ubuntu12.04/apt_get_g++_48.sh
   - ./scripts/ubuntu12.04/apt_get_gfortran_48.sh
   - ./scripts/aptget_debian.sh
   - ./scripts/install_sundials_w_lapack.sh
-  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+#  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
   - mkdir -p $HOME/.config/matplotlib/
   - cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
 install:
-  - source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 0
+  - if [[ "$PYTHON_VERSION" == "3.4" ]]; then cp -r -L docs docs_; rm -r docs; mv docs_ docs; fi  # https://bugs.python.org/issue21697
 script:
-  - LIBRARY_PATH=$CONDA_PATH/envs/$ENV_NAME/lib:$LIBRARY_PATH ./scripts/run_tests.sh
+  - conda build conda-recipe
+  - conda install --use-local chemreac
+  - ./scripts/run_tests.sh
 after_success:
   - coveralls
   - ./scripts/travis_after_success.sh $CONDA_PATH

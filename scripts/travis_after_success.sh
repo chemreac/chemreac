@@ -48,6 +48,6 @@ if [[ "$TRAVIS_REPO_SLUG" == "${GITHUB_USER}/${GITHUB_REPO}" ]] && [[ "$TRAVIS_P
         conda install anaconda-client
         export MY_CONDA_PKG=$(conda build --output conda-recipe | tail -n 1)
         set +x  # Silent (protect token in Travis log)
-        anaconda -t $BINSTAR_TOKEN upload --force ${MY_CONDA_PKG/--/-${CHEMREAC_RELEASE_VERSION#v}-}
+        anaconda -t $BINSTAR_TOKEN upload --user chemreac --force ${MY_CONDA_PKG/--/-${CHEMREAC_RELEASE_VERSION#v}-}
     fi
 fi

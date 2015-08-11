@@ -52,31 +52,18 @@ on the continuous integration servers.
 
 Prerequisites
 ~~~~~~~~~~~~~
+Version numbers of dependencies indicate what has been tested:
 
 - C++ compiler with C++11 support (e.g. `GCC <https://gcc.gnu.org/>`_ >= 4.8)
 - Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. `gfortran <https://gcc.gnu.org/fortran/>`_)
 - LAPACK (provided by e.g. `OpenBLAS <http://www.openblas.net/>`_)
 - `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.5
-- `Python <https://www.python.org>`_ (2.7 or >=3.3)
+- `Python <https://www.python.org>`_ (2.7 or >=3.4)
     
-In addition to python, the following python packages are required
-(versions indicate what is tested, they are found on 
-`PyPI <https://pypi.python.org/pypi>`_ and may be installed using ``pip``):
-
-- argh>=0.25.0
-- numpy>=1.9.0
-- cython>=0.21.0
-- mako>=1.0.0
-- quantities>=0.10.1
-- pytest>=2.5.2
-- pytest-pep8>=1.0.6
-- scipy>=0.14.0
-- matplotlib>=1.4.0
-- periodictable>=1.4.1
-- future>=0.13.0
-- pycompilation>=0.4.0
-- pycodeexport>=0.1.0
-- sympy>=0.7.6
+In addition to the standard library provided by Python, a number of
+python packages are required (see `requirements.txt
+<./requirements.txt>`_), they are found on `PyPI
+<https://pypi.python.org/pypi>`_ and may be installed using ``pip``.
 
 For rendering the documentation you also need:
 
@@ -84,7 +71,7 @@ For rendering the documentation you also need:
 - `numpydoc <https://pypi.python.org/pypi/numpydoc>`_
 - `sphinx_rtd_theme <https://pypi.python.org/pypi/sphinx_rtd_theme>`_
 
-to run all the tests you also need:
+to run all the tests you also need these tools:
 
 - valgrind
 - graphviz
@@ -113,6 +100,9 @@ To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.
 
     $ LLAPACK=openblas python setup.py build_ext --inplace
 
+The following environment variables are also supported by
+``setup.py`` (defaults to "0", enable by setting them to "1"):
+``WITH_DEBUG``, ``WITH_OPENMP``
 
 Tests
 -----
@@ -190,5 +180,5 @@ Contributors are welcome to suggest improvements at https://github.com/chemreac/
 Author
 ======
 Björn Dahlgren, contact:
- - gmail adress: bjodah
- - kth.se adress: bda
+ - gmail address: bjodah
+ - kth.se address: bda

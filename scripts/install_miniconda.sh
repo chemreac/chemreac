@@ -24,9 +24,6 @@ else
     wget --quiet http://repo.continuum.io/miniconda/Miniconda3-${CONDA_VERSION}-Linux-${ARCH}.sh -O miniconda.sh;
 fi
 bash miniconda.sh -b -p $MINICONDA_PATH
+rm miniconda.sh
 export PATH="$MINICONDA_PATH/bin:$PATH"
 hash -r
-conda config --set always_yes yes --set changeps1 no
-conda update --quiet conda
-conda install --quiet conda-build anaconda-client jinja2
-conda info -a

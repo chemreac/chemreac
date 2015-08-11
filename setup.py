@@ -72,8 +72,8 @@ else:
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda
             flags += ['-O2', '-funroll-loops']
-        else:
-            options += ['fast']  # -ffast-math -funroll-loops
+        # else:
+        #     options += ['fast']  # -ffast-math -funroll-loops
 
 if WITH_BLOCK_DIAG_ILU_OPENMP:
     options += ['openmp']
