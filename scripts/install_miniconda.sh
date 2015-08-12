@@ -1,5 +1,5 @@
 #!/bin/bash -e
-PY_VERSION=$1
+PYTHON_VERSION=$1
 MINICONDA_PATH=$2
 CONDA_VERSION=$3
 
@@ -10,15 +10,15 @@ else
     ARCH="x86"
 fi
 
-if [[ "${PY_VERSION:0:1}" == "2" ]]; then
+if [[ "${PYTHON_VERSION:0:1}" == "2" ]]; then
     if [[ "${PY_VERSION}" != "2.7" ]]; then
-        echo "PY_VERSION was not set to 2.7"
+        echo "PYTHON_VERSION was not set to 2.7"
         exit 1
     fi
     wget --quiet http://repo.continuum.io/miniconda/Miniconda-${CONDA_VERSION}-Linux-${ARCH}.sh -O miniconda.sh;
 else
-    if [[ "${PY_VERSION:0:1}" == "3.4" ]]; then
-        echo "PY_VERSION was not set to 2.7 or 3.4"
+    if [[ "${PYTHON_VERSION:0:1}" != "3" ]]; then
+        echo "Unkown PYTHON_VERSION."
         exit 1
     fi
     wget --quiet http://repo.continuum.io/miniconda/Miniconda3-${CONDA_VERSION}-Linux-${ARCH}.sh -O miniconda.sh;
