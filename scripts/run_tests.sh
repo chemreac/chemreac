@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 # Usage, e.g.:
 # ./scripts/run_tests.sh --ignore examples/
 

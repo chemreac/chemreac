@@ -25,7 +25,7 @@ before_install:
   - ./scripts/ubuntu12.04/apt_get_g++_48.sh
   - ./scripts/ubuntu12.04/apt_get_gfortran_48.sh
   - ./scripts/aptget_debian.sh
-  - ./scripts/install_sundials_w_lapack.sh
+#  - ./scripts/install_sundials_w_lapack.sh
 #  - export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
   - mkdir -p $HOME/.config/matplotlib/
   - cp ./scripts/matplotlibrc $HOME/.config/matplotlib/
