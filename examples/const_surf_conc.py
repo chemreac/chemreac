@@ -115,7 +115,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
         rrefl=not rinterpol,
         modulated_rxns=[0, 1],
         modulation=[modulation, modulation],
-        units=units,
+        unit_registry=units,
         faraday=1,
         vacuum_permittivity=1
     )

@@ -163,9 +163,8 @@ def integrate_rd(
     kf = kf/molar/second
     kb = kb/second
 
-    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]],
-                           [kf, kb],
-                           logy=logy, logt=logt, units=registry)
+    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb],
+                           logy=logy, logt=logt, unit_registry=registry)
 
     y0 = np.array([A0, B0, C0])*molar
     if plotlogt:

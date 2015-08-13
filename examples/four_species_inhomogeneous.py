@@ -31,16 +31,14 @@ def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
         os.path.join(os.path.dirname(
             __file__), 'four_species.json'),
         N=N, bin_k_factor=[[mod1(x/3+0.1)] for x in range(N)],
-        bin_k_factor_span=[1])
+        bin_k_factor_span=[1], logt=logt, logy=logy)
 
     y0 = np.array([1.3, 1e-4, 0.7, 1e-4])
     y0 = np.concatenate([y0/(i+1)*(0.25*i**2+1) for i in range(N)])
 
     t0 = 1e-10
     tout = np.linspace(t0, tend, nt)
-    y = np.log(y0) if logy else y0
-    t = np.log(tout) if logt else tout
-    integr = run(sys, y, t)
+    integr = run(sys, y0, tout)
     if verbose:
         pprint(integr.info)
 

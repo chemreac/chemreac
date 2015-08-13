@@ -200,6 +200,7 @@ class Reaction(object):
         Reference key
     name: string (optional)
         Descriptive name of reaction
+
     """
 
     @property
@@ -271,15 +272,15 @@ class ReactionSystem(object):
 
     Attributes
     ----------
-    rxns
+    rxns : list of objects
         sequence of :class:`Reaction` instances
-    species_names
+    species_names : set of strings
         names of occurring species
-    k
+    k : list of floats (possibly with units)
         rates for rxns
-    ns
+    ns : int
         number of species
-    nr
+    nr : int
         number of reactions
 
     """
