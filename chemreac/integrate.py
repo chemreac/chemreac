@@ -36,6 +36,10 @@ DEFAULTS = {
 }
 
 
+class IntegrationError(Exception):
+    pass
+
+
 def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     """
     see :py:func:`integrate`
@@ -274,7 +278,7 @@ class Integration(object):
         added to C0 when rd.logy==True and C0_is_log==False. Note that
         if you explicitly want to avoid adding tiny you need to set it
         to zero (e.g. when manually setting any C0==0 to some epsilon).
-    (default: None => numpy.finfo(np.float64).tiny)
+        (default: None => numpy.finfo(np.float64).tiny)
 
     **kwargs:
         mode: not supported by Sundials solver (current wrapper
@@ -296,7 +300,8 @@ class Integration(object):
             - 'texec': execution time in seconds.
             - 'atol': float or array, absolute tolerance(s).
             - 'rtol': float, relative tolerance
-
+    rd: ReactionDiffusion instance
+        same instance as passed in Parameters.
 
     Methods
     -------
@@ -396,14 +401,23 @@ class Integration(object):
         # Post processing
         # ---------------
         # Back-transform independent variable into linear time
-        self.tout = self.with_units(
-            np.exp(self.internal_t) if self.rd.logt else self.internal_t,
-            'time')
+        if self.rd.logt:
+            unitless_time = (np.exp(self.internal_t) - (t0 if t0_set else 0))
+        else:
+            unitless_time = self.internal_t
+        self.tout = self.with_units(unitless_time, 'time')
 
         # Back-transform integration output into linear concentration
         self.Cout = self.with_units(
             np.exp(self.yout) if self.rd.logy else self.yout,
             'concentration')
+
+    def internal_iter(self):
+        """ Returns an iterator over (t, y) pairs where t is entries in
+        internal_t and y is a (2-dim) vector over the bins (1st dim)
+        with the corresponding dependent variables (2nd dim)."""
+        for idx, x in np.ndenumerate(self.internal_t):
+            yield x, self.yout[idx, ...]
 
 
 def run(*args, **kwargs):
