@@ -87,9 +87,32 @@ def suggest_t0(rd, y0, max_f=1.0):
          inital step.
     """
     fout = rd.alloc_fout()
-    rd.f(0, y0, fout)
+    rd.f(0, np.asarray(y0), fout)
     fout_maxabs = np.max(np.abs(fout))
     if fout_maxabs < max_f:
         return 1.0
     else:
         return max_f/fout_maxabs
+
+
+def eval_jacobian(rd, x, y):
+    """
+    Calculate the Jacobian matrix
+
+    Parameters
+    ----------
+    rd: ReactionDiffusion instance
+         System at hand
+    x: float
+         value of the independent variable
+    y: array
+         values of the dependent variables (you may need to transform)
+
+    """
+    banded = (rd.N > 1)
+    jout = rd.alloc_jout(banded=banded, order='F')
+    if banded:
+        rd.banded_packed_jac_cmaj(x, y.flatten(), jout)
+    else:
+        rd.dense_jac_cmaj(x, y.flatten(), jout)
+    return jout
