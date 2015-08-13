@@ -136,11 +136,13 @@ def mk_sn_dict_from_names(names, **kwargs):
 
     Examples
     --------
-    >>> mk_sn_dict_from_names(
-    ...     'ABCD', D=[0.1, 0.2, 0.3, 0.4]) # doctest: +NORMALIZE_WHITESPACE
+    >>> d = mk_sn_dict_from_names(
+    ...     'ABCD', D=[0.1, 0.2, 0.3, 0.4])
+    >>> d  # doctest: +NORMALIZE_WHITESPACE
     OrderedDict([('A', <Substance 'A'>), ('B', <Substance 'B'>),
     ('C', <Substance 'C'>), ('D', <Substance 'D'>)])
-
+    >>> d['A'].name
+    'A'
     """
     kwargs_list = []
     for i in range(len(names)):
@@ -201,6 +203,12 @@ class Reaction(object):
     name: string (optional)
         Descriptive name of reaction
 
+    Examples
+    --------
+    >>> d = mk_sn_dict_from_names('AB')
+    >>> dimerization = Reaction({d['A']: 2}, {d['B']: 1})
+    >>> str(dimerization)
+    '2 A -> B'
     """
 
     @property
@@ -237,7 +245,8 @@ class Reaction(object):
             arrow = ' <-> ' if equilibrium else ' -> '
         active, inactv, prod = [[
             ((str(v)+' ') if v > 1 else '') + names.get(
-                k, getattr(k, 'tex_name', str(k)) if tex else str(k)) for
+                k, getattr(k, 'tex_name', str(k)) if tex
+                else getattr(k, 'name', str(k))) for
             k, v in filter(itemgetter(1), d.items())
         ] for d in (self.active_reac, self.inactv_reac, self.products)]
         fmtstr = "{}" + (" + ({})" if len(inactv) > 0 else "{}") + arrow + "{}"
