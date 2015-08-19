@@ -432,6 +432,10 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
     return ax, substance_idxs, labels
 
 
+def plot_C_vs_t(integr, **kwargs):
+    return plot_C_vs_t_in_bin(integr.rd, integr.tout, integr.Cout, **kwargs)
+
+
 def plot_C_vs_t_in_bin(
         rd, tout, Cout, bi=0, ax=None, labels=None,
         xscale='log', yscale='log', substances=None,
@@ -505,8 +509,8 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
         time index
     ax: Axes instance
     labels: sequence of strings
-    xscale: matplotlib scale choice (e.g. 'log', 'symlog')
-    yscale: matplotlib scale choice (e.g. 'log', 'symlog')
+    xscale: matplotlib scale choice (e.g. 'linear', 'log', 'symlog')
+    yscale: matplotlib scale choice (e.g. 'linear', 'log', 'symlog')
     basetitle: string
 
     Returns
