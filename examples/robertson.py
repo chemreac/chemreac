@@ -30,25 +30,26 @@ def get_reaction_system(substances, rates):
 
 def integrate_rd(tend=7200.0, A0=1.0, B0=0.0, C0=0.0, k1=0.04, k2=1e4, k3=3e7,
                  t0=0.0, nt=100, logt=False, logy=False, plot=False,
-                 savefig='None', verbose=False, dump_latex=False):
+                 savefig='None', verbose=False, dump_expr='False'):
     sn_dict = mk_sn_dict_from_names('ABC', mass=(1, 1, 2))
     k = (k1, k2, k3)
     init_conc = (A0, B0, C0)
     reaction_system = get_reaction_system(sn_dict.values(), k)
     print([str(_) for _ in reaction_system.rxns])
     rd = reaction_system.to_ReactionDiffusion(logt=logt, logy=logy)
-    if dump_latex:
+    if dump_expr.lower() not in ('false', '0'):
         from chemreac.symbolic import SymRD
         import sympy as sp
-        srd = SymRD.from_rd(rd)
+        cb = {'latex': sp.latex, 'ccode': sp.ccode}.get(dump_expr.lower(), str)
+        srd = SymRD.from_rd(rd, k=sp.symbols('k:3'))
         print('dydx:')
-        print('\n'.join(map(sp.latex, srd._f)))
+        print('\n'.join(map(cb, srd._f)))
         print('jac:')
         for ri, row in enumerate(srd.jacobian.tolist()):
             for ci, expr in enumerate(row):
                 if expr == 0:
                     continue
-                print(ri, ci, sp.latex(expr))
+                print(ri, ci, cb(expr))
         return None
     if t0 == 0 and logt:
         t0 = 1e-3*suggest_t0(rd, init_conc)
