@@ -55,7 +55,7 @@ from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot
 
 
 def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
-                 doserate=15, N=1000, nt=512, nstencil=3,
+                 doserate=15, N=1000, nt=512, nstencil=0,
                  logy=False, logt=False, logx=False, name='aqueous_radiolysis',
                  num_jacobian=False, savefig='None', verbose=False,
                  plot=False, plot_jacobians=False):
@@ -64,7 +64,8 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
     :download:`aqueous_radiolysis.json <examples/aqueous_radiolysis.json>`
     """
     null_conc = 1e-24
-
+    if nstencil == 0:
+        nstencil = 3 if N > 1 else 1
     mu = 50.0*metre**-1  # linear attenuation
     x = generate_grid(x0, xend, N, logx)
     _cb = (lambda arg: np.exp(arg)) if logx else (lambda arg: arg)
@@ -85,7 +86,7 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
                     1e-3/(i+2) for k in rd.substance_names]
                    for i in range(rd.N)])*molar
 
-    tout = np.logspace(log10(t0), log10(tend), nt+1)*second
+    tout = np.logspace(log10(t0), log10(tend), nt)*second
     integr = run(rd, y0, tout, with_jacobian=(not num_jacobian))
 
     if verbose:
@@ -100,14 +101,14 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
                      "with local doserate {}")
         ax = plt.subplot(2, 1, 1)
         plot_C_vs_t_in_bin(
-            rd, to_unitless(tout, time_unit),
+            rd, to_unitless(integr.tout, time_unit),
             to_unitless(integr.Cout, conc_unit),
             0, ax, substances=('H2', 'H2O2'),
             ttlfmt=bt_fmtstr.format(rd.fields[0][0]),
             ylabel="C / "+str(conc_unit))
         ax = plt.subplot(2, 1, 2)
         plot_C_vs_t_in_bin(
-            rd, to_unitless(tout, time_unit),
+            rd, to_unitless(integr.tout, time_unit),
             to_unitless(integr.Cout, conc_unit),
             N-1, ax, substances=('H2', 'H2O2'),
             ttlfmt=bt_fmtstr.format(rd.fields[0][N-1]),

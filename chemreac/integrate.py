@@ -116,8 +116,40 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     return yout, tout, info
 
 
+def integrate_odeint(rd, y0, tout, mode=DENSE, dense_output=None, **kwargs):
+    if dense_output is None:
+        dense_output = (len(tout) == 2)
+    if not dense_output or len(tout) != 2:
+        raise NotImplementedError("Currently only dense_output is supported")
+    if mode != DENSE:
+        raise NotImplementedError("Currently only dense jacobian is supported")
+    from pyodeint import integrate_adaptive
+    new_kwargs = dict(y0=y0, x0=tout[0], xend=tout[1],
+                      dx0=1e-16*(tout[1]-tout[0]))
+    new_kwargs['atol'] = kwargs.pop('atol', DEFAULTS['atol'])
+    new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
+
+    def jac(t, y, jmat_out, dfdx_out):
+        rd.dense_jac_rmaj(t, y, jmat_out)
+        if rd.logt:
+            fout = np.empty(rd.ny)
+            rd.f(t, y, fout)
+            dfdx_out[:] = fout
+        else:
+            dfdx_out[:] = 0
+    new_kwargs['check_indexing'] = False
+    texec = time.time()
+    xout, yout = integrate_adaptive(rd.f, jac, rd.ny, **new_kwargs)
+    texec = time.time() - texec
+    info = {
+        'texec': texec,
+        'success': True,
+    }
+    return yout.reshape((xout.size, rd.N, rd.n)), xout, info
+
+
 def integrate_scipy(rd, y0, tout, mode=None,
-                    integrator_name='vode', dense_output=False,
+                    integrator_name='vode', dense_output=None,
                     **kwargs):
     """
     see :py:func:`integrate`
@@ -129,8 +161,9 @@ def integrate_scipy(rd, y0, tout, mode=None,
         - np.linspace(t0, tend, nt)
         - np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt)
     integrator_name: string (default: vode)
-    dense_output: bool (default: False)
-        if True, tout is taken to be length 2 tuple (t0, tend)
+    dense_output: bool (default: None)
+        if True, tout is taken to be length 2 tuple (t0, tend),
+        if unspecified (None), length of tout decides (length 2 => True)
 
     Returns
     =======
@@ -202,6 +235,9 @@ def integrate_scipy(rd, y0, tout, mode=None,
     runner = ode(f, jac=jac if new_kwargs['with_jacobian'] else None)
     runner.set_integrator(integrator_name, **new_kwargs)
     runner.set_initial_value(y0.flatten(), tout[0])
+
+    if dense_output is None:
+        dense_output = (len(tout) == 2)
 
     texec = time.time()
     if dense_output:
@@ -313,6 +349,7 @@ class Integration(object):
     _callbacks = {
         'sundials': integrate_sundials,
         'scipy': integrate_scipy,
+        'odeint': integrate_odeint,
         'rk4': _integrate_rk4,
     }
 
