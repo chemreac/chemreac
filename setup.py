@@ -207,6 +207,7 @@ setup_kwargs = dict(
     package_data=package_data,
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
+    classifiers=classifiers,
 )
 
 if __name__ == '__main__':
