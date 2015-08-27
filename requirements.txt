@@ -13,3 +13,5 @@ mpld3>=0.2
 sympy>=0.7.6
 pycodeexport>=0.1.1
 pycompilation>=0.4.2
+pyodeint
+pygslodeiv2

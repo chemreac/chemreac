@@ -6,4 +6,5 @@ env:
   - CHEMREAC_SOLVER=sundials
   - CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
 script:
+  - pip install pyodeint pygslodeiv2
   - ./scripts/run_tests.sh

@@ -49,6 +49,12 @@ def main(logy=False, logt=False):
     assert np.allclose(integr4.Cout[:, 0, :], Cref(integr4.tout),
                        atol=1e-5, rtol=1e-5)
 
+    # gslodeiv2
+    integr5 = Integration('gslodeiv2', rd, np.asarray(y0), (t0, tend),
+                          mode=DENSE, dense_output=True, atol=1e-9, rtol=1e-9)
+    assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
+                       atol=1e-5, rtol=1e-5)
+
 
 if __name__ == '__main__':
     import argh
