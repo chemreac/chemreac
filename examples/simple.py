@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, print_function)
 from future.builtins import *
 
 import numpy as np
@@ -44,16 +43,20 @@ def main(logy=False, logt=False):
                            atol=5e-3, rtol=5e-3)
 
     # odeint
-    integr4 = Integration('odeint', rd, np.asarray(y0), (t0, tend),
+    integr4 = Integration('pyodeint', rd, np.asarray(y0), (t0, tend),
                           mode=DENSE, dense_output=True, atol=1e-9, rtol=1e-9)
     assert np.allclose(integr4.Cout[:, 0, :], Cref(integr4.tout),
                        atol=1e-5, rtol=1e-5)
 
     # gslodeiv2
-    integr5 = Integration('gslodeiv2', rd, np.asarray(y0), (t0, tend),
-                          mode=DENSE, dense_output=True, atol=1e-9, rtol=1e-9)
-    assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
-                       atol=1e-5, rtol=1e-5)
+    for method in ['bsimp', 'msadams', 'rkf45', 'rkck',
+                   'rk8pd', 'rk4imp', 'msbdf']:
+        atol, rtol = 1e-8, 1e-8
+        integr5 = Integration('pygslodeiv2', rd, np.asarray(y0), (t0, tend),
+                              mode=DENSE, dense_output=True, atol=atol,
+                              rtol=rtol, method=method)
+        assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
+                           atol=atol, rtol=rtol)
 
 
 if __name__ == '__main__':

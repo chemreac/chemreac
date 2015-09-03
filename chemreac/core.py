@@ -41,7 +41,9 @@ class ReactionDiffusionBase(object):
     def alloc_fout(self):
         return np.zeros(self.n*self.N)
 
-    def alloc_jout(self, banded=True, order='C', pad=0):
+    def alloc_jout(self, banded=None, order='C', pad=0):
+        if banded is None:
+            banded = self.N > 1
         if order == 'C':
             rpad, cpad = 0, pad
         elif order == 'F':

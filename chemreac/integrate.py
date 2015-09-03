@@ -115,19 +115,24 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     }
     return yout, tout, info
 
+np.set_printoptions(linewidth=180)
 
-def _integrate_adaptive(callback, rd, y0, tout, mode=DENSE, dense_output=None,
-                        **kwargs):
+def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
+                  **kwargs):
     if dense_output is None:
         dense_output = (len(tout) == 2)
-    if not dense_output or len(tout) != 2:
-        raise NotImplementedError("Currently only dense_output is supported")
     if mode != DENSE:
         raise NotImplementedError("Currently only dense jacobian is supported")
-    new_kwargs = dict(y0=y0, x0=tout[0], xend=tout[1],
-                      dx0=1e-16*(tout[1]-tout[0]))
-    new_kwargs['atol'] = kwargs.pop('atol', DEFAULTS['atol'])
-    new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
+    new_kwargs = dict(y0=y0, dx0=1e-16*(tout[1]-tout[0]))
+    new_kwargs.update(kwargs)
+    if dense_output:
+        new_kwargs['x0'] = tout[0]
+        new_kwargs['xend'] = tout[1]
+    else:
+        new_kwargs['xout'] = tout
+    info = {}
+    info['atol'] = new_kwargs['atol'] = kwargs.pop('atol', DEFAULTS['atol'])
+    info['rtol'] = new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
 
     def jac(t, y, jmat_out, dfdx_out):
         rd.dense_jac_rmaj(t, y, jmat_out)
@@ -137,25 +142,32 @@ def _integrate_adaptive(callback, rd, y0, tout, mode=DENSE, dense_output=None,
             dfdx_out[:] = fout
         else:
             dfdx_out[:] = 0
+        print(jmat_out) ## DEBUG
     new_kwargs['check_indexing'] = False
     texec = time.time()
-    xout, yout = callback(rd.f, jac, rd.ny, **new_kwargs)
+    if dense_output:
+        xout, yout = callback[0](rd.f, jac, **new_kwargs)
+    else:
+        xout = tout
+        yout = callback[1](rd.f, jac, **new_kwargs)
     texec = time.time() - texec
-    info = {
+    info.update({
         'texec': texec,
         'success': True,
-    }
+    })
     return yout.reshape((xout.size, rd.N, rd.n)), xout, info
 
 
-def integrate_odeint(*args, **kwargs):
-    from pyodeint import integrate_adaptive
-    return _integrate_adaptive(integrate_adaptive, *args, **kwargs)
+def integrate_pyodeint(*args, **kwargs):
+    from pyodeint import integrate_adaptive, integrate_predefined
+    return _integrate_cb((integrate_adaptive,
+                          integrate_predefined), *args, **kwargs)
 
 
-def integrate_gslodeiv2(*args, **kwargs):
-    from pygslodeiv2 import integrate_adaptive
-    return _integrate_adaptive(integrate_adaptive, *args, **kwargs)
+def integrate_pygslodeiv2(*args, **kwargs):
+    from pygslodeiv2 import integrate_adaptive, integrate_predefined
+    return _integrate_cb((integrate_adaptive,
+                          integrate_predefined), *args, **kwargs)
 
 
 def integrate_scipy(rd, y0, tout, mode=None,
@@ -359,8 +371,8 @@ class Integration(object):
     _callbacks = {
         'sundials': integrate_sundials,
         'scipy': integrate_scipy,
-        'odeint': integrate_odeint,
-        'gslodeiv2': integrate_gslodeiv2,
+        'pyodeint': integrate_pyodeint,
+        'pygslodeiv2': integrate_pygslodeiv2,
         'rk4': _integrate_rk4,
     }
 
