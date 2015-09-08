@@ -115,7 +115,7 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     }
     return yout, tout, info
 
-np.set_printoptions(linewidth=180)
+np.set_printoptions(linewidth=220) ## DEBUG
 
 def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
                   **kwargs):
@@ -143,10 +143,14 @@ def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
         else:
             dfdx_out[:] = 0
         print(jmat_out) ## DEBUG
+    def f(t, y, fout): ## DEBUG
+        rd.f(t, y, fout)
+        #print('%7.3e' % t, y) ## DEBUG
+        #print(fout) ## DEBUG
     new_kwargs['check_indexing'] = False
     texec = time.time()
     if dense_output:
-        xout, yout = callback[0](rd.f, jac, **new_kwargs)
+        xout, yout = callback[0](f, jac, **new_kwargs) ## DEBUG: rd.f -> f
     else:
         xout = tout
         yout = callback[1](rd.f, jac, **new_kwargs)
@@ -158,16 +162,23 @@ def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
     return yout.reshape((xout.size, rd.N, rd.n)), xout, info
 
 
+def _no_check(cb):
+    def _cb(*args, **kwargs):
+        kwargs['check_callable'] = False
+        kwargs['check_indexing'] = False
+        return cb(*args, **kwargs)
+    return _cb
+
 def integrate_pyodeint(*args, **kwargs):
-    from pyodeint import integrate_adaptive, integrate_predefined
-    return _integrate_cb((integrate_adaptive,
-                          integrate_predefined), *args, **kwargs)
+    from pygslodeiv2 import integrate_adaptive, integrate_predefined
+    return _integrate_cb((_no_check(integrate_adaptive),
+                          _no_check(integrate_predefined)), *args, **kwargs)
 
 
 def integrate_pygslodeiv2(*args, **kwargs):
     from pygslodeiv2 import integrate_adaptive, integrate_predefined
-    return _integrate_cb((integrate_adaptive,
-                          integrate_predefined), *args, **kwargs)
+    return _integrate_cb((_no_check(integrate_adaptive),
+                          _no_check(integrate_predefined)), *args, **kwargs)
 
 
 def integrate_scipy(rd, y0, tout, mode=None,

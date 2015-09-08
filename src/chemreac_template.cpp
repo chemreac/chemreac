@@ -1,4 +1,4 @@
-## -*- coding: utf-8 -*-
+## -*- coding: utf-8; compile-command: "cd ~/vc/chemreac; rm -r build/; PYTHONPATH=~/vc/pycompilation:~/vc/pycodeexport python setup.py build_ext -i; cd build/temp.linux-x86_64-2.7; /usr/bin/g++ -O2 -c -std=c++0x -fPIC -Wall -Wextra -o src/chemreac.o -I/home/bjorn/vc/chemreac/src -I/home/bjorn/vc/chemreac/src/finitediff/include -I/home/bjorn/vc/chemreac/src/finitediff/external/newton_interval/include -I/home/bjorn/.local/lib/python2.7/site-packages/numpy/core/include src/chemreac.cpp" -*-
 // ${_warning_in_the_generated_file_not_to_edit}
 <%doc>
 // This is a templated source file.
@@ -328,27 +328,35 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ C,
 
 
 #define Y(bi, si) y[(bi)*n+(si)]
-#define LINC(bi, si) linC[(bi)*n+(si)]
 const double *
-ReactionDiffusion::_alloc_and_populate_linC(const double * const __restrict__ y) const
+ReactionDiffusion::alloc_and_populate_linC(const double * const __restrict__ y,
+                                            bool recip=false) const
 {
     int nlinC = n*N;
     double * const linC = (double * const)malloc(nlinC*sizeof(double));
     // TODO: Tune 42...
     ${"#pragma omp parallel for if (N > 42)" if WITH_OPENMP else ""}
-    for (uint bi=0; bi<N; ++bi)
-        for (uint si=0; si<n; ++si)
-            LINC(bi, si) = exp(Y(bi, si));
+    for (uint bi=0; bi<N; ++bi){
+        for (uint si=0; si<n; ++si){
+            if (recip)
+                linC[bi*n + si] = exp(-Y(bi, si));
+            else
+                linC[bi*n + si] = exp(Y(bi, si));
+        }
+    }
     return linC;
 }
-// Y, LINC, D_WEIGHT(bi, li) still defined
+// Y, D_WEIGHT(bi, li) still defined
+#define LINC(bi, si) linC[(bi)*n+(si)]
+#define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 void
 ReactionDiffusion::f(double t, const double * const y, double * const __restrict__ dydt)
 {
     // note condifiontal call to free at end of this function
-    const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
+    const double * const linC = (logy) ? alloc_and_populate_linC(y) : y;
+    const double * const rlinC = (logy) ? alloc_and_populate_linC(y, true) : nullptr;
     if (auto_efield){
         calc_efield(linC);
     }
@@ -418,15 +426,17 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         }
         for (uint si=0; si<n; ++si){
             if (logy)
-                DYDT(bi, si) /= LINC(bi, si);
+                DYDT(bi, si) *= RLINC(bi, si);
             if (logt)
                 DYDT(bi, si) *= exp_t;
         }
         ${"delete []local_r;" if WITH_OPENMP else ""}
     }
     ${"delete []local_r;" if not WITH_OPENMP else ""}
-    if (logy)
+    if (logy){
         free((void*)linC);
+        free((void*)rlinC);
+    }
     neval_f++;
 }
 #undef DYDT
@@ -450,6 +460,25 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
 #define SUB(di, bri, ci) JAC(bri, bri-di, ci, ci)
 #define SUP(di, bri, ci) JAC(bri, bri+di, ci, ci)
 %endif
+void
+ReactionDiffusion::${token}_mass_action(uint bi, uint si, uint dsi, int Ski, int Akj,
+                                        double rk, double * const __restrict__ ja, int ldj) const {
+    ${'ignore(ldj);' if token.startswith('compressed') else ''}
+    if (Ski == 0)
+        return;
+    if (logy) {
+        if (Ski == 0 && dsi == si){
+            JAC(bi, bi, si, dsi) -= Ski*rk;
+        } else {
+            const int tmp = (si == dsi) ? 1 : 0;
+            JAC(bi, bi, si, dsi) += Ski*rk*(Akj - tmp);
+        }
+    } else {
+        if (Akj == 0)
+            return;
+        JAC(bi, bi, si, dsi) += Akj*Ski*rk;
+    }
+}
 void
 ReactionDiffusion::${token}(double t,
                             const double * const __restrict__ y,
@@ -476,7 +505,8 @@ ReactionDiffusion::${token}(double t,
     }
 
     // note conditional call to free at end of this function
-    const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
+    const double * const linC = (logy) ? alloc_and_populate_linC(y) : y;
+    const double * const rlinC = alloc_and_populate_linC(y, true);
     if (auto_efield)
         calc_efield(linC);
 
@@ -485,7 +515,7 @@ ReactionDiffusion::${token}(double t,
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
         ${'double * const local_r = new double[nr];' if WITH_OPENMP else ''}
-
+        _fill_local_r(bi, linC, local_r);
         // Contributions from reactions and fields
         // ---------------------------------------
         for (uint si=0; si<n; ++si){
@@ -495,31 +525,26 @@ ReactionDiffusion::${token}(double t,
                 JAC(bi, bi, si, dsi) = 0.0;
                 for (uint rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
-                    if (coeff_total[rxni*n + si] == 0)
-                        continue; // species si unaffected by reaction
-                    if (coeff_active[rxni*n + dsi] == 0)
-                        continue; // rate of reaction unaffected by species dsi
-                    if (coeff_active[rxni*n + dsi] > 1 && LINC(bi, dsi) == 0.0)
-                        continue; // vanishing contribution
-                    double linJ = coeff_total[rxni*n + si]*\
-                        coeff_active[rxni*n + dsi];
-                    bool skipped_one = false;
-                    for (uint rnti=0; rnti<stoich_active[rxni].size(); ++rnti){
-                        // reactant index rnti
-                        int sai = stoich_active[rxni][rnti];
-                        if (sai == dsi && !skipped_one){
-                            skipped_one = true;
-                            continue;
-                        }
-                        linJ *= LINC(bi, rnti);
-                    }
-                    JAC(bi, bi, si, dsi) += linJ;
-                    std::cout << JAC(bi, bi, si, dsi) << "\n";
+                    const int Ski = coeff_total[rxni*n + si];
+                    const int Akj = coeff_active[rxni*n + dsi];
+                    const double rk = local_r[rxni];
+                    ${token}_mass_action(bi, si, dsi, Ski, Akj, rk, ja, ldj);
+                    // std::cout << JAC(bi, bi, si, dsi) << "\n";
                 }
                 // Contribution from particle/electromagnetic fields
                 for (uint fi=0; fi<(this->fields.size()); ++fi){
-                    if ((int)dsi == g_value_parents[fi] && g_values[fi][si] != 0.0)
-                        JAC(bi, bi, si, dsi) += fields[fi][bi]*g_values[fi][si];
+                    const int Ski = (g_values[fi][si] != 0.0) ? 1 : 0;
+                    const int Akj = ((int)dsi == g_value_parents[fi]) ? 1 : 0;
+                    const double rk = fields[fi][bi]*g_values[fi][si];
+                    ${token}_mass_action(bi, si, dsi, Ski, Akj, rk, ja, ldj);
+                }
+                if (logy){
+                    JAC(bi, bi, si, dsi) *= RLINC(bi, si);
+                }else{
+                    if (LINC(bi, dsi) > 0){
+                        // std::cout << LINC(bi, dsi) << " "; // DEBUG
+                        JAC(bi, bi, si, dsi) *= RLINC(bi, dsi);
+                    }
                 }
             }
         }
@@ -530,27 +555,30 @@ ReactionDiffusion::${token}(double t,
             uint lbound = _stencil_bi_lbound(bi);
             for (uint si=0; si<n; ++si){ // species index si
                 if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
-                // All versions expect the compressed Jacobian ignore any more sub/super
+                // All versions except the compressed Jacobian ignore any more sub/super
                 // diagonals than the innermost.
                 for (uint k=0; k<nstencil; ++k){
                     const uint sbi = _xc_bi_map(lbound+k);
-                    JAC(bi, bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
+                    const double jacf = (logy) ? LINC(sbi, si)*RLINC(bi, si) : 1.0;
+                    JAC(bi, bi, si, si) += -jacf*mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
                     if (sbi == bi) {
-                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
-                        JAC(bi, bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
+                        JAC(bi, bi, si, si) += jacf*D[si]*D_WEIGHT(bi, k);
+                        JAC(bi, bi, si, si) += -jacf*mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
                         if (bi >= 1)
                             if (sbi == bi-1){
-                                double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
-                                SUB(1, bi, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                SUB(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
+                                //double Cfactor = (logy ? LINC(bi-1, si)/LINC(bi, si) : 1.0);
+                                const double Cfactor = 1.0;
+                                SUB(1, bi, si) += jacf*D[si]*D_WEIGHT(bi, k)*Cfactor;
+                                SUB(1, bi, si) += jacf*efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor;
                             }
                         if (bi < N-1)
                             if (sbi == bi+1){
-                                double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
-                                SUP(1, bi, si) += D[si]*D_WEIGHT(bi, k)*Cfactor;
-                                SUP(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
+                                //double Cfactor = (logy ? LINC(bi+1, si)/LINC(bi, si) : 1.0);
+                                const double Cfactor = 1.0;
+                                SUP(1, bi, si) += jacf*D[si]*D_WEIGHT(bi, k)*Cfactor;
+                                SUP(1, bi, si) += jacf*efield[bi]*-mobility[si]*A_WEIGHT(bi, k)*\
                                     Cfactor;
                             }
                     }
@@ -558,23 +586,16 @@ ReactionDiffusion::${token}(double t,
             }
         }
 
-        // Logartihmic time
+        // Logartihmic transformations
         // ----------------------------
-        if (logt || logy){
+        if (logt){
             for (uint si=0; si<n; ++si){
-                if (logt){
-                    for (uint dsi=0; dsi<n; ++dsi)
-                        JAC(bi, bi, si, dsi) *= exp_t;
-                    if (bi>0)
-                        SUB(1, bi, si) *= exp_t;
-                    if (bi<N-1)
-                        SUP(1, bi, si) *= exp_t;
-                }
-                if (logy){
-                    for (uint dsi=0; dsi<n; ++dsi)
-                        JAC(bi, bi, si, dsi) *= LINC(bi, dsi);
-                    JAC(bi, bi, si, si) -= FOUT(bi, si)/LINC(bi, si);
-                }
+                for (uint dsi=0; dsi<n; ++dsi)
+                    JAC(bi, bi, si, dsi) *= exp_t;
+                if (bi>0)
+                    SUB(1, bi, si) *= exp_t;
+                if (bi<N-1)
+                    SUP(1, bi, si) *= exp_t;
             }
         }
         ${'delete []local_r;' if WITH_OPENMP else ''}
@@ -584,6 +605,7 @@ ReactionDiffusion::${token}(double t,
         delete []fout;
     if (logy)
         free((void*)linC);
+        free((void*)rlinC);
     neval_j++;
 #if defined(WITH_DATA_DUMPING)
     std::ostringstream fname;
@@ -600,7 +622,7 @@ ReactionDiffusion::${token}(double t,
 // void ReactionDiffusion::local_reaction_jac(const uint bi, const double * const y,
 //                                            double * const __restrict__ ja) const
 // {
-//     const double * const linC = (logy) ? _alloc_and_populate_linC(y) : y;
+//     const double * const linC = (logy) ? alloc_and_populate_linC(y) : y;
 //     std::unique_ptr<double[]> local_r {new double[nr]};
 //     _fill_local_r(bi, y, local_r);
 //     for (uint si=0; si<n; ++si){
