@@ -467,7 +467,7 @@ ReactionDiffusion::${token}_mass_action(uint bi, uint si, uint dsi, int Ski, int
     if (Ski == 0)
         return;
     if (logy) {
-        if (Ski == 0 && dsi == si){
+        if (Akj == 0 && dsi == si){
             JAC(bi, bi, si, dsi) -= Ski*rk;
         } else {
             const int tmp = (si == dsi) ? 1 : 0;
