@@ -29,7 +29,7 @@ public:
 
     void _fill_local_r(int, const double * const __restrict__, double * const __restrict__) const;
     void _apply_fd(uint);
-    const double * alloc_and_populate_linC(const double * const __restrict__, bool) const;
+    const double * alloc_and_populate_linC(const double * const __restrict__, bool, bool) const;
     uint _stencil_bi_lbound(uint bi) const;
     uint _xc_bi_map(uint xci) const;
 
