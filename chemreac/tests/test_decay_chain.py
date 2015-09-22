@@ -7,10 +7,12 @@ import numpy as np
 from chemreac import ReactionDiffusion
 from .test_reactiondiffusion import _test_f, _test_dense_jac_rmaj
 
+
 def test_dc():
     n = 7
-    k=[1]*(n-1)
-    rd = ReactionDiffusion(n, [[i] for i in range(n-1)], [[i] for i in range(1, n)], k=k)
+    k = [1]*(n-1)
+    rd = ReactionDiffusion(n, [[i] for i in range(n-1)],
+                           [[i] for i in range(1, n)], k=k)
     fout = rd.alloc_fout()
     y0 = [0]*n
     y0[0] = 1
@@ -24,11 +26,11 @@ def test_dc():
 
     jout = rd.alloc_jout()
     rd.dense_jac_rmaj(0, y0, jout)
-    _test_dense_jac_rmaj(rd, 0, y0)
     jref = np.zeros_like(jout)
     for i in range(n):
         if i < n - 1:
-            jref[i,i] = -k[i]
+            jref[i, i] = -k[i]
         if i > 0:
             jref[i, i-1] = k[i-1]
     assert np.allclose(jref, jout)
+    _test_dense_jac_rmaj(rd, 0, y0)

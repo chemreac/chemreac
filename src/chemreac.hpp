@@ -113,11 +113,7 @@ public:
     void banded_packed_jac_cmaj(double, const double * const __restrict__,  const double * const __restrict__, double * const __restrict__, int);
     void compressed_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
 
-    void dense_jac_rmaj_mass_action(uint, uint, uint, int, int, double, double * const __restrict__, int) const;
-    void dense_jac_cmaj_mass_action(uint, uint, uint, int, int, double, double * const __restrict__, int) const;
-    void banded_padded_jac_cmaj_mass_action(uint, uint, uint, int, int, double, double * const __restrict__, int) const;
-    void banded_packed_jac_cmaj_mass_action(uint, uint, uint, int, int, double, double * const __restrict__, int) const;
-    void compressed_jac_cmaj_mass_action(uint, uint, uint, int, int, double, double * const __restrict__, int) const;
+    double get_mod_k(int bi, int ri) const;
 
     // For iterative linear solver
     // void local_reaction_jac(const uint, const double * const, double * const __restrict__, double) const;

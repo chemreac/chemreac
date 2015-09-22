@@ -295,6 +295,19 @@ void ReactionDiffusion::_apply_fd(uint bi){
 #undef FDWEIGHT
 // D_WEIGHT still defined
 
+double
+ReactionDiffusion::get_mod_k(int bi, int ri) const{
+    double tmp = k[ri];
+    // Modulation
+    int enumer = -1;
+    for (auto mi : this->modulated_rxns){
+        enumer++;
+        if (mi == (int)ri)
+            tmp *= this->modulation[enumer][bi];
+    }
+    return tmp;
+}
+
 void
 ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ C,
                                  double * const __restrict__ local_r) const
@@ -305,20 +318,13 @@ ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ C,
         double tmp = 1;
 
         // Kinetically active reactants (law of massaction)
-        for (uint rnti=0; rnti<stoich_active[rxni].size(); ++rnti){
+        for (uint rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_active[rxni][rnti];
             tmp *= C[bi*n+si];
         }
-        // Modulation
-        int enumer = -1;
-        for (auto mi : this->modulated_rxns){
-            enumer++;
-            if (mi == (int)rxni)
-                tmp *= this->modulation[enumer][bi];
-        }
         // Rate constant
-        local_r[rxni] = k[rxni]*tmp;
+        local_r[rxni] = get_mod_k(bi, rxni)*tmp;
     }
 }
 // D_WEIGHT still defined
@@ -461,14 +467,6 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
 #define SUP(di, bri, ci) JAC(bri, bri+di, ci, ci)
 %endif
 void
-ReactionDiffusion::${token}_mass_action(uint bi, uint si, uint dsi, int Ski, int Akj,
-                                        double rk, double * const __restrict__ ja, int ldj) const {
-    ${'ignore(ldj);' if token.startswith('compressed') else ''}
-    if (Ski == 0 || Akj == 0)
-        return;
-    JAC(bi, bi, si, dsi) += Akj*Ski*rk;
-}
-void
 ReactionDiffusion::${token}(double t,
                             const double * const __restrict__ y,
                             const double * const __restrict__ fy,
@@ -500,12 +498,9 @@ ReactionDiffusion::${token}(double t,
     if (auto_efield)
         calc_efield(linC);
 
-    ${'double * const local_r = new double[nr];' if not WITH_OPENMP else ''}
     ${'#pragma omp parallel for' if WITH_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
-        ${'double * const local_r = new double[nr];' if WITH_OPENMP else ''}
-        _fill_local_r(bi, linC, local_r);
         // Contributions from reactions and fields
         // ---------------------------------------
         for (uint si=0; si<n; ++si){
@@ -515,10 +510,18 @@ ReactionDiffusion::${token}(double t,
                 JAC(bi, bi, si, dsi) = 0.0;
                 for (uint rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
-                    const int Ski = coeff_total[rxni*n + si];
                     const int Akj = coeff_active[rxni*n + dsi];
-                    const double rk = local_r[rxni];
-                    ${token}_mass_action(bi, si, dsi, Ski, Akj, rk, ja, ldj);
+                    const int Ski = coeff_total[rxni*n + si];
+                    if (Akj == 0 || Ski == 0)
+                        continue;
+                    double qkj = get_mod_k(bi, rxni)*Akj*pow(LINC(bi, dsi), Akj-1);
+                    for (uint rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
+                        const uint rnti_si = stoich_active[rxni][rnti];
+                        if (rnti_si == dsi)
+                            continue;
+                        qkj *= LINC(bi, rnti_si);
+                    }
+                    JAC(bi, bi, si, dsi) += Ski*qkj;
                     // std::cout << JAC(bi, bi, si, dsi) << "\n";
                 }
                 // Contribution from particle/electromagnetic fields
@@ -526,11 +529,9 @@ ReactionDiffusion::${token}(double t,
                     const int Ski = (g_values[fi][si] != 0.0) ? 1 : 0;
                     const int Akj = ((int)dsi == g_value_parents[fi]) ? 1 : 0;
                     const double rk = fields[fi][bi]*g_values[fi][si];
-                    ${token}_mass_action(bi, si, dsi, Ski, Akj, rk, ja, ldj);
-                }
-                if (LINC(bi, dsi) > 0){
-                    // std::cout << LINC(bi, dsi) << " "; // DEBUG
-                    JAC(bi, bi, si, dsi) *= RLINC(bi, dsi);
+                    if (Ski == 0 || Akj == 0 || rk == 0)
+                        continue;
+                    JAC(bi, bi, si, dsi) += Akj*Ski*rk;
                 }
             }
         }
@@ -593,9 +594,7 @@ ReactionDiffusion::${token}(double t,
                 }
             }
         }
-        ${'delete []local_r;' if WITH_OPENMP else ''}
     }
-    ${'delete []local_r;' if not WITH_OPENMP else ''}
     if (logy && !fy)
         delete []fout;
     free((void*)rlinC);

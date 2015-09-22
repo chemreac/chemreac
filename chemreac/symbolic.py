@@ -7,9 +7,7 @@ symbolically. It is therefore too slow for use in integration or large systems
 in general.
 """
 
-from __future__ import (
-    print_function, division, absolute_import, unicode_literals
-)
+from __future__ import print_function, division, absolute_import
 
 from functools import reduce
 from operator import add

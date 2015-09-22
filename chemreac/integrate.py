@@ -17,8 +17,7 @@ the user of the script through the use of environment variables.
 
 """
 
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
+from __future__ import (absolute_import, division, print_function)
 
 
 import time
@@ -115,7 +114,6 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     }
     return yout, tout, info
 
-np.set_printoptions(linewidth=220) ## DEBUG
 
 def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
                   **kwargs):
@@ -142,15 +140,10 @@ def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
             dfdx_out[:] = fout
         else:
             dfdx_out[:] = 0
-        print(jmat_out) ## DEBUG
-    def f(t, y, fout): ## DEBUG
-        rd.f(t, y, fout)
-        #print('%7.3e' % t, y) ## DEBUG
-        #print(fout) ## DEBUG
     new_kwargs['check_indexing'] = False
     texec = time.time()
     if dense_output:
-        xout, yout = callback[0](f, jac, **new_kwargs) ## DEBUG: rd.f -> f
+        xout, yout = callback[0](rd.f, jac, **new_kwargs)
     else:
         xout = tout
         yout = callback[1](rd.f, jac, **new_kwargs)
@@ -169,8 +162,9 @@ def _no_check(cb):
         return cb(*args, **kwargs)
     return _cb
 
+
 def integrate_pyodeint(*args, **kwargs):
-    from pygslodeiv2 import integrate_adaptive, integrate_predefined
+    from pyodeint import integrate_adaptive, integrate_predefined
     return _integrate_cb((_no_check(integrate_adaptive),
                           _no_check(integrate_predefined)), *args, **kwargs)
 

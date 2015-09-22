@@ -53,3 +53,5 @@ __conda_version__.txt
 .coverage
 htmlcov/
 scripts/chemreac_logo.*
+dec_cha.ipynb
+.ipynb_checkpoints/
