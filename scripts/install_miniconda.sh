@@ -11,7 +11,7 @@ else
 fi
 
 if [[ "${PYTHON_VERSION:0:1}" == "2" ]]; then
-    if [[ "${PY_VERSION}" != "2.7" ]]; then
+    if [[ "${PYTHON_VERSION}" != "2.7" ]]; then
         echo "PYTHON_VERSION was not set to 2.7"
         exit 1
     fi

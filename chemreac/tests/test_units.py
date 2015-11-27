@@ -161,6 +161,6 @@ def test_unit_registry_from_human_readable():
 
 
 def test_allclose():
-    a = np.linspace(2*second, 3*second)
-    b = np.linspace(2/3600.*hour, 3/3600.*hour)
+    a = np.linspace(2, 3)*second
+    b = np.linspace(2/3600., 3/3600.)*hour
     assert allclose(a, b)

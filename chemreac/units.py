@@ -153,8 +153,18 @@ def unit_registry_from_human_readable(unit_registry):
 
 
 def allclose(a, b, rtol=1e-8, atol=None):
-    d = np.abs(a - b)
-    lim = np.abs(a)*rtol
+    d = a - b
+    lim = abs(rescale(a*rtol, unitof(d)))
     if atol is not None:
         lim += atol
-    return np.all(d < lim)
+    #return np.less(abs(d), lim)  # see https://github.com/python-quantities/python-quantities/pull/98
+
+    try:
+        n = len(d)
+    except TypeError:
+        n = 1
+
+    if n == 1:
+        return d < lim
+    else:
+        return all(_d < _lim for _d, _lim in zip(d, lim))
