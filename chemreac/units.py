@@ -4,6 +4,7 @@
 This file is an abstraction layer over ``quantities`` (makes it possible to
 use another underlying package in the future).
 """
+
 from __future__ import absolute_import, division, print_function
 
 import numpy as np
@@ -86,6 +87,14 @@ def unitof(expr):
         return 1
 
 
+def linspace(start, stop, num=50):
+    # work around for quantities v0.10.1 and NumPy
+    unit = unitof(start)
+    start_ = to_unitless(start, unit)
+    stop_ = to_unitless(stop, unit)
+    return np.linspace(start_, stop_, num)*unit
+
+
 def to_unitless(value, new_unit=None):
     if new_unit is None:
         new_unit = pq.dimensionless
@@ -153,8 +162,20 @@ def unit_registry_from_human_readable(unit_registry):
 
 
 def allclose(a, b, rtol=1e-8, atol=None):
-    d = np.abs(a - b)
-    lim = np.abs(a)*rtol
+    d = a - b
+    lim = abs(rescale(a*rtol, unitof(d)))
     if atol is not None:
         lim += atol
-    return np.all(d < lim)
+
+    # see https://github.com/python-quantities/python-quantities/pull/98
+    # return np.less(abs(d), lim)
+
+    try:
+        n = len(d)
+    except TypeError:
+        n = 1
+
+    if n == 1:
+        return d < lim
+    else:
+        return np.all(_d < _lim for _d, _lim in zip(d, lim))

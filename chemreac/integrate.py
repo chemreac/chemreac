@@ -143,15 +143,16 @@ def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
     new_kwargs['check_indexing'] = False
     texec = time.time()
     if dense_output:
-        xout, yout = callback[0](rd.f, jac, **new_kwargs)
+        xout, yout, info_ = callback[0](rd.f, jac, **new_kwargs)
     else:
         xout = tout
-        yout = callback[1](rd.f, jac, **new_kwargs)
+        yout, info_ = callback[1](rd.f, jac, **new_kwargs)
     texec = time.time() - texec
     info.update({
         'texec': texec,
         'success': True,
     })
+    info.update(info_)
     return yout.reshape((xout.size, rd.N, rd.n)), xout, info
 
 

@@ -25,7 +25,7 @@ with open(os.path.join(pkg_name,'__init__.py')) as f:
 # The latter method is used for now:
 # The variable $CHEMREAC_RELEASE_VERSION is matched against "v*" and
 # if valid __version__ is set accordingly. If mathcing fails setup.py
-# will exec the contents of: ./chemreac/release.py
+# will exec the contents of: ./chemreac/_release.py
 #
 # To complicate things further conda-build drops most environment
 # variables, so for conda based builds to work need setup.py to write
@@ -41,14 +41,14 @@ if CONDA_BUILD:
     except IOError:
         pass
 
-release_py_path = os.path.join(pkg_name, 'release.py')
+release_py_path = os.path.join(pkg_name, '_release.py')
 
 if len(CHEMREAC_RELEASE_VERSION) > 1 and CHEMREAC_RELEASE_VERSION[0] == 'v':
     TAGGED_RELEASE = True
     __version__ = CHEMREAC_RELEASE_VERSION[1:]
 else:
     TAGGED_RELEASE = False
-    # read __version__ attribute from release.py:
+    # read __version__ attribute from _release.py:
     exec(open(release_py_path).read())
 
 WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'

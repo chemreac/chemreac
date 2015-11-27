@@ -11,7 +11,7 @@ is the class describing the system of ODEs.
 import numpy as np
 
 from .util.pyutil import monotonic
-from .units import unitof, get_derived_unit, to_unitless
+from .units import unitof, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
 from ._chemreac import CppReactionDiffusion, diag_data_len
@@ -233,14 +233,14 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                     raise ValueError("x must be strictly positive monotonic")
                 _x = x
             elif len(x) == 2:
-                _x = np.linspace(x[0], x[1], N+1)
+                _x = linspace(x[0], x[1], N+1)
             elif len(x) == 1:
                 raise TypeError
             else:
                 raise ValueError("Don't know what to do with len(x) == %d" %
                                  len(x))
         except TypeError:
-            _x = np.linspace(0*unitof(x), x, N+1)
+            _x = linspace(0*unitof(x), x, N+1)
 
         if stoich_inactv is None:
             stoich_inactv = list([[]]*len(stoich_active))

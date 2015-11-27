@@ -1,10 +1,10 @@
-image: bjodah/dockerfile-bjodah-scicomp:14.04b
-git:
-    path: github.com/chemreac/chemreac
-env:
-  - WITH_OPENMP=1
-  - CHEMREAC_SOLVER=sundials
-  - CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
-script:
-  - pip install pyodeint pygslodeiv2
-  - ./scripts/run_tests.sh
+build:
+  image: bjodah/bjodahimg:v1.0
+  environment:
+    - WITH_OPENMP=1
+    - CHEMREAC_SOLVER=sundials
+    - CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
+  commands:
+    - pip install pyodeint pygslodeiv2
+    - pip3 install pyodeint pygslodeiv2
+    - PYTHONPATH=$(pwd) ./scripts/run_tests.sh

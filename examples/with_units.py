@@ -22,7 +22,7 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import Integration
-from chemreac.units import second, mole, metre, molar, SI_base
+from chemreac.units import second, mole, metre, molar, SI_base, linspace
 
 
 def main(logy=False, logt=False, unit_registry=None):
@@ -35,7 +35,7 @@ def main(logy=False, logt=False, unit_registry=None):
                            unit_registry=unit_registry)
     y0 = [3.0e3 * mole/metre**3, 1.0*molar]
     t0, tend, nt = 5.0*second, 17.0*second, 42
-    tout = np.linspace(t0, tend, nt)
+    tout = linspace(t0, tend, nt)
 
     Cref = molar*np.array([3.0*np.exp(-0.13*second**-1*(tout-t0)),
                            1.0 + 3.0*(1 - np.exp(
