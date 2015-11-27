@@ -79,8 +79,7 @@ absolute tolerance we can get accurate results:
 
 """
 
-from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
+from __future__ import absolute_import, division, print_function
 from future.builtins import *
 import argh
 import numpy as np
@@ -135,8 +134,8 @@ def _get_Cref(t, y0, k, use_mpmath=True):
 
 
 def integrate_rd(
-        tend=1.9, A0=4.2, B0=3.1, C0=1.4, nt=100, t0=0.0,
-        kf=0.9, kb=0.23, atol='1e-7,1e-6,1e-5', rtol='1e-6',
+        tend=1.9, A0=4.2, B0=3.1, C0=1.4, nt=100, t0=0.0, kf=0.9, kb=0.23,
+        atol='1e-7,1e-6,1e-5', rtol='1e-6', solver='scipy', method='bdf',
         logy=False, logt=False, num_jac=False, plot=False, savefig='None',
         splitplots=False, plotlogy=False, plotsymlogy=False, plotlogt=False,
         scale_err=1.0, scaling=1.0, verbose=False):
@@ -163,9 +162,8 @@ def integrate_rd(
     kf = kf/molar/second
     kb = kb/second
 
-    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]],
-                           [kf, kb],
-                           logy=logy, logt=logt, units=registry)
+    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb],
+                           logy=logy, logt=logt, unit_registry=registry)
 
     y0 = np.array([A0, B0, C0])*molar
     if plotlogt:
@@ -173,7 +171,9 @@ def integrate_rd(
         tout = np.logspace(np.log10(t0+eps), np.log10(tend+eps), nt)*second
     else:
         tout = np.linspace(t0, tend, nt)*second
-    integr = run(rd, y0, tout, atol=atol, rtol=rtol, with_jacobian=not num_jac)
+
+    integr = run(rd, y0, tout, atol=atol, rtol=rtol, with_jacobian=not num_jac,
+                 solver=solver, method=method)
     Cout, yout, info = integr.Cout, integr.yout, integr.info
     try:
         import mpmath

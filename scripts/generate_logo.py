@@ -2,7 +2,8 @@
 # -*- coding: utf-8 -*-
 
 from __future__ import (absolute_import, division,
-                        print_function, unicode_literals)
+                        print_function)
+
 from future.builtins import *
 
 import argh

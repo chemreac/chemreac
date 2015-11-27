@@ -41,7 +41,9 @@ class ReactionDiffusionBase(object):
     def alloc_fout(self):
         return np.zeros(self.n*self.N)
 
-    def alloc_jout(self, banded=True, order='C', pad=0):
+    def alloc_jout(self, banded=None, order='C', pad=0):
+        if banded is None:
+            banded = self.N > 1
         if order == 'C':
             rpad, cpad = 0, pad
         elif order == 'F':
@@ -66,14 +68,14 @@ class ReactionDiffusionBase(object):
         return self.N*self.n
 
 
-def get_unit(units, key):
+def get_unit(unit_registry, key):
     try:
-        return get_derived_unit(units, key)
+        return get_derived_unit(unit_registry, key)
     except KeyError:
         return dict(
-            radyield=units['amount']/get_unit(units, 'energy'),
-            field=get_unit(units, 'energy')/(get_unit(units, 'time') *
-                                             get_unit(units, 'length')**3)
+            radyield=unit_registry['amount']/get_unit(unit_registry, 'energy'),
+            field=get_unit(unit_registry, 'energy')/(get_unit(
+                unit_registry, 'time') * get_unit(unit_registry, 'length')**3)
         )[key]
 
 
@@ -153,13 +155,13 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         Indicies of reactions subject to per bin modulation
     modulation: sequence of sequences of floats
         Per bin modulation vectors for each index in modulated_rxns
-    units: dict (optional)
+    unit_registry: dict (optional)
         default: None, see ``chemreac.units.SI_base`` for an
         example.
 
     Attributes
     ----------
-    units: dict
+    unit_registry: dict
 
     """
     # not used by C++ class
@@ -195,7 +197,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 fields=None,
                 modulated_rxns=None,
                 modulation=None,
-                units=None,
+                unit_registry=None,
                 faraday=None,  # deprecated
                 vacuum_permittivity=None,  # deprecated
                 k_unitless=None,
@@ -212,17 +214,18 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if z_chg is None:
             z_chg = list([0]*n)
         if mobility is None:
-            mobility = np.zeros(n)*get_unit(units, 'electrical_mobility')
+            mobility = np.zeros(n)*get_unit(unit_registry,
+                                            'electrical_mobility')
         if N > 1:
             assert n == len(D)
             assert n == len(z_chg)
             assert n == len(mobility)
         else:
             if D is None:
-                D = np.zeros(n)*get_unit(units, 'diffusion')
+                D = np.zeros(n)*get_unit(unit_registry, 'diffusion')
 
         if x is None:
-            x = 1.0*get_unit(units, 'length')
+            x = 1.0*get_unit(unit_registry, 'length')
 
         try:
             if len(x) == N+1:
@@ -251,8 +254,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
 
         if surf_chg is None:
-            surf_chg = (0.0*get_unit(units, 'charge'),
-                        0.0*get_unit(units, 'charge'))
+            surf_chg = (0.0*get_unit(unit_registry, 'charge'),
+                        0.0*get_unit(unit_registry, 'charge'))
 
         # Handle g_values
         if g_values is None:
@@ -266,7 +269,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             g_value_parents = [-1]*len(g_values)
 
         if fields is None:
-            fields = [[0.0*get_unit(units, 'field')]*N]*len(g_values)
+            fields = [[0.0*get_unit(unit_registry, 'field')]*N]*len(g_values)
         else:
             assert len(fields) == len(g_values)
             for fld in fields:
@@ -275,7 +278,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         reac_orders = map(len, stoich_active)
         if k_unitless is None:
             k_unitless = [to_unitless(kval, kunit) for kval, kunit in
-                          zip(k, cls.k_units(units, reac_orders))]
+                          zip(k, cls.k_units(unit_registry, reac_orders))]
         else:
             if k is not None:
                 raise ValueError(
@@ -294,27 +297,31 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             cls, n, stoich_active, stoich_prod,
             np.asarray(k_unitless),
             N,
-            to_unitless(D, get_unit(units, 'diffusion')),
+            to_unitless(D, get_unit(unit_registry, 'diffusion')),
             z_chg,
-            to_unitless(mobility, get_unit(units, 'electrical_mobility')),
-            to_unitless(_x, get_unit(units, 'length')),
+            to_unitless(mobility, get_unit(unit_registry,
+                                           'electrical_mobility')),
+            to_unitless(_x, get_unit(unit_registry, 'length')),
             stoich_inactv, geom, logy, logt, logx,
             [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
-             yld_unit in zip(g_values, cls.g_units(units, g_value_parents))],
+             yld_unit in zip(g_values, cls.g_units(unit_registry,
+                                                   g_value_parents))],
             g_value_parents,
-            [to_unitless(fld, get_unit(units, 'field')) for fld in fields],
+            [to_unitless(fld, get_unit(unit_registry, 'field'))
+             for fld in fields],
             modulated_rxns or [],
             modulation or [],
             nstencil, lrefl, rrefl, auto_efield,
-            (to_unitless(surf_chg[0], get_unit(units, 'charge')),
-             to_unitless(surf_chg[1], get_unit(units, 'charge'))),
+            (to_unitless(surf_chg[0], get_unit(unit_registry, 'charge')),
+             to_unitless(surf_chg[1], get_unit(unit_registry, 'charge'))),
             eps_rel,
-            faraday or get_unitless_constant(units, 'Faraday_constant'),
+            faraday or get_unitless_constant(unit_registry,
+                                             'Faraday_constant'),
             vacuum_permittivity or get_unitless_constant(
-                units, 'vacuum_permittivity'),
+                unit_registry, 'vacuum_permittivity'),
         )
 
-        rd.units = units
+        rd.unit_registry = unit_registry
 
         for attr in cls.kwarg_attrs:
             if attr in kwargs:
@@ -325,57 +332,62 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @property
     def fields(self):
-        return np.asarray(self._fields)*get_unit(self.units, 'field')
+        return np.asarray(self._fields)*get_unit(self.unit_registry, 'field')
 
     @fields.setter
     def fields(self, value):
-        self._fields = to_unitless(value, get_unit(self.units, 'field'))
+        self._fields = to_unitless(value, get_unit(self.unit_registry,
+                                                   'field'))
 
     @staticmethod
-    def g_units(units, g_value_parents):
+    def g_units(unit_registry, g_value_parents):
         g_units = []
         for parent in g_value_parents:
             if parent == -1:
-                g_units.append(get_unit(units, 'radyield'))
+                g_units.append(get_unit(unit_registry, 'radyield'))
             else:
-                g_units.append(get_unit(units, 'radyield') /
-                               get_unit(units, 'concentration'))
+                g_units.append(get_unit(unit_registry, 'radyield') /
+                               get_unit(unit_registry, 'concentration'))
         return g_units
 
     @property
     def g_values(self):
         return [np.asarray(gv)*gu for gv, gu in zip(
-            self._g_values, self.g_units(self.units, self.g_value_parents))]
+            self._g_values, self.g_units(self.unit_registry,
+                                         self.g_value_parents))]
 
     @staticmethod
-    def k_units(units, reaction_orders):
-        return [get_unit(units, 'concentration')**(
-            1-order)/get_unit(units, 'time') for order in reaction_orders]
+    def k_units(unit_registry, reaction_orders):
+        return [get_unit(unit_registry, 'concentration')**(
+            1-order)/get_unit(unit_registry, 'time')
+                for order in reaction_orders]
 
     @property
     def k(self):
         reac_orders = map(len, self.stoich_active)
         return [kv*ku for kv, ku in zip(self._k, self.k_units(
-            self.units, reac_orders))]
+            self.unit_registry, reac_orders))]
 
     @k.setter
     def k(self, value):
         reac_orders = map(len, self.stoich_active)
         self._k = [to_unitless(kv, ku) for kv, ku in zip(value, self.k_units(
-            reac_orders))]
+            self.unit_registry, reac_orders))]
 
     @property
     def D(self):
-        return np.asarray(self._D)*get_unit(self.units, 'diffusion')
+        return np.asarray(self._D)*get_unit(self.unit_registry, 'diffusion')
 
     @D.setter
     def D(self, value):
-        self._D = to_unitless(value, get_unit(self.units, 'diffusion'))
+        self._D = to_unitless(value, get_unit(self.unit_registry, 'diffusion'))
 
     @property
     def mobility(self):
-        return np.asarray(self._mobility)*get_unit(self.units, 'mobility')
+        return np.asarray(self._mobility)*get_unit(self.unit_registry,
+                                                   'mobility')
 
     @mobility.setter
     def mobility(self, value):
-        self._mobility = to_unitless(value, get_unit(self.units, 'mobility'))
+        self._mobility = to_unitless(value, get_unit(self.unit_registry,
+                                                     'mobility'))

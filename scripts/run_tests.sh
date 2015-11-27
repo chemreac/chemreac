@@ -2,9 +2,8 @@
 # Usage, e.g.:
 # ./scripts/run_tests.sh --ignore examples/
 
-PYTEST_EXE=${1:-py.test}
 export PKG_NAME=chemreac
-
+PYTEST_EXE=py.test
 PYTEST_ARGS=()
 
 # py.test might use either 'python' or 'python3'

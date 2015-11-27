@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+chemreac.util.physchem
+----------------------
+
+Conventional relations from the field of physical chemistry.
+
+"""
 
 from ..constants import Boltzmann_constant, elementary_charge
 
@@ -7,7 +14,7 @@ def electrical_mobility_from_D(Dcoeff, charge, Temp, kB=None, elem_chg=None):
     """
     Calculates the electrical mobility through Einstein-Smoluchowski relation.
 
-    Paraneters
+    Parameters
     ----------
     Dcoeff: float
         Diffusion coefficient

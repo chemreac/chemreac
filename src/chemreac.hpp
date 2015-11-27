@@ -29,7 +29,7 @@ public:
 
     void _fill_local_r(int, const double * const __restrict__, double * const __restrict__) const;
     void _apply_fd(uint);
-    const double * _alloc_and_populate_linC(const double * const __restrict__) const;
+    const double * alloc_and_populate_linC(const double * const __restrict__, bool, bool) const;
     uint _stencil_bi_lbound(uint bi) const;
     uint _xc_bi_map(uint xci) const;
 
@@ -106,11 +106,15 @@ public:
                       );
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);
+
     void dense_jac_rmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
     void dense_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
     void banded_padded_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
     void banded_packed_jac_cmaj(double, const double * const __restrict__,  const double * const __restrict__, double * const __restrict__, int);
     void compressed_jac_cmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);
+
+    double get_mod_k(int bi, int ri) const;
+
     // For iterative linear solver
     // void local_reaction_jac(const uint, const double * const, double * const __restrict__, double) const;
     void jac_times_vec(const double * const __restrict__ vec,

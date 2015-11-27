@@ -46,7 +46,7 @@ else
 endif
 
 TARGETS=test_chemreac.out test_chemreac_sundials.out test_chemreac_catch.out
-GENERATED=chemreac.cpp test_chemreac test_chemreac.out fornberg.o test_chemreac_sundials test_chemreac_sundials.out test_utils.o chemreac.o c_fornberg.o fornberg.mod c_fornberg.mod
+GENERATED=chemreac.cpp test_chemreac test_chemreac.out test_chemreac_sundials test_chemreac_sundials.out test_utils.o chemreac.o
 
 ifeq ($(PROFILING),1)
   FLAGS += $(PROFFLAGS) -DPROFILING 
@@ -71,7 +71,7 @@ LIBDIRS=-L${LOCALLIB}
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
 
-INCLUDE ?= -I.. -I../finitediff/finitediff
+INCLUDE ?= -I.. -I../finitediff/include
 
 %.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
@@ -86,19 +86,14 @@ clean:
 chemreac.cpp: ../chemreac_template.cpp
 	python enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
 
-fornberg.o: ../finitediff/finitediff/fornberg.f90
-	$(FC) $(FORTFLAGS) -c -o $@ $^
 
-c_fornberg.o: ../finitediff/finitediff/c_fornberg.f90
-	$(FC) $(FORTFLAGS) -c -o $@ $^
-
-test_chemreac: chemreac.cpp test_chemreac.cpp fornberg.o c_fornberg.o test_utils.o
+test_chemreac: chemreac.cpp test_chemreac.cpp test_utils.o
 	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) \
 	 -o $@ $^ $(LIBS) $(FORTCPPLIBS) # -lrt only needed if we're not using OpenMP
 
 
-test_chemreac_sundials: chemreac.o fornberg.o c_fornberg.o test_utils.o test_chemreac_sundials.cpp
-	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm $(FORTCPPLIBS) -lsundials_cvodes -llapack -lsundials_nvecserial
+test_chemreac_sundials: chemreac.o test_utils.o test_chemreac_sundials.cpp
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm -lsundials_cvodes -llapack -lsundials_nvecserial
 
 gmon.out: test_chemreac
 	./$<
@@ -120,4 +115,4 @@ catch.hpp: catch.hpp.bz2
 	bunzip2 -k -f $<
 
 test_chemreac_catch: test_chemreac_catch.cpp catch.hpp
-	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $< chemreac.o fornberg.o c_fornberg.o test_utils.o $(LIBS) $(FORTCPPLIBS)
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $< chemreac.o test_utils.o $(LIBS)

@@ -290,3 +290,5 @@ if 'html_context' in globals():
     html_context.update(context)
 else:
     html_context = context
+
+numpydoc_class_members_toctree = False

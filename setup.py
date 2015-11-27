@@ -62,16 +62,17 @@ ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
 ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 
 # See pycompilation for details on "options"
-flags = []
 options = ['pic', 'warn']
 if WITH_DEBUG:
     print("Building chemreac with debugging enabled.")
     options += ['debug']
+    flags = []
 else:
+    flags = ['-O2']
     if not (ON_DRONE or ON_TRAVIS):
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda
-            flags += ['-O2', '-funroll-loops']
+            flags += ['-funroll-loops']
         # else:
         #     options += ['fast']  # -ffast-math -funroll-loops
 
@@ -97,7 +98,7 @@ else:
     template_path = 'src/chemreac_template.cpp'
     rendered_path = 'src/chemreac.cpp'
     # Source distributions contain rendered sources
-    USE_TEMPLATE = not os.path.exists(rendered_path)
+    USE_TEMPLATE = os.path.exists(template_path)
     try:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
     except ImportError:
@@ -117,8 +118,6 @@ else:
     pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
     sources = [
         template_path if USE_TEMPLATE else rendered_path,
-        'src/finitediff/finitediff/fornberg.f90',
-        'src/finitediff/finitediff/c_fornberg.f90',
         pyx_or_cpp,
     ]
 
@@ -166,7 +165,8 @@ else:
                 'options': (['openmp'] if WITH_OPENMP else []),
                 'std': 'c++0x',
             },
-            include_dirs=['src/', 'src/finitediff/finitediff/',
+            include_dirs=['src/', 'src/finitediff/include/',
+                          'src/finitediff/external/newton_interval/include/',
                           np.get_include()],
             libraries=['sundials_cvodes', LLAPACK, 'sundials_nvecserial', 'm'],
             logger=True,
@@ -207,6 +207,7 @@ setup_kwargs = dict(
     package_data=package_data,
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
+    classifiers=classifiers,
 )
 
 if __name__ == '__main__':

@@ -59,6 +59,12 @@ def save_and_or_show_plot(show=None, savefig='None'):
         plt.show()
 
 
+# if True:
+#     SymLogNorm if np.any(A<0) else LogNorm
+# if isinstance(log, int):
+#     SymLogNorm(10**log)
+# note: "norm" in kwargs overrides this.
+
 def coloured_spy(A, cmap_name='coolwarm', log=False,
                  symmetric_colorbar=False, **kwargs):
     """
@@ -72,12 +78,10 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
         Array to inspect, populated e.g. by jacobian callback.
     cmap_name: string (default: coolwarm)
         name of matplotlib colormap to use, kwargs["cmap"] overrides this.
-    log: bool or int (default: False)
-        if True:
-            SymLogNorm if np.any(A<0) else LogNorm
-        if isinstance(log, int):
-            SymLogNorm(10**log)
-        note: "norm" in kwargs overrides this.
+    log: bool or int
+        when True: LogNorm/SymLogNorm is used,
+        when integer: SymlogNorm(10**log). Note that "norm" in kwargs
+        override this.
     symmetric_colorbar: bool or float
         to make divergent colormaps pass through zero as intended.
         if float: max abolute value of colormap (linear)
@@ -86,8 +90,8 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
     -------
     Pair (tuple) of axes plotted to (spy, colorbar)
 
-    .. note:: colorbar does not play nicely with \
-        SymLogNorm why a custom colorbar axes is drawn.
+    .. note:: colorbar does not play nicely with
+            SymLogNorm why a custom colorbar axes is drawn.
 
     """
     from matplotlib.ticker import MaxNLocator
@@ -298,7 +302,7 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
 
 
 def plot_jacobian_from_integration(integr, substances, **kwargs):
-    a = integr.rd.units
+    a = integr.rd.unit_registry
     return plot_jacobian(integr.rd, )  # TODO: finish this
 
 
@@ -428,6 +432,10 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
     return ax, substance_idxs, labels
 
 
+def plot_C_vs_t(integr, **kwargs):
+    return plot_C_vs_t_in_bin(integr.rd, integr.tout, integr.Cout, **kwargs)
+
+
 def plot_C_vs_t_in_bin(
         rd, tout, Cout, bi=0, ax=None, labels=None,
         xscale='log', yscale='log', substances=None,
@@ -501,8 +509,8 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
         time index
     ax: Axes instance
     labels: sequence of strings
-    xscale: matplotlib scale choice (e.g. 'log', 'symlog')
-    yscale: matplotlib scale choice (e.g. 'log', 'symlog')
+    xscale: matplotlib scale choice (e.g. 'linear', 'log', 'symlog')
+    yscale: matplotlib scale choice (e.g. 'linear', 'log', 'symlog')
     basetitle: string
 
     Returns
