@@ -95,7 +95,7 @@ def render_tex_to_pdf(contents, texfname, pdffname, output_dir, save):
 
 def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
                   tex=True, rxnarrow=r'$\rightarrow$', ref_fmt='{}',
-                  units=None, unit_fmt='{}'):
+                  unit_registry=None, unit_fmt='{}'):
     """
     Generates a table representation of a ReactionSystem.
 
@@ -113,7 +113,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         default: '\$\\rightarrow\$'
     ref_fmt: string or callable
         format string of ``ref`` attribute of reactions
-    units: unit registry
+    unit_registry: unit registry
         optional (default: None)
     """
 
@@ -123,9 +123,10 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
         return getattr(substances[sn], 'tex_name' if tex else 'name')
     lines = []
     for ri, rxn in enumerate(rsys.rxns):
-        if units is not None:
-            kunit = (get_derived_unit(units, 'concentration')**(1-rxn.order) /
-                     get_derived_unit(units, 'time'))
+        if unit_registry is not None:
+            kunit = (get_derived_unit(unit_registry,
+                                      'concentration')**(1-rxn.order) /
+                     get_derived_unit(unit_registry, 'time'))
             k = to_unitless(rxn.k, kunit)
         else:
             kunit = 1
@@ -255,7 +256,7 @@ def rsys2pdf_table(rsys, substances, output_dir=None, doc_template=None,
     return render_tex_to_pdf(contents, texfname, pdffname, output_dir, save)
 
 
-def radyields2pdf_table(rd, output_dir=None, save=True, units=None,
+def radyields2pdf_table(rd, output_dir=None, save=True, unit_registry=None,
                         siunitx=False, fmtstr='{0:.3f}', **kwargs):
     line_term = r' \\'
     col_delim = ' & '
@@ -263,8 +264,8 @@ def radyields2pdf_table(rd, output_dir=None, save=True, units=None,
               line_term)
     lines = []
     for cur_gs in rd.g_values:
-        if units is not None:
-            gunit = get_derived_unit(units, 'radiolytic_yield')
+        if unit_registry is not None:
+            gunit = get_derived_unit(unit_registry, 'radiolytic_yield')
             cur_gs = to_unitless(cur_gs, gunit)
         lines.append(col_delim.join(map(
             lambda v: fmtstr.format(v), cur_gs)) + line_term)

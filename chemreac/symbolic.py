@@ -7,9 +7,7 @@ symbolically. It is therefore too slow for use in integration or large systems
 in general.
 """
 
-from __future__ import (
-    print_function, division, absolute_import, unicode_literals
-)
+from __future__ import print_function, division, absolute_import
 
 from functools import reduce
 from operator import add
@@ -24,9 +22,9 @@ from .util.grid import padded_centers, pxci_to_bi, stencil_pxci_lbounds
 class SymRD(ReactionDiffusionBase):
 
     @classmethod
-    def from_rd(cls, rd):
+    def from_rd(cls, rd, **kwargs):
         import inspect
-        return cls(*tuple(getattr(rd, attr) for attr in
+        return cls(*tuple(kwargs.get(attr, getattr(rd, attr)) for attr in
                           inspect.getargspec(cls.__init__).args[1:]))
 
     def __init__(self, n, stoich_active, stoich_prod, k, N=0, D=None,

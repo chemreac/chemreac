@@ -9,7 +9,7 @@ from chemreac.units import (
     get_derived_unit,
     to_unitless, unit_registry_from_human_readable, SI_base,
     metre, kilogram, second, hour, ampere, kelvin, candela, mole,
-    dm, molar, allclose
+    dm, molar, allclose, linspace
 )
 
 
@@ -161,6 +161,11 @@ def test_unit_registry_from_human_readable():
 
 
 def test_allclose():
-    a = np.linspace(2*second, 3*second)
-    b = np.linspace(2/3600.*hour, 3/3600.*hour)
+    a = np.linspace(2, 3)*second
+    b = np.linspace(2/3600., 3/3600.)*hour
     assert allclose(a, b)
+
+
+def test_linspace():
+    ls = linspace(2*second, 3*second)
+    assert abs(to_unitless(ls[0], hour) - 2/3600.) < 1e-15

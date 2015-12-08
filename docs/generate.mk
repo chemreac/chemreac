@@ -1,7 +1,7 @@
 
 .PHONY: images-png
 
-IMAGES=_generated/analytic_diffusion.png _generated/steady_state_approx.png _generated/steady_state_approx.html _generated/aqueous_radiolysis.png _generated/analytic_N_scaling.png _generated/auto_efield.png _generated/decay.png _generated/four_species.png _generated/equilibrium.png _generated/equilibrium_unscaled.png _generated/equilibrium_scaled.png _generated/const_surf_conc.png _generated/const_surf_conc_logy_logx.png
+IMAGES=_generated/analytic_diffusion.png _generated/steady_state_approx.png _generated/steady_state_approx.html _generated/aqueous_radiolysis.png _generated/analytic_N_scaling.png _generated/auto_efield.png _generated/decay.png _generated/decay_long.png _generated/decay_long_damp.png _generated/four_species.png _generated/equilibrium.png _generated/equilibrium_unscaled.png _generated/equilibrium_scaled.png _generated/const_surf_conc.png _generated/const_surf_conc_logy_logx.png
 
 _generated/steady_state_approx.png: examples/examples/steady_state_approx.py
 	python $< --plot --savefig $@
@@ -23,6 +23,12 @@ _generated/auto_efield.png: examples/examples/auto_efield.py
 
 _generated/decay.png: examples/examples/decay.py
 	python $< --plot --savefig $@
+
+_generated/decay_long.png: examples/examples/decay.py
+	python $< --plot --savefig $@ --rates 1.0 --logy --logt --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024 --tend 1700
+
+_generated/decay_long_damp.png: examples/examples/decay.py
+	python $< --plot --savefig $@ --rates 1.0 --logy --logt --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024 --tend 1700 --sigm-damp
 
 _generated/four_species.png: examples/examples/four_species.py
 	python $< --plot --savefig $@

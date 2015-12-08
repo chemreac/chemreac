@@ -15,8 +15,8 @@ import numpy as np
 from ..units import get_derived_unit, to_unitless
 
 
-def generate_grid(x0, xend, N, logx=False, units=None, random=False):
-    length_unit = get_derived_unit(units, 'length')
+def generate_grid(x0, xend, N, logx=False, unit_registry=None, random=False):
+    length_unit = get_derived_unit(unit_registry, 'length')
     _x0 = to_unitless(x0, length_unit)
     _xend = to_unitless(xend, length_unit)
     if logx:
