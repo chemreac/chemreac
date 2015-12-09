@@ -2,12 +2,9 @@
 chemreac
 ========
 
-.. image:: https://travis-ci.org/chemreac/chemreac.png?branch=master
-   :target: https://travis-ci.org/chemreac/chemreac
+.. image:: http://hera.physchem.kth.se:9090/api/badges/chemreac/chemreac/status.svg
+   :target: http://hera.physchem.kth.se:9090/chemreac/chemreac
    :alt: Build status
-.. image:: https://coveralls.io/repos/chemreac/chemreac/badge.png?branch=master
-   :target: https://coveralls.io/r/chemreac/chemreac?branch=master
-   :alt: Test coverage
 
 chremreac is an open source library which aims to collect tools and utilities for
 modeling of chemical kinetics problems. It is primarily designed to
@@ -142,26 +139,11 @@ Continuous integration
 .. ci-start
 
 In order to minimize the risk of (re)introducing bugs into the code
-base, it is continuously built on two CI services:
+base, it is continuously built on a CI server:
 
-- `travis-ci.org <https://travis-ci.org/chemreac/chemreac>`_
-- `drone.io <https://drone.io/github.com/chemreac/chemreac>`_
-
-.. image:: https://travis-ci.org/chemreac/chemreac.png?branch=master
-   :target: https://travis-ci.org/chemreac/chemreac
-
-Above you can find the build status shield for travis-ci (Py 2.7, Py
-3.4, no OpenMP, runs coveralls, builds docs and pushes them to the
-chemreac.github.io repo).
-
-.. image:: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac/status.svg?branch=master
-   :target: http://hera.physchem.kth.se:8080/github.com/chemreac/chemreac
-   :alt: Build status on hera
-
-Above you can find build status shield for drone on
-hera.physchem.kth.se (Py 2.7, uses OpenMP and the Sundials backend,
-build docs as artifact, html coverage report as artifact, uses Docker
-image from script/docker_drone/Dockerfile)
+.. image:: http://hera.physchem.kth.se:9090/api/badges/chemreac/chemreac/status.svg
+   :target: http://hera.physchem.kth.se:9090/chemreac/chemreac
+   :alt: Build status
 
 .. ci-end
 
