@@ -9,8 +9,8 @@ from chemreac.util.testing import slow
 
 
 def _get_rsys():
-    sbstncs = mk_sn_dict_from_names('AB', tex_name=(r'$\mathcal{A}$',
-                                                    r'$\mathcal{B}$'))
+    sbstncs = mk_sn_dict_from_names('AB', latex_name=(r'$\mathcal{A}$',
+                                                      r'$\mathcal{B}$'))
     r1 = Reaction({'A': 2}, {'B': 1}, k=3.0)
     rsys = ReactionSystem([r1])
     return rsys, sbstncs

@@ -120,7 +120,7 @@ def rsys2tablines(rsys, substances, rref0=1, coldelim=' & ',
     param_fmt = '{0:.3g}'  # Could be taken from Reaction instance
 
     def _get_name(sn):
-        return getattr(substances[sn], 'tex_name' if tex else 'name')
+        return getattr(substances[sn], 'latex_name' if tex else 'name')
     lines = []
     for ri, rxn in enumerate(rsys.rxns):
         if unit_registry is not None:
@@ -260,7 +260,7 @@ def radyields2pdf_table(rd, output_dir=None, save=True, unit_registry=None,
                         siunitx=False, fmtstr='{0:.3f}', **kwargs):
     line_term = r' \\'
     col_delim = ' & '
-    header = (col_delim.join(rd.substance_tex_names or rd.substance_names) +
+    header = (col_delim.join(rd.substance_latex_names or rd.substance_names) +
               line_term)
     lines = []
     for cur_gs in rd.g_values:

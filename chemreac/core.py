@@ -11,7 +11,7 @@ is the class describing the system of ODEs.
 import numpy as np
 
 from .util.pyutil import monotonic
-from .units import unitof, get_derived_unit, to_unitless, linspace
+from .units import unit_of, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
 from ._chemreac import CppReactionDiffusion, diag_data_len
@@ -97,7 +97,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     Additional convenience attributes (not used by underlying C++ class):
 
     - :py:attr:`substance_names`
-    - :py:attr:`substance_tex_names`
+    - :py:attr:`substance_latex_names`
 
     Parameters
     ----------
@@ -156,7 +156,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     modulation: sequence of sequences of floats
         Per bin modulation vectors for each index in modulated_rxns
     unit_registry: dict (optional)
-        default: None, see ``chemreac.units.SI_base`` for an
+        default: None, see ``chemreac.units.SI_base_registry`` for an
         example.
 
     Attributes
@@ -165,13 +165,13 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     """
     # not used by C++ class
-    extra_attrs = ['substance_names', 'substance_tex_names']
+    extra_attrs = ['substance_names', 'substance_latex_names']
 
     # subset of extra_attrs optionally passed by user
-    kwarg_attrs = ['substance_names', 'substance_tex_names']
+    kwarg_attrs = ['substance_names', 'substance_latex_names']
 
     _substance_names = None
-    _substance_tex_names = None
+    _substance_latex_names = None
 
     @property
     def substance_names(self):
@@ -182,12 +182,12 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         self._substance_names = names
 
     @property
-    def substance_tex_names(self):
-        return self._substance_tex_names or list(map(str, range(self.n)))
+    def substance_latex_names(self):
+        return self._substance_latex_names or list(map(str, range(self.n)))
 
-    @substance_tex_names.setter
-    def substance_tex_names(self, tex_names):
-        self._substance_tex_names = tex_names
+    @substance_latex_names.setter
+    def substance_latex_names(self, latex_names):
+        self._substance_latex_names = latex_names
 
     def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_inactv=None, geom=FLAT,
@@ -240,7 +240,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 raise ValueError("Don't know what to do with len(x) == %d" %
                                  len(x))
         except TypeError:
-            _x = linspace(0*unitof(x), x, N+1)
+            _x = linspace(0*unit_of(x), x, N+1)
 
         if stoich_inactv is None:
             stoich_inactv = list([[]]*len(stoich_active))

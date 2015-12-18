@@ -23,7 +23,7 @@ def rsys2dot(rsys, substances=None, tex=False, rprefix='r', rref0=1,
     substances: sequence of Substance instances
     tex: bool (default False)
         If set True, output will be LaTeX formated
-    (Substance need to have tex_name attribute set)
+    (Substance need to have latex_name attribute set)
     rprefix: string
         Reaction enumeration prefix, default: r
     rref0: integer
@@ -41,7 +41,7 @@ def rsys2dot(rsys, substances=None, tex=False, rprefix='r', rref0=1,
 
     def add_vertex(sn, num, reac):
         snum = str(num) if num > 1 else ''
-        name = getattr(substances[sn], 'tex_name' if tex else 'name')
+        name = getattr(substances[sn], 'latex_name' if tex else 'name')
         lines.append(ind + '"{}" -> "{}" [label ="{}"];\n'.format(
             *((name, rid, snum) if reac else (rid, name, snum))
         ))

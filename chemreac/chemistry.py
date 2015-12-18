@@ -12,7 +12,6 @@ the model.
 from __future__ import print_function, division, absolute_import
 
 from collections import defaultdict, OrderedDict
-from functools import total_ordering
 from itertools import chain
 from operator import itemgetter
 import weakref
@@ -22,99 +21,12 @@ import quantities as pq
 from chemreac import ReactionDiffusion
 from chemreac.util.physchem import electrical_mobility_from_D
 
-# TODO: somewhere: add check for massconservation and charge conservation
+from chempy.chemistry import Substance as _Substance
+from chempy.chemistry import Reaction as _Reaction
+from chempy.chemistry import ReactionSystem as _ReactionSystem
 
-dm = pq.UnitQuantity('decimeter',  pq.m / 10.0,  symbol='dm')
-molar = pq.UnitQuantity('molar',  pq.mole / dm ** 3,  symbol='M')
 
-
-@total_ordering
-class Substance(object):
-    """
-    Substance class to represent a chemical speices.
-
-    Parameters
-    ==========
-    name: string
-        unique string representation e.g. "H2O", "CNO-", "OCN-"
-    charge: integer
-        charge of substance
-    mass: float
-        molar mass (default None)
-    formula: e.g. periodictable.formulas.Formula instance
-        optional, if formula instance provides `mass` attribute it is
-        used as mass in the case mass=None
-    tex_name: string
-        optional, TeX formated string, e.g. '$\mathrm{OH^{-}}$'
-    multiplicity: integer
-        optional, 1 for singlet, 2 for doublet...
-    D: float (optional)
-        diffusion coefficent, for now: isothermal, isotropic and only
-        for one medium.  default: 0.0
-    **kwargs:
-        additional freely chosen attributes
-
-    Attributes
-    ==========
-    all_substances
-        dictionary (name, insatnce) of all Substance instances.
-
-    Examples
-    ========
-    >>> Substance(name='H2O', charge=0, tex_name=r'$\mathrm{H_{2}O}$', pKa=14)
-    <Substance 'H2O'>
-    >>> Substance.all_substances['H2O']
-    <Substance 'H2O'>
-    >>> 'H2O' in Substance.all_substances
-    True
-
-    """
-    # weakref => If instance is deleted GC can kill it.
-    # We manually keep track och instances in order to ensure unique names
-    all_substances = weakref.WeakValueDictionary()
-
-    def __init__(self, name, charge=None, mass=None, formula=None,
-                 tex_name=None, multiplicity=None, D=0.0, **kwargs):
-        self._name = name
-        if name in self.__class__.all_substances:
-            colliding_occurance = self.__class__.all_substances[name]
-            if not self == colliding_occurance:
-                raise KeyError(
-                    'Substance name already exists: ' + name + ' id=' +
-                    str(id(self.__class__.all_substances[name])))
-        else:
-            self.__class__.all_substances[name] = self
-        self.charge = charge
-        if mass is None and hasattr(formula, 'mass'):
-            mass = formula.mass
-        self.mass = mass
-        self.formula = formula
-        self.tex_name = tex_name
-        self.multiplicity = multiplicity
-        self.D = D
-        self.__dict__.update(kwargs)
-
-    @property
-    def name(self):
-        return self._name
-
-    def __repr__(self, ):
-        return "<" + self.__class__.__name__ + " '" + self.name + "'>"
-
-    # Thanks to total_ordering it is sufficient to specify eq and lt
-    def __eq__(self, other):
-        """
-        Equality of Substance instances is solely determined from .name
-        """
-        # all_substances dictionary lookup in __init__ should
-        # prevent collisions
-        return self.name == other.name
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __lt__(self, other):
-        return self.name < other.name
+class Substance(_Substance):
 
     def get_mobility(self, Temp, **kwargs):
         """ See ``chemreac.util.physchem.electrical_mobility_from_D`` """
@@ -147,15 +59,20 @@ def mk_sn_dict_from_names(names, **kwargs):
     kwargs_list = []
     for i in range(len(names)):
         d = {}
+        other_properties = {}
         for k, v in kwargs.items():
-            d[k] = v[i]
+            if k in Substance.attrs:
+                d[k] = v[i]
+            else:
+                other_properties[k] = v[i]
+        d['other_properties'] = other_properties
         kwargs_list.append(d)
 
     return OrderedDict([(s, Substance(s, **kwargs_list[i])) for i, s
                         in enumerate(names)])
 
 
-class Reaction(object):
+class Reaction(_Reaction):
     """
     Reaction with kinetics governed by the law of mass-action.
     Example:
@@ -169,8 +86,8 @@ class Reaction(object):
     by specifying active reactants C1, C2 and inactive reaktants 4*C1.
 
     reactants and products are dictionaries with substance names
-    as keys and positive integers giving their stoichiometric coeffecients
-    as values
+    as keys and positive integers giving their stoichiometric coefficients
+    as values.
 
     rate constant i either given as k (T optional as validity info)
     or as Ea and A for use in the Arrhenius equation
@@ -211,118 +128,25 @@ class Reaction(object):
     '2 A -> B'
     """
 
-    @property
-    def reactants(self):
+    def reactants(self):  # use net_stoich instead
         d = defaultdict(int)
         for k, v in chain(self.inactv_reac.items(),
                           self.active_reac.items()):
             d[k] += v
         return d
 
-    def __init__(self, active_reac, products, inactv_reac=None,
-                 k=None, T=None, Ea=None, A=None, ref=None, name=None):
-        self.active_reac = defaultdict(int, active_reac)
-        self.products = defaultdict(int, products)
-        self.inactv_reac = defaultdict(int, inactv_reac or {})
-        self.order = sum(self.active_reac.values())
-        self.k = k
-        self.T = T
-        self.Ea = Ea
-        self.A = A
-        self.ref = ref
-        self.name = name
+    # @property
+    # def species_names(self):
+    #     return set(list(self.reactants.keys()) + list(self.products.keys()))
 
-    def __str__(self):
-        return self.render()
+    # def reactant_stoich_coeffs(self, species_names):
+    #     return [self.reactants[n] for n in species_names]
 
-    def render(self, names=None, tex=False, equilibrium=False):
-        if names is None:
-            names = {}
-        if tex:
-            arrow = (' $\\rightleftharpoons$ ' if equilibrium
-                     else ' $\\rightarrow$ ')
-        else:
-            arrow = ' <-> ' if equilibrium else ' -> '
-        active, inactv, prod = [[
-            ((str(v)+' ') if v > 1 else '') + names.get(
-                k, getattr(k, 'tex_name', str(k)) if tex
-                else getattr(k, 'name', str(k))) for
-            k, v in filter(itemgetter(1), d.items())
-        ] for d in (self.active_reac, self.inactv_reac, self.products)]
-        fmtstr = "{}" + (" + ({})" if len(inactv) > 0 else "{}") + arrow + "{}"
-        return fmtstr.format(" + ".join(active),
-                             " + ".join(inactv),
-                             " + ".join(prod))
-
-    @property
-    def species_names(self):
-        return set(list(self.reactants.keys()) + list(self.products.keys()))
-
-    def reactant_stoich_coeffs(self, species_names):
-        return [self.reactants[n] for n in species_names]
-
-    def product_stoich_coeffs(self, species_names):
-        return [self.products[n] for n in species_names]
+    # def product_stoich_coeffs(self, species_names):
+    #     return [self.products[n] for n in species_names]
 
 
-class ReactionSystem(object):
-    """
-    Collection of reactions forming a system (model).
-
-    Parameters
-    ----------
-    rxns: sequence
-         sequence of :py:class:`Reaction` instances
-    name: string (optional)
-         Name of ReactionSystem (e.g. model name / citation key)
-    substances: sequence (optional)
-         Sequence of Substance instances, will be used in doing
-         a sanity check and as default in method :meth:`to_ReactionDiffusion`
-
-    Attributes
-    ----------
-    rxns : list of objects
-        sequence of :class:`Reaction` instances
-    species_names : set of strings
-        names of occurring species
-    k : list of floats (possibly with units)
-        rates for rxns
-    ns : int
-        number of species
-    nr : int
-        number of reactions
-
-    """
-
-    def __init__(self, rxns=None, name=None, substances=None):
-        self.substances = substances
-        self.name = name
-        self.rxns = rxns
-
-    @property
-    def rxns(self):
-        return self._rxns
-
-    @rxns.setter
-    def rxns(self, val):
-        self._do_sanity_check(val)
-        self._rxns = val
-
-    def _do_sanity_check(self, rxns):
-        """ Check for conservation of mass and charge. """
-        if self.substances is None:
-            return
-        for rxn in rxns:
-            net_chg = 0
-            net_mass = 0.0
-            for reac, n in rxn.reactants.items():
-                net_chg -= self.substances[reac].charge
-                net_mass -= self.substances[reac].mass
-            for reac, n in rxn.products.items():
-                net_chg += self.substances[reac].charge
-                net_mass += self.substances[reac].mass
-            assert net_chg == 0
-            assert abs(net_mass) < 0.01
+class ReactionSystem(_ReactionSystem):
 
     @classmethod
     def from_ReactionDiffusion(cls, rd):
@@ -332,8 +156,7 @@ class ReactionSystem(object):
             rxns.append(rxn)
         return cls(rxns)
 
-    def to_ReactionDiffusion(self, substances=None, ordered_names=None,
-                             **kwargs):
+    def to_ReactionDiffusion(self, ordered_names=None, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``self``.
 
@@ -347,22 +170,20 @@ class ReactionSystem(object):
             Keyword arguments passed on to :class:`ReactionDiffusion`
         """
         ord_names = ordered_names or self.ordered_names()
-        substs = substances or self.substances
 
         def _kwargs_updater(key, attr):
             if attr in kwargs:
                 return
             try:
-                kwargs[attr] = [getattr(substs[sn], key) for sn in ord_names]
+                kwargs[attr] = [getattr(self.substances[sn], key) for sn in ord_names]
             except AttributeError:
                 pass
 
-        if substs:
-            for key, attr in zip(
-                    ['D', 'mobility', 'name', 'tex_name'],
-                    ['D', 'mobility', 'substance_names',
-                     'substance_tex_names']):
-                _kwargs_updater(key, attr)
+        for key, attr in zip(
+                ['D', 'mobility', 'name', 'latex_name'],
+                ['D', 'mobility', 'substance_names',
+                 'substance_latex_names']):
+            _kwargs_updater(key, attr)
 
         return ReactionDiffusion(
             self.ns, self.stoich_active(ordered_names),
@@ -376,38 +197,7 @@ class ReactionSystem(object):
     def ordered_names(self):
         return sorted(self.species_names)
 
-    def _get_repeating_indices_list(self, attr, ordered_names):
-        result = []
-        for rxn in self._rxns:
-            l = []
-            for si, sn in enumerate(ordered_names):
-                l += [si]*getattr(rxn, attr, defaultdict(int))[sn]
-            result.append(l)
-        return result
-
-    def stoich_active(self, ordered_names=None):
-        return self._get_repeating_indices_list(
-            'active_reac', ordered_names or self.ordered_names())
-
-    def stoich_prod(self, ordered_names=None):
-        return self._get_repeating_indices_list(
-            'products', ordered_names or self.ordered_names())
-
-    def stoich_inactv(self, ordered_names=None):
-        return self._get_repeating_indices_list(
-            'inactv_reac', ordered_names or self.ordered_names())
-
     @property
-    def k(self):
+    def params(self):
         """ List of rate constants """
-        return [rxn.k for rxn in self._rxns]
-
-    @property
-    def ns(self):
-        """ Number of species """
-        return len(self.species_names)
-
-    @property
-    def nr(self):
-        """ Number of reactions """
-        return len(self._rxns)
+        return [rxn.param for rxn in self._rxns]

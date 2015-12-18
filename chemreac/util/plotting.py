@@ -291,7 +291,7 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
     """
     indices = [si if isinstance(si, int) else rd.substance_names.index(si) for
                si in substances]
-    print_names = rd.substance_tex_names or rd.substance_names
+    print_names = rd.substance_latex_names or rd.substance_names
     axes = _plot_analysis(_get_jac_row_over_t, print_names, rd, tout, yout,
                           indices, titles=[
                               print_names[i] for i in indices], **kwargs)
@@ -333,8 +333,8 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
 
     indices = [ri if isinstance(ri, int) else rd.substance_names.index(ri)
                for ri in substances]
-    if rd.substance_tex_names is not None:
-        print_names = rd.substance_tex_names
+    if rd.substance_latex_names is not None:
+        print_names = rd.substance_latex_names
         use_tex = True
     else:
         print_names = rd.substance_names
@@ -423,7 +423,7 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
 
     if labels is None:
         try:
-            names = rd.substance_tex_names or rd.substance_names
+            names = rd.substance_latex_names or rd.substance_names
         except AttributeError:
             names = list(map(str, substance_idxs))
         labels = [names[i] for i in substance_idxs]
@@ -578,8 +578,8 @@ def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
     ax.set_ylabel(fmtstr.format('time / s'))
     ax.set_zlabel(fmtstr.format('C / M'))
     if rd.substance_names:
-        if rd.substance_tex_names:
-            name = rd.substance_tex_names[substance]
+        if rd.substance_latex_names:
+            name = rd.substance_latex_names[substance]
         else:
             name = rd.substance_names[substance]
         ax.set_title('['+name+'] vs. t and x')
