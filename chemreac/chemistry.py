@@ -51,8 +51,9 @@ def mk_sn_dict_from_names(names, **kwargs):
     >>> d = mk_sn_dict_from_names(
     ...     'ABCD', D=[0.1, 0.2, 0.3, 0.4])
     >>> d  # doctest: +NORMALIZE_WHITESPACE
-    OrderedDict([('A', <Substance 'A'>), ('B', <Substance 'B'>),
-    ('C', <Substance 'C'>), ('D', <Substance 'D'>)])
+    OrderedDict([('A', <Substance(name=A, ...>),
+    ('B', <Substance(name=B, ...)>), ('C', <Substance(name=C, ...)>),
+    ('D', <Substance(name=D, ...)>)])
     >>> d['A'].name
     'A'
     """
@@ -149,12 +150,12 @@ class Reaction(_Reaction):
 class ReactionSystem(_ReactionSystem):
 
     @classmethod
-    def from_ReactionDiffusion(cls, rd):
+    def from_ReactionDiffusion(cls, rd, substances):
         rxns = []
         for ri in range(rd.nr):
             rxn = rd.to_Reaction(ri)
             rxns.append(rxn)
-        return cls(rxns)
+        return cls(rxns, substances)
 
     def to_ReactionDiffusion(self, ordered_names=None, **kwargs):
         """
@@ -169,13 +170,14 @@ class ReactionSystem(_ReactionSystem):
         \*\*kwargs:
             Keyword arguments passed on to :class:`ReactionDiffusion`
         """
-        ord_names = ordered_names or self.ordered_names()
+        ord_names = ordered_names or self.substance_names()
 
         def _kwargs_updater(key, attr):
             if attr in kwargs:
                 return
             try:
-                kwargs[attr] = [getattr(self.substances[sn], key) for sn in ord_names]
+                kwargs[attr] = [getattr(self.substances[sn], key) for sn in
+                                ord_names]
             except AttributeError:
                 pass
 
@@ -186,16 +188,25 @@ class ReactionSystem(_ReactionSystem):
             _kwargs_updater(key, attr)
 
         return ReactionDiffusion(
-            self.ns, self.stoich_active(ordered_names),
-            self.stoich_prod(ordered_names), self.k,
-            stoich_inactv=self.stoich_inactv(ordered_names), **kwargs)
+            self.ns,
+            [[rxn.reac.get(k, 0) for k in ord_names] for rxn in self.rxns],
+            [[rxn.prod.get(k, 0) for k in ord_names] for rxn in self.rxns],
+            [rxn.param for rxn in self.rxns],
+            stoich_inactv=[
+                [0 if rxn.inact_reac is None else rxn.inact_reac.get(k, 0)
+                 for k in ord_names] for rxn in self.rxns],
+            **kwargs)
 
-    @property
-    def species_names(self):
-        return set.union(*tuple(rxn.species_names for rxn in self._rxns))
+    def substance_names(self):
+        return tuple(substance.name for substance in self.substances.values())
 
-    def ordered_names(self):
-        return sorted(self.species_names)
+    # @property
+    # def species_names(self):
+    #     return set.union(*tuple(substance.name for substance in
+    #         self.substances.values()))
+
+    # def ordered_names(self):
+    #     return sorted(self.species_names)
 
     @property
     def params(self):

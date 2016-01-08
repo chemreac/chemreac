@@ -11,7 +11,7 @@ Convenince functions for representing reaction systems as graphs.
 """
 
 
-def rsys2dot(rsys, substances=None, tex=False, rprefix='r', rref0=1,
+def rsys2dot(rsys, tex=False, rprefix='r', rref0=1,
              nodeparams='[label={} shape=diamond]'):
     """
     Returns list of lines of DOT (graph description language)
@@ -20,7 +20,6 @@ def rsys2dot(rsys, substances=None, tex=False, rprefix='r', rref0=1,
     Parameters
     ==========
     rsys: ReactionSystem
-    substances: sequence of Substance instances
     tex: bool (default False)
         If set True, output will be LaTeX formated
     (Substance need to have latex_name attribute set)
@@ -41,7 +40,7 @@ def rsys2dot(rsys, substances=None, tex=False, rprefix='r', rref0=1,
 
     def add_vertex(sn, num, reac):
         snum = str(num) if num > 1 else ''
-        name = getattr(substances[sn], 'latex_name' if tex else 'name')
+        name = getattr(rsys.substances[sn], 'latex_name' if tex else 'name')
         lines.append(ind + '"{}" -> "{}" [label ="{}"];\n'.format(
             *((name, rid, snum) if reac else (rid, name, snum))
         ))
@@ -64,7 +63,7 @@ def rsys2dot(rsys, substances=None, tex=False, rprefix='r', rref0=1,
     return lines
 
 
-def rsys2graph(rsys, substances, fname, output_dir=None, prog=None, save=False,
+def rsys2graph(rsys, fname, output_dir=None, prog=None, save=False,
                **kwargs):
     """
     Convenience function to call `rsys2dot` and write output to file
@@ -73,7 +72,6 @@ def rsys2graph(rsys, substances, fname, output_dir=None, prog=None, save=False,
     Parameters
     ----------
     rsys: ReactionSystem
-    substances: sequence of Substance instances
     outpath: path to graph to be rendered
     prog: command to render DOT file (default: dot)
     **kwargs: parameters to pass along to `rsys2dot`
@@ -83,7 +81,7 @@ def rsys2graph(rsys, substances, fname, output_dir=None, prog=None, save=False,
 
     >>> rsys2graph(rsys, sbstncs, '/tmp/out.png')  # doctest: +SKIP
     """
-    lines = rsys2dot(rsys, substances, **kwargs)
+    lines = rsys2dot(rsys, **kwargs)
     created_tempdir = False
     try:
         if output_dir is None:

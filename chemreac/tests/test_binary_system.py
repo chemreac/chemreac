@@ -146,8 +146,8 @@ def test_dense_jac_cmaj(log):
 def test_chemistry():
     sbstncs = mk_sn_dict_from_names('ABC', D=[.1, .2, .3])
     r1 = Reaction({'A': 1, 'B': 1}, {'C': 1}, k=0.3)
-    rsys = ReactionSystem([r1])
-    rd = rsys.to_ReactionDiffusion(sbstncs)
+    rsys = ReactionSystem([r1], sbstncs)
+    rd = rsys.to_ReactionDiffusion()
     serialized_rd = load(JSON_PATH)
     assert rd.stoich_active == serialized_rd.stoich_active
     assert rd.stoich_prod == serialized_rd.stoich_prod

@@ -12,13 +12,13 @@ def _get_rsys():
     sbstncs = mk_sn_dict_from_names('AB', latex_name=(r'$\mathcal{A}$',
                                                       r'$\mathcal{B}$'))
     r1 = Reaction({'A': 2}, {'B': 1}, k=3.0)
-    rsys = ReactionSystem([r1])
-    return rsys, sbstncs
+    rsys = ReactionSystem([r1], sbstncs)
+    return rsys
 
 
 def test_rsys2dot():
-    rsys, sbstncs = _get_rsys()
-    assert list(map(str.strip, rsys2dot(rsys, sbstncs))) == [
+    rsys = _get_rsys()
+    assert list(map(str.strip, rsys2dot(rsys))) == [
         'digraph None{',
         '{',
         'node [label=r1 shape=diamond]',

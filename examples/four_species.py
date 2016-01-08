@@ -137,8 +137,7 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
                 savefig = base + '_per_reaction' + ext
             save_and_or_show_plot(savefig=savefig)
     if graph:
-        print(rsys2graph(ReactionSystem.from_ReactionDiffusion(rd),
-                         mk_sn_dict_from_names('ABCD'),
+        print(rsys2graph(ReactionSystem.from_ReactionDiffusion(rd, 'ABCD'),
                          'four_species_graph.png', save='.'))
 
 

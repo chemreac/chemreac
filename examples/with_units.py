@@ -22,7 +22,9 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import Integration
-from chemreac.units import second, mole, metre, molar, SI_base_registry, linspace
+from chemreac.units import (
+    second, mole, metre, molar, SI_base_registry, linspace
+)
 
 
 def main(logy=False, logt=False, unit_registry=None):

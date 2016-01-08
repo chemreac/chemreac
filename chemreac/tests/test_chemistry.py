@@ -23,7 +23,7 @@ def test_ReactionSystem__to_ReactionDiffusion():
 
 def test_ReactionSystem__from_ReactionDiffusion():
     rd = ReactionDiffusion(2, [[0]], [[1]], [1])
-    rsys = ReactionSystem.from_ReactionDiffusion(rd)
+    rsys = ReactionSystem.from_ReactionDiffusion(rd, 'AB')
     assert len(rsys.rxns) == 1
 
 
