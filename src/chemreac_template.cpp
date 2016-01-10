@@ -58,7 +58,7 @@ ReactionDiffusion::ReactionDiffusion(
     const vector<int> z_chg,
     vector<double> mobility,
     const vector<double> x, // separation
-    vector<vector<uint> > stoich_inactv, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
+    vector<vector<uint> > stoich_inact, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     int geom_,
     bool logy,
     bool logt,
@@ -78,7 +78,7 @@ ReactionDiffusion::ReactionDiffusion(
     vector<vector<double> > modulation):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
-    stoich_inactv(stoich_inactv), stoich_prod(stoich_prod),
+    stoich_inact(stoich_inact), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl),
     auto_efield(auto_efield),
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
@@ -153,27 +153,27 @@ ReactionDiffusion::ReactionDiffusion(
         for (auto si=stoich_prod[ri].begin(); si != stoich_prod[ri].end(); ++si)
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_prod > (n-1)");
-        for (auto si=stoich_inactv[ri].begin(); si != stoich_inactv[ri].end(); ++si)
+        for (auto si=stoich_inact[ri].begin(); si != stoich_inact[ri].end(); ++si)
             if (*si > n-1)
-                throw std::logic_error("At least one species index in stoich_inactv > (n-1)");
+                throw std::logic_error("At least one species index in stoich_inact > (n-1)");
     }
 
     coeff_active = new int[nr*n];
     coeff_prod = new int[nr*n];
     coeff_total = new int[nr*n];
-    coeff_inactv = new int[nr*n];
+    coeff_inact = new int[nr*n];
 
-    stoich_inactv.reserve(nr);
+    stoich_inact.reserve(nr);
     for (uint rxni=0; rxni<nr; ++rxni){ // reaction index
         for (uint si=0; si<n; ++si){ // species index
             coeff_active[rxni*n+si] = count(stoich_active[rxni].begin(),
                                           stoich_active[rxni].end(), si);
-            coeff_inactv[rxni*n+si] = count(stoich_inactv[rxni].begin(),
-                                            stoich_inactv[rxni].end(), si);
+            coeff_inact[rxni*n+si] = count(stoich_inact[rxni].begin(),
+                                            stoich_inact[rxni].end(), si);
             coeff_prod[rxni*n+si] = count(stoich_prod[rxni].begin(),
                                         stoich_prod[rxni].end(), si);
             coeff_total[rxni*n+si] = coeff_prod[rxni*n+si] -\
-                coeff_active[rxni*n+si] - coeff_inactv[rxni*n+si];
+                coeff_active[rxni*n+si] - coeff_inact[rxni*n+si];
         }
     }
 
@@ -215,7 +215,7 @@ ReactionDiffusion::~ReactionDiffusion()
     delete []coeff_active;
     delete []coeff_prod;
     delete []coeff_total;
-    delete []coeff_inactv;
+    delete []coeff_inact;
     if (prec_cache != nullptr)
         delete prec_cache;
     if (jac_cache != nullptr)

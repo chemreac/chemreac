@@ -59,8 +59,8 @@ def test_autodimerization():
     sbstncs = mk_sn_dict_from_names('AB')
     k = 3.0
     r1 = Reaction({'A': 2}, {'B': 1}, k=k)
-    rsys = ReactionSystem([r1])
-    rd = rsys.to_ReactionDiffusion(sbstncs)
+    rsys = ReactionSystem([r1], sbstncs)
+    rd = ReactionDiffusion.from_ReactionSystem(rsys)
     t = np.linspace(0, 5, 3)
     A0, B0 = 1.0, 0.0
     integr = run(rd, [A0, B0], t)

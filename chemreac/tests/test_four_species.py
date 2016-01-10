@@ -7,7 +7,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from chemreac import FLAT, SPHERICAL, CYLINDRICAL
+from chemreac import FLAT, SPHERICAL, CYLINDRICAL, ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
@@ -170,8 +170,8 @@ def test_chemistry():
     sbstncs = mk_sn_dict_from_names('ABCD', D=[0.1, 0.2, 0.3, 0.4])
     r1 = Reaction({'A': 1}, {'B': 1}, k=0.05)
     r2 = Reaction({'B': 1, 'C': 2}, {'D': 1, 'B': 1}, k=3.0)
-    rsys = ReactionSystem([r1, r2])
-    rd = rsys.to_ReactionDiffusion(sbstncs)
+    rsys = ReactionSystem([r1, r2], sbstncs)
+    rd = ReactionDiffusion.from_ReactionSystem(rsys)
     # how to compare equality of say: json loaded rd?
     # specie indices can be permuted in 4*3*2*1 = 24 ways
     # ...solution: canonical representation is alphabetically sorted on
@@ -179,7 +179,7 @@ def test_chemistry():
     serialized_rd = load(JSON_PATH)
     assert rd.stoich_active == serialized_rd.stoich_active
     assert rd.stoich_prod == serialized_rd.stoich_prod
-    assert rd.stoich_inactv == serialized_rd.stoich_inactv
+    assert rd.stoich_inact == serialized_rd.stoich_inact
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
 

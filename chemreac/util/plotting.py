@@ -11,6 +11,7 @@ of results.
 from math import floor, ceil
 
 import numpy as np
+from chemreac.chemistry import mk_sn_dict_from_names
 from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
 from chemreac.util.pyutil import set_dict_defaults_inplace
@@ -339,6 +340,8 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
     else:
         print_names = rd.substance_names
         use_tex = False
+    substances = mk_sn_dict_from_names(rd.substance_names,
+                                       latex_name=rd.substance_latex_names)
 
     if field_yields:
         # Let's use negative reaction indices for each field -1: 0, -2: 1
@@ -358,16 +361,15 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
         rxn_indices += range(rd.nr)
 
     labels = []
-    for rxns in rxn_indices:
-        if isinstance(rxns, int):
-            if rxns >= 0:
-                labels.append('R' + str(rxns) + ': ' +
-                              rd.to_Reaction(rxns).render(
-                                  dict(zip(rd.substance_names, print_names)),
-                                  use_tex))
+    for rxni in rxn_indices:
+        if isinstance(rxni, int):
+            if rxni >= 0:
+                rxn = rd.to_Reaction(rxni)
+                labels.append('R' + str(rxni) + ': ' +
+                              rxn.latex(substances) if use_tex else str(rxn))
             else:
                 # Field production!
-                fi = -rxns - 1
+                fi = -rxni - 1
                 if rd.g_value_parents[fi] == -1:
                     # No parents
                     parent = ''
@@ -378,8 +380,8 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
                     [print_names[si] for si in range(rd.n) if
                      rd.g_values[fi][si] != 0]))
         else:
-            labels.append('R(' + ', '.join(map(str, rxns)) + '): ' +
-                          rd.to_Reaction(rxns[0]).render(
+            labels.append('R(' + ', '.join(map(str, rxni)) + '): ' +
+                          rd.to_Reaction(rxni[0]).render(
                               dict(zip(rd.substance_names, print_names)),
                               use_tex,
                               equilibrium=True))

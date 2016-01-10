@@ -201,7 +201,7 @@ def integrate_scipy(rd, y0, tout, mode=None,
 
     from scipy import __version__ as __scipy_version__
     from scipy.integrate import ode
-    scipy_version = tuple(map(int, __scipy_version__.split('.')[:3]))
+    scipy_version = tuple(map(int, __scipy_version__.split('.')[:2]))
 
     new_kwargs = {}
     y0 = np.asarray(y0)

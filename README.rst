@@ -54,7 +54,7 @@ Version numbers of dependencies indicate what has been tested:
 - C++ compiler with C++11 support (e.g. `GCC <https://gcc.gnu.org/>`_ >= 4.8)
 - Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. `gfortran <https://gcc.gnu.org/fortran/>`_)
 - LAPACK (provided by e.g. `OpenBLAS <http://www.openblas.net/>`_)
-- `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.5
+- `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.6.2
 - `Python <https://www.python.org>`_ (2.7 or >=3.4)
     
 In addition to the standard library provided by Python, a number of

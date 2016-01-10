@@ -9,7 +9,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from chemreac import FLAT, SPHERICAL, CYLINDRICAL
+from chemreac import FLAT, SPHERICAL, CYLINDRICAL, ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
@@ -147,11 +147,11 @@ def test_chemistry():
     sbstncs = mk_sn_dict_from_names('ABC', D=[.1, .2, .3])
     r1 = Reaction({'A': 1, 'B': 1}, {'C': 1}, k=0.3)
     rsys = ReactionSystem([r1], sbstncs)
-    rd = rsys.to_ReactionDiffusion()
+    rd = ReactionDiffusion.from_ReactionSystem(rsys)
     serialized_rd = load(JSON_PATH)
     assert rd.stoich_active == serialized_rd.stoich_active
     assert rd.stoich_prod == serialized_rd.stoich_prod
-    assert rd.stoich_inactv == serialized_rd.stoich_inactv
+    assert rd.stoich_inact == serialized_rd.stoich_inact
     assert np.allclose(rd.k, serialized_rd.k)
     assert np.allclose(rd.D, serialized_rd.D)
 

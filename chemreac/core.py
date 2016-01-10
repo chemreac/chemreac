@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 chemreac.core
 =============
@@ -7,9 +6,15 @@ In chemreac.core you will find :py:class:`ReactionDiffusion` which
 is the class describing the system of ODEs.
 
 """
+from __future__ import (absolute_import, division, print_function)
+
+from functools import reduce
+from operator import add
+
 
 import numpy as np
 
+from .chemistry import mk_sn_dict_from_names, ReactionSystem
 from .util.pyutil import monotonic
 from .units import unit_of, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
@@ -23,6 +28,62 @@ GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
 
 
 class ReactionDiffusionBase(object):
+
+    def to_ReactionSystem(self, substance_names):
+        rxns = []
+        for ri in range(self.nr):
+            rxn = self.to_Reaction(ri)
+            rxns.append(rxn)
+        return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
+
+    @classmethod
+    def from_ReactionSystem(cls, rsys, ordered_names=None, **kwargs):
+        """
+        Creates a :class:`ReactionDiffusion` instance from ``rsys``.
+
+        Parameters
+        ----------
+        substances: sequence of Substance instances
+            pass to override rsys.substances (optional)
+        ordered_names: sequence of names
+            pass to override rsys.ordered_names()
+        \*\*kwargs:
+            Keyword arguments passed on to :class:`ReactionDiffusion`
+        """
+        ord_names = ordered_names or rsys.substance_names()
+
+        def _kwargs_updater(key, attr):
+            if attr in kwargs:
+                return
+            try:
+                kwargs[attr] = [getattr(rsys.substances[sn], key) for sn in
+                                ord_names]
+            except AttributeError:
+                try:
+                    kwargs[attr] = [rsys.substances[sn].other_properties[key]
+                                    for sn in ord_names]
+                except KeyError:
+                    pass
+
+        for key, attr in zip(
+                ['D', 'mobility', 'name', 'latex_name'],
+                ['D', 'mobility', 'substance_names',
+                 'substance_latex_names']):
+            _kwargs_updater(key, attr)
+
+        return ReactionDiffusion(
+            rsys.ns,
+            [reduce(add, [[i]*rxn.reac.get(k, 0) for i, k
+                          in enumerate(ord_names)]) for rxn in rsys.rxns],
+            [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
+                          in enumerate(ord_names)]) for rxn in rsys.rxns],
+            [rxn.param for rxn in rsys.rxns],
+            stoich_inact=[reduce(add, [
+                [i]*(0 if rxn.inact_reac is None else
+                     rxn.inact_reac.get(k, 0)) for i, k in enumerate(ord_names)
+            ]) for rxn in rsys.rxns],
+            **kwargs)
+
     def to_Reaction(self, ri):
         """
         Convenience method for making a Reaction instance
@@ -34,9 +95,10 @@ class ReactionDiffusionBase(object):
              i in range(self.n)},
             {self.substance_names[i]: self.stoich_prod[ri].count(i) for
              i in range(self.n)},
-            {self.substance_names[i]: self.stoich_inactv[ri].count(i) for
-             i in range(self.n)},
-            k=self.k[ri])
+            param=self.k[ri],
+            inact_reac={
+                self.substance_names[i]: self.stoich_inact[ri].count(i) for
+                i in range(self.n)})
 
     def alloc_fout(self):
         return np.zeros(self.n*self.N)
@@ -121,7 +183,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         compartment boundaries (of length N+1), default: linspace(0, 1, N+1)
         if x is a pair of floats it is expanded into linspace(x[0], x[1], N+1).
         if x is a float it is expanded into linspace(0, x, N+1)
-    stoich_inactv: list of lists of integer indices
+    stoich_inact: list of lists of integer indices
         list of inactive reactant index lists per reaction.n, default: []
     geom: integer
         any of (FLAT, SPHERICAL, CYLINDRICAL)
@@ -190,7 +252,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         self._substance_latex_names = latex_names
 
     def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
-                mobility=None, x=None, stoich_inactv=None, geom=FLAT,
+                mobility=None, x=None, stoich_inact=None, geom=FLAT,
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
                 eps_rel=1.0, g_values=None, g_value_parents=None,
@@ -242,9 +304,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         except TypeError:
             _x = linspace(0*unit_of(x), x, N+1)
 
-        if stoich_inactv is None:
-            stoich_inactv = list([[]]*len(stoich_active))
-        assert len(stoich_inactv) == len(stoich_active)
+        if stoich_inact is None:
+            stoich_inact = list([[]]*len(stoich_active))
+        assert len(stoich_inact) == len(stoich_active)
         assert len(stoich_active) == len(stoich_prod)
 
         if k is not None:
@@ -302,7 +364,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             to_unitless(mobility, get_unit(unit_registry,
                                            'electrical_mobility')),
             to_unitless(_x, get_unit(unit_registry, 'length')),
-            stoich_inactv, geom, logy, logt, logx,
+            stoich_inact, geom, logy, logt, logx,
             [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
              yld_unit in zip(g_values, cls.g_units(unit_registry,
                                                    g_value_parents))],
@@ -341,6 +403,13 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @staticmethod
     def g_units(unit_registry, g_value_parents):
+        """ Forms the unit of radiolytic yield
+
+        Parameters
+        ----------
+        g_value_parents: iterable of integers
+            parent substance indices (-1 indicates no parent)
+        """
         g_units = []
         for parent in g_value_parents:
             if parent == -1:

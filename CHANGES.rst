@@ -1,5 +1,9 @@
 v0.3
 ====
+- ReactionSystem.from_ReactionDiffusion, ReactionSystem.to_ReactionDiffusion ->
+      ReactionDiffusion.from_ReactionSystem, ReactionDiffusion.to_ReactionSystem
+- Use chempy for Substance, Reaction, ReactionSystem etc.
+   - ReactionSystem got a new signature
 - bin_k_factor/bin_k_factor_span replaced with fields/g_values and modulated_rxns/modulation
 - Added support for units (.units, .constants), new serialization format.
 - Moved repository to github.com/chemreac/chemreac
