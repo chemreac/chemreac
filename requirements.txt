@@ -13,5 +13,7 @@ mpld3>=0.2
 sympy>=0.7.6.1
 pycodeexport>=0.1.1
 pycompilation>=0.4.2
-pyodeint>=0.4.1
-pygslodeiv2>=0.3.0
+pyodeint>=0.6.0
+pygslodeiv2>=0.5.0
+git+https://github.com/bjodah/chempy.git@chained-and-units
+# DO-NOT-MERGE!

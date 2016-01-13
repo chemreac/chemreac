@@ -1,10 +1,10 @@
 build:
-  image: bjodah/bjodahimg:v1.0
+  image: bjodah/bjodahimg:v1.1
   environment:
     - WITH_OPENMP=1
-    - CHEMREAC_SOLVER=sundials
     - CPLUS_INCLUDE_PATH="$CPLUS_INCLUDE_PATH:/usr/include/python2.7"
   commands:
-    - pip install pyodeint pygslodeiv2
-    - pip3 install pyodeint pygslodeiv2
-    - PYTHONPATH=$(pwd) ./scripts/run_tests.sh
+    - pip install --upgrade -r requirements.txt
+    - pip3 install --upgrade -r requirements.txt
+    - ./scripts/ci.sh chemreac
+    - CHEMREAC_SOLVER=sundials ./scripts/ci.sh chemreac --slow --veryslow
