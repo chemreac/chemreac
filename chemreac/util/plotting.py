@@ -380,11 +380,11 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
                     [print_names[si] for si in range(rd.n) if
                      rd.g_values[fi][si] != 0]))
         else:
-            labels.append('R(' + ', '.join(map(str, rxni)) + '): ' +
-                          rd.to_Reaction(rxni[0]).render(
-                              dict(zip(rd.substance_names, print_names)),
-                              use_tex,
-                              equilibrium=True))
+            rxn = rd.to_Reaction(rxni[0])
+            labels.append(
+                'R(' + ', '.join(map(str, rxni)) + '): ' +
+                rxn.latex(dict(zip(rd.substance_names, print_names))) if use_tex
+                else str(rxn))
 
     def cb(rd_, tout_, yout_, specie_indices_):
         bi = 0  # bin index, N=1 only implemented for now
