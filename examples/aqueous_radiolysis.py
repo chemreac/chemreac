@@ -35,7 +35,7 @@ from __future__ import absolute_import, division, print_function
 # stdlib imports
 import json
 import os
-from math import log, exp, log10
+from math import log10
 
 # external imports
 import argh
@@ -46,8 +46,7 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.units import (
-    kilogram, decimetre, gray, second, molar, second, get_derived_unit,
-    to_unitless, metre
+    kilogram, decimetre, gray, molar, second, to_unitless, metre
 )
 from chemreac.util.grid import generate_grid
 from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot

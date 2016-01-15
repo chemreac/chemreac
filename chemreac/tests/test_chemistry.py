@@ -2,11 +2,9 @@
 
 from operator import attrgetter
 
-import pytest
 from periodictable import formula
 
 from chemreac import ReactionDiffusion
-from chemreac.units import molar, second
 from chemreac.chemistry import (
     Substance, Reaction, ReactionSystem,
     mk_sn_dict_from_names

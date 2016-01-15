@@ -49,7 +49,7 @@ import numpy as np
 
 from chempy.util.graph import rsys2graph
 from chemreac import DENSE, BANDED
-from chemreac.chemistry import ReactionSystem, mk_sn_dict_from_names
+from chemreac.chemistry import ReactionSystem
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.util.plotting import (

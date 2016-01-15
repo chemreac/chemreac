@@ -84,6 +84,7 @@ def test_plot_C_vs_x():
 
 @pytest.mark.xfail
 def test_plot_C_vs_t_and_x():
+    import mpl_toolkits
     N = 3
     rd = _get_decay_rd(N)
     tout = np.linspace(0, 3.0, 7)

@@ -43,7 +43,6 @@ from __future__ import absolute_import, division, print_function
 from future.builtins import *
 
 from collections import defaultdict
-from math import log
 
 import argh
 import numpy as np
