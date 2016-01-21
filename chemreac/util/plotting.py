@@ -236,7 +236,7 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     logx: set x scale to 'log'
     legend_kwargs: dict
         dict of kwargs to pass to matplotlib legend function
-        (default: {'loc': None, 'prop': {'size': 11}}), set
+        (default: {'loc': None, 'prop': {'size': 12}}), set
         to False to suppress legend.
     ls: sequence of strings
         linestyles
@@ -245,7 +245,7 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     """
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
-                              dict(loc=None, prop={'size': 11}))
+                              dict(loc=None, prop={'size': 12}))
     if axes is None:
         axes = [plt.subplot(len(indices), 1, i+1) for i in range(
             len(indices))]
@@ -468,7 +468,7 @@ def plot_C_vs_t_in_bin(
     ttlfmt: string formatted with bin boundaries (set to empty to suppress)
     legend_kwargs: dict
         kwargs passed to matplotlib legend function,
-        (default: {'loc': None, 'prop': {'size': 11}}), set
+        (default: {'loc': None, 'prop': {'size': 12}}), set
         to False to suppress legend.
     ls: sequence of strings
         linestyles
@@ -481,7 +481,7 @@ def plot_C_vs_t_in_bin(
     """
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
-                              dict(loc='best', prop={'size': 11}))
+                              dict(loc='upper left', prop={'size': 12}))
     ls = ls or DEFAULT['ls']
     c = c or DEFAULT['c']
     ax, substances, labels = _init_ax_substances_labels(
@@ -490,8 +490,8 @@ def plot_C_vs_t_in_bin(
         ax.plot(tout, Cout[:, bi, i], label=lbl,
                 ls=ls[i % len(ls)], c=c[i % len(c)])
     try:
-        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex))
-        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex))
+        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex), {'fontsize': 16})
+        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex), {'fontsize': 16})
     except AttributeError:
         pass
     if ttlfmt:
@@ -534,7 +534,7 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
     ax.set_xlabel("x / m")
     ax.set_ylabel("C / M")
     ax.set_title(basetitle+" at t = {0:.3g} s".format(tout[ti]))
-    ax.legend(loc='best', prop={'size': 11})
+    ax.legend(loc='best', prop={'size': 12})
     return ax
 
 

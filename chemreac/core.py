@@ -9,8 +9,8 @@ is the class describing the system of ODEs.
 from __future__ import (absolute_import, division, print_function)
 
 from functools import reduce
+from itertools import chain
 from operator import add
-
 
 import numpy as np
 
@@ -51,6 +51,10 @@ class ReactionDiffusionBase(object):
             Keyword arguments passed on to :class:`ReactionDiffusion`
         """
         ord_names = ordered_names or rsys.substance_names()
+        for rxn in rsys.rxns:
+            for key in chain(rxn.reac, rxn.prod, rxn.inact_reac):
+                if key not in ord_names:
+                    raise ValueError("Unkown substance name: %s" % key)
 
         def _kwargs_updater(key, attr):
             if attr in kwargs:
