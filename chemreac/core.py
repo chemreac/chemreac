@@ -37,7 +37,7 @@ class ReactionDiffusionBase(object):
         return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
 
     @classmethod
-    def from_ReactionSystem(cls, rsys, ordered_names=None, **kwargs):
+    def from_ReactionSystem(cls, rsys, ordered_names=None, state=None, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
 
@@ -47,6 +47,8 @@ class ReactionDiffusionBase(object):
             pass to override rsys.substances (optional)
         ordered_names: sequence of names
             pass to override rsys.ordered_names()
+        state: object
+            used to evaluate callable ``Reaction.params`` in ``rsys.rxns``
         \*\*kwargs:
             Keyword arguments passed on to :class:`ReactionDiffusion`
         """
@@ -81,7 +83,8 @@ class ReactionDiffusionBase(object):
                           in enumerate(ord_names)]) for rxn in rsys.rxns],
             [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
                           in enumerate(ord_names)]) for rxn in rsys.rxns],
-            [rxn.param for rxn in rsys.rxns],
+            [rxn.param(state) if callable(rxn.param) else rxn.param for
+             rxn in rsys.rxns],
             stoich_inact=[reduce(add, [
                 [i]*(0 if rxn.inact_reac is None else
                      rxn.inact_reac.get(k, 0)) for i, k in enumerate(ord_names)
