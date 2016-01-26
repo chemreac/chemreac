@@ -32,12 +32,13 @@ class ReactionDiffusionBase(object):
     def to_ReactionSystem(self, substance_names):
         rxns = []
         for ri in range(self.nr):
-            rxn = self.to_Reaction(ri)
+            rxn = self.to_Reaction(ri, substance_names)
             rxns.append(rxn)
         return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
 
     @classmethod
-    def from_ReactionSystem(cls, rsys, ordered_names=None, state=None, **kwargs):
+    def from_ReactionSystem(cls, rsys, ordered_names=None, state=None,
+                            **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
 
@@ -91,20 +92,22 @@ class ReactionDiffusionBase(object):
             ]) for rxn in rsys.rxns],
             **kwargs)
 
-    def to_Reaction(self, ri):
+    def to_Reaction(self, ri, substance_names=None):
         """
         Convenience method for making a Reaction instance
         for reaction index ri
         """
         from .chemistry import Reaction
+        if substance_names is None:
+            substance_names = self.substance_names
         return Reaction(
-            {self.substance_names[i]: self.stoich_active[ri].count(i) for
+            {substance_names[i]: self.stoich_active[ri].count(i) for
              i in range(self.n)},
-            {self.substance_names[i]: self.stoich_prod[ri].count(i) for
+            {substance_names[i]: self.stoich_prod[ri].count(i) for
              i in range(self.n)},
             param=self.k[ri],
             inact_reac={
-                self.substance_names[i]: self.stoich_inact[ri].count(i) for
+                substance_names[i]: self.stoich_inact[ri].count(i) for
                 i in range(self.n)})
 
     def alloc_fout(self):

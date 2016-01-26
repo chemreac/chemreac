@@ -8,8 +8,6 @@ Collects stoichiometry related functions.
 
 """
 
-import numpy as np
-
 
 def identify_equilibria(stoich_reac, stoich_prod):
     """

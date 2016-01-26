@@ -490,8 +490,10 @@ def plot_C_vs_t_in_bin(
         ax.plot(tout, Cout[:, bi, i], label=lbl,
                 ls=ls[i % len(ls)], c=c[i % len(c)])
     try:
-        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex), {'fontsize': 16})
-        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex), {'fontsize': 16})
+        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex),
+                      {'fontsize': 16})
+        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex),
+                      {'fontsize': 16})
     except AttributeError:
         pass
     if ttlfmt:

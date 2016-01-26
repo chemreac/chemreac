@@ -1,9 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from collections import OrderedDict
-
-import numpy as np
-
 from chemreac.util.stoich import (
     identify_equilibria
 )
