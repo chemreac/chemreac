@@ -31,8 +31,8 @@ def radyields2pdf_table(rd, output_dir=None, save=True, unit_registry=None,
     table = tex_templates['table']['default'] % table_template_dict
 
     _envs = ['landscape', 'tiny']
-    _pkgs = (['siunitx'] if siunitx else []) + ['booktabs', 'lscape',
-                                                'amsmath']
+    _pkgs = (['siunitx'] if siunitx else []) + [
+        'booktabs', 'lscape', 'amsmath', 'hyperref']
     contents = tex_templates['document']['default'] % {
         'usepkg': '\n'.join([r'\usepackage{%s}' % pkg for pkg in _pkgs]),
         'begins': '\n'.join([r'\begin{%s}' % env for env in _envs]),
