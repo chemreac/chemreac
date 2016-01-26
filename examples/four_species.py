@@ -47,11 +47,11 @@ import os
 import argh
 import numpy as np
 
+from chempy.util.graph import rsys2graph
 from chemreac import DENSE, BANDED
-from chemreac.chemistry import ReactionSystem, mk_sn_dict_from_names
+from chemreac.chemistry import ReactionSystem
 from chemreac.integrate import run
 from chemreac.serialization import load
-from chemreac.util.graph import rsys2graph
 from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     save_and_or_show_plot
@@ -137,8 +137,7 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
                 savefig = base + '_per_reaction' + ext
             save_and_or_show_plot(savefig=savefig)
     if graph:
-        print(rsys2graph(ReactionSystem.from_ReactionDiffusion(rd),
-                         mk_sn_dict_from_names('ABCD'),
+        print(rsys2graph(ReactionSystem.from_ReactionDiffusion(rd, 'ABCD'),
                          'four_species_graph.png', save='.'))
 
 

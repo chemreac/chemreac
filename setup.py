@@ -156,6 +156,7 @@ else:
                         'gdb_debug': WITH_DEBUG
                     } if using_pyx else {
                         'std': 'c++0x',
+                        'inc_py': True,
                     }
                 },
                 'flags': flags,

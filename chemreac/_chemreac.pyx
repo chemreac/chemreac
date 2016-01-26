@@ -61,7 +61,7 @@ cdef class CppReactionDiffusion:
                   vector[int] z_chg,
                   vector[double] mobility,
                   vector[double] x,
-                  vector[vector[uint]] stoich_inactv,
+                  vector[vector[uint]] stoich_inact,
                   int geom,
                   bint logy,
                   bint logt,
@@ -83,7 +83,7 @@ cdef class CppReactionDiffusion:
         cdef size_t i
         self.thisptr = new ReactionDiffusion(
             n, stoich_active, stoich_prod, k, N,
-            D, z_chg, mobility, x, stoich_inactv, geom,
+            D, z_chg, mobility, x, stoich_inact, geom,
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
@@ -187,9 +187,9 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.stoich_prod
 
-    property stoich_inactv:
+    property stoich_inact:
         def __get__(self):
-            return self.thisptr.stoich_inactv
+            return self.thisptr.stoich_inact
 
     property _k:
         def __get__(self):

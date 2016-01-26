@@ -28,7 +28,7 @@ class SymRD(ReactionDiffusionBase):
                           inspect.getargspec(cls.__init__).args[1:]))
 
     def __init__(self, n, stoich_active, stoich_prod, k, N=0, D=None,
-                 z_chg=None, mobility=None, x=None, stoich_inactv=None,
+                 z_chg=None, mobility=None, x=None, stoich_inact=None,
                  geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
@@ -46,7 +46,7 @@ class SymRD(ReactionDiffusionBase):
         self.N = len(self.x) - 1
         if N not in [None, 0]:
             assert self.N == N
-        self.stoich_inactv = stoich_inactv or [[]*len(stoich_active)]
+        self.stoich_inact = stoich_inact or [[]*len(stoich_active)]
         self.geom = geom
         self.logy = logy
         self.logt = logt
@@ -77,14 +77,14 @@ class SymRD(ReactionDiffusionBase):
         self.efield = [0]*self.N
 
         # Reactions
-        for ri, (k, sactv, sinactv, sprod) in enumerate(zip(
-                self.k, self.stoich_active, self.stoich_inactv,
+        for ri, (k, sactv, sinact, sprod) in enumerate(zip(
+                self.k, self.stoich_active, self.stoich_inact,
                 self.stoich_prod)):
             c_actv = map(sactv.count, range(self.n))
-            c_inactv = map(sinactv.count, range(self.n))
+            c_inact = map(sinact.count, range(self.n))
             c_prod = map(sprod.count, range(self.n))
-            c_totl = [nprd - nactv - ninactv for nactv, ninactv, nprd in zip(
-                c_actv, c_inactv, c_prod)]
+            c_totl = [nprd - nactv - ninact for nactv, ninact, nprd in zip(
+                c_actv, c_inact, c_prod)]
             for bi in range(self.N):
                 r = k
                 if ri in self.modulated_rxns:

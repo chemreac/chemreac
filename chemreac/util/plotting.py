@@ -11,6 +11,7 @@ of results.
 from math import floor, ceil
 
 import numpy as np
+from chemreac.chemistry import mk_sn_dict_from_names
 from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
 from chemreac.util.pyutil import set_dict_defaults_inplace
@@ -235,7 +236,7 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     logx: set x scale to 'log'
     legend_kwargs: dict
         dict of kwargs to pass to matplotlib legend function
-        (default: {'loc': None, 'prop': {'size': 11}}), set
+        (default: {'loc': None, 'prop': {'size': 12}}), set
         to False to suppress legend.
     ls: sequence of strings
         linestyles
@@ -244,7 +245,7 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     """
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
-                              dict(loc=None, prop={'size': 11}))
+                              dict(loc=None, prop={'size': 12}))
     if axes is None:
         axes = [plt.subplot(len(indices), 1, i+1) for i in range(
             len(indices))]
@@ -260,7 +261,6 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
         istl = 0  # style counter
         for j, lbl in enumerate(labels):
             if np.all(np.abs(row_out[:, i, j]) < lintreshy):
-                print("skipping: ", lbl)
                 continue
             ax.plot(tout, row_out[:, i, j], label=lbl, c=c[istl % len(c)],
                     ls=ls[istl % len(ls)])
@@ -291,7 +291,7 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
     """
     indices = [si if isinstance(si, int) else rd.substance_names.index(si) for
                si in substances]
-    print_names = rd.substance_tex_names or rd.substance_names
+    print_names = rd.substance_latex_names or rd.substance_names
     axes = _plot_analysis(_get_jac_row_over_t, print_names, rd, tout, yout,
                           indices, titles=[
                               print_names[i] for i in indices], **kwargs)
@@ -302,8 +302,9 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
 
 
 def plot_jacobian_from_integration(integr, substances, **kwargs):
-    a = integr.rd.unit_registry
-    return plot_jacobian(integr.rd, )  # TODO: finish this
+    pass
+    # a = integr.rd.unit_registry
+    # return plot_jacobian(integr.rd, )  # TODO: finish this
 
 
 def plot_per_reaction_contribution(integr, substances, equilibria=None,
@@ -333,12 +334,14 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
 
     indices = [ri if isinstance(ri, int) else rd.substance_names.index(ri)
                for ri in substances]
-    if rd.substance_tex_names is not None:
-        print_names = rd.substance_tex_names
+    if rd.substance_latex_names is not None:
+        print_names = rd.substance_latex_names
         use_tex = True
     else:
         print_names = rd.substance_names
         use_tex = False
+    substances = mk_sn_dict_from_names(rd.substance_names,
+                                       latex_name=rd.substance_latex_names)
 
     if field_yields:
         # Let's use negative reaction indices for each field -1: 0, -2: 1
@@ -358,16 +361,16 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
         rxn_indices += range(rd.nr)
 
     labels = []
-    for rxns in rxn_indices:
-        if isinstance(rxns, int):
-            if rxns >= 0:
-                labels.append('R' + str(rxns) + ': ' +
-                              rd.to_Reaction(rxns).render(
-                                  dict(zip(rd.substance_names, print_names)),
-                                  use_tex))
+    for rxni in rxn_indices:
+        if isinstance(rxni, int):
+            if rxni >= 0:
+                rxn = rd.to_Reaction(rxni)
+                labels.append('R' + str(rxni) + ': ' +
+                              ('$' + rxn.latex(substances) + '$') if
+                              use_tex else str(rxn))
             else:
                 # Field production!
-                fi = -rxns - 1
+                fi = -rxni - 1
                 if rd.g_value_parents[fi] == -1:
                     # No parents
                     parent = ''
@@ -378,11 +381,12 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
                     [print_names[si] for si in range(rd.n) if
                      rd.g_values[fi][si] != 0]))
         else:
-            labels.append('R(' + ', '.join(map(str, rxns)) + '): ' +
-                          rd.to_Reaction(rxns[0]).render(
-                              dict(zip(rd.substance_names, print_names)),
-                              use_tex,
-                              equilibrium=True))
+            rxn = rd.to_Reaction(rxni[0])
+            labels.append(
+                'R(' + ', '.join(map(str, rxni)) + '): ' +
+                ('$' + rxn.latex(dict(zip(
+                    rd.substance_names, print_names))) + '$') if use_tex
+                else str(rxn))
 
     def cb(rd_, tout_, yout_, specie_indices_):
         bi = 0  # bin index, N=1 only implemented for now
@@ -403,7 +407,8 @@ def plot_per_reaction_contribution(integr, substances, equilibria=None,
         return out
 
     axes = _plot_analysis(cb, labels, rd, integr.tout, integr.yout, indices,
-                          titles=[print_names[i] for i in indices], **kwargs)
+                          titles=['$'+print_names[i]+'$' for i in indices],
+                          **kwargs)
     for ax in axes:
         ax.set_ylabel(r"Reaction rate / $M\cdot s^{-1}$")
     return axes
@@ -423,7 +428,10 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
 
     if labels is None:
         try:
-            names = rd.substance_tex_names or rd.substance_names
+            if rd.substance_latex_names is not None:
+                names = ['$'+n+'$' for n in rd.substance_latex_names]
+            else:
+                rd.substance_names
         except AttributeError:
             names = list(map(str, substance_idxs))
         labels = [names[i] for i in substance_idxs]
@@ -460,7 +468,7 @@ def plot_C_vs_t_in_bin(
     ttlfmt: string formatted with bin boundaries (set to empty to suppress)
     legend_kwargs: dict
         kwargs passed to matplotlib legend function,
-        (default: {'loc': None, 'prop': {'size': 11}}), set
+        (default: {'loc': None, 'prop': {'size': 12}}), set
         to False to suppress legend.
     ls: sequence of strings
         linestyles
@@ -473,7 +481,7 @@ def plot_C_vs_t_in_bin(
     """
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
-                              dict(loc='best', prop={'size': 11}))
+                              dict(loc='upper left', prop={'size': 12}))
     ls = ls or DEFAULT['ls']
     c = c or DEFAULT['c']
     ax, substances, labels = _init_ax_substances_labels(
@@ -482,8 +490,10 @@ def plot_C_vs_t_in_bin(
         ax.plot(tout, Cout[:, bi, i], label=lbl,
                 ls=ls[i % len(ls)], c=c[i % len(c)])
     try:
-        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex))
-        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex))
+        ax.set_xlabel(xlabel or "t / " + str(tout.dimensionality.latex),
+                      {'fontsize': 16})
+        ax.set_ylabel(ylabel or "C / " + str(Cout.dimensionality.latex),
+                      {'fontsize': 16})
     except AttributeError:
         pass
     if ttlfmt:
@@ -526,7 +536,7 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
     ax.set_xlabel("x / m")
     ax.set_ylabel("C / M")
     ax.set_title(basetitle+" at t = {0:.3g} s".format(tout[ti]))
-    ax.legend(loc='best', prop={'size': 11})
+    ax.legend(loc='best', prop={'size': 12})
     return ax
 
 
@@ -578,8 +588,8 @@ def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
     ax.set_ylabel(fmtstr.format('time / s'))
     ax.set_zlabel(fmtstr.format('C / M'))
     if rd.substance_names:
-        if rd.substance_tex_names:
-            name = rd.substance_tex_names[substance]
+        if rd.substance_latex_names:
+            name = '$' + rd.substance_latex_names[substance] + '$'
         else:
             name = rd.substance_names[substance]
         ax.set_title('['+name+'] vs. t and x')

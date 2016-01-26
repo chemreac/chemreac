@@ -21,7 +21,7 @@ public:
     int * coeff_active;
     int * coeff_prod;
     int * coeff_total;
-    int * coeff_inactv;
+    int * coeff_inact;
     double * D_weight; // diffusion weights
     double * A_weight; // Advection weights
     uint n_factor_affected_k;
@@ -43,7 +43,7 @@ public:
     const bool logt; // use logarithmic time
     const bool logx; // use logarithmic x (space coordinate)
     const vector<vector<uint> > stoich_active; // Reactants per reaction
-    const vector<vector<uint> > stoich_inactv; // Active reactants per reaction
+    const vector<vector<uint> > stoich_inact; // Active reactants per reaction
     const vector<vector<uint> > stoich_prod; // Products per reaction
     vector<double> k; // Rate coefficients (law of mass action)
     vector<double> D; // Diffusion coefficients

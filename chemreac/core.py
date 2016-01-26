@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """
 chemreac.core
 =============
@@ -7,11 +6,17 @@ In chemreac.core you will find :py:class:`ReactionDiffusion` which
 is the class describing the system of ODEs.
 
 """
+from __future__ import (absolute_import, division, print_function)
+
+from functools import reduce
+from itertools import chain
+from operator import add
 
 import numpy as np
 
+from .chemistry import mk_sn_dict_from_names, ReactionSystem
 from .util.pyutil import monotonic
-from .units import unitof, get_derived_unit, to_unitless, linspace
+from .units import unit_of, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
 from ._chemreac import CppReactionDiffusion, diag_data_len
@@ -23,20 +28,87 @@ GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
 
 
 class ReactionDiffusionBase(object):
-    def to_Reaction(self, ri):
+
+    def to_ReactionSystem(self, substance_names):
+        rxns = []
+        for ri in range(self.nr):
+            rxn = self.to_Reaction(ri, substance_names)
+            rxns.append(rxn)
+        return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
+
+    @classmethod
+    def from_ReactionSystem(cls, rsys, ordered_names=None, state=None,
+                            **kwargs):
+        """
+        Creates a :class:`ReactionDiffusion` instance from ``rsys``.
+
+        Parameters
+        ----------
+        substances: sequence of Substance instances
+            pass to override rsys.substances (optional)
+        ordered_names: sequence of names
+            pass to override rsys.ordered_names()
+        state: object
+            used to evaluate callable ``Reaction.params`` in ``rsys.rxns``
+        \*\*kwargs:
+            Keyword arguments passed on to :class:`ReactionDiffusion`
+        """
+        ord_names = ordered_names or rsys.substance_names()
+        for rxn in rsys.rxns:
+            for key in chain(rxn.reac, rxn.prod, rxn.inact_reac):
+                if key not in ord_names:
+                    raise ValueError("Unkown substance name: %s" % key)
+
+        def _kwargs_updater(key, attr):
+            if attr in kwargs:
+                return
+            try:
+                kwargs[attr] = [getattr(rsys.substances[sn], key) for sn in
+                                ord_names]
+            except AttributeError:
+                try:
+                    kwargs[attr] = [rsys.substances[sn].other_properties[key]
+                                    for sn in ord_names]
+                except KeyError:
+                    pass
+
+        for key, attr in zip(
+                ['D', 'mobility', 'name', 'latex_name'],
+                ['D', 'mobility', 'substance_names',
+                 'substance_latex_names']):
+            _kwargs_updater(key, attr)
+
+        return ReactionDiffusion(
+            rsys.ns,
+            [reduce(add, [[i]*rxn.reac.get(k, 0) for i, k
+                          in enumerate(ord_names)]) for rxn in rsys.rxns],
+            [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
+                          in enumerate(ord_names)]) for rxn in rsys.rxns],
+            [rxn.param(state) if callable(rxn.param) else rxn.param for
+             rxn in rsys.rxns],
+            stoich_inact=[reduce(add, [
+                [i]*(0 if rxn.inact_reac is None else
+                     rxn.inact_reac.get(k, 0)) for i, k in enumerate(ord_names)
+            ]) for rxn in rsys.rxns],
+            **kwargs)
+
+    def to_Reaction(self, ri, substance_names=None):
         """
         Convenience method for making a Reaction instance
         for reaction index ri
         """
         from .chemistry import Reaction
+        if substance_names is None:
+            substance_names = self.substance_names
         return Reaction(
-            {self.substance_names[i]: self.stoich_active[ri].count(i) for
+            {substance_names[i]: self.stoich_active[ri].count(i) for
              i in range(self.n)},
-            {self.substance_names[i]: self.stoich_prod[ri].count(i) for
+            {substance_names[i]: self.stoich_prod[ri].count(i) for
              i in range(self.n)},
-            {self.substance_names[i]: self.stoich_inactv[ri].count(i) for
-             i in range(self.n)},
-            k=self.k[ri])
+            param=self.k[ri],
+            inact_reac={
+                substance_names[i]: self.stoich_inact[ri].count(i) for
+                i in range(self.n)})
 
     def alloc_fout(self):
         return np.zeros(self.n*self.N)
@@ -97,7 +169,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     Additional convenience attributes (not used by underlying C++ class):
 
     - :py:attr:`substance_names`
-    - :py:attr:`substance_tex_names`
+    - :py:attr:`substance_latex_names`
 
     Parameters
     ----------
@@ -121,7 +193,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         compartment boundaries (of length N+1), default: linspace(0, 1, N+1)
         if x is a pair of floats it is expanded into linspace(x[0], x[1], N+1).
         if x is a float it is expanded into linspace(0, x, N+1)
-    stoich_inactv: list of lists of integer indices
+    stoich_inact: list of lists of integer indices
         list of inactive reactant index lists per reaction.n, default: []
     geom: integer
         any of (FLAT, SPHERICAL, CYLINDRICAL)
@@ -156,7 +228,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     modulation: sequence of sequences of floats
         Per bin modulation vectors for each index in modulated_rxns
     unit_registry: dict (optional)
-        default: None, see ``chemreac.units.SI_base`` for an
+        default: None, see ``chemreac.units.SI_base_registry`` for an
         example.
 
     Attributes
@@ -165,13 +237,13 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     """
     # not used by C++ class
-    extra_attrs = ['substance_names', 'substance_tex_names']
+    extra_attrs = ['substance_names', 'substance_latex_names']
 
     # subset of extra_attrs optionally passed by user
-    kwarg_attrs = ['substance_names', 'substance_tex_names']
+    kwarg_attrs = ['substance_names', 'substance_latex_names']
 
     _substance_names = None
-    _substance_tex_names = None
+    _substance_latex_names = None
 
     @property
     def substance_names(self):
@@ -182,15 +254,15 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         self._substance_names = names
 
     @property
-    def substance_tex_names(self):
-        return self._substance_tex_names or list(map(str, range(self.n)))
+    def substance_latex_names(self):
+        return self._substance_latex_names or list(map(str, range(self.n)))
 
-    @substance_tex_names.setter
-    def substance_tex_names(self, tex_names):
-        self._substance_tex_names = tex_names
+    @substance_latex_names.setter
+    def substance_latex_names(self, latex_names):
+        self._substance_latex_names = latex_names
 
     def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
-                mobility=None, x=None, stoich_inactv=None, geom=FLAT,
+                mobility=None, x=None, stoich_inact=None, geom=FLAT,
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
                 eps_rel=1.0, g_values=None, g_value_parents=None,
@@ -240,11 +312,11 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 raise ValueError("Don't know what to do with len(x) == %d" %
                                  len(x))
         except TypeError:
-            _x = linspace(0*unitof(x), x, N+1)
+            _x = linspace(0*unit_of(x), x, N+1)
 
-        if stoich_inactv is None:
-            stoich_inactv = list([[]]*len(stoich_active))
-        assert len(stoich_inactv) == len(stoich_active)
+        if stoich_inact is None:
+            stoich_inact = list([[]]*len(stoich_active))
+        assert len(stoich_inact) == len(stoich_active)
         assert len(stoich_active) == len(stoich_prod)
 
         if k is not None:
@@ -302,7 +374,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             to_unitless(mobility, get_unit(unit_registry,
                                            'electrical_mobility')),
             to_unitless(_x, get_unit(unit_registry, 'length')),
-            stoich_inactv, geom, logy, logt, logx,
+            stoich_inact, geom, logy, logt, logx,
             [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
              yld_unit in zip(g_values, cls.g_units(unit_registry,
                                                    g_value_parents))],
@@ -341,6 +413,13 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
 
     @staticmethod
     def g_units(unit_registry, g_value_parents):
+        """ Forms the unit of radiolytic yield
+
+        Parameters
+        ----------
+        g_value_parents: iterable of integers
+            parent substance indices (-1 indicates no parent)
+        """
         g_units = []
         for parent in g_value_parents:
             if parent == -1:

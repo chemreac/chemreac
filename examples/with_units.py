@@ -22,7 +22,9 @@ import numpy as np
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import Integration
-from chemreac.units import second, mole, metre, molar, SI_base, linspace
+from chemreac.units import (
+    second, mole, metre, molar, SI_base_registry, linspace
+)
 
 
 def main(logy=False, logt=False, unit_registry=None):
@@ -30,7 +32,7 @@ def main(logy=False, logt=False, unit_registry=None):
     n = 2
     k0 = 0.13 * second**-1
     if unit_registry is None:
-        unit_registry = SI_base
+        unit_registry = SI_base_registry
     rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt,
                            unit_registry=unit_registry)
     y0 = [3.0e3 * mole/metre**3, 1.0*molar]

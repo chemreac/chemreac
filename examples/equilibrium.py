@@ -87,7 +87,7 @@ import numpy as np
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.units import (
-    SI_base, second, molar, unitof, to_unitless, get_derived_unit
+    SI_base_registry, second, molar, to_unitless, get_derived_unit
 )
 from chemreac.util.plotting import (
     save_and_or_show_plot, plot_solver_linear_error,
@@ -155,7 +155,7 @@ def integrate_rd(
     atol = list(map(float, atol.split(',')))
     if len(atol) == 1:
         atol = atol[0]
-    registry = SI_base.copy()
+    registry = SI_base_registry.copy()
     registry['amount'] = 1.0/scaling*registry['amount']
     registry['length'] = registry['length']/10  # decimetre
 

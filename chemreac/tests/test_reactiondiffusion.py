@@ -64,8 +64,8 @@ def test_autobinary():
     sbstncs = mk_sn_dict_from_names('AB')
     k = 3.0
     r1 = Reaction({'A': 2}, {'B': 1}, k=k)
-    rsys = ReactionSystem([r1])
-    rd = rsys.to_ReactionDiffusion(sbstncs)
+    rsys = ReactionSystem([r1], sbstncs)
+    rd = ReactionDiffusion.from_ReactionSystem(rsys)
 
     _test_f_and_dense_jac_rmaj(rd, 0, [1, 37], [-2*3, 3])
 
@@ -116,7 +116,7 @@ def test_ReactionDiffusion__actv_1():
     y0 = np.array([2.0, 3.0, 7.0])
     k = 5.0
     # A + C -(+A)-> B + C
-    rd = ReactionDiffusion(3, [[0, 2]], [[1, 2]], [k], stoich_inactv=[[0]])
+    rd = ReactionDiffusion(3, [[0, 2]], [[1, 2]], [k], stoich_inact=[[0]])
     r = k*y0[0]*y0[2]
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, 0])
 
@@ -126,7 +126,7 @@ def test_ReactionDiffusion__actv_2():
     k = 5.0
     # A + C --(+A+5*C)--> B
     rd = ReactionDiffusion(3, [[0, 2]], [[1]], [k],
-                           stoich_inactv=[[0, 2, 2, 2, 2, 2]])
+                           stoich_inact=[[0, 2, 2, 2, 2, 2]])
     r = k*y0[0]*y0[2]
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, -6*r])
 
