@@ -403,7 +403,7 @@ def sundials_integrate(
 
 
 # Below is an implementation of the classic Runge Kutta 4th order stepper with fixed step size
-# it is only useful for debugging purposes (fixed step size isn't for production runs)
+# it is only useful for debugging purposes (fixed step size is not for production runs)
 
 cdef void _add_2_vecs(int n,  double * v1, double * v2,
                       double f1, double f2, double * out):

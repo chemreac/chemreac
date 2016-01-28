@@ -750,17 +750,21 @@ void ReactionDiffusion::prec_solve_left(const double t,
 
 #endif
 
-    // {
-    //     block_diag_ilu::ILU_inplace ilu {prec_cache->view};
-    //     ilu.solve(r, z);
-    // }
-    {
-        // This section is for debuggging.
-        // The ILU preconditioning seem to be working
-        // so and so.
-        // This performs a full LU decomposition
-        // which should essentially be equivalent with
-        // the direct linear solver.
+    double off_diag_factor = 0;
+    for (uint bi = 0; bi < N; ++bi){
+        for (unit si = 0; si < n; ++si){
+            double diag = jac_cache->view.block(bi, si, si);
+            if (bi < N-1)
+                off_diag_factor += std::abs(diag/jac_cache->view.sup(0, bi, si));
+            if (bi > 0)
+                off_diag_factor += std::abs(diag/jac_cache->view.sup(0, bi-1, si));
+        }
+    }
+    off_diag_factor /= n*N;
+    if (off_diag_factor > CHEMREAC_ILU_LIMIT) {
+        block_diag_ilu::ILU_inplace ilu {prec_cache->view};
+        ilu.solve(r, z);
+    } else {
         block_diag_ilu::LU lu {prec_cache->view};
         lu.solve(r, z);
     }

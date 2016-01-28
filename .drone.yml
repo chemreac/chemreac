@@ -5,6 +5,7 @@ build:
   commands:
     - ./scripts/ci.sh chemreac
     - CHEMREAC_SOLVER=sundials ./scripts/ci.sh --slow --veryslow --cov chemreac --cov-report html
+    - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
     - ./scripts/generate_docs.sh
     - ./scripts/prepare_deploy.sh
 

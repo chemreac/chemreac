@@ -99,7 +99,7 @@ Once non-python prerequisites are in installed, you may procede e.g. as:
 
     $ git clone https://github.com/chemreac/chemreac.git
     $ cd chemreac
-    $ pip install --user -e .
+    $ pip install --user -e .[all]
     $ ./scripts/run_tests.sh
 
 

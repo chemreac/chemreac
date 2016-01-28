@@ -54,6 +54,7 @@ else:
 WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'
 WITH_OPENMP = os.environ.get('WITH_OPENMP', '0') == '1'
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
+WITH_ILU = os.environ.get('WITH_ILU', '0') == '1'
 WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
 WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'

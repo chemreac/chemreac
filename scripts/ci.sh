@@ -10,8 +10,7 @@ pip install dist/*.tar.gz
 (cd /; python2.7 -m pytest --pyargs $1)
 pip3 install dist/*.tar.gz
 (cd /; python3 -m pytest --pyargs $1)
-python2 setup.py build_ext -i
-python3 setup.py build_ext -i
+pip install --user .[all]
+pip3 install --user .[all]
 PYTHONPATH=$(pwd) ./scripts/run_tests.sh $@
-./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
 ! grep "DO-NOT-MERGE!" -R . --exclude ci.sh
