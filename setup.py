@@ -5,7 +5,7 @@ import os
 import shutil
 import sys
 
-from distutils.core import setup, Command
+from setuptools import setup
 
 pkg_name = 'chemreac'
 
@@ -209,6 +209,11 @@ setup_kwargs = dict(
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
     classifiers=classifiers,
+    setup_requires=['pycompilation', 'pycodeexport', 'mako'],
+    install_requires=['numpy', 'chempy', 'quantities', ],
+    extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
+                            'sympy', 'pyodeint', 'pygslodeiv2']}
+
 )
 
 if __name__ == '__main__':

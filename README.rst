@@ -29,17 +29,19 @@ Easiest way to install chemreac (on linux) is by using
 `conda <http://docs.continuum.io/anaconda/index.html>`_:
 ::
 
-    $ conda install -c https://conda.anaconda.org/chemreac chemreac
+   $ conda config --add channel chemreac
+   $ conda install chemreac
 
 and you're done! To check if it's installed you may run:
 
 ::
 
-    $ python -c "import chemreac"
+    $ conda install pytest
+    $ pytest --pyargs chemreac
 
-which should exit silently. If you are not using the conda package
-manager you can still install chemreac from source. You will find the
-instructions for doing so below.
+which should run the test suite (all tests should pass or xfail).
+If you are not using the conda package manager you can still install
+chemreac from source. You will find the instructions for doing so below.
 
 Building from source
 --------------------
