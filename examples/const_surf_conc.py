@@ -40,7 +40,6 @@ Solving the transformed system (:math:`\\frac{d}{dt} \\ln(c(\\ln(x), t))`):
 """
 
 from __future__ import absolute_import, division, print_function
-from future.builtins import *
 
 from collections import defaultdict
 
