@@ -11,7 +11,12 @@ where issues and patches ("pull requests") are posted.
 Coding standards
 ----------------
 The Python code should comply with `PEP8
-<http://legacy.python.org/dev/peps/pep-0008/>`_. PEP8 complience is
+<http://legacy.python.org/dev/peps/pep-0008/>`_.  Before submitting a
+Pull Request you also want to pass ``--pep8`` to ``py.test`` (it is
+done automatically by the ``./scripts/run_tests.sh`` script but you
+need ``pytest-pep8`` for it to work).
+
+PEP8 complience is
 also checked by the CI servers. For the C++ code, `PyNE's C/C++ style
 guide <http://pyne.io/devsguide/style_guide.html#c-c-style-guide>`_ is
 recommended.
@@ -37,14 +42,10 @@ Continuous integration
 
 Test coverage
 ~~~~~~~~~~~~~
-
-.. image:: https://coveralls.io/repos/chemreac/chemreac/badge.png?branch=master
-   :target: https://coveralls.io/r/chemreac/chemreac?branch=master
-   :alt: Test coverage
-
 Unit testing is a great tool, provided the tests actually cover the majority
-of the code base. In order to keep track of the coverage "coveralls" is
-used (click the badge above to see detailed per-line breakdown).
+of the code base. In order to keep track of the test coverage a 
+`report <http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov>`_ is 
+generated for each change of the code.
 
 Environment
 -----------
@@ -53,7 +54,7 @@ least familiarity with this environment for tweaking build scripts
 etc. Feedback from users and developers on other platforms is most
 welcome.
 
-If you are new to github and the like, a good start is SymPy's wiki
+If you are new to `github <https://github.com/>`_ and the like, a good start is SymPy's wiki
 entry on `development workflow
 <https://github.com/sympy/sympy/wiki/Development-workflow>`_ (minus
 the SymPy specific parts obviously).
@@ -64,14 +65,14 @@ Here is an example to get you started developing chemreac and contributing
 to the code:
 
 1. `Fork <https://help.github.com/articles/fork-a-repo/>`_ the repository on github
-2. Install the dependencies specified in the README.rst
+2. Install the dependencies specified in the README.rst file
 3. Clone your own repo to get a local copy:
 
 ::
 
     $ git clone https://github.com/YOUR_GITHUB_USERNAME/chemreac.git
 
-4. Set-up the pre-commit hook (prevents commiting untested code).
+4. Optionally set-up the pre-commit hook (prevents commiting untested code).
 ::
 
     $ cd .git/hooks

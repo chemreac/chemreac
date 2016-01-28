@@ -5,3 +5,16 @@ build:
   commands:
     - ./scripts/ci.sh chemreac
     - CHEMREAC_SOLVER=sundials ./scripts/ci.sh --slow --veryslow --cov chemreac --cov-report html
+    - ./scripts/generate_docs.sh
+    - ./scripts/prepare_deploy.sh
+
+deploy:
+
+  rsync:
+    host: hera.physchem.kth.se
+    port: 22
+    user: chemreac
+    source: deploy/
+    target: ~
+    recursive: true
+    delete: false

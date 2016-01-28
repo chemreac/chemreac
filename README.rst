@@ -5,6 +5,19 @@ chemreac
 .. image:: http://hera.physchem.kth.se:9090/api/badges/chemreac/chemreac/status.svg
    :target: http://hera.physchem.kth.se:9090/chemreac/chemreac
    :alt: Build status
+.. image:: https://img.shields.io/pypi/v/chemreac.svg
+   :target: https://pypi.python.org/pypi/chemreac
+   :alt: PyPI version
+.. image:: https://img.shields.io/pypi/l/chemreac.svg
+   :target: https://github.com/bjodah/chemreac/blob/master/LICENSE
+   :alt: License
+.. image:: http://img.shields.io/badge/benchmarked%20by-asv-green.svg?style=flat
+   :target: http://hera.physchem.kth.se/~chemreac/benchmarks
+   :alt: airspeedvelocity
+.. image:: http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov/coverage.svg
+   :target: http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov
+   :alt: coverage
+
 
 chremreac is an open source library which aims to collect tools and utilities for
 modeling of chemical kinetics problems. It is primarily designed to
@@ -25,14 +38,14 @@ Installation
 ============
 .. install-start
 
-Easiest way to install chemreac (on linux) is by using 
+The easiest way to install chemreac (on linux) is to use
 `conda <http://docs.continuum.io/anaconda/index.html>`_:
 ::
 
    $ conda config --add channel chemreac
    $ conda install chemreac
 
-and you're done! To check if it's installed you may run:
+and you're done! To check if chemreac is installed correctly you may run:
 
 ::
 
@@ -54,15 +67,15 @@ Prerequisites
 Version numbers of dependencies indicate what has been tested:
 
 - C++ compiler with C++11 support (e.g. `GCC <https://gcc.gnu.org/>`_ >= 4.8)
-- Fortran compiler with ISO_C_BINDING support (Fortran 2003 standard) (e.g. `gfortran <https://gcc.gnu.org/fortran/>`_)
 - LAPACK (provided by e.g. `OpenBLAS <http://www.openblas.net/>`_)
 - `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.6.2
 - `Python <https://www.python.org>`_ (2.7 or >=3.4)
     
 In addition to the standard library provided by Python, a number of
-python packages are required (see `requirements.txt
-<./requirements.txt>`_), they are found on `PyPI
-<https://pypi.python.org/pypi>`_ and may be installed using ``pip``.
+python packages are required (see `setup.py
+<./setup.py>`_), they are found on `PyPI
+<https://pypi.python.org/pypi>`_ and are automatically installed 
+when using ``pip``.
 
 For rendering the documentation you also need:
 
@@ -75,6 +88,8 @@ to run all the tests you also need these tools:
 - valgrind
 - graphviz
 - dot2tex
+- pdflatex
+
 
 Building and installing
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,14 +99,11 @@ Once non-python prerequisites are in installed, you may procede e.g. as:
 
     $ git clone https://github.com/chemreac/chemreac.git
     $ cd chemreac
-    $ pip install --user --upgrade -r requirements.txt
-    $ python setup.py install --user
+    $ pip install --user -e .
     $ ./scripts/run_tests.sh
 
 
-the above procedure works on Ubuntu 14.04 for example. See the `Python
-docs <https://docs.python.org/2/install/index.html#install-index>`_
-for more information on how to install e.g. system wide.
+the above procedure works on Ubuntu 14.04 for example.
 
 To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.:
 
@@ -114,20 +126,6 @@ installed package:
 
 All tests should pass (or xfail). If they do not, please `file an
 issue <https://github.com/chemreac/chemreac/issues>`_.
-
-Note that you may need to modify ``$PYTHONPATH``. For example: if you
-have only built the package inplace with ``build_ext --inplace``, and
-you are standing in the root directory of the repository you may
-proceed as:
-
-::
-
-    $ PYTHONPATH=`pwd`:$PYTHONPATH py.test --slow --veryslow
-
-Before submitting a Pull Request you also want to pass ``--pep8`` to
-``py.test`` (it is done automatically by the
-``./scripts/run_tests.sh`` script but you need ``pytest-pep8`` for it
-to work).
 
 .. install-end
 
