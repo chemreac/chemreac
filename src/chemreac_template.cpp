@@ -143,7 +143,7 @@ ReactionDiffusion::ReactionDiffusion(
     // Precalc coeffs for Jacobian for current geom.
     // not centered diffs close to boundaries
     for (uint bi=0; bi<N; bi++)
-        _apply_fd(bi);
+        apply_fd_(bi);
 
     // Stoichiometry
     for (uint ri=0; ri<nr; ++ri){
@@ -243,7 +243,7 @@ uint ReactionDiffusion::_xc_bi_map(uint xci) const
 #define D_WEIGHT(bi, li) D_weight[nstencil*(bi) + li]
 #define A_WEIGHT(bi, li) A_weight[nstencil*(bi) + li]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
-void ReactionDiffusion::_apply_fd(uint bi){
+void ReactionDiffusion::apply_fd_(uint bi){
     double * const c = new double[3*nstencil];
     double * const lxc = new double[nstencil]; // local shifted x-centers
     uint around = bi + nsidep;
@@ -309,7 +309,7 @@ ReactionDiffusion::get_mod_k(int bi, int ri) const{
 }
 
 void
-ReactionDiffusion::_fill_local_r(int bi, const double * const __restrict__ C,
+ReactionDiffusion::fill_local_r_(int bi, const double * const __restrict__ C,
                                  double * const __restrict__ local_r) const
 {
     // intent(out) :: local_r
@@ -378,7 +378,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
 
         // Contributions from reactions
         // ----------------------------
-        _fill_local_r(bi, linC, local_r);
+        fill_local_r_(bi, linC, local_r);
         for (uint rxni=0; rxni<nr; ++rxni){
             // reaction index rxni
             for (uint si=0; si<n; ++si){
@@ -618,7 +618,7 @@ ReactionDiffusion::${token}(double t,
 // {
 //     const double * const linC = (logy) ? alloc_and_populate_linC(y) : y;
 //     std::unique_ptr<double[]> local_r {new double[nr]};
-//     _fill_local_r(bi, y, local_r);
+//     fill_local_r_(bi, y, local_r);
 //     for (uint si=0; si<n; ++si){
 //         // species si
 //         for (uint dsi=0; dsi<n; ++dsi){
@@ -692,6 +692,7 @@ void ReactionDiffusion::prec_setup(double t,
         const int dummy = 0;
         jac_cache->view.zero_out_diags();
         compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
+        update_prec_cache = true;
         jac_recomputed = true;
     } else jac_recomputed = false;
     nprec_setup++;
@@ -709,9 +710,8 @@ void ReactionDiffusion::prec_solve_left(const double t,
                                         double * const __restrict__ z,
                                         double gamma)
 {
-    // See 4.6.8 on page 68 (78) in cvs_guide.pdf
+    // See 4.6.9 on page 75 in cvs_guide.pdf (Sundials 2.6.2)
     // Solves P*z = r, where P ~= I - gamma*J
-    // see page  in cvs_guide.pdf (Sundials 2.5)
     nprec_solve++;
 
     ignore(t); ignore(fy); ignore(y);
@@ -720,7 +720,7 @@ void ReactionDiffusion::prec_solve_left(const double t,
         prec_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
         recompute = true;
     } else {
-        if (old_gamma != gamma) // TODO: what about when jac_cahce updated?
+        if (update_prec_cache or (old_gamma != gamma))
             recompute = true;
     }
     if (recompute){
@@ -750,23 +750,17 @@ void ReactionDiffusion::prec_solve_left(const double t,
 
 #endif
 
-    double off_diag_factor = 0;
-    for (uint bi = 0; bi < N; ++bi){
-        for (unit si = 0; si < n; ++si){
-            double diag = jac_cache->view.block(bi, si, si);
-            if (bi < N-1)
-                off_diag_factor += std::abs(diag/jac_cache->view.sup(0, bi, si));
-            if (bi > 0)
-                off_diag_factor += std::abs(diag/jac_cache->view.sup(0, bi-1, si));
-        }
-    }
-    off_diag_factor /= n*N;
-    if (off_diag_factor > CHEMREAC_ILU_LIMIT) {
+#if !defined(CHEMREAC_ILU_LIMIT)
+#define CHEMREAC_ILU_LIMIT 1000
+#endif
+    if (prec_cache->view.average_diag_weight(0) > CHEMREAC_ILU_LIMIT) {
         block_diag_ilu::ILU_inplace ilu {prec_cache->view};
         ilu.solve(r, z);
+        //std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
     } else {
         block_diag_ilu::LU lu {prec_cache->view};
         lu.solve(r, z);
+        //std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
     }
 }
 
@@ -775,7 +769,7 @@ void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __r
 {
     ignore(t);
     double * const local_r = new double[nr];
-    _fill_local_r(0, y, local_r);
+    fill_local_r_(0, y, local_r);
     for (uint ri=0; ri<nr; ++ri){
 	out[ri] = coeff_total[ri*n+si]*local_r[ri];
     }

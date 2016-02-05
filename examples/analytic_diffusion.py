@@ -56,6 +56,7 @@ from __future__ import absolute_import, division, print_function
 
 
 from math import log
+from itertools import product
 
 import argh
 import numpy as np
@@ -194,18 +195,19 @@ def _efield_cb(x):
     return -np.ones_like(x)
 
 
-def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
+def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
                  nt=42, geom='f', logt=False, logy=False, logx=False,
-                 random=False, k=0.0, nstencil=3, linterpol=False,
-                 rinterpol=False, num_jacobian=False, method='bdf',
-                 plot=False, atol=1e-6, rtol=1e-6, efield=False,
-                 random_seed=42, savefig='None', verbose=False):
+                 random=False, nspecies=1, p=0, a=0.2, nstencil=3,
+                 linterpol=False, rinterpol=False, num_jacobian=False,
+                 method='bdf', plot=False, atol=1e-6, rtol=1e-6,
+                 efield=False, random_seed=42, savefig='None',
+                 verbose=False, yscale='linear', vline_limit=100):
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
         np.random.seed(random_seed)
-    decay = (k != 0.0)
-    n = 2 if decay else 1
+    # decay = (nspecies > 1)
+    # n = 2 if decay else 1
     mu = float(mu or x0)
     tout = np.linspace(t0, tend, nt)
 
@@ -224,15 +226,19 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     if random:
         x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
 
-    sys = ReactionDiffusion(
-        n,
-        [[0]] if decay else [],
-        [[1]] if decay else [],
-        [k] if decay else [],
+    def _k(si):
+        return (si+p)*log(a+1)
+    k = [_k(i+1) for i in range(nspecies-1)]
+
+    rd = ReactionDiffusion(
+        nspecies,
+        [[i] for i in range(nspecies-1)],
+        [[i+1] for i in range(nspecies-1)],
+        [k[i] for i in range(nspecies-1)],
         N,
-        D=[D]*(2 if decay else 1),
-        z_chg=[1]*(2 if decay else 1),
-        mobility=[0.01]*(2 if decay else 1),
+        D=[D]*nspecies,
+        z_chg=[1]*nspecies,
+        mobility=[0.01]*nspecies,
         x=x,
         geom=geom,
         logy=logy,
@@ -246,32 +252,36 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     if efield:
         if geom != FLAT:
             raise ValueError("Only analytic sol. for flat drift implemented.")
-        sys.efield = _efield_cb(sys.xcenters)
+        rd.efield = _efield_cb(rd.xcenters)
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = analytic(sys.xcenters, t, D, mu, x0, xend,
+    yref = analytic(rd.xcenters, t, D, mu, x0, xend,
                     0.01 if efield else 0, logy, logx).reshape(nt, N, 1)
 
-    if decay:
-        yref = np.concatenate((yref, yref), axis=2)
+    if nspecies > 1:
+        from batemaneq import bateman_parent
+        bateman_out = np.array(bateman_parent(k, tout)).T
+        print(bateman_out)
+        terminal = (1 - np.sum(bateman_out, axis=1)).reshape((nt, 1))
+        bateman_out = np.concatenate((bateman_out, terminal), axis=1).reshape(
+            (nt, 1, nspecies))
+        print(bateman_out.shape)
         if logy:
-            yref[:, :, 0] += -k*t
-            yref[:, :, 1] += np.log(1-np.exp(-k*t))
+            yref = yref + np.log(bateman_out)
         else:
-            yref[:, :, 0] *= np.exp(-k*t)
-            yref[:, :, 1] *= 1-np.exp(-k*t)
+            yref = yref * bateman_out
 
     # Run the integration
-    integr = run(sys, yref[0, ...], tout, atol=atol, rtol=rtol,
+    integr = run(rd, yref[0, ...], tout, atol=atol, rtol=rtol,
                  with_jacobian=(not num_jacobian), method=method,
                  C0_is_log=logy)
-    yout, info = integr.yout, integr.info
+    info = integr.info
 
     if logy:
         def lin_err(i, j):
             linref = np.exp(yref[i, :, j])
-            linerr = np.exp(yout[i, :, j])-linref
+            linerr = np.exp(integr.yout[i, :, j])-linref
             linatol = np.average(yref[i, :, j])
             linrtol = linatol
             return linerr/(linrtol*np.abs(linref)+linatol)
@@ -279,8 +289,8 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     if logy:
         rmsd = np.sum(lin_err(slice(None), slice(None))**2 / N, axis=1)**0.5
     else:
-        rmsd = np.sum((yref-yout)**2 / N, axis=1)**0.5
-    ave_rmsd_over_atol = np.average(rmsd, axis=0)/info['atol']
+        rmsd = np.sum((yref-integr.yout)**2 / N, axis=1)**0.5
+    ave_rmsd_over_atol = np.average(rmsd, axis=0)/atol
 
     if verbose:
         # Print statistics
@@ -293,62 +303,67 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         import matplotlib.pyplot as plt
         plt.figure(figsize=(6, 10))
 
-        def _plot(y, c, ttl=None, apply_exp_on_y=False, vlines=False):
-            plt.plot(sys.xcenters, np.exp(y) if apply_exp_on_y else y,
-                     c=c)
-            if vlines:
-                plt.vlines(sys.x, 0, np.ones_like(sys.x)*max(y),
-                           linewidth=1, colors='gray')
-            plt.xlabel('x / m')
-            plt.ylabel('C / M')
-            if ttl:
-                plt.title(ttl)
+        # colors: (0.5, 0.5, 0.5), (0.5, 0.5, 1), ...
+        base_colors = list(product([.5, 1], repeat=3))[1:]
 
-        for i in range(nt):
-            c = 1-tout[i]/tend
-            c = (1.0-c, .5-c/2, .5-c/2)
+        def color(ci, ti):
+            return np.array(base_colors[ci % len(base_colors)])*tout[ti]/tend
 
+        for ti in range(nt):
             plt.subplot(4, 1, 1)
-            _plot(yout[i, :, 0], c, 'Simulation (N={})'.format(sys.N),
-                  apply_exp_on_y=logy, vlines=(i == 0 and N < 100))
-            if decay:
-                _plot(yout[i, :, 1], c[::-1], apply_exp_on_y=logy)
+            for si in range(nspecies):
+                plt.plot(rd.xcenters, integr.Cout[ti, :, si], c=color(si, ti),
+                         label=None if ti < nt - 1 else rd.substance_names[si])
 
             plt.subplot(4, 1, 2)
-            _plot(yref[i, :, 0], c, 'Analytic', apply_exp_on_y=logy,
-                  vlines=(i == 0 and N < 100))
-            if decay:
-                _plot(yref[i, :, 1], c[::-1], apply_exp_on_y=logy)
+            for si in range(nspecies):
+                plt.plot(rd.xcenters, np.exp(yref[ti, :, si]) if logy
+                         else yref[ti, :, si], c=color(si, ti))
 
             plt.subplot(4, 1, 3)
             if logy:
-                _plot(lin_err(i, 0)/info['atol'], c,
-                      'Linear rel error / Log abs. tol. (={})'.format(
-                          info['atol']), vlines=(i == nt-1 and N < 100))
-                if decay:
-                    _plot(lin_err(i, 1)/info['atol'], c[::-1])
+                for si in range(nspecies):
+                    plt.plot(rd.xcenters, lin_err(ti, si)/atol,
+                             c=color(si, ti))
             else:
-                _plot((yref[i, :, 0]-yout[i, :, 0])/info['atol'], c,
-                      'Abs. err. / Abs. tol. (={})'.format(info['atol']),
-                      vlines=(i == nt-1 and N < 100))
-                if decay:
-                    _plot((yref[i, :, 1]-yout[i, :, 1])/info['atol'],
-                          c[::-1])
+                for si in range(nspecies):
+                    plt.plot(
+                        rd.xcenters,
+                        (yref[ti, :, si] - integr.yout[ti, :, si])/atol,
+                        c=color(si, ti))
+
+        if N < vline_limit:
+            for idx in range(1, 4):
+                plt.subplot(4, 1, idx)
+                for bi in range(N):
+                    plt.axvline(rd.x[bi], color='gray')
+
+        plt.subplot(4, 1, 1)
+        plt.title('Simulation (N={})'.format(rd.N))
+        plt.xlabel('x / m')
+        plt.ylabel('C / M')
+        plt.gca().set_yscale(yscale)
+        plt.legend()
+
+        plt.subplot(4, 1, 2)
+        plt.gca().set_yscale(yscale)
+
+        plt.subplot(4, 1, 3)
+        plt.title('Linear rel. error / Abs. tol. (={})'.format(atol))
 
         plt.subplot(4, 1, 4)
         tspan = [tout[0], tout[-1]]
-        plt.plot(tout, rmsd[:, 0] / info['atol'], 'r')
-        plt.plot(tspan, [ave_rmsd_over_atol[0]]*2, 'r--')
-        if decay:
-            plt.plot(tout, rmsd[:, 1]/info['atol'], 'b')
-            plt.plot(tspan, [ave_rmsd_over_atol[1]]*2, 'b--')
+        for si in range(nspecies):
+            plt.plot(tout, rmsd[:, si] / atol, c=color(si, -1))
+            plt.plot(tspan, [ave_rmsd_over_atol[si]]*2,
+                     c=color(si, -1), ls='--')
 
         plt.xlabel('Time / s')
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
 
-    return tout, yout, info, ave_rmsd_over_atol, sys
+    return tout, integr.yout, info, ave_rmsd_over_atol, rd
 
 
 if __name__ == '__main__':

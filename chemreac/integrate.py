@@ -180,7 +180,7 @@ def integrate_scipy(rd, y0, tout, mode=None,
                     integrator_name='vode', dense_output=None,
                     **kwargs):
     """
-    see :py:func:`integrate`
+    see :class:`Integration`
 
     Parameters
     ----------

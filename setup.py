@@ -213,7 +213,7 @@ setup_kwargs = dict(
     setup_requires=['pycompilation', 'pycodeexport', 'mako'],
     install_requires=['numpy', 'chempy', 'quantities', ],
     extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
-                            'sympy', 'pyodeint', 'pygslodeiv2']}
+                            'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq']}
 
 )
 

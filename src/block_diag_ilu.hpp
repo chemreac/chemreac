@@ -1,10 +1,9 @@
-#ifndef BLOCK_DIAG_ILU_GOB3CSYR2HBHUEX4HJGA3584
-#define BLOCK_DIAG_ILU_GOB3CSYR2HBHUEX4HJGA3584
+#pragma once
 #include <algorithm> // std::max
 #include <type_traits>
 #include <utility>
 #include <memory>
-#include <cmath> // std::abs for float and double
+#include <cmath> // std::abs for float and double, std::sqrt
 #include <cstdlib> // std::abs for int (must include!!)
 #include <cstring> // memcpy
 
@@ -16,15 +15,15 @@
 // ==============
 // Algorithm: Incomplete LU factorization of block diagonal matrices with weak sub-/super-diagonals
 // Language: C++11
-// License: Open Source, see LICENSE.txt (BSD 2-Clause license)
+// License: Open Source, see LICENSE (BSD 2-Clause license)
 // Author: Björn Dahlgren 2015
 // URL: https://github.com/chemreac/block_diag_ilu
 
 
 namespace block_diag_ilu {
 
-    // make_unique<T[]>() only in C++14, work around:
-    // begin copy paste from http://stackoverflow.com/a/10150181/790973
+    // make_unique<T[]>() only provided in C++14, work around for C++11:
+    // <copy&paste href=http://stackoverflow.com/a/10150181/790973 license=cc-wiki>
     template <class T, class ...Args>
     typename std::enable_if
     <
@@ -47,7 +46,7 @@ namespace block_diag_ilu {
         typedef typename std::remove_extent<T>::type RT;
         return std::unique_ptr<T>(new RT[n]);
     }
-    // end copy paste from http://stackoverflow.com/a/10150181/790973
+    // </copy&paste>
 
     // Let's define an alias template for a buffer type which may
     // use (conditional compilation) either std::unique_ptr or std::vector
@@ -77,8 +76,8 @@ namespace block_diag_ilu {
 #endif
 
 #if defined(WITH_BLOCK_DIAG_ILU_DGETRF)
-    inline int dgetrf_square(const int dim, double * const __restrict__ a,
-                             const int lda, int * const __restrict__ ipiv) noexcept;
+    inline uint dgetrf_square(const uint dim, double * const __restrict__ a,
+                              const uint lda, int * const __restrict__ ipiv) noexcept;
 #else
     extern "C" void dgetrf_(const int* dim1, const int* dim2, double* a, int* lda, int* ipiv, int* info);
 #endif
@@ -93,24 +92,20 @@ namespace block_diag_ilu {
     template <typename Real_t = double>
     class ColMajBlockDiagView {
     public:
-
-        // int will suffice, decomposition scales as N**3,
-        // even iterative methods (N**2) would need months
-        // at 1 TFLOPS (assuming int is int32)
-
         Real_t *block_data, *sub_data, *sup_data;
+        // int will suffice, decomposition scales as N**3 even iterative methods (N**2) would need months at 1 TFLOPS
         const std::size_t nblocks;
-        const int blockw, ndiag, ld_blocks;
+        const uint blockw, ndiag, ld_blocks;
         const std::size_t block_stride;
-        const int ld_diag;
+        const uint ld_diag;
         const std::size_t block_data_len, diag_data_len, nouter, dim;
         // ld_block for cache alignment and avoiding false sharing
         // block_stride for avoiding false sharing
         ColMajBlockDiagView(Real_t * const block_data_, Real_t * const sub_data_,
                             Real_t * const sup_data_, const std::size_t nblocks_,
-                            const int blockw_, const int ndiag_,
-                            const int ld_blocks_=0, const std::size_t block_stride_=0,
-                            const int ld_diag_=0) :
+                            const uint blockw_, const uint ndiag_,
+                            const uint ld_blocks_=0, const std::size_t block_stride_=0,
+                            const uint ld_diag_=0) :
             block_data(block_data_), sub_data(sub_data_), sup_data(sup_data_),
             nblocks(nblocks_), blockw(blockw_), ndiag(ndiag_),
             ld_blocks((ld_blocks_ == 0) ? blockw_ : ld_blocks_),
@@ -131,46 +126,105 @@ namespace block_diag_ilu {
             // out need not be zeroed out before call
             const auto nblk = this->nblocks;
             const auto blkw = this->blockw;
-            for (std::size_t i=0; i<nblk*blkw; ++i)
+            for (std::size_t i=0; i<nblk*blkw; ++i){
                 out[i] = 0.0;
-            for (std::size_t bri=0; bri<nblk; ++bri)
-                for (int lci=0; lci<blkw; ++lci)
-                    for (int lri=0; lri<blkw; ++lri)
+            }
+            for (std::size_t bri=0; bri<nblk; ++bri){
+                for (uint lci=0; lci<blkw; ++lci){
+                    for (uint lri=0; lri<blkw; ++lri){
                         out[bri*blkw + lri] += vec[bri*blkw + lci]*\
                             (this->block(bri, lri, lci));
-            for (int di=0; di<this->ndiag; ++di)
-                for (std::size_t bi=0; bi<nblk-di-1; ++bi)
-                    for (int ci=0; ci<blkw; ++ci){
+                    }
+                }
+            }
+            for (uint di=0; di<this->ndiag; ++di){
+                for (std::size_t bi=0; bi<nblk-di-1; ++bi){
+                    for (uint ci=0; ci<blkw; ++ci){
                         out[bi*blkw + ci] += this->sup(di, bi, ci)*vec[(bi+di+1)*blkw+ci];
                         out[(bi+di+1)*blkw + ci] += this->sub(di, bi, ci)*vec[bi*blkw+ci];
                     }
-    }
+                }
+            }
+        }
+        Real_t rms_diag(int diag_idx) {
+            // returns the root means square of `diag_idx`:th diagonal
+            // (diag_idx < 0 denotes sub diagonals, diag_idx == 0 deontes main diagonal,
+            // and diag_idx > 0 denotes super diagonals)
+            Real_t sum = 0;
+            std::size_t nelem;
+            if (diag_idx == 0){
+                nelem = (this->nblocks)*(this->blockw);
+                for (std::size_t bi = 0; bi < (this->nblocks); ++bi){
+                    for (uint ci = 0; ci < (this->blockw); ++ci){
+                        const Real_t elem = this->block(bi, ci, ci);
+                        sum += elem*elem;
+                    }
+                }
+            } else if (diag_idx < 0) {
+                if ((unsigned)(-diag_idx) >= this->nblocks)
+                    return 0;
+                nelem = (this->nblocks + diag_idx)*(this->blockw);
+                for (std::size_t bi = 0; bi < (this->nblocks)+diag_idx ; ++bi){
+                    for (uint ci = 0; ci < (this->blockw); ++ci){
+                        const Real_t elem = this->sub(-diag_idx - 1, bi, ci);
+                        sum += elem*elem;
+                    }
+                }
+            } else {
+                if ((unsigned)diag_idx >= this->nblocks)
+                    return 0;
+                nelem = (this->nblocks - diag_idx)*(this->blockw);
+                for (std::size_t bi = 0; bi < (this->nblocks)-diag_idx ; ++bi){
+                    for (uint ci = 0; ci < (this->blockw); ++ci){
+                        const Real_t elem = this->sup(diag_idx - 1, bi, ci);
+                        sum += elem*elem;
+                    }
+                }
+            }
+            return std::sqrt(sum/nelem);
+        }
+        Real_t average_diag_weight(uint di){ // , double max_val=1e-8
+            Real_t off_diag_factor = 0;
+            for (uint bi = 0; bi < this->nblocks; ++bi){
+                for (uint li = 0; li < this->blockw; ++li){
+                    //const Real_t r_diag_val = std::max(max_val, 1 / std::abs(this->block(bi, li, li)));
+                    const Real_t r_diag_val = 1 / this->block(bi, li, li);
+                    if (bi < this->nblocks - di - 1){
+                        off_diag_factor += std::abs(r_diag_val * this->sup(di, bi, li));
+                    }
+                    if (bi > di){
+                        off_diag_factor += std::abs(r_diag_val * this->sub(di, bi-1-di, li));
+                    }
+                }
+            }
+            return 1.0 / (off_diag_factor * (this->blockw) * (this->nblocks - 1 - di) * 2);
+        }
 
     private:
-        inline std::size_t diag_idx(const int diagi, const std::size_t blocki,
-                                    const int coli) const noexcept {
+        inline std::size_t diag_idx(const uint diagi, const std::size_t blocki,
+                                    const uint coli) const noexcept {
             const std::size_t n_diag_blocks_skip = this->nblocks*diagi - (diagi*diagi + diagi)/2;
             return (n_diag_blocks_skip + blocki)*(this->ld_diag) + coli;
         }
     public:
-        inline Real_t& block(const std::size_t blocki, const int rowi,
-                             const int coli) const noexcept {
+        inline Real_t& block(const std::size_t blocki, const uint rowi,
+                             const uint coli) const noexcept {
             return this->block_data[blocki*this->block_stride + coli*(this->ld_blocks) + rowi];
         }
-        inline Real_t& sub(const int diagi, const std::size_t blocki,
-                           const int coli) const noexcept {
+        inline Real_t& sub(const uint diagi, const std::size_t blocki,
+                           const uint coli) const noexcept {
             return this->sub_data[diag_idx(diagi, blocki, coli)];
         }
-        inline Real_t& sup(const int diagi, const std::size_t blocki,
-                           const int coli) const noexcept {
+        inline Real_t& sup(const uint diagi, const std::size_t blocki,
+                           const uint coli) const noexcept {
             return this->sup_data[diag_idx(diagi, blocki, coli)];
         }
         inline Real_t get_global(const std::size_t rowi,
                                  const std::size_t coli) const noexcept{
             const std::size_t bri = rowi / this->blockw;
             const std::size_t bci = coli / this->blockw;
-            const int lri = rowi - bri*this->blockw;
-            const int lci = coli - bci*this->blockw;
+            const uint lri = rowi - bri*this->blockw;
+            const uint lci = coli - bci*this->blockw;
             if (bri == bci)
                 return this->block(bri, lri, lci);
             if (lri != lci)
@@ -187,17 +241,17 @@ namespace block_diag_ilu {
                     return this->sup(bci-bri-1, bri, lri);
             }
         }
-        inline int get_banded_ld() const noexcept {
+        inline uint get_banded_ld() const noexcept {
             return 1 + 3*this->nouter; // padded for use with LAPACK's dgbtrf
         }
         inline buffer_t<Real_t> to_banded() const {
             const auto ld_result = this->get_banded_ld();
             auto result = buffer_factory<Real_t>(ld_result*this->dim);
-            for (unsigned int ci = 0; ci < this->dim; ++ci){
-                const int row_lower = (ci < this->nouter) ? 0 : ci - this->nouter;
-                const int row_upper = (ci + this->nouter + 1 > this->dim) ? this->dim :
+            for (uint ci = 0; ci < this->dim; ++ci){
+                const uint row_lower = (ci < this->nouter) ? 0 : ci - this->nouter;
+                const uint row_upper = (ci + this->nouter + 1 > this->dim) ? this->dim :
                     ci + this->nouter + 1;
-                for (int ri=row_lower; ri<row_upper; ++ri){
+                for (uint ri=row_lower; ri<row_upper; ++ri){
                     result[ld_result*ci + 2*this->nouter + ri - ci] = this->get_global(ri, ci);
                 }
             }
@@ -207,23 +261,29 @@ namespace block_diag_ilu {
             const auto nblocks = this->nblocks;
             const auto blockw = this->blockw;
             // Scale main blocks by -gamma
-            for (std::size_t bi = 0; bi < nblocks; ++bi)
-                for (int ci=0; ci < blockw; ++ci)
-                    for (int ri = 0; ri < blockw; ++ri)
+            for (std::size_t bi = 0; bi < nblocks; ++bi){
+                for (uint ci=0; ci < blockw; ++ci){
+                    for (uint ri = 0; ri < blockw; ++ri){
                         this->block(bi, ri, ci) = -gamma*other.block(bi, ri, ci);
+                    }
+                }
+            }
 
             // Add the identiy matrix
-            for (std::size_t bi = 0; bi < nblocks; ++bi)
-                for (int ci = 0; ci < blockw; ++ci)
+            for (std::size_t bi = 0; bi < nblocks; ++bi){
+                for (uint ci = 0; ci < blockw; ++ci){
                     this->block(bi, ci, ci) += 1;
-
+                }
+            }
             // Scale diagonals by -gamma
-            for (int di = 0; di < this->ndiag; ++di)
-                for (std::size_t bi=0; bi < ((nblocks <= (unsigned)di+1) ? 0 : nblocks - di - 1); ++bi)
-                    for (int ci = 0; ci < blockw; ++ci){
+            for (uint di = 0; di < this->ndiag; ++di) {
+                for (std::size_t bi=0; bi < ((nblocks <= (unsigned)di+1) ? 0 : nblocks - di - 1); ++bi) {
+                    for (uint ci = 0; ci < blockw; ++ci){
                         this->sub(di, bi, ci) = -gamma*other.sub(di, bi, ci);
                         this->sup(di, bi, ci) = -gamma*other.sup(di, bi, ci);
                     }
+                }
+            }
         }
         inline void zero_out_blocks() noexcept {
             for (std::size_t i=0; i<(this->block_data_len); ++i){
@@ -238,11 +298,10 @@ namespace block_diag_ilu {
                 this->sup_data[i] = 0.0;
             }
         }
-
     };
 
-    class LU {
-#ifdef UNIT_TEST
+    class LU {  // Wrapper around DGBTRF & DGBTRS from LAPACK
+#ifdef BLOCK_DIAG_ILU_UNIT_TEST
     public:
 #endif
         const int dim, nouter, ld;
@@ -283,6 +342,15 @@ namespace block_diag_ilu {
     public:
         ColMajBlockDiagView<Real_t> view;
         const bool contiguous;
+        buffer_ptr_t<Real_t> get_block_data_raw_ptr() {
+            return buffer_get_raw_ptr(this->block_data);
+        }
+        buffer_ptr_t<Real_t> get_sub_data_raw_ptr() {
+            return buffer_get_raw_ptr(this->sub_data);
+        }
+        buffer_ptr_t<Real_t> get_sup_data_raw_ptr() {
+            return buffer_get_raw_ptr(this->sup_data);
+        }
         ColMajBlockDiagMat(const std::size_t nblocks_,
                            const int blockw_,
                            const int ndiag_,
@@ -296,7 +364,7 @@ namespace block_diag_ilu {
             if (contiguous){
                 this->block_data = buffer_factory<Real_t>(view.block_data_len +
                                                           2*view.diag_data_len);
-                auto raw_ptr = buffer_get_raw_ptr(this->block_data);
+                auto raw_ptr = this->get_block_data_raw_ptr();
                 this->view.set_data_pointers(raw_ptr,
                                              raw_ptr + view.block_data_len,
                                              raw_ptr + view.block_data_len + view.diag_data_len);
@@ -308,15 +376,6 @@ namespace block_diag_ilu {
                                              buffer_get_raw_ptr(this->sub_data),
                                              buffer_get_raw_ptr(this->sup_data));
             }
-        }
-        buffer_ptr_t<Real_t> get_block_data_raw_ptr() {
-            return buffer_get_raw_ptr(this->block_data);
-        }
-        buffer_ptr_t<Real_t> get_sub_data_raw_ptr() {
-            return buffer_get_raw_ptr(this->sub_data);
-        }
-        buffer_ptr_t<Real_t> get_sup_data_raw_ptr() {
-            return buffer_get_raw_ptr(this->sup_data);
         }
     };
 
@@ -353,7 +412,7 @@ namespace block_diag_ilu {
     public:
         ColMajBlockDiagView<double> view;
         buffer_t<int> ipiv, rowbycol, colbyrow;
-#ifdef UNIT_TEST
+#ifdef BLOCK_DIAG_ILU_UNIT_TEST
         std::size_t nblocks() { return this->view.nblocks; }
         int blockw() { return this->view.blockw; }
         int ndiag() { return this->view.ndiag; }
@@ -375,13 +434,13 @@ namespace block_diag_ilu {
             colbyrow(buffer_factory<int>(view.blockw*view.nblocks)) {
             int info_ = 0;
             const auto nblocks = this->view.nblocks;
-            const auto ndiag = this->view.ndiag;
+            const auto ndiag = this->view.ndiag;  // narrowing cast
 #if !defined(WITH_BLOCK_DIAG_ILU_DGETRF)
             // LAPACK take pointers to integers
             int blockw = this->view.blockw;
             int ld_blocks = this->view.ld_blocks;
 #else
-            auto blockw = this->view.blockw;
+            const auto blockw = this->view.blockw;
 #pragma omp parallel for
 #endif
             for (std::size_t bi=0; bi<nblocks; ++bi){
@@ -402,8 +461,8 @@ namespace block_diag_ilu {
 #endif
                 if ((info != 0) && (info_ == 0))
                     info_ = info;
-                for (int ci = 0; ci < blockw; ++ci){
-                    for (int di = 0; (di < ndiag) && (bi+di < (nblocks) - 1); ++di){
+                for (uint ci = 0; ci < (uint)blockw; ++ci){
+                    for (uint di = 0; (di < ndiag) && (bi+di < (nblocks - 1)); ++di){
                         this->view.sub(di, bi, ci) /= this->view.block(bi, ci, ci);
                     }
                 }
@@ -417,8 +476,8 @@ namespace block_diag_ilu {
             // before calling solve: make sure that the
             // block_data and sup_data pointers are still valid.
             const auto nblocks = this->view.nblocks;
-            const auto blockw = this->view.blockw;
-            const auto ndiag = this->view.ndiag;
+            const int blockw = this->view.blockw; // narrowing cast
+            const int ndiag = this->view.ndiag; // narrowing cast
             auto y = buffer_factory<double>(nblocks*blockw);
             for (std::size_t bri = 0; bri < nblocks; ++bri){
                 for (int li = 0; li < blockw; ++li){
@@ -438,8 +497,9 @@ namespace block_diag_ilu {
             for (std::size_t bri = nblocks; bri > 0; --bri){
                 for (int li = blockw; li > 0; --li){
                     double s = 0.0;
-                    for (int ci = li; ci < blockw; ++ci)
+                    for (int ci = li; ci < blockw; ++ci){
                         s += this->view.block(bri-1, li-1, ci)*x[(bri-1)*blockw + ci];
+                    }
                     for (int di = 1; di <= ndiag; ++di) {
                         if ((bri-1) < nblocks - di){
                             int ci = this->colbyrow[(bri-1)*blockw + li-1];
@@ -457,31 +517,31 @@ namespace block_diag_ilu {
 
 #if defined(WITH_BLOCK_DIAG_ILU_DGETRF)
 // int will be enough (flops of a LU decomoposition scales as N**3, and besides this is unblocked)
-inline int block_diag_ilu::dgetrf_square(const int dim, double * const __restrict__ a,
-                                         const int lda, int * const __restrict__ ipiv) noexcept {
+inline uint block_diag_ilu::dgetrf_square(const uint dim, double * const __restrict__ a,
+                                          const uint lda, int * const __restrict__ ipiv) noexcept {
     // Unblocked algorithm for LU decomposition of square matrices
     // employing Doolittle's algorithm with rowswaps.
     //
     // ipiv indexing starts at 1 (Fortran compability)
     // performance should be acceptable when leading dimension
-    // of the block fits in a L1 cache line.
+    // of the block fits in a L1 cache line. (as of 2016 i.e. 8*float64)
 
     if (dim == 0) return 0;
 
-    int info = 0;
-    auto A = [&](int ri, int ci) -> double& { return a[ci*lda + ri]; };
-    auto swaprows = [&](int ri1, int ri2) { // this is not cache friendly
-        for (int ci=0; ci<dim; ++ci){
+    uint info = 0;
+    auto A = [&](uint ri, uint ci) -> double& { return a[ci*lda + ri]; };
+    auto swaprows = [&](uint ri1, uint ri2) { // this is not cache friendly
+        for (uint ci=0; ci<dim; ++ci){
             double temp = A(ri1, ci);
             A(ri1, ci) = A(ri2, ci);
             A(ri2, ci) = temp;
         }
     };
 
-    for (int i=0; i<dim-1; ++i) {
-        int pivrow = i;
+    for (uint i=0; i<dim-1; ++i) {
+        uint pivrow = i;
         double absmax = std::abs(A(i, i));
-        for (int j=i; j<dim; ++j) {
+        for (uint j=i; j<dim; ++j) {
             // Find pivot
             double curabs = std::abs(A(j, i));
             if (curabs > absmax){
@@ -497,12 +557,12 @@ inline int block_diag_ilu::dgetrf_square(const int dim, double * const __restric
             swaprows(i, pivrow);
         }
         // Eliminate in column
-        for (int ri=i+1; ri<dim; ++ri){
+        for (uint ri=i+1; ri<dim; ++ri){
             A(ri, i) = A(ri, i)/A(i, i);
         }
         // Subtract from rows
-        for (int ci=i+1; ci<dim; ++ci){
-            for (int ri=i+1; ri<dim; ++ri){
+        for (uint ci=i+1; ci<dim; ++ci){
+            for (uint ri=i+1; ri<dim; ++ri){
                 A(ri, ci) -= A(ri, i)*A(i, ci);
             }
         }
@@ -510,6 +570,4 @@ inline int block_diag_ilu::dgetrf_square(const int dim, double * const __restric
     ipiv[dim-1] = dim;
     return info;
 }
-#endif
-
 #endif

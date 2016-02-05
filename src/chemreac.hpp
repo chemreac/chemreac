@@ -27,8 +27,8 @@ public:
     uint n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
 
-    void _fill_local_r(int, const double * const __restrict__, double * const __restrict__) const;
-    void _apply_fd(uint);
+    void fill_local_r_(int, const double * const __restrict__, double * const __restrict__) const;
+    void apply_fd_(uint);
     const double * alloc_and_populate_linC(const double * const __restrict__, bool, bool) const;
     uint _stencil_bi_lbound(uint bi) const;
     uint _xc_bi_map(uint xci) const;
@@ -66,6 +66,7 @@ public:
 private:
     block_diag_ilu::ColMajBlockDiagMat<double> *jac_cache {nullptr};
     block_diag_ilu::ColMajBlockDiagMat<double> *prec_cache {nullptr};
+    bool update_prec_cache = false;
     double old_gamma;
 
 public:
