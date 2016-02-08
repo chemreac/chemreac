@@ -11,6 +11,7 @@ from __future__ import (absolute_import, division, print_function)
 from functools import reduce
 from itertools import chain
 from operator import add
+import os
 
 import numpy as np
 
@@ -227,6 +228,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         Indicies of reactions subject to per bin modulation
     modulation: sequence of sequences of floats
         Per bin modulation vectors for each index in modulated_rxns
+    ilu_limit: float
+        Requirement on (average) diagonal dominance for performing ILU
+        factorization.
     unit_registry: dict (optional)
         default: None, see ``chemreac.units.SI_base_registry`` for an
         example.
@@ -273,6 +277,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 faraday=None,  # deprecated
                 vacuum_permittivity=None,  # deprecated
                 k_unitless=None,
+                ilu_limit=None,
                 **kwargs):
         if N == 0:
             if x is None:
@@ -391,6 +396,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                                              'Faraday_constant'),
             vacuum_permittivity or get_unitless_constant(
                 unit_registry, 'vacuum_permittivity'),
+            ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
+                       ilu_limit is None else ilu_limit)
         )
 
         rd.unit_registry = unit_registry

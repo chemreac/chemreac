@@ -61,6 +61,7 @@ public:
     vector<vector<double>> fields;
     vector<int> modulated_rxns;
     vector<vector<double> > modulation;
+    double ilu_limit;
     double * const efield; // v_d = mu_el*E
     double * const netchg;
 private:
@@ -103,7 +104,8 @@ public:
                       vector<int> g_value_parents={},
                       vector<vector<double> > fields={},
                       vector<int> modulated_rxns={},
-                      vector<vector<double> > modulation={}
+                      vector<vector<double> > modulation={},
+                      double ilu_limit=1000.0
                       );
     ~ReactionDiffusion();
     void f(double, const double * const, double * const __restrict__);

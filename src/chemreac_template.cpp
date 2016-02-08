@@ -75,7 +75,8 @@ ReactionDiffusion::ReactionDiffusion(
     vector<int> g_value_parents,
     vector<vector<double>> fields,
     vector<int> modulated_rxns,
-    vector<vector<double> > modulation):
+    vector<vector<double> > modulation,
+    double ilu_limit):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
@@ -84,6 +85,7 @@ ReactionDiffusion::ReactionDiffusion(
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
     vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
+    ilu_limit(ilu_limit),
     efield(new double[N]), netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
@@ -756,11 +758,11 @@ void ReactionDiffusion::prec_solve_left(const double t,
     if (prec_cache->view.average_diag_weight(0) > CHEMREAC_ILU_LIMIT) {
         block_diag_ilu::ILU_inplace ilu {prec_cache->view};
         ilu.solve(r, z);
-        //std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
     } else {
         block_diag_ilu::LU lu {prec_cache->view};
         lu.solve(r, z);
-        //std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
     }
 }
 
