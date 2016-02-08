@@ -56,3 +56,4 @@ scripts/chemreac_logo.*
 dec_cha.ipynb
 .ipynb_checkpoints/
 *.egg-info
+*.egg

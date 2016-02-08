@@ -12,7 +12,7 @@ from __future__ import (absolute_import, division, print_function)
 from math import log10
 import numpy as np
 from chemreac import ReactionDiffusion
-from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
+from chemreac.chemistry import Reaction, ReactionSystem
 from chemreac.integrate import run
 from chemreac.util.analysis import suggest_t0
 from chemreac.util.plotting import (

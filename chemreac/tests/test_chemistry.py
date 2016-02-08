@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 
-from operator import attrgetter
-
 from chemreac import ReactionDiffusion
 from chemreac.chemistry import (
-    Substance, Reaction, ReactionSystem,
+    Reaction, ReactionSystem,
     mk_sn_dict_from_names
 )
 

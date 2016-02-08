@@ -13,6 +13,5 @@ trap "rm __conda_version__.txt" EXIT SIGINT SIGTERM
 if [[ ! -z "$CONDA_BIN_PATH" ]]; then
     export PATH=$CONDA_BIN_PATH:$PATH
 fi
-for CPY in {27,34}; do
-    PYTHONNOUSERSITE=1 CONDA_PY=$CPY conda build conda-recipe
-done
+CONDA_PY=27 conda build --no-test conda-recipe
+CONDA_PY=34 conda build conda-recipe

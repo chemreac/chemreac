@@ -5,12 +5,9 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
 fi
 rm -r build/ dist/* */*.so
 set -e
-python2 setup.py sdist
-pip install dist/*.tar.gz
-(cd /; python2.7 -m pytest --pyargs $1)
-pip3 install dist/*.tar.gz
-(cd /; python3 -m pytest --pyargs $1)
-pip install --user -e .[all]
-pip3 install --user -e .[all]
-PYTHONPATH=$(pwd) ./scripts/run_tests.sh $@
+python2.7 setup.py sdist
+python2.7 -m pip install --user -e .[all]
+python3.4 -m pip install --user -e .[all]
+PYTHONPATH=$(pwd) PYTHON=python2.7 ./scripts/run_tests.sh
+PYTHONPATH=$(pwd) PYTHON=python3.4 ./scripts/run_tests.sh ${@:2}
 ! grep "DO-NOT-MERGE!" -R . --exclude ci.sh
