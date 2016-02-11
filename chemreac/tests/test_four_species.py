@@ -168,8 +168,8 @@ def test_dense_jac_cmaj(log):
 
 def test_chemistry():
     sbstncs = mk_sn_dict_from_names('ABCD', D=[0.1, 0.2, 0.3, 0.4])
-    r1 = Reaction({'A': 1}, {'B': 1}, k=0.05)
-    r2 = Reaction({'B': 1, 'C': 2}, {'D': 1, 'B': 1}, k=3.0)
+    r1 = Reaction({'A': 1}, {'B': 1}, 0.05)
+    r2 = Reaction({'B': 1, 'C': 2}, {'D': 1, 'B': 1}, 3.0)
     rsys = ReactionSystem([r1, r2], sbstncs)
     rd = ReactionDiffusion.from_ReactionSystem(rsys)
     # how to compare equality of say: json loaded rd?

@@ -145,7 +145,7 @@ def test_dense_jac_cmaj(log):
 
 def test_chemistry():
     sbstncs = mk_sn_dict_from_names('ABC', D=[.1, .2, .3])
-    r1 = Reaction({'A': 1, 'B': 1}, {'C': 1}, k=0.3)
+    r1 = Reaction({'A': 1, 'B': 1}, {'C': 1}, 0.3)
     rsys = ReactionSystem([r1], sbstncs)
     rd = ReactionDiffusion.from_ReactionSystem(rsys)
     serialized_rd = load(JSON_PATH)

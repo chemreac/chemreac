@@ -63,7 +63,7 @@ def test_autobinary():
     )
     sbstncs = mk_sn_dict_from_names('AB')
     k = 3.0
-    r1 = Reaction({'A': 2}, {'B': 1}, k=k)
+    r1 = Reaction({'A': 2}, {'B': 1}, k)
     rsys = ReactionSystem([r1], sbstncs)
     rd = ReactionDiffusion.from_ReactionSystem(rsys)
 

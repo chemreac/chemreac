@@ -27,9 +27,9 @@ def get_reactions(rates):
     B + B -> C
     """
     return (
-        Reaction({'A': 1}, {'B': 1}, k=rates[0]),
-        Reaction({'B': 1, 'C': 1}, {'A': 1, 'C': 1}, k=rates[1]),
-        Reaction({'B': 2}, {'B': 1, 'C': 1}, k=rates[2])
+        Reaction({'A': 1}, {'B': 1}, rates[0]),
+        Reaction({'B': 1, 'C': 1}, {'A': 1, 'C': 1}, rates[1]),
+        Reaction({'B': 2}, {'B': 1, 'C': 1}, rates[2])
     )
 
 

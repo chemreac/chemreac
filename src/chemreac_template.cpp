@@ -752,10 +752,7 @@ void ReactionDiffusion::prec_solve_left(const double t,
 
 #endif
 
-#if !defined(CHEMREAC_ILU_LIMIT)
-#define CHEMREAC_ILU_LIMIT 1000
-#endif
-    if (prec_cache->view.average_diag_weight(0) > CHEMREAC_ILU_LIMIT) {
+    if (prec_cache->view.average_diag_weight(0) > ilu_limit) {
         block_diag_ilu::ILU_inplace ilu {prec_cache->view};
         ilu.solve(r, z);
         std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;

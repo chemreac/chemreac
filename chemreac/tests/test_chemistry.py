@@ -9,7 +9,7 @@ from chemreac.chemistry import (
 
 def test_ReactionSystem__to_ReactionDiffusion():
     sbstncs = mk_sn_dict_from_names('AB')
-    r1 = Reaction({'A': 2}, {'B': 1}, k=3.0)
+    r1 = Reaction({'A': 2}, {'B': 1}, 3.0)
     rsys = ReactionSystem([r1], sbstncs)
     rd = ReactionDiffusion.from_ReactionSystem(rsys)
     assert rd.stoich_active == [[0, 0]]
