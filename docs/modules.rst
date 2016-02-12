@@ -8,7 +8,6 @@ of some runtime parameters. Here is an overview:
 
 CHEMREAC_INTEGRATOR: sundials, e.g. 'scipy'
 CHEMREAC_INTEGRATOR_KWARGS: nil, e.g. '{"iterative": 1}'
-CHEMREAC_ILU_LIMIT: 1000.0, used for preconditioning for the iterative solvers
 
 
 .. toctree::
