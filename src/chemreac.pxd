@@ -32,6 +32,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[vector[double]] fields
         vector[int] modulated_rxns
         vector[vector[double]] modulation
+        double ilu_limit
         double * const efield
         double * xc
         long neval_f
@@ -66,7 +67,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           vector[int],
                           vector[vector[double]],
                           vector[int],
-                          vector[vector[double]]
+                          vector[vector[double]],
+                          double
                           ) except +
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, const double * const, double * const, int)

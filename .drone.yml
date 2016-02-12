@@ -3,7 +3,19 @@ build:
   environment:
     - WITH_OPENMP=1
   commands:
-    - pip install -r requirements.txt
-    - pip3 install -r requirements.txt
     - ./scripts/ci.sh chemreac
-    - CHEMREAC_SOLVER=sundials ./scripts/ci.sh chemreac --slow --veryslow
+    - CHEMREAC_SOLVER=sundials ./scripts/ci.sh chemreac --slow --veryslow --cov chemreac --cov-report html
+    - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
+    - ./scripts/generate_docs.sh
+    - ./scripts/prepare_deploy.sh
+
+deploy:
+
+  rsync:
+    host: hera.physchem.kth.se
+    port: 22
+    user: chemreac
+    source: deploy/
+    target: ~
+    recursive: true
+    delete: false

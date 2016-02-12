@@ -8,7 +8,7 @@ This module collects convenience functions to create matplotlib plots
 of results.
 """
 
-from math import floor, ceil
+from math import floor, ceil, log
 
 import numpy as np
 from chemreac.chemistry import mk_sn_dict_from_names
@@ -28,9 +28,7 @@ def _init_axes(ax=None):
 
 
 def save_and_or_show_plot(show=None, savefig='None'):
-    """
-    Convenience method for either showing or saving current matplotlib
-    figure.
+    """ Save and/or show current matplotlib figure
 
     Parameters
     ----------
@@ -425,13 +423,13 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
         substance_idxs = [
             s if isinstance(s, int) else rd.substance_names.index(s) for
             s in substances]
-
+    latex_names_None = rd.substance_latex_names in (None, [None]*rd.n)
     if labels is None:
         try:
-            if rd.substance_latex_names is not None:
+            if not latex_names_None:
                 names = ['$'+n+'$' for n in rd.substance_latex_names]
             else:
-                rd.substance_names
+                names = rd.substance_names
         except AttributeError:
             names = list(map(str, substance_idxs))
         labels = [names[i] for i in substance_idxs]
@@ -540,6 +538,22 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
     return ax
 
 
+def plot_faded_time(integr, substance, rgb=(1., .5, .5), log_color=False,
+                    yscale=None):
+    si = (substance if isinstance(substance, int) else
+          integr.rd.substance_names.index(substance))
+    for ti in range(integr.tout.size):
+        if log_color:
+            span = log(integr.tout[-1]) - log(integr.tout[0])
+            c = (log(integr.tout[ti]) - log(integr.tout[0]))/span
+        else:
+            c = integr.tout[ti]/integr.tout[-1]
+        c = c*rgb[0], c*rgb[1], c*rgb[2]
+        plt.plot(integr.rd.xcenters, integr.Cout[ti, :, si], c=c)
+    if yscale is not None:
+        plt.gca().set_yscale(yscale)
+
+
 def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
                       **plot_kwargs):
     """
@@ -587,8 +601,9 @@ def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
     ax.set_xlabel(fmtstr.format('x / m'))
     ax.set_ylabel(fmtstr.format('time / s'))
     ax.set_zlabel(fmtstr.format('C / M'))
+    latex_names_None = rd.substance_latex_names in (None, [None]*rd.n)
     if rd.substance_names:
-        if rd.substance_latex_names:
+        if not latex_names_None:
             name = '$' + rd.substance_latex_names[substance] + '$'
         else:
             name = rd.substance_names[substance]

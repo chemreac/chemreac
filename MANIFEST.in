@@ -12,8 +12,8 @@ recursive-include scripts *
 include chemreac/tests/*.json
 include chemreac/tests/*.txt
 
+include AUTHORS
 include CHANGES.rst
-include LICENSE.txt
+include LICENSE
 include README.rst
-include requirements.txt
 include conftest.py

@@ -4,14 +4,10 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 rm -r build/ dist/* */*.so
-set +e
-python2 setup.py sdist
-pip install dist/*.tar.gz
-(cd /; python2.7 -m pytest --pyargs $1)
-pip3 install dist/*.tar.gz
-(cd /; python3 -m pytest --pyargs $1)
-python2 setup.py build_ext -i
-python3 setup.py build_ext -i
-PYTHONPATH=$(pwd) ./scripts/run_tests.sh --cov $1 --cov-report html ${@:2}
-./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
+set -e
+python2.7 setup.py sdist
+python2.7 -m pip install --user -e .[all]
+python3.4 -m pip install --user -e .[all]
+PYTHONPATH=$(pwd) PYTHON=python2.7 ./scripts/run_tests.sh
+PYTHONPATH=$(pwd) PYTHON=python3.4 ./scripts/run_tests.sh ${@:2}
 ! grep "DO-NOT-MERGE!" -R . --exclude ci.sh

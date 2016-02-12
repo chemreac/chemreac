@@ -79,6 +79,7 @@ cdef class CppReactionDiffusion:
                   double eps_rel=1.0,
                   double faraday_const=9.64853399e4,
                   double vacuum_permittivity=8.854187817e-12,
+                  ilu_limit=1000.0,
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion(
@@ -87,7 +88,7 @@ cdef class CppReactionDiffusion:
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
-            modulated_rxns, modulation)
+            modulated_rxns, modulation, ilu_limit)
 
     def __dealloc__(self):
         del self.thisptr
@@ -403,7 +404,7 @@ def sundials_integrate(
 
 
 # Below is an implementation of the classic Runge Kutta 4th order stepper with fixed step size
-# it is only useful for debugging purposes (fixed step size isn't for production runs)
+# it is only useful for debugging purposes (fixed step size is not for production runs)
 
 cdef void _add_2_vecs(int n,  double * v1, double * v2,
                       double f1, double f2, double * out):

@@ -11,7 +11,7 @@ from chemreac.util.table import radyields2pdf_table
 
 
 def _get_rsys():
-    r1 = Reaction({'A': 2}, {'B': 1}, k=3.0)
+    r1 = Reaction({'A': 2}, {'B': 1}, 3.0)
     A = Substance('A', latex_name='\\ensuremath{\\boldsymbol{A}}')
     B = Substance('B', latex_name='\\ensuremath{\\boldsymbol{B}}')
     rsys = ReactionSystem([r1], [A, B])

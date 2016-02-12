@@ -1,6 +1,6 @@
 package:
   name: chemreac
-  version: 0.3.1.dev0
+  version: 0.4.0.git
   # the version being overridden by the __conda_version__.txt file
   # http://conda.pydata.org/docs/build.html#post-build-version
 
@@ -25,12 +25,11 @@ requirements:
     - future
     - sympy
     - quantities
+    - chempy
 
 test:
   requires:
     - pytest
-    - sympy
-    - quantities
     - periodictable
     - argh
   imports:

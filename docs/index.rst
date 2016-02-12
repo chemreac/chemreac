@@ -6,7 +6,7 @@
 Welcome to chemreac's documentation!
 ====================================
 
-chemreac is an open-source library for modeling chemical kinetcs in either:
+chemreac is an open-source Python library for modeling chemical kinetcs in either:
 
 - Homogeneous bulk solution (no concentration gradients)
     - Kinetics governed by law of mass action
@@ -22,7 +22,10 @@ For the non-homogeneous case the user may choose:
 - an arbitrarily spaced grid
 - to calculate the electric field from concentrations for advection (drift).
 
-Interfaces are provided to Sundials_ (CVODE) at the C++ level and to both 
+futhermore the user may choose to solve the problem for the logarithm of concentraion, 
+time and/or space (variable transformations).
+
+Interfaces are provided to Sundials_ (CVode) at the C++ level and to both 
 Sundials and SciPy_ at the python level.
 
 Currently the code is written with the following assumptions:
