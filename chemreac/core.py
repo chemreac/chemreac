@@ -2,7 +2,7 @@
 """
 chemreac.core
 =============
-In chemreac.core you will find :py:class:`ReactionDiffusion` which
+In ``chemreac.core`` you will find :py:class:`ReactionDiffusion` which
 is the class describing the system of ODEs.
 
 """
@@ -158,6 +158,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     derivatives and jacobian.
 
     The instance provides methods:
+
+    - :meth:`f`
+    - :meth:`dense_jac_rmaj`
+
 
     - ``f(t, y, fout)``
     - ``dense_jac_rmaj(t, y, jout)``

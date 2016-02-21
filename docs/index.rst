@@ -22,11 +22,13 @@ For the non-homogeneous case the user may choose:
 - an arbitrarily spaced grid
 - to calculate the electric field from concentrations for advection (drift).
 
-futhermore the user may choose to solve the problem for the logarithm of concentraion, 
-time and/or space (variable transformations).
+Futhermore the user may choose to solve the problem for the logarithm of concentraion, 
+time and/or space (variable transformations). The library also intends to provide first
+class support for photo-/radiation chemical contributions. 
 
-Interfaces are provided to Sundials_ (CVode) at the C++ level and to both 
-Sundials and SciPy_ at the python level.
+The numerical evaluation is performed natively (the model is implemented in C++) and
+the integration can be performed using Sundials_ (CVode) at the C++ level or SciPy_ at
+the python level.
 
 Currently the code is written with the following assumptions:
 
@@ -54,7 +56,6 @@ where :math:`t` is time, :math:`c_i` is the concentration of species :math:`i`, 
 where :math:`\kappa_l` is the rate constant, :math:`R_{kl}` is the stoichiometric coefficient of species :math:`k` on the reactant side.
 
 The equation is discretized in one dimension (flat, cylindrical or spherical shells). 
-The model is implemented in a C++ class with Python_ bindings for ease of access.
 
 Contents:
 

@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+chemreac.util.table
+-------------------
+
+this module contains functions to generate tables.
+"""
 from __future__ import (absolute_import, division, print_function)
 
 from chempy.units import get_derived_unit, to_unitless

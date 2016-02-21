@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 """
+Python package for modeling chemical kinetics with diffusion and drift.
+
 chemreac is a python library for solving chemical kinetics problems
 with possible diffusion and drift contributions. It is implemented
 by solving the deterministic Smoluchovski equation for discretized

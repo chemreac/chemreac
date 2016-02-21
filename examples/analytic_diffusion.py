@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-u"""
+"""
 Analytic diffusion
 ------------------
 
@@ -21,7 +21,7 @@ function expressions for respective geometry).
 ::
 
  $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5\
- --nspecies 2 --geom f
+ --nspecies 3 --geom f
 
  $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 400\
  --nstencil 3
@@ -346,12 +346,14 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.legend()
 
         plt.subplot(4, 1, 2)
+        plt.title('Analytic solution')
         plt.gca().set_yscale(yscale)
 
         plt.subplot(4, 1, 3)
         plt.title('Linear rel. error / Abs. tol. (={})'.format(atol))
 
         plt.subplot(4, 1, 4)
+        plt.title('RMS error vs. time'.format(atol))
         tspan = [tout[0], tout[-1]]
         for si in range(nspecies):
             plt.plot(tout, rmsd[:, si] / atol, c=color(si, -1))

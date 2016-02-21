@@ -5,6 +5,8 @@ chemreac.util.banded
 
 this module contains functions to deal with banded matrices.
 """
+from __future__ import (absolute_import, division, print_function)
+
 
 import numpy as np
 

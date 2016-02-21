@@ -9,8 +9,8 @@ from setuptools import setup
 
 pkg_name = 'chemreac'
 
-with open(os.path.join(pkg_name,'__init__.py')) as f:
-    long_description = f.read().split('"""')[1]
+def _path_under_setup(*args):
+    return os.path.join(os.path.dirname(__file__), *args)
 
 # Reading the version is a bit tricky: the same commit could actually
 # correspond to multiple versions. e.g. a commit could be tagged both:
@@ -197,13 +197,21 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Mathematics',
 ]
 
+long_description = open('README.rst').read()
+with open(_path_under_setup(pkg_name, '__init__.py')) as f:
+    short_description = f.read().split('"""')[1].split('\n')[1]
+assert len(short_description) > 10 and len(short_description) < 256
+
 setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
-    description='Python package for modeling chemical kinetics with diffusion and drift.',
+    description=short_description,
     long_description=long_description,
     author='Björn Dahlgren',
     author_email='bjodah@DELETEMEgmail.com',
+    license='BSD',
+    keywords=["chemical kinetics", "Smoluchowski equation",
+              "advection-diffusion-reaction"],
     url='https://github.com/chemreac/' + pkg_name,
     packages=[pkg_name] + modules + tests,
     package_data=package_data,
