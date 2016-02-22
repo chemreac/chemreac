@@ -20,18 +20,18 @@ function expressions for respective geometry).
 
 ::
 
- $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5\
- --nspecies 3 --geom f
+ $ python analytic_diffusion.py --plot --efield --center 0.5\
+ --nstencil 5 --nspecies 3 --geom f
 
- $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 400\
- --nstencil 3
+ $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --center 500\
+ -D 400 --nstencil 3
 
 Note -D 475
 
 ::
 
- $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 475\
-  --nstencil 7
+ $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --center 500\
+ -D 475 --nstencil 7
 
 Still problematic (should not need to be):
 
@@ -195,20 +195,21 @@ def _efield_cb(x):
     return -np.ones_like(x)
 
 
-def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
+def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None, N=64,
                  nt=42, geom='f', logt=False, logy=False, logx=False,
                  random=False, nspecies=1, p=0, a=0.2, nstencil=3,
                  linterpol=False, rinterpol=False, num_jacobian=False,
                  method='bdf', plot=False, atol=1e-6, rtol=1e-6,
                  efield=False, random_seed=42, savefig='None',
-                 verbose=False, yscale='linear', vline_limit=100):
+                 verbose=False, yscale='linear', vline_limit=100,
+                 mobility=0.01):
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
         np.random.seed(random_seed)
     # decay = (nspecies > 1)
     # n = 2 if decay else 1
-    mu = float(mu or x0)
+    center = float(center or x0)
     tout = np.linspace(t0, tend, nt)
 
     assert geom in 'fcs'
@@ -238,7 +239,7 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         N,
         D=[D]*nspecies,
         z_chg=[1]*nspecies,
-        mobility=[0.01]*nspecies,
+        mobility=[mobility]*nspecies,
         x=x,
         geom=geom,
         logy=logy,
@@ -256,8 +257,8 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = analytic(rd.xcenters, t, D, mu, x0, xend,
-                    0.01 if efield else 0, logy, logx).reshape(nt, N, 1)
+    yref = analytic(rd.xcenters, t, D, center, x0, xend,
+                    -mobility if efield else 0, logy, logx).reshape(nt, N, 1)
 
     if nspecies > 1:
         from batemaneq import bateman_parent

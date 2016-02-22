@@ -20,7 +20,7 @@ from .util.pyutil import monotonic
 from .units import unit_of, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
-from ._chemreac import CppReactionDiffusion, diag_data_len
+from ._chemreac import CppReactionDiffusion
 
 DENSE, BANDED, SPARSE = range(3)
 FLAT, CYLINDRICAL, SPHERICAL = range(3)
@@ -132,9 +132,8 @@ class ReactionDiffusionBase(object):
                             order=order)
 
     def alloc_jout_compressed(self, ndiag):
-        # TODO: ndiag from nstencil
-        return np.zeros(self.n*self.n*self.N + 2*diag_data_len(
-            self.N, self.n, ndiag))
+        from block_diag_ilu import alloc_compressed
+        return alloc_compressed(self.N, self.n, self.n_jac_diags)
 
     @property
     def ny(self):
@@ -235,6 +234,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     ilu_limit: float
         Requirement on (average) diagonal dominance for performing ILU
         factorization.
+    n_jac_diags: int
+        Number of diagonals to include in Jacobian (default: 1)
     unit_registry: dict (optional)
         default: None, see ``chemreac.units.SI_base_registry`` for an
         example.
@@ -282,6 +283,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 vacuum_permittivity=None,  # deprecated
                 k_unitless=None,
                 ilu_limit=None,
+                n_jac_diags=0,
                 **kwargs):
         if N == 0:
             if x is None:
@@ -401,7 +403,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             vacuum_permittivity or get_unitless_constant(
                 unit_registry, 'vacuum_permittivity'),
             ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
-                       ilu_limit is None else ilu_limit)
+                       ilu_limit is None else ilu_limit),
+            n_jac_diags=(int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
+                         n_jac_diags == 0 else n_jac_diags)
         )
 
         rd.unit_registry = unit_registry

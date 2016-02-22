@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
+from __future__ import (absolute_import, division, print_function)
+
 
 from itertools import product
 import os
@@ -11,7 +12,6 @@ import pytest
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
-from chemreac.util.compressed_jac_store import get_compressed
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
 
@@ -599,9 +599,36 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
 
+    # compressed_jac_cmaj actually use all diagonals
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x,
+                           logy=logy, logt=logt, nstencil=nstencil,
+                           lrefl=False, rrefl=False, n_jac_diags=2)
     jout_cmprs = rd.alloc_jout_compressed(nsidep)
     rd.compressed_jac_cmaj(t, y, jout_cmprs)
-    jref_cmprs = get_compressed(jref, 1, N, nsidep)
+    from block_diag_ilu import Compressed_from_dense
+
+    jref2 = np.zeros((N, N))
+    for i in range(N):
+        for j in range(max(0, i-2), min(N, i+3)):
+            if logy:
+                if i-2 <= j <= i+2:
+                    if i == j:
+                        for k in range(nstencil):
+                            cyi = yi[k+lb[i]]
+                            if i == cyi:
+                                continue
+                            jref2[i, i] -= D*weights[i][k]*y0[cyi]/y0[i]
+                    else:
+                        for k in range(nstencil):
+                            if yi[k+lb[i]] == j:
+                                jref2[i, j] += D*weights[i][k]*y0[j]/y0[i]
+
+            else:
+                if i-2 <= j <= i+2:
+                    jref2[i, j] = D*weights[i][j-lb[i]+nsidep]
+    if logt:
+        jref2 *= t0
+    jref_cmprs = Compressed_from_dense(jref2, N, 1, nsidep).data
     assert np.allclose(jout_cmprs, jref_cmprs)
 
 

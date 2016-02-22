@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+# -*- mode: cython -*-
 from libcpp cimport bool
 from libcpp.vector cimport vector
 

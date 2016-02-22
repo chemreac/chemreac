@@ -130,27 +130,29 @@ int test_jac(){
     // Compressed jacobian
     vector<double> cmprs_jac(rd.n*rd.n*rd.N + 2*rd.n*(rd.N-1), 0);
     rd.compressed_jac_cmaj(0.0, &y[0], nullptr, &cmprs_jac[0], rd.n);
+    std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
 #define CMPRS(bi, ri, ci) cmprs_jac[bi*rd.n*rd.n + ci*rd.n + ri]
-#define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi+ci]
-#define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi+ci]
+#define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi + ci]
+#define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi + ci]
     // diagonal blocks
     for (uint bi=0; bi<rd.N; ++bi)
         for (uint ci=0; ci<rd.n; ++ci)
             for (uint ri=0; ri<rd.n; ++ri)
                 if (dabs(CMPRS(bi, ri, ci) - DNS(bi*rd.n + ri, bi*rd.n + ci)) > 1e-14){
-                    std::cout << bi << " " << ci << " " << ri << " " << CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
+                    std::cout << "CMPRS: " << bi << " " << ci << " " << ri << " " <<
+                        CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
                     exit2 = exit2 | 4;
                 }
     for (uint bi=0; bi<rd.N-1; ++bi)
         for (uint ci=0; ci<rd.n; ++ci){
             // sub diagonal
             if (dabs(SUB(bi, ci) - DNS((bi+1)*rd.n + ci, bi*rd.n + ci)) > 1e-14){
-                std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
+                std::cout << "SUB: " << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
                 exit2 = exit2 | 4;
             }
             // sup diagonal
             if (dabs(SUP(bi, ci) - DNS(bi*rd.n + ci, (bi+1)*rd.n + ci)) > 1e-14){
-                std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
+                std::cout << "SUP:" << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
                 exit2 = exit2 | 4;
             }
         }

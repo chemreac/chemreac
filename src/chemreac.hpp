@@ -30,8 +30,8 @@ public:
     void fill_local_r_(int, const double * const __restrict__, double * const __restrict__) const;
     void apply_fd_(uint);
     const double * alloc_and_populate_linC(const double * const __restrict__, bool, bool) const;
-    uint _stencil_bi_lbound(uint bi) const;
-    uint _xc_bi_map(uint xci) const;
+    uint stencil_bi_lbound_(uint bi) const;
+    uint xc_bi_map_(uint xci) const;
 
 public:
     const uint n; // number of species
@@ -62,6 +62,8 @@ public:
     vector<int> modulated_rxns;
     vector<vector<double> > modulation;
     double ilu_limit;
+    uint n_jac_diags;
+
     double * const efield; // v_d = mu_el*E
     double * const netchg;
 private:
@@ -72,11 +74,15 @@ private:
 
 public:
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
+
+    // counters
     long neval_f {0};
     long neval_j {0};
     long nprec_setup {0};
     long nprec_solve {0};
     long njacvec_dot {0};
+    long nprec_solve_ilu {0};
+    long nprec_solve_lu {0};
 
     ReactionDiffusion(uint,
 		      const vector<vector<uint> >,
@@ -105,9 +111,13 @@ public:
                       vector<vector<double> > fields={},
                       vector<int> modulated_rxns={},
                       vector<vector<double> > modulation={},
-                      double ilu_limit=1000.0
+                      double ilu_limit=1000.0,
+                      uint n_jac_diags=0
                       );
     ~ReactionDiffusion();
+
+    void zero_counters();
+
     void f(double, const double * const, double * const __restrict__);
 
     void dense_jac_rmaj(double, const double * const __restrict__, const double * const __restrict__, double * const __restrict__, int);

@@ -76,7 +76,8 @@ ReactionDiffusion::ReactionDiffusion(
     vector<vector<double>> fields,
     vector<int> modulated_rxns,
     vector<vector<double> > modulation,
-    double ilu_limit):
+    double ilu_limit,
+    uint n_jac_diags):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
@@ -113,6 +114,9 @@ ReactionDiffusion::ReactionDiffusion(
             throw std::length_error(
                 "Number bin edges != number of compartments + 1.");
     }
+    if (n_jac_diags == 0)
+        n_jac_diags = nsidep;
+    this->n_jac_diags = n_jac_diags;
 
     switch(geom_) {
     case 0:
@@ -224,14 +228,27 @@ ReactionDiffusion::~ReactionDiffusion()
         delete jac_cache;
 }
 
-uint ReactionDiffusion::_stencil_bi_lbound(uint bi) const
+void
+ReactionDiffusion::zero_counters(){
+    neval_f = 0;
+    neval_j = 0;
+    nprec_setup = 0;
+    nprec_solve = 0;
+    njacvec_dot = 0;
+    nprec_solve_ilu = 0;
+    nprec_solve_lu = 0;
+}
+
+uint
+ReactionDiffusion::stencil_bi_lbound_(uint bi) const
 {
     const uint le = lrefl ? 0 : nsidep;
     const uint re = rrefl ? 0 : nsidep;
     return max(le, min(N + 2*nsidep - re - nstencil, bi));
 }
 
-uint ReactionDiffusion::_xc_bi_map(uint xci) const
+uint
+ReactionDiffusion::xc_bi_map_(uint xci) const
 {
     if (xci < nsidep)
         return nsidep - xci - 1;
@@ -458,15 +475,12 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
     ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-(bci))*n+ri-ci'),\
     ('compressed_jac_cmaj', None, None),\
     ]:
-%if token.startswith('compressed'):
-#define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
-    //define SUB(di, bri, ci) std::cout<< di << " " << bri << " " << ci << std::endl; ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
-#define SUB(di, bri, ci) ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
-#define SUP(di, bri, ci) ja[N*n*n + n*(N*nsidep - (nsidep*nsidep + nsidep)/2) + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri)*n + ci]
+    %if token.startswith('compressed') or token.startswith('banded_padded'):
+// #define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
+// #define SUB(di, bri, ci) ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
+// #define SUP(di, bri, ci) ja[N*n*n + n*(N*nsidep - (nsidep*nsidep + nsidep)/2) + \
+    //                             n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri)*n + ci]
 %else:
-#define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
-#define SUB(di, bri, ci) JAC(bri, bri-di, ci, ci)
-#define SUP(di, bri, ci) JAC(bri, bri+di, ci, ci)
 %endif
 void
 ReactionDiffusion::${token}(double t,
@@ -474,13 +488,29 @@ ReactionDiffusion::${token}(double t,
                             const double * const __restrict__ fy,
                             double * const __restrict__ ja, int ldj)
 {
-    // Note: does not return a strictly correct Jacobian for nstecil > 3
-    // (only 1 pair of bands).
+    // Note: blocks are zeroed out, diagnoals only incremented
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
-    ${'ignore(ldj);' if token.startswith('compressed') else ''}
+    %if token.startswith('compressed') or token.startswith('banded_padded'):
+#define JAC(bi, ignore_, ri, ci) jac.block(bi, ri, ci)
+#define SUB(di, bi, li) jac.sub(di, bi, li)
+#define SUP(di, bi, li) jac.sup(di, bi, li)
+    %if token.startswith('compressed'):
+    ignore(ldj);
+    block_diag_ilu::ColMajBlockDiagView<double> jac {ja,
+            ja + N*n*n,
+            ja + N*n*n + n*(N*n_jac_diags - (n_jac_diags*n_jac_diags + n_jac_diags)/2),
+            N, n, n_jac_diags};
+    %elif token.startswith('banded_padded'):
+    block_diag_ilu::ColMajBandedView<double> jac {ja, N, n, n_jac_diags, ldj};
+    %endif
+    %else:
+#define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
+#define SUB(di, bi, li) JAC(bi+di+1, bi, li, li)
+#define SUP(di, bi, li) JAC(bi, bi+di+1, li, li)
+    %endif
     const double exp_t = (logt) ? exp(t) : 0.0;
 
     double * fout = nullptr;
@@ -542,35 +572,33 @@ ReactionDiffusion::${token}(double t,
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
-            uint lbound = _stencil_bi_lbound(bi);
+            uint lbound = stencil_bi_lbound_(bi);
             for (uint si=0; si<n; ++si){ // species index si
                 if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
-                // All versions except the compressed Jacobian ignore any more sub/super
-                // diagonals than the innermost.
                 for (uint k=0; k<nstencil; ++k){
-                    const uint sbi = _xc_bi_map(lbound+k);
+                    const uint sbi = xc_bi_map_(lbound+k);
                     JAC(bi, bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
                     if (sbi == bi) {
                         JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
                         JAC(bi, bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
-                        if (bi >= 1)
-                            if (sbi == bi-1){
-                                SUB(1, bi, si) += D[si]*D_WEIGHT(bi, k);
-                                SUB(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
+                        for (uint di=0; di<n_jac_diags; ++di){
+                            if ((bi >= di+1) and (sbi == bi-di-1)){
+                                SUB(di, bi-di-1, si) += D[si]*D_WEIGHT(bi, k);
+                                SUB(di, bi-di-1, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
                             }
-                        if (bi < N-1)
-                            if (sbi == bi+1){
-                                SUP(1, bi, si) += D[si]*D_WEIGHT(bi, k);
-                                SUP(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
+                            if ((bi < N-di-1) and (sbi == bi+di+1)){
+                                SUP(di, bi, si) += D[si]*D_WEIGHT(bi, k);
+                                SUP(di, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
                             }
+                        }
                     }
                 }
             }
         }
 
         // Logartihmic transformations
-        // ----------------------------
+        // ---------------------------
         if (logy || logt){
             for (uint si=0; si<n; ++si){
                 for (uint dsi=0; dsi<n; ++dsi){
@@ -582,17 +610,19 @@ ReactionDiffusion::${token}(double t,
                     if (logy && dsi == si)
                         JAC(bi, bi, si, si) -= FOUT(bi, si);
                 }
-                if (bi>0){
-                    if (logy)
-                        SUB(1, bi, si) *= LINC(bi-1, si)*RLINC(bi, si);
-                    if (logt)
-                        SUB(1, bi, si) *= exp_t;
-                }
-                if (bi<N-1){
-                    if (logy)
-                        SUP(1, bi, si) *= LINC(bi+1, si)*RLINC(bi, si);
-                    if (logt)
-                        SUP(1, bi, si) *= exp_t;
+                for (uint di=0; di<n_jac_diags; ++di){
+                    if (bi > di){
+                        if (logy)
+                            SUB(di, bi-di-1, si) *= LINC(bi-di-1, si)*RLINC(bi, si);
+                        if (logt)
+                            SUB(di, bi-di-1, si) *= exp_t;
+                    }
+                    if (bi < N-di-1){
+                        if (logy)
+                            SUP(di, bi, si) *= LINC(bi+di+1, si)*RLINC(bi, si);
+                        if (logt)
+                            SUP(di, bi, si) *= exp_t;
+                    }
                 }
             }
         }
@@ -753,13 +783,15 @@ void ReactionDiffusion::prec_solve_left(const double t,
 #endif
 
     if (prec_cache->view.average_diag_weight(0) > ilu_limit) {
-        block_diag_ilu::ILU_inplace ilu {prec_cache->view};
+        block_diag_ilu::ILU ilu {prec_cache->view};
         ilu.solve(r, z);
-        std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        nprec_solve_ilu++;
+        //std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
     } else {
         block_diag_ilu::LU lu {prec_cache->view};
         lu.solve(r, z);
-        std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        nprec_solve_lu++;
+        //std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
     }
 }
 

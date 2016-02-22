@@ -33,6 +33,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[int] modulated_rxns
         vector[vector[double]] modulation
         double ilu_limit
+        uint n_jac_diags
         double * const efield
         double * xc
         long neval_f
@@ -40,6 +41,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         long nprec_setup
         long nprec_solve
         long njacvec_dot
+        long nprec_solve_ilu
+        long nprec_solve_lu
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],
@@ -68,8 +71,10 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           vector[vector[double]],
                           vector[int],
                           vector[vector[double]],
-                          double
+                          double,
+                          uint
                           ) except +
+        void zero_counters()
         void f(double, const double * const, double * const)
         void dense_jac_rmaj(double, const double * const, const double * const, double * const, int)
         void dense_jac_cmaj(double, const double * const, const double * const, double * const, int)
@@ -81,5 +86,5 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         int get_geom_as_int()
         void calc_efield(const double * const)
 
-        uint _stencil_bi_lbound(uint)
-        uint _xc_bi_map(uint)
+        uint stencil_bi_lbound_(uint)
+        uint xc_bi_map_(uint)

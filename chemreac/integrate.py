@@ -66,7 +66,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
     # Run the integration
-    rd.zero_out_counters()
+    rd.zero_counters()
     texec = time.time()
     try:
         yout = sundials_integrate(rd, np.asarray(y0).flatten(),
@@ -90,6 +90,8 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
         info['nprec_setup'] = rd.nprec_setup
         info['nprec_solve'] = rd.nprec_solve
         info['njacvec_dot'] = rd.njacvec_dot
+        info['nprec_solve_ilu'] = rd.nprec_solve_ilu
+        info['nprec_solve_lu'] = rd.nprec_solve_lu
     return yout, tout, info
 
 

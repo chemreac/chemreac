@@ -39,9 +39,6 @@ cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
         version=3,
     ))
 
-def diag_data_len(N, n, ndiag):
-    return n*(N*ndiag - ((ndiag+1)*(ndiag+1) - (ndiag+1))//2)
-
 
 cdef class CppReactionDiffusion:
     """
@@ -80,6 +77,7 @@ cdef class CppReactionDiffusion:
                   double faraday_const=9.64853399e4,
                   double vacuum_permittivity=8.854187817e-12,
                   ilu_limit=1000.0,
+                  n_jac_diags=1,
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion(
@@ -88,7 +86,7 @@ cdef class CppReactionDiffusion:
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
-            modulated_rxns, modulation, ilu_limit)
+            modulated_rxns, modulation, ilu_limit, n_jac_diags)
 
     def __dealloc__(self):
         del self.thisptr
@@ -133,6 +131,7 @@ cdef class CppReactionDiffusion:
 
     def compressed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                             cnp.ndarray[cnp.float64_t, ndim=1] Jout):
+        from block_diag_ilu import diag_data_len
         assert y.size >= self.n*self.N
         assert Jout.size >= self.n*self.n*self.N + 2*diag_data_len(
             self.N, self.n, (self.nstencil-1)//2)
@@ -296,42 +295,46 @@ cdef class CppReactionDiffusion:
         def __set__(self, vector[vector[double]] modulation):
             self.thisptr.modulation = modulation
 
+    property ilu_limit:
+        def __get__(self):
+            return self.thisptr.ilu_limit
+
+    property n_jac_diags:
+        def __get__(self):
+            return self.thisptr.n_jac_diags
+
     property neval_f:
         def __get__(self):
             return self.thisptr.neval_f
-        def __set__(self, long n):
-            self.thisptr.neval_f = n
 
     property neval_j:
         def __get__(self):
             return self.thisptr.neval_j
-        def __set__(self, long n):
-            self.thisptr.neval_j = n
 
     property nprec_setup:
         def __get__(self):
             return self.thisptr.nprec_setup
-        def __set__(self, long n):
-            self.thisptr.nprec_setup = n
 
     property nprec_solve:
         def __get__(self):
             return self.thisptr.nprec_solve
-        def __set__(self, long n):
-            self.thisptr.nprec_solve = n
+
 
     property njacvec_dot:
         def __get__(self):
             return self.thisptr.njacvec_dot
-        def __set__(self, long n):
-            self.thisptr.njacvec_dot = n
 
-    def zero_out_counters(self):
-        self.neval_f = 0
-        self.neval_j = 0
-        self.nprec_setup = 0
-        self.nprec_solve = 0
-        self.njacvec_dot = 0
+    property nprec_solve_ilu:
+        def __get__(self):
+            return self.thisptr.nprec_solve_ilu
+
+    property nprec_solve_lu:
+        def __get__(self):
+            return self.thisptr.nprec_solve_lu
+
+
+    def zero_counters(self):
+        self.thisptr.zero_counters()
 
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
@@ -374,10 +377,10 @@ cdef class CppReactionDiffusion:
                                (self.thisptr.N*self.thisptr.nstencil,))
 
     def _stencil_bi_lbound(self, uint bi):
-        return self.thisptr._stencil_bi_lbound(bi)
+        return self.thisptr.stencil_bi_lbound_(bi)
 
     def _xc_bi_map(self, uint xci):
-        return self.thisptr._xc_bi_map(xci)
+        return self.thisptr.xc_bi_map_(xci)
 
     property efield:
         def __get__(self):
