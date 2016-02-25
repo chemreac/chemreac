@@ -94,10 +94,10 @@ namespace block_diag_ilu {
 
 
     template <class T, typename Real_t = double>
-    struct ColMajViewBase {
+    struct ViewBase {
         const uint blockw, ndiag;
         const std::size_t nblocks, nouter, dim;
-        ColMajViewBase(uint blockw, uint ndiag, std::size_t nblocks)
+        ViewBase(uint blockw, uint ndiag, std::size_t nblocks)
             : blockw(blockw), ndiag(ndiag), nblocks(nblocks),
               nouter(nouter_(blockw, ndiag)), dim(blockw*nblocks) {}
 
@@ -148,45 +148,48 @@ namespace block_diag_ilu {
     };
 
 
-    template <typename Real_t = double>
-    class ColMajDenseView : public ColMajViewBase<ColMajDenseView<Real_t>, Real_t> {
+
+    template <typename Real_t = double, bool col_maj = true>
+    class DenseView : public ViewBase<DenseView<Real_t, col_maj>, Real_t> {
         // For use with LAPACK's dense matrix layout
     public:
         Real_t *data;
         const uint ld;
 
-        ColMajDenseView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag, const int ld_=0)
-            : ColMajViewBase<ColMajDenseView<Real_t>, Real_t>(blockw, ndiag, nblocks),
+        DenseView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag, const int ld_=0)
+            : ViewBase<DenseView<Real_t, col_maj>, Real_t>(blockw, ndiag, nblocks),
               data(data), ld((ld_ == 0) ? blockw*nblocks : ld_) {}
         inline Real_t& block(const std::size_t blocki, const uint rowi,
                              const uint coli) const noexcept {
-            const uint imaj = (this->blockw)*blocki + coli;
-            const uint imin = (this->blockw)*blocki + rowi;
+            const uint imaj = (this->blockw)*blocki + (col_maj ? coli : rowi);
+            const uint imin = (this->blockw)*blocki + (col_maj ? rowi : coli);
             return this->data[imaj*ld + imin];
         }
         inline Real_t& sub(const uint diagi, const std::size_t blocki,
-                           const uint coli) const noexcept {
-            const uint imaj = (this->blockw)*blocki + coli;
-            const uint imin = (this->blockw)*(blocki + diagi + 1) + coli;
+                           const uint li) const noexcept {
+            const uint imaj = (this->blockw)*(blocki + (col_maj ? 0 : diagi + 1)) + li;
+            const uint imin = (this->blockw)*(blocki + (col_maj ? diagi + 1 : 0)) + li;
             return this->data[imaj*ld + imin];
         }
         inline Real_t& sup(const uint diagi, const std::size_t blocki,
-                           const uint coli) const noexcept {
-            const uint imaj = (this->blockw)*(blocki + diagi + 1) + coli;
-            const uint imin = (this->blockw) + coli;
+                           const uint li) const noexcept {
+            const uint imaj = (this->blockw)*(blocki + (col_maj ? diagi + 1 : 0)) + li;
+            const uint imin = (this->blockw)*(blocki + (col_maj ? 0 : diagi + 1)) + li;
             return this->data[imaj*ld + imin];
         }
     };
 
     template <typename Real_t = double>
-    class ColMajBandedView : public ColMajViewBase<ColMajBandedView<Real_t>, Real_t> {
-        // For use with LAPACK's banded matrix layout
+    class ColMajBandedView : public ViewBase<ColMajBandedView<Real_t>, Real_t> {
+        // For use with LAPACK's banded matrix layout.
+        // Note that the matrix is padded with ``mupper`` extra bands.
     public:
         Real_t *data;
         const uint ld;
 
-        ColMajBandedView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag, const int ld_=0)
-            : ColMajViewBase<ColMajBandedView<Real_t>, Real_t>(blockw, ndiag, nblocks),
+        ColMajBandedView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag,
+                         const uint ld_=0)
+            : ViewBase<ColMajBandedView<Real_t>, Real_t>(blockw, ndiag, nblocks),
               data(data), ld((ld_ == 0) ? banded_ld_(nouter_(blockw, ndiag)) : ld_) {}
         inline Real_t& block(const std::size_t blocki, const uint rowi,
                              const uint coli) const noexcept {
@@ -210,7 +213,7 @@ namespace block_diag_ilu {
 
     template <typename Real_t = double> class ColMajBlockDiagMat;
     template <typename Real_t = double>
-    class ColMajBlockDiagView : public ColMajViewBase<ColMajBlockDiagView<Real_t>, Real_t> {
+    class ColMajBlockDiagView : public ViewBase<ColMajBlockDiagView<Real_t>, Real_t> {
     public:
         Real_t *block_data, *sub_data, *sup_data;
         // int will suffice, decomposition scales as N**3 even iterative methods (N**2) would need months at 1 TFLOPS
@@ -225,7 +228,7 @@ namespace block_diag_ilu {
                             const uint blockw, const uint ndiag,
                             const uint ld_blocks_=0, const std::size_t block_stride_=0,
                             const uint ld_diag_=0) :
-            ColMajViewBase<ColMajBlockDiagView<Real_t>, Real_t>(blockw, ndiag, nblocks),
+            ViewBase<ColMajBlockDiagView<Real_t>, Real_t>(blockw, ndiag, nblocks),
             block_data(block_data), sub_data(sub_data), sup_data(sup_data),
             ld_blocks((ld_blocks_ == 0) ? blockw : ld_blocks_),
             block_stride((block_stride_ == 0) ? ld_blocks*blockw : block_stride_),
@@ -421,6 +424,9 @@ namespace block_diag_ilu {
             ipiv(buffer_factory<int>(view.dim))
         {
             std::memcpy(&data[0], view.data, sizeof(double)*view.ld*view.dim);
+            if (view.ld != banded_ld_(view.nouter)){
+                throw std::runtime_error("LAPACK requires padding");
+            }
             factorize();
         }
         void factorize(){

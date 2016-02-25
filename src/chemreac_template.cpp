@@ -467,6 +467,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
 #undef DYDT
 // D_WEIGHT(bi, li), Y(bi, si) and LINC(bi, si) still defined.
 
+
 #define FOUT(bi, si) fout[(bi)*n+si]
 %for token, imaj, imin in [\
     ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
@@ -475,13 +476,6 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
     ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-(bci))*n+ri-ci'),\
     ('compressed_jac_cmaj', None, None),\
     ]:
-    %if token.startswith('compressed') or token.startswith('banded_padded'):
-// #define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
-// #define SUB(di, bri, ci) ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
-// #define SUP(di, bri, ci) ja[N*n*n + n*(N*nsidep - (nsidep*nsidep + nsidep)/2) + \
-    //                             n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri)*n + ci]
-%else:
-%endif
 void
 ReactionDiffusion::${token}(double t,
                             const double * const __restrict__ y,
@@ -493,7 +487,7 @@ ReactionDiffusion::${token}(double t,
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
-    %if token.startswith('compressed') or token.startswith('banded_padded'):
+    %if token.startswith('compressed') or token.startswith('banded_padded') or token.startswith('dense'):
 #define JAC(bi, ignore_, ri, ci) jac.block(bi, ri, ci)
 #define SUB(di, bi, li) jac.sub(di, bi, li)
 #define SUP(di, bi, li) jac.sup(di, bi, li)
@@ -505,6 +499,10 @@ ReactionDiffusion::${token}(double t,
             N, n, n_jac_diags};
     %elif token.startswith('banded_padded'):
     block_diag_ilu::ColMajBandedView<double> jac {ja, N, n, n_jac_diags, ldj};
+    %elif token.startswith('dense_jac_cmaj'):
+    block_diag_ilu::DenseView<double> jac {ja, N, n, n_jac_diags, ldj};
+    %elif token.startswith('dense_jac_rmaj'):
+    block_diag_ilu::DenseView<double, false> jac {ja, N, n, n_jac_diags, ldj};
     %endif
     %else:
 #define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
