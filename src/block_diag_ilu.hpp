@@ -90,8 +90,9 @@ namespace block_diag_ilu {
                             const int *ldab, const int *ipiv, double *b, const int *ldb, int *info);
 
     constexpr uint nouter_(uint blockw, uint ndiag) { return (ndiag == 0) ? blockw-1 : blockw*ndiag; }
-    constexpr uint banded_ld_(uint nouter) { return 1 + 3*nouter; } // padded for use with LAPACK's dgbtrf
-
+    constexpr uint banded_ld_(uint nouter, int offset=-1) {
+        return 1 + 2*nouter + ((offset == -1) ? nouter : offset); // padded for use with LAPACK's dgbtrf
+    }
 
     template <class T, typename Real_t = double>
     struct ViewBase {
@@ -185,28 +186,29 @@ namespace block_diag_ilu {
         // Note that the matrix is padded with ``mupper`` extra bands.
     public:
         Real_t *data;
-        const uint ld;
+        const uint ld, offset;
 
         ColMajBandedView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag,
-                         const uint ld_=0)
+                         const uint ld_=0, int offset_=-1)
             : ViewBase<ColMajBandedView<Real_t>, Real_t>(blockw, ndiag, nblocks),
-              data(data), ld((ld_ == 0) ? banded_ld_(nouter_(blockw, ndiag)) : ld_) {}
+              data(data), ld((ld_ == 0) ? banded_ld_(nouter_(blockw, ndiag), offset_) : ld_),
+              offset((offset_ == -1) ? nouter_(blockw, ndiag) : offset_) {}
         inline Real_t& block(const std::size_t blocki, const uint rowi,
                              const uint coli) const noexcept {
             const uint imaj = blocki*(this->blockw) + coli;
-            const uint imin = 2*(this->nouter) + rowi - coli;
+            const uint imin = offset + this->nouter + rowi - coli;
             return this->data[imaj*ld + imin];
         }
         inline Real_t& sub(const uint diagi, const std::size_t blocki,
                            const uint coli) const noexcept {
             const uint imaj = blocki*(this->blockw) + coli;
-            const uint imin = 2*(this->nouter) + (diagi + 1)*(this->blockw);
+            const uint imin = offset + this->nouter + (diagi + 1)*(this->blockw);
             return this->data[imaj*ld + imin];
         }
         inline Real_t& sup(const uint diagi, const std::size_t blocki,
                            const uint coli) const noexcept {
             const uint imaj = (blocki + diagi + 1)*(this->blockw) + coli;
-            const uint imin = 2*(this->nouter) - (diagi+1)*(this->blockw);
+            const uint imin = offset + this->nouter - (diagi+1)*(this->blockw);
             return this->data[imaj*ld + imin];
         }
     };
