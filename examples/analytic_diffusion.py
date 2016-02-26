@@ -263,11 +263,9 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None, N=64,
     if nspecies > 1:
         from batemaneq import bateman_parent
         bateman_out = np.array(bateman_parent(k, tout)).T
-        print(bateman_out)
         terminal = (1 - np.sum(bateman_out, axis=1)).reshape((nt, 1))
         bateman_out = np.concatenate((bateman_out, terminal), axis=1).reshape(
             (nt, 1, nspecies))
-        print(bateman_out.shape)
         if logy:
             yref = yref + np.log(bateman_out)
         else:

@@ -76,8 +76,8 @@ public:
     double * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
 
     // counters
-    long neval_f {0};
-    long neval_j {0};
+    long nfev {0};
+    long njev {0};
     long nprec_setup {0};
     long nprec_solve {0};
     long njacvec_dot {0};

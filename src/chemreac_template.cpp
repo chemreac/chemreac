@@ -230,8 +230,8 @@ ReactionDiffusion::~ReactionDiffusion()
 
 void
 ReactionDiffusion::zero_counters(){
-    neval_f = 0;
-    neval_j = 0;
+    nfev = 0;
+    njev = 0;
     nprec_setup = 0;
     nprec_solve = 0;
     njacvec_dot = 0;
@@ -462,7 +462,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         free((void*)linC);
         free((void*)rlinC);
     }
-    neval_f++;
+    nfev++;
 }
 #undef DYDT
 // D_WEIGHT(bi, li), Y(bi, si) and LINC(bi, si) still defined.
@@ -620,10 +620,10 @@ ReactionDiffusion::${token}(double t,
     free((void*)rlinC);
     if (logy)
         free((void*)linC);
-    neval_j++;
+    njev++;
 #if defined(WITH_DATA_DUMPING)
     std::ostringstream fname;
-    fname << "jac_" << std::setfill('0') << std::setw(5) << neval_j << ".dat";
+    fname << "jac_" << std::setfill('0') << std::setw(5) << njev << ".dat";
     save_array(ja, ldj*n*N, fname.str());
 #endif
 }

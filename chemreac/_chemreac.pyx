@@ -303,13 +303,13 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.n_jac_diags
 
-    property neval_f:
+    property nfev:
         def __get__(self):
-            return self.thisptr.neval_f
+            return self.thisptr.nfev
 
-    property neval_j:
+    property njev:
         def __get__(self):
-            return self.thisptr.neval_j
+            return self.thisptr.njev
 
     property nprec_setup:
         def __get__(self):

@@ -36,8 +36,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         uint n_jac_diags
         double * const efield
         double * xc
-        long neval_f
-        long neval_j
+        long nfev
+        long njev
         long nprec_setup
         long nprec_solve
         long njacvec_dot

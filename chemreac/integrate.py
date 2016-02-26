@@ -81,8 +81,8 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
 
     info = new_kwargs.copy()
     info.update({
-        'neval_f': rd.neval_f,
-        'neval_j': rd.neval_j,
+        'nfev': rd.nfev,
+        'njev': rd.njev,
         'texec': texec,
         'success': success
     })
@@ -109,8 +109,8 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     yout, Dyout = rk4(rd, y0, tout)
     texec = time.time() - texec
     info = {
-        'neval_f': 4*(tout.size-1),
-        'neval_j': 0,
+        'nfev': 4*(tout.size-1),
+        'njev': 0,
         'texec': texec,
         'success': True,
     }
@@ -300,8 +300,8 @@ def integrate_scipy(rd, y0, tout, mode=None,
         'integrator_name': integrator_name,
         'success': runner.successful(),
         'texec': texec,
-        'neval_f': f.neval,
-        'neval_j': jac.neval,
+        'nfev': f.neval,
+        'njev': jac.neval,
     })
     return yout.reshape((len(tout), rd.N, rd.n)), tout, info
 
