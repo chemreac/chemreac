@@ -489,7 +489,6 @@ namespace cvodes_wrapper {
                 integr.set_jac_times_vec_fn(jac_times_vec_cb<OdeSys>);
                 integr.set_preconditioner(prec_setup_cb<OdeSys>,
                                           jac_prec_solve_cb<OdeSys>);
-                std::cout << "so we set it to iterative alright..." << std::endl;
                 // integr.set_gram_schmidt_type() // GMRES
                 // integr.set_krylov_max_len()  // BiCGStab, TFQMR
             } else {
