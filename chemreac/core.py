@@ -115,6 +115,10 @@ class ReactionDiffusionBase(object):
         return np.zeros(self.n*self.N)
 
     def alloc_jout(self, banded=None, order='C', pad=0):
+        if pad is True:
+            pad = self.n*self.n_jac_diags
+        if pad is False:
+            pad = 0
         if banded is None:
             banded = self.N > 1
         if order == 'C':
@@ -125,13 +129,14 @@ class ReactionDiffusionBase(object):
             raise ValueError("Order must be 'C' or 'F'")
 
         if banded:
-            return np.zeros((self.n*2 + 1 + rpad, self.n*self.N + cpad),
-                            order=order)
+            nr = 2*(self.n*self.n_jac_diags) + 1 + rpad
+            nc = self.n*self.N + cpad
+            return np.zeros((nr, nc), order=order)
         else:
             return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
                             order=order)
 
-    def alloc_jout_compressed(self, ndiag):
+    def alloc_jout_compressed(self):
         from block_diag_ilu import alloc_compressed
         return alloc_compressed(self.N, self.n, self.n_jac_diags)
 
@@ -283,7 +288,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 vacuum_permittivity=None,  # deprecated
                 k_unitless=None,
                 ilu_limit=None,
-                n_jac_diags=0,
+                n_jac_diags=-1,
                 **kwargs):
         if N == 0:
             if x is None:
@@ -376,6 +381,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             if any(len(arr) != N for arr in modulation):
                 raise ValueError("An array in modulation of size != N")
 
+        _k = np.asarray(k_unitless)
+        if _k.ndim != 1:
+            raise ValueError("Rates vector has inproper dimension")
+
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_active, stoich_prod,
             np.asarray(k_unitless),
@@ -405,7 +414,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
                        ilu_limit is None else ilu_limit),
             n_jac_diags=(int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
-                         n_jac_diags == 0 else n_jac_diags)
+                         n_jac_diags is -1 else n_jac_diags)
         )
 
         rd.unit_registry = unit_registry

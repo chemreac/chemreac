@@ -86,7 +86,7 @@ ReactionDiffusion::ReactionDiffusion(
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
     vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
-    ilu_limit(ilu_limit),
+    ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags),
     efield(new double[N]), netchg(new double[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
@@ -114,10 +114,6 @@ ReactionDiffusion::ReactionDiffusion(
             throw std::length_error(
                 "Number bin edges != number of compartments + 1.");
     }
-    if (n_jac_diags == 0)
-        n_jac_diags = nsidep;
-    this->n_jac_diags = n_jac_diags;
-
     switch(geom_) {
     case 0:
         geom = Geom::FLAT;
@@ -253,7 +249,7 @@ ReactionDiffusion::xc_bi_map_(uint xci) const
     if (xci < nsidep)
         return nsidep - xci - 1;
     else if (xci >= N+nsidep)
-        return 2*N - xci;
+        return nsidep + 2*N - xci - 1;
     else
         return xci - nsidep;
 }

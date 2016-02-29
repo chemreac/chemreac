@@ -10,8 +10,10 @@ in general.
 from __future__ import print_function, division, absolute_import
 
 from functools import reduce
-from operator import add
+from itertools import product
 from math import exp
+from operator import add
+import os
 
 import sympy as sp
 
@@ -33,7 +35,7 @@ class SymRD(ReactionDiffusionBase):
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
                  g_value_parents=None, fields=None, modulated_rxns=None,
-                 modulation=None, **kwargs):
+                 modulation=None, n_jac_diags=-1, **kwargs):
         # Save args
         self.n = n
         self.stoich_active = stoich_active
@@ -62,17 +64,21 @@ class SymRD(ReactionDiffusionBase):
         self.fields = [] if fields is None else fields
         self.modulated_rxns = [] if modulated_rxns is None else modulated_rxns
         self.modulation = [] if modulation is None else modulation
+        self.n_jac_diags = (int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
+                            n_jac_diags is -1 else n_jac_diags)
         if kwargs:
             raise KeyError("Don't know what to do with:", kwargs)
 
         # Set attributes used later
         self._t = sp.Symbol('t')
         self._nsidep = (self.nstencil-1) // 2
+        if self.n_jac_diags == 0:
+            self.n_jac_diags = self._nsidep
         self._y = sp.symbols('y:'+str(self.n*self.N))
         self._xc = padded_centers(self.x, self._nsidep)
         self._lb = stencil_pxci_lbounds(self.nstencil, self.N,
                                         self.lrefl, self.rrefl)
-        self._pxci2bi = pxci_to_bi(self.nstencil, self.N)
+        self._xc_bi_map = pxci_to_bi(self.nstencil, self.N)
         self._f = [0]*self.n*self.N
         self.efield = [0]*self.N
 
@@ -136,12 +142,12 @@ class SymRD(ReactionDiffusionBase):
             for bi, (dw, aw) in enumerate(zip(self.D_wghts, self.A_wghts)):
                 for si in range(self.n):
                     d_terms = [dw[k]*self.y(
-                        self._pxci2bi[self._lb[bi]+k], si
+                        self._xc_bi_map[self._lb[bi]+k], si
                     ) for k in range(self.nstencil)]
                     self._f[bi*self.n + si] += self.D[si]*reduce(
                         add, d_terms)
                     a_terms = [aw[k]*self.y(
-                        self._pxci2bi[self._lb[bi]+k], si
+                        self._xc_bi_map[self._lb[bi]+k], si
                     ) for k in range(self.nstencil)]
                     self._f[bi*self.n + si] += (
                         self.mobility[si]*self.efield[bi]*reduce(
@@ -164,7 +170,7 @@ class SymRD(ReactionDiffusionBase):
     def f(self, t, y, fout):
         subsd = dict(zip(self._y, y))
         subsd[self._t] = t
-        fout[:] = [expr.subs(subsd) for expr in self._f]
+        fout[:] = [expr.xreplace(subsd) for expr in self._f]
 
     @property
     def jacobian(self):
@@ -175,8 +181,39 @@ class SymRD(ReactionDiffusionBase):
             self._jacobian = fmat.jacobian(self._y)
             return self._jacobian
 
-    def dense_jac_rmaj(self, t, y, Jout):
+    def dense_jac(self, t, y, Jout):
         subsd = dict(zip(self._y, y))
         subsd[self._t] = t
-        Jout[:, :] = [[expr.subs(subsd) for expr in row]
-                      for row in self.jacobian.tolist()]
+        for ri, row in enumerate(self.jacobian.tolist()):
+            for ci in range(max(0,
+                                ri - self.n*self.n_jac_diags),
+                            min(self.n*self.N,
+                                ri + self.n*self.n_jac_diags + 1)):
+                Jout[ri, ci] = row[ci].xreplace(subsd)
+        # Jout[:, :] = [[expr for expr in row]
+        #               for row in ]
+
+    dense_jac_rmaj = dense_jac_cmaj = dense_jac
+
+    def banded_jac(self, t, y, Jout):
+        from pyodesys.util import banded_jacobian
+        jac = banded_jacobian(self._f, self._y,
+                              self.n*self.n_jac_diags,
+                              self.n*self.n_jac_diags)
+        width = 2*self.n*self.n_jac_diags + 1
+        if Jout.shape[0] == width:
+            pad = 0
+        elif Jout.shape[0] == 3*self.n*self.n_jac_diags + 1:
+            pad = self.n*self.n_jac_diags
+        else:
+            raise ValueError("Ill-shaped Jout")
+
+        subsd = dict(zip(self._y, y))
+        for ri, ci in product(range(width), range(self.n*self.N)):
+            Jout[ri + pad, ci] = sp.S(jac[ri, ci]).xreplace(subsd)
+
+    def compressed_jac(self, t, y, Jout):
+        from block_diag_ilu import get_compressed
+        J = self.alloc_jout(banded=False)
+        self.dense_jac(t, y, J)
+        Jout[:] = get_compressed(J, self.N, self.n, self.n_jac_diags)

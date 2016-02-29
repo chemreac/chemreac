@@ -836,6 +836,11 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     ref_banded_j = get_banded(jref, n, N)
 
+    ref_banded_j_symbolic = rd.alloc_jout(order='F')
+    symrd = SymRD.from_rd(rd)
+    symrd.banded_jac_cmaj(0.0, y0.flatten(), ref_banded_j_symbolic)
+    assert np.allclose(ref_banded_j_symbolic, ref_banded_j)
+
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
     rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
@@ -858,6 +863,42 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 
-    jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
+    jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
     rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
     assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
+
+
+@pytest.mark.parametrize("n_jac_diags", [-1, 1, 2, 3, 0])
+def test_n_jac_diags(n_jac_diags):
+    N, n, nstencil = 10, 1, 7
+    rd = ReactionDiffusion(n, [], [], [], N=N, nstencil=nstencil,
+                           n_jac_diags=n_jac_diags, D=[9])
+    assert np.allclose(rd.xcenters,
+                       [.05, .15, .25, .35, .45, .55, .65, .75, .85, .95])
+    y0 = np.ones(N)
+
+    # Dense
+    jref_cdns = np.zeros((n*N, n*N), order='F')
+    jout_cdns = np.zeros((n*N, n*N), order='F')
+    sm = SymRD.from_rd(rd)
+    sm.dense_jac(0.0, y0.flatten(), jref_cdns)
+    rd.dense_jac_cmaj(0.0, y0.flatten(), jout_cdns)
+    assert np.allclose(jout_cdns, jref_cdns)
+
+    # Banded
+    for pad in (True, False):
+        jref_cbnd = rd.alloc_jout(order='F', pad=pad)
+        jout_cbnd = rd.alloc_jout(order='F', pad=pad)
+        sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
+        if pad:
+            rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
+        else:
+            rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
+        assert np.allclose(jout_cbnd, jref_cbnd)
+
+    # Compressed
+    jref_cmprs = rd.alloc_jout_compressed()
+    jout_cmprs = rd.alloc_jout_compressed()
+    sm.compressed_jac(0.0, y0.flatten(), jref_cmprs)
+    rd.compressed_jac_cmaj(0.0, y0.flatten(), jout_cmprs)
+    assert np.allclose(jout_cmprs, jref_cmprs)

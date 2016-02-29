@@ -492,7 +492,7 @@ namespace cvodes_wrapper {
                 // integr.set_gram_schmidt_type() // GMRES
                 // integr.set_krylov_max_len()  // BiCGStab, TFQMR
             } else {
-                integr.set_linear_solver_to_banded(ny, rd->n, rd->n);
+                integr.set_linear_solver_to_banded(ny, rd->n*rd->n_jac_diags, rd->n*rd->n_jac_diags);
                 if (with_jacobian)
                     integr.set_band_jac_fn(jac_band_cb<OdeSys>);
             }

@@ -76,8 +76,8 @@ cdef class CppReactionDiffusion:
                   double eps_rel=1.0,
                   double faraday_const=9.64853399e4,
                   double vacuum_permittivity=8.854187817e-12,
-                  ilu_limit=1000.0,
-                  n_jac_diags=1,
+                  double ilu_limit=1000.0,
+                  int n_jac_diags=1,
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion(
@@ -134,7 +134,7 @@ cdef class CppReactionDiffusion:
         from block_diag_ilu import diag_data_len
         assert y.size >= self.n*self.N
         assert Jout.size >= self.n*self.n*self.N + 2*diag_data_len(
-            self.N, self.n, (self.nstencil-1)//2)
+            self.N, self.n, self.n_jac_diags)
         self.thisptr.compressed_jac_cmaj(
             t, &y[0], NULL, <double *>Jout.data, self.n)
 
@@ -243,6 +243,10 @@ cdef class CppReactionDiffusion:
     property nstencil:
         def __get__(self):
             return self.thisptr.nstencil
+
+    property nsidep:
+        def __get__(self):
+            return self.thisptr.nsidep
 
     property lrefl:
         def __get__(self):

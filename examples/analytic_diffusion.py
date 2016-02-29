@@ -195,14 +195,16 @@ def _efield_cb(x):
     return -np.ones_like(x)
 
 
-def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None, N=64,
-                 nt=42, geom='f', logt=False, logy=False, logx=False,
-                 random=False, nspecies=1, p=0, a=0.2, nstencil=3,
+def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
+                 D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None,
+                 nt=42, logt=False, logy=False, logx=False,
+                 random=False, p=0, a=0.2,
                  linterpol=False, rinterpol=False, num_jacobian=False,
-                 method='bdf', plot=False, atol=1e-6, rtol=1e-6,
-                 efield=False, random_seed=42, savefig='None',
-                 verbose=False, yscale='linear', vline_limit=100,
-                 mobility=0.01):
+                 method='bdf', atol=1e-8, rtol=1e-10,
+                 efield=False, random_seed=42, mobility=0.01,
+                 plot=False, savefig='None', verbose=False, yscale='linear',
+                 vline_limit=100,
+                 ):  # remember: anayltic_N_scaling.main kwargs
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
@@ -230,12 +232,11 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None, N=64,
     def _k(si):
         return (si+p)*log(a+1)
     k = [_k(i+1) for i in range(nspecies-1)]
-
     rd = ReactionDiffusion(
         nspecies,
         [[i] for i in range(nspecies-1)],
         [[i+1] for i in range(nspecies-1)],
-        [k[i] for i in range(nspecies-1)],
+        k,
         N,
         D=[D]*nspecies,
         z_chg=[1]*nspecies,

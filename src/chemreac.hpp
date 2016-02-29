@@ -61,8 +61,8 @@ public:
     vector<vector<double>> fields;
     vector<int> modulated_rxns;
     vector<vector<double> > modulation;
-    double ilu_limit;
-    uint n_jac_diags;
+    const double ilu_limit;
+    const uint n_jac_diags;
 
     double * const efield; // v_d = mu_el*E
     double * const netchg;

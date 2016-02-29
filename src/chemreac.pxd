@@ -13,7 +13,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         # (Private)
         double * D_weight
 
-        const uint n, N, nr, nstencil
+        const uint n, N, nr, nstencil, nsidep
         const bool logy, logt, logx, lrefl, rrefl, auto_efield
         const vector[vector[uint]] stoich_active
         vector[vector[uint]] stoich_inact

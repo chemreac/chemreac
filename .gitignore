@@ -58,3 +58,4 @@ dec_cha.ipynb
 *.egg-info
 *.egg
 *.log
+examples/analytic_N_scaling_output/
