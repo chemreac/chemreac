@@ -395,7 +395,7 @@ namespace cvodes_wrapper {
         // callback of req. signature wrapping OdeSys method.
         ignore(N); ignore(mupper); ignore(mlower); ignore(tmp1); ignore(tmp2); ignore(tmp3);
         OdeSys * odesys = (OdeSys*)user_data;
-        if (Jac->s_mu != 2*(odesys->n))
+        if (Jac->s_mu != 2*(odesys->n*odesys->n_jac_diags))
             throw std::runtime_error("Mismatching size of padding.");
         odesys->banded_padded_jac_cmaj(t, NV_DATA_S(y), NV_DATA_S(fy), Jac->data, Jac->ldim);
         return 0;
