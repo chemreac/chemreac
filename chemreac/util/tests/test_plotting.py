@@ -127,6 +127,7 @@ def test_plot_fields():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
+@slow
 def test_plot_solver_linear_error():
     N = 3
     rd = _get_decay_rd(N)

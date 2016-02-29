@@ -11,6 +11,7 @@ import pytest
 
 from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
 from chemreac.integrate import run, Integration
+from chemreac.util.testing import veryslow
 
 """
 Tests the integration routine for the
@@ -69,6 +70,7 @@ def test_autodimerization():
     assert np.allclose(integr.yout[:, 0, :], yref)
 
 
+@veryslow
 @pytest.mark.parametrize("log_geom", product(
     LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
 def test_ReactionDiffusion_fields_and_g_values(log_geom):

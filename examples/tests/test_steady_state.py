@@ -8,6 +8,8 @@ import numpy as np
 import pytest
 
 from steady_state import integrate_rd
+from chemreac.util.testing import slow
+
 
 TR_FLS = (True, False)
 
@@ -30,6 +32,7 @@ def test_steady_state(params):
         assert np.all(rmsd < forgiveness)
 
 
+@slow
 @pytest.mark.parametrize('params', list(product(
     TR_FLS, TR_FLS, TR_FLS, [5, 7])))
 def test_steady_state__high_stencil(params):

@@ -603,7 +603,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x,
                            logy=logy, logt=logt, nstencil=nstencil,
                            lrefl=False, rrefl=False, n_jac_diags=2)
-    jout_cmprs = rd.alloc_jout_compressed(nsidep)
+    jout_cmprs = rd.alloc_jout_compressed()
     rd.compressed_jac_cmaj(t, y, jout_cmprs)
     from block_diag_ilu import Compressed_from_dense
 
@@ -838,7 +838,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     ref_banded_j_symbolic = rd.alloc_jout(order='F')
     symrd = SymRD.from_rd(rd)
-    symrd.banded_jac_cmaj(0.0, y0.flatten(), ref_banded_j_symbolic)
+    symrd.banded_jac(0.0, y0.flatten(), ref_banded_j_symbolic)
     assert np.allclose(ref_banded_j_symbolic, ref_banded_j)
 
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')

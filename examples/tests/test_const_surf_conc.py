@@ -3,8 +3,10 @@
 from __future__ import absolute_import, division, print_function
 
 from const_surf_conc import integrate_rd
+from chemreac.util.testing import veryslow
 
 
+@veryslow
 def test_const_surf_conc():
     tout, Cout, info, rd, tot_ave_rmsd = integrate_rd(
         D=2e-3, t0=1, tend=13, x0=1e-6, xend=1, N=1024, nt=42,
