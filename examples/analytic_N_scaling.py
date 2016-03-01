@@ -48,7 +48,7 @@ from analytic_diffusion import (
 
 
 def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
-         nspecies='1,2,3', nfit='7,5,4', keys='nfev,njev,texec', ylims='None',
+         nspecies='1,2,3', nfit='7,4,3', keys='nfev,njev,texec', ylims='None',
          # kwargs from analytic_diffusion.integrate_rd:
          D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None,
          nt=42, logt=False, logy=False, logx=False,

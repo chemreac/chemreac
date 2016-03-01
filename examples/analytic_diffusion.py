@@ -304,7 +304,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
         plt.figure(figsize=(6, 10))
 
         # colors: (0.5, 0.5, 0.5), (0.5, 0.5, 1), ...
-        base_colors = list(product([.5, 1], repeat=3))[1:]
+        base_colors = list(product([.5, 1], repeat=3))[1:-1]
 
         def color(ci, ti):
             return np.array(base_colors[ci % len(base_colors)])*tout[ti]/tend

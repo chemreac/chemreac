@@ -8,6 +8,7 @@
 
 # Output files from examples
 examples/*.png
+examples/*.pkl
 examples/profile.out
 
 # Rendered sources
