@@ -157,7 +157,7 @@ namespace block_diag_ilu {
         Real_t *data;
         const uint ld;
 
-        DenseView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag, const int ld_=0)
+        DenseView(Real_t *data, const std::size_t nblocks, const uint blockw, const uint ndiag, const uint ld_=0)
             : ViewBase<DenseView<Real_t, col_maj>, Real_t>(blockw, ndiag, nblocks),
               data(data), ld((ld_ == 0) ? blockw*nblocks : ld_) {}
         inline Real_t& block(const std::size_t blocki, const uint rowi,

@@ -485,13 +485,13 @@ ReactionDiffusion::${token}(double t,
             ja + N*n*n + n*(N*n_jac_diags - (n_jac_diags*n_jac_diags + n_jac_diags)/2),
             N, n, n_jac_diags};
     %elif token.startswith('banded_packed_jac_cmaj'):
-    block_diag_ilu::ColMajBandedView<double> jac {ja, N, n, n_jac_diags, ldj, 0};
+    block_diag_ilu::ColMajBandedView<double> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj), 0};
     %elif token.startswith('banded_padded_jac_cmaj'):
-    block_diag_ilu::ColMajBandedView<double> jac {ja, N, n, n_jac_diags, ldj};
+    block_diag_ilu::ColMajBandedView<double> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
     %elif token.startswith('dense_jac_cmaj'):
-    block_diag_ilu::DenseView<double> jac {ja, N, n, n_jac_diags, ldj};
+    block_diag_ilu::DenseView<double> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
     %elif token.startswith('dense_jac_rmaj'):
-    block_diag_ilu::DenseView<double, false> jac {ja, N, n, n_jac_diags, ldj};
+    block_diag_ilu::DenseView<double, false> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
     %else:
 #error "Unhandled token."
     %endif

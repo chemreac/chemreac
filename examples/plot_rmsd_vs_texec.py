@@ -4,7 +4,6 @@ except ImportError:
     import pickle
 
 import gzip
-from itertools import chain
 import os
 import struct
 
@@ -73,7 +72,7 @@ def main():
                  tools=[hover, 'pan', 'reset', 'box_zoom'])
     top.xaxis.axis_label = xkey
     top.yaxis.axis_label = ykey
-    cr = top.scatter(
+    top.scatter(
         x=xkey, y=ykey, source=source, size=10, color="color", line_color=None,
         # marker="mrk"
     )

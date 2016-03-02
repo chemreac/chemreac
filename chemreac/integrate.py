@@ -60,8 +60,15 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
-    new_kwargs['iterative'] = {'gmres': 1, 'bicgstab': 2, 'tfqmr': 3}.get(
-        kwargs.pop('iterative', 'false').lower(), 0)
+    new_kwargs['iter_type'] = {
+        'default': 0, 'functional': 1, 'direct': 2}.get(
+            kwargs.pop('iter_type', 'default').lower())
+    new_kwargs['linear_solver'] = {
+        'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
+        'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}.get(
+            kwargs.pop('linear_solver', 'default').lower())
+    new_kwargs['maxl'] = kwargs.pop('maxl', 5)
+    new_kwargs['eps_lin'] = kwargs.pop('eps_lin', 0.05)
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
@@ -86,7 +93,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
         'texec': texec,
         'success': success
     })
-    if info['iterative'] > 0:
+    if info['iter_type'] == 2 and info['linear_solver'] >= 10:
         info['nprec_setup'] = rd.nprec_setup
         info['nprec_solve'] = rd.nprec_solve
         info['njacvec_dot'] = rd.njacvec_dot

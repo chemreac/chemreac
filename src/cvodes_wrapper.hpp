@@ -51,6 +51,7 @@ namespace cvodes_wrapper {
     enum class IterLinSolEnum : int {GMRES=1, BICGSTAB=2, TFQMR=3};
     enum class PrecType : int {NONE=PREC_NONE, LEFT=PREC_LEFT,
             RIGHT=PREC_RIGHT, BOTH=PREC_BOTH};
+    enum class GramSchmidtType : int {CLASSICAL=CLASSICAL_GS, MODIFIED=MODIFIED_GS};
 
     class Integrator{
     public:
@@ -175,7 +176,14 @@ namespace cvodes_wrapper {
             int flag = CVSpilsSetPrecType(this->mem, (int)pretyp);
             this->cvspils_check_flag(flag, true);
         }
-
+        void set_gram_schmidt_type(GramSchmidtType gs_type){
+            int flag = CVSpilsSetGSType(this->mem, (int)gs_type);
+            this->cvspils_check_flag(flag, true);
+        }
+        void set_krylov_max_len(int maxl){
+            int flag = CVSpilsSetMaxl(this->mem, maxl);
+            this->cvspils_check_flag(flag);
+        }
         void set_init_step(realtype h0){
             CVodeSetInitStep(this->mem, h0);
         }
@@ -444,23 +452,39 @@ namespace cvodes_wrapper {
     }
 
     template <typename real_t, class OdeSys>
-    void simple_integrate(OdeSys * rd,
+    void simple_integrate(OdeSys * const rd,
                           const std::vector<real_t> atol,
                           const real_t rtol, const int lmm,
                           const real_t * const y0,
                           const std::size_t nout,
                           const real_t * const tout,
                           real_t * const yout,
-                          bool with_jacobian=true,
-                          int iterative=0){
-        // iterative == 0 => direct (Newton)
-        // iterative == 1 => iterative (GMRES)
-        // iterative == 2 => iterative (BiCGStab)
-        // iterative == 3 => iterative (TFQMR)
+                          const bool with_jacobian=true,
+                          int iter_type=0,
+                          int linear_solver=0,
+                          const int maxl=5,
+                          const real_t eps_lin=0.05){
+        // iter_type == 0 => 1 if lmm == CV_ADAMS else 2
+        // iter_type == 1 => Functional (ignore linear_solver)
+        // iter_type == 2 => Newton
+
+        // linear_solver ==  0 => 1 if N == 1 else 2
+        // linear_solver ==  1 => Direct (dense LU-factorization)
+        // linear_solver ==  2 => Direct (banded LU-factorization)
+        // linear_solver == 10 => Iterative, GMRES, Modified Gram-Schmidt
+        // linear_solver == 11 => Iterative, GMRES, Classical Gram-Schmidt
+        // linear_solver == 20 => Iterative, Bi-CGStab (maxl => maximum dimension of Krylov subspace)
+        // linear_solver == 30 => Iterative, TFQMR (maxl => maximum dimension of Krylov subspace)
+
+        if (iter_type == 0)
+            iter_type = (lmm == CV_ADAMS) ? 1 : 2;
+        if (iter_type != 1 and iter_type != 2)
+            throw std::runtime_error("Invalid iter_type");
+        if (linear_solver == 0)
+            linear_solver = (rd->N == 1) ? 1 : 2;
         const int ny = rd->n*rd->N;
-        Integrator integr {(lmm == CV_BDF) ? LMM::BDF : LMM::ADAMS,
-                (lmm == CV_BDF) ? IterType::NEWTON : IterType::FUNCTIONAL};
-                //(iterative) ? IterType::FUNCTIONAL : IterType::NEWTON};
+        Integrator integr {(lmm == CV_ADAMS) ? LMM::ADAMS : LMM::BDF,
+                (iter_type == 1) ? IterType::FUNCTIONAL : IterType::NEWTON};
         integr.set_user_data((void *)rd);
         integr.init(f_cb<OdeSys>, tout[0], y0, ny);
         if (atol.size() == 1){
@@ -468,34 +492,44 @@ namespace cvodes_wrapper {
         }else{
             integr.set_tol(rtol, atol);
         }
-        if (rd->N == 1){
-            if (iterative)
-                throw std::runtime_error("Iterative solution not implemented for N==1");
-            integr.set_linear_solver_to_dense(rd->n);
-            if (with_jacobian)
-                integr.set_dense_jac_fn(jac_dense_cb<OdeSys>);
-        }else {
-            if (iterative){
-                switch (iterative) {
-                case 1:
-                    integr.set_linear_solver_to_iterative(IterLinSolEnum::GMRES); break;
-                case 2:
-                    integr.set_linear_solver_to_iterative(IterLinSolEnum::BICGSTAB); break;
-                case 3:
-                    integr.set_linear_solver_to_iterative(IterLinSolEnum::TFQMR); break;
-                }
-                integr.set_prec_type(PrecType::LEFT);
-                integr.set_iter_eps_lin(0); // 0 => default.
-                integr.set_jac_times_vec_fn(jac_times_vec_cb<OdeSys>);
-                integr.set_preconditioner(prec_setup_cb<OdeSys>,
-                                          jac_prec_solve_cb<OdeSys>);
-                // integr.set_gram_schmidt_type() // GMRES
-                // integr.set_krylov_max_len()  // BiCGStab, TFQMR
-            } else {
+        if (iter_type == 2){
+            // Newton iteration --> we need a linear solver:
+            switch(linear_solver){
+            case 1:
+                integr.set_linear_solver_to_dense(ny);
+                if (with_jacobian)
+                    integr.set_dense_jac_fn(jac_dense_cb<OdeSys>);
+                break;
+            case 2:
                 integr.set_linear_solver_to_banded(ny, rd->n*rd->n_jac_diags, rd->n*rd->n_jac_diags);
                 if (with_jacobian)
                     integr.set_band_jac_fn(jac_band_cb<OdeSys>);
+                break;
+            case 10:
+            case 11:
+                integr.set_linear_solver_to_iterative(IterLinSolEnum::GMRES); break;
+            case 20:
+                integr.set_linear_solver_to_iterative(IterLinSolEnum::BICGSTAB); break;
+            case 30:
+                integr.set_linear_solver_to_iterative(IterLinSolEnum::TFQMR); break;
+            default:
+                throw std::runtime_error("Invalid linear_solver");
             }
+        }
+        if (linear_solver >= 10){
+            if (!with_jacobian)
+                throw std::runtime_error("Iterative method requires an (approximate) jacobian");
+            integr.set_prec_type(PrecType::LEFT);
+            integr.set_iter_eps_lin(eps_lin);
+            integr.set_jac_times_vec_fn(jac_times_vec_cb<OdeSys>);
+            integr.set_preconditioner(prec_setup_cb<OdeSys>,
+                                      jac_prec_solve_cb<OdeSys>);
+            if (linear_solver == 10 || linear_solver == 11) // GMRES
+                integr.set_gram_schmidt_type((linear_solver == 10) ? GramSchmidtType::MODIFIED : GramSchmidtType::CLASSICAL);
+            else if (linear_solver == 20 or linear_solver == 30) // BiCGStab, TFQMR
+                integr.set_krylov_max_len(maxl);
+            else
+                throw std::runtime_error("Unknown linear_solver.");
         }
         integr.integrate(nout, ny, tout, y0, 0, yout);
         rd->last_integration_info.clear();
@@ -505,16 +539,18 @@ namespace cvodes_wrapper {
         rd->last_integration_info["n_err_test_fails"] = integr.get_n_err_test_fails();
         rd->last_integration_info["n_nonlin_solv_iters"] = integr.get_n_nonlin_solv_iters();
         rd->last_integration_info["n_nonlin_solv_conv_fails"] = integr.get_n_nonlin_solv_conv_fails();
-        if (iterative) {
-            rd->last_integration_info["krylov_n_lin_iters"] = integr.get_n_lin_iters();
-            rd->last_integration_info["krylov_n_prec_evals"] = integr.get_n_prec_evals();
-            rd->last_integration_info["krylov_n_prec_solves"] = integr.get_n_prec_solves();
-            rd->last_integration_info["krylov_n_conv_fails"] = integr.get_n_conv_fails();
-            rd->last_integration_info["krylov_n_jac_times_evals"] = integr.get_n_jac_times_evals();
-            rd->last_integration_info["krylov_n_iter_rhs"] = integr.get_n_iter_rhs();
-        } else {
-            rd->last_integration_info["dense_n_dls_jac_evals"] = integr.get_n_dls_jac_evals();
-            rd->last_integration_info["dense_n_dls_rhs_evals"] = integr.get_n_dls_rhs_evals();
+        if (iter_type == 2){
+            if (linear_solver >= 10) {  // iterative linear solver
+                rd->last_integration_info["krylov_n_lin_iters"] = integr.get_n_lin_iters();
+                rd->last_integration_info["krylov_n_prec_evals"] = integr.get_n_prec_evals();
+                rd->last_integration_info["krylov_n_prec_solves"] = integr.get_n_prec_solves();
+                rd->last_integration_info["krylov_n_conv_fails"] = integr.get_n_conv_fails();
+                rd->last_integration_info["krylov_n_jac_times_evals"] = integr.get_n_jac_times_evals();
+                rd->last_integration_info["krylov_n_iter_rhs"] = integr.get_n_iter_rhs();
+            } else { // direct linear solver
+                rd->last_integration_info["dense_n_dls_jac_evals"] = integr.get_n_dls_jac_evals();
+                rd->last_integration_info["dense_n_dls_rhs_evals"] = integr.get_n_dls_rhs_evals();
+            }
         }
     }
 }

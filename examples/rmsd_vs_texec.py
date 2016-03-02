@@ -30,8 +30,8 @@ constant = dict(
     atol=1e-8, rtol=1e-10,
     efield=True, random_seed=42, mobility=0.01,
     plot=False, savefig='None', verbose=False, yscale='linear',
-    vline_limit=100, solver='sundials',  iterative='gmres',
-    ilu_limit=1.0,  # method='bdf'
+    vline_limit=100, solver='sundials', iter_type='default',
+    linear_solver='gmres', ilu_limit=1.0,  # method='bdf'
 )
 
 
@@ -54,13 +54,14 @@ def integrate(**kwargs):
 
 def main():
     results = {}
-    all_params = product(*varied.values())
+    all_params = list(product(*varied.values()))
     sys.stdout.write(str(len(all_params)) + ': ')
     for params in all_params:
         kwargs = constant.copy()
         kwargs.update(dict(zip(varied.keys(), params)))
         results[params] = integrate(**kwargs)
         sys.stdout.write('.')
+        sys.stdout.flush()
     sys.stdout.write('\n')
     pickle.dump(results, gzip.open('analytic_diffusion_results.pkl', 'wb'))
 

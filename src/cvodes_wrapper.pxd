@@ -12,4 +12,8 @@ cdef extern from "cvodes_wrapper.hpp" namespace "cvodes_wrapper":
         size_t nout,
         const T * const tout,
         T * const yout,
-        bool with_jacobian) except +
+        bool with_jacobian,
+        int, 
+        int,
+        int,
+        double) except +
