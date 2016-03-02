@@ -64,7 +64,7 @@ def main():
     vals = results.values()
     source = ColumnDataSource(data={k: [] for k in cols})
     for k in cols:
-        source.data[k] = [vals[idx][k] for idx in range(len(vals))]
+        source.data[k] = [vals[idx].get(k, None) for idx in range(len(vals))]
 
     top = Figure(plot_height=600, plot_width=800,
                  title="%s vs. %s" % (xkey, ykey),

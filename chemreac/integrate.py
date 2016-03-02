@@ -93,7 +93,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
         'texec': texec,
         'success': success
     })
-    if info['iter_type'] == 2 and info['linear_solver'] >= 10:
+    if info['linear_solver'] >= 10:
         info['nprec_setup'] = rd.nprec_setup
         info['nprec_solve'] = rd.nprec_solve
         info['njacvec_dot'] = rd.njacvec_dot

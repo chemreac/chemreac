@@ -85,7 +85,7 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
                 print(Geom_names[geom], nstencil, ns)
                 tout, yout, info, rmsd_over_atol, sys, rmsd = zip(*[
                     integrate_rd(
-                        N=N, nstencil=nstencil, nspecies=ns, geom='fcs'[geom],
+                        N=N, nstencil=nstencil, nspecies=ns, geom=geom,
                         D=D, t0=t0, tend=tend, x0=x0, xend=xend, center=center,
                         nt=nt, logt=logt, logy=logy, logx=logx, random=random,
                         p=p, a=a, linterpol=linterpol, rinterpol=rinterpol,
