@@ -13,7 +13,7 @@ from bokeh.io import curdoc
 from bokeh.plotting import Figure, gridplot
 from bokeh.models import ColumnDataSource, HoverTool
 
-from rmsd_vs_texec import varied
+from rmsd_vs_texec import default_varied  # should be read from pickled data
 
 
 def main():
@@ -22,7 +22,7 @@ def main():
                      'analytic_diffusion_results.pkl'), 'rb'))
 
     xkey, ykey = 'texec', 'rmsd_over_atol'
-    include_keys = list(varied.keys()) + [
+    include_keys = list(default_varied.keys()) + [
         'nfev', 'njev',  'nprec_setup', 'nprec_solve', 'njacvec_dot',
         'nprec_solve_ilu', 'nprec_solve_lu',
         "n_steps",
@@ -50,7 +50,7 @@ def main():
 
     def _color(params):
         hue_val, tone_val = params[:2]
-        hue_vals, tone_vals = varied.values()[:2]
+        hue_vals, tone_vals = default_varied.values()[:2]
         tone = 1/4. + 3*tone_val/float(tone_vals[-1])/4.
         hue = base_colors[hue_vals.index(hue_val)]
         color = tuple(np.asarray(np.round(255*np.array(hue)*tone), dtype=int))

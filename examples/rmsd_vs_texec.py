@@ -15,7 +15,7 @@ import numpy as np
 
 from analytic_diffusion import integrate_rd
 
-varied = OrderedDict([
+default_varied = OrderedDict([
     ('nstencil', [3, 5, 7]),  # categorical
     ('N', [40, 80, 160, 240, 320]),  # continuous  #, 400, 480, 560, 640],
     ('method', ['bdf', 'adams'])  # categorical
@@ -47,12 +47,14 @@ def integrate(**kwargs):
     info['yout'] = yout
     info['rmsd'] = rmsd
     info['rmsd_over_atol'] = np.sqrt(np.sum(rmsd_over_atol**2))
-    for k in varied:
+    for k in default_varied:
         info[k] = kwargs[k]
     return info
 
 
-def main():
+def main(varied=None):
+    if varied is None:
+        varied = default_varied
     results = {}
     all_params = list(product(*varied.values()))
     sys.stdout.write(str(len(all_params)) + ': ')
@@ -64,6 +66,7 @@ def main():
         sys.stdout.flush()
     sys.stdout.write('\n')
     pickle.dump(results, gzip.open('analytic_diffusion_results.pkl', 'wb'))
+
 
 if __name__ == '__main__':
     main()
