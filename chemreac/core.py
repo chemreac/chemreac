@@ -22,10 +22,7 @@ from .constants import get_unitless_constant
 
 from ._chemreac import CppReactionDiffusion
 
-DENSE, BANDED, SPARSE = range(3)
-FLAT, CYLINDRICAL, SPHERICAL = range(3)
-Geom_names = {FLAT: 'Flat', CYLINDRICAL: 'Cylindrical', SPHERICAL: 'Spherical'}
-GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
+Geom_names = {'f': 'Flat', 'c': 'Cylindrical', 's': 'Spherical'}
 
 
 class ReactionDiffusionBase(object):
@@ -204,8 +201,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if x is a float it is expanded into linspace(0, x, N+1)
     stoich_inact: list of lists of integer indices
         list of inactive reactant index lists per reaction.n, default: []
-    geom: integer
-        any of (FLAT, SPHERICAL, CYLINDRICAL)
+    geom: str (letter)
+        any in 'fcs' (flat, cylindrical, spherical)
     logy: bool
         f and \*_jac_\* routines operate on log(concentration)
     logt: bool
@@ -276,7 +273,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         self._substance_latex_names = latex_names
 
     def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
-                mobility=None, x=None, stoich_inact=None, geom=FLAT,
+                mobility=None, x=None, stoich_inact=None, geom='f',
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
                 eps_rel=1.0, g_values=None, g_value_parents=None,
@@ -339,7 +336,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             assert len(stoich_active) == len(k)
         else:
             assert len(stoich_active) == len(k_unitless)
-        assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
+        if geom not in 'fcs':
+            raise ValueError("Unkown geom: %s" % geom)
 
         if surf_chg is None:
             surf_chg = (0.0*get_unit(unit_registry, 'charge'),
@@ -394,7 +392,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             to_unitless(mobility, get_unit(unit_registry,
                                            'electrical_mobility')),
             to_unitless(_x, get_unit(unit_registry, 'length')),
-            stoich_inact, geom, logy, logt, logx,
+            stoich_inact, 'fcs'.index(geom), logy, logt, logx,
             [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
              yld_unit in zip(g_values, cls.g_units(unit_registry,
                                                    g_value_parents))],

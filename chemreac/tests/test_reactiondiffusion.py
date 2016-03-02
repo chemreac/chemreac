@@ -9,14 +9,14 @@ import os
 import numpy as np
 import pytest
 
-from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+from chemreac import ReactionDiffusion
 from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
 
 TR_FLS = [True, False]
-TRUE_FALSE_PAIRS = list(product(TR_FLS, TR_FLS))
+TR_FLS_PAIRS = list(product(TR_FLS, TR_FLS))
 
 
 def _test_f(rd, t, y, fref=None):
@@ -131,7 +131,7 @@ def test_ReactionDiffusion__actv_2():
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, -6*r])
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__lrefl_3(log):
     # Diffusion without reaction
     # 3 bins
@@ -208,7 +208,7 @@ def test_ReactionDiffusion__lrefl_3(log):
     _test_dense_jac_rmaj(rd, t, y, jref)
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__rrefl_3(log):
     # Diffusion without reaction
     # 3 bins
@@ -283,7 +283,7 @@ def test_ReactionDiffusion__rrefl_3(log):
 
 
 @slow
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__lrefl_7(log):
     # Diffusion without reaction (7 bins)
     from sympy import finite_diff_weights
@@ -453,7 +453,7 @@ def test_ReactionDiffusion__only_1_field_dep_reaction_logy_logt(N):
     _test_f_and_dense_jac_rmaj(rd, np.log(t0), np.log(y0), fref)
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     # Diffusion without reaction
     # 3 bins
@@ -535,7 +535,7 @@ def test_ReactionDiffusion__D_weight():
 
 
 @slow
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     # Diffusion without reaction
     N = 7
@@ -634,7 +634,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
 
 @slow
 @pytest.mark.parametrize("geom_refl_logx", list(product(
-    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS, TR_FLS)))
+    'fcs', TR_FLS_PAIRS, TR_FLS)))
 def test_diffusion_jac(geom_refl_logx):
     geom, refl, logx = geom_refl_logx
     lrefl, rrefl = refl
@@ -647,7 +647,7 @@ def test_diffusion_jac(geom_refl_logx):
     _test_f_and_dense_jac_rmaj(rd, 0, y0)
 
 
-COMBOS = list(product((FLAT, CYLINDRICAL, SPHERICAL), TR_FLS))
+COMBOS = list(product('fcs', TR_FLS))
 
 
 @pytest.mark.parametrize("params", COMBOS)
@@ -662,11 +662,11 @@ def test_integrated_conc(params):
     y = xc*np.exp(-xc)
 
     def primitive(t):
-        if geom == FLAT:
+        if geom == 'f':
             return -(t+1)*np.exp(-t)
-        elif geom == CYLINDRICAL:
+        elif geom == 'c':
             return 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
-        elif geom == SPHERICAL:
+        elif geom == 's':
             return 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
         else:
             raise NotImplementedError
@@ -676,8 +676,7 @@ def test_integrated_conc(params):
 
 
 @slow
-@pytest.mark.parametrize("geom_refl", list(product(
-    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
+@pytest.mark.parametrize("geom_refl", list(product('fcs', TR_FLS_PAIRS)))
 def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         geom_refl):
     # UNSUPPORTED since `bin_k_factor` was replaced with `fields`
@@ -748,13 +747,13 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
             2, local_x_serie, x0=local_x_around
         )
         D_weight.append(w[-1][-1])
-        if geom == FLAT:
+        if geom == 'f':
             pass
-        elif geom == CYLINDRICAL:
+        elif geom == 'c':
             for wi in range(nstencil):
                 # first order derivative
                 D_weight[bi][wi] += w[-2][-1][wi]*1/local_x_around
-        elif geom == SPHERICAL:
+        elif geom == 's':
             for wi in range(nstencil):
                 # first order derivative
                 D_weight[bi][wi] += w[-2][-1][wi]*2/local_x_around

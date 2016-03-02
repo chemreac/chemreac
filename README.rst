@@ -115,7 +115,23 @@ To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.
 
 The following environment variables are also supported by
 ``setup.py`` (defaults to "0", enable by setting them to "1"):
-``WITH_DEBUG``, ``WITH_OPENMP``
+
++-----------------------------------------+-------+--------------------------------------------------+
+|Environament variable                    |Default|Action                                            |
++=========================================+=======+==================================================+
+|``WITH_OPENMP``                          |0      |Enable parallell evaluation of rhs and jac.       |
++-----------------------------------------+-------+--------------------------------------------------+
+|``WITH_BLOCK_DIAG_ILU_DGETRF``           |0      |Use unblocked version of dgetrf instead of LAPACK |
++-----------------------------------------+-------+--------------------------------------------------+
+|``WITH_BLOCK_DIAG_ILU_OPENMP``           |0      |Evaluate LU decomposition of blocks in parallel   |
++-----------------------------------------+-------+--------------------------------------------------+
+|``WITH_DATA_DUMPING``                    |0      |For debugging purposes only                       |
++-----------------------------------------+-------+--------------------------------------------------+
+|``WITH_DEBUG``                           |0      |For debugging purposes only                       |
++-----------------------------------------+-------+--------------------------------------------------+
+
+Enabling the first three is known to provide significant speed up for some scenarios (performance is
+system dependent, hence recommendations are not possible to give without benchmarking).
 
 Tests
 -----

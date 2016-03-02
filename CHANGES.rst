@@ -1,3 +1,10 @@
+v0.4
+====
+- Don't use consants FLAT, CYLINDRICAL, SPHERICAL. Instead use 'f', 'c', 's'
+- Don't use iterative 0, 1, 2, 3. Instead use: 'false', 'gmres', 'bicgstab', 'tfqmr'
+- Drop constants GEOM_ORDER, DENSE, BANDED, SPARSE, GEOMS
+
+
 v0.3
 ====
 - ReactionSystem.from_ReactionDiffusion, ReactionSystem.to_ReactionDiffusion ->

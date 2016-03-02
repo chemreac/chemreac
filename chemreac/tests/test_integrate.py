@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pytest
 
-from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+from chemreac import ReactionDiffusion
 from chemreac.integrate import run, Integration
 from chemreac.util.testing import veryslow
 
@@ -72,7 +72,7 @@ def test_autodimerization():
 
 @veryslow
 @pytest.mark.parametrize("log_geom", product(
-    LOG_COMOBS, (FLAT, SPHERICAL, CYLINDRICAL)))
+    LOG_COMOBS, 'fcs'))
 def test_ReactionDiffusion_fields_and_g_values(log_geom):
     # modulation in x means x_center
     # A -> B # mod1 (x**2)
@@ -134,7 +134,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
 
 
 @pytest.mark.parametrize("N_wjac_geom", product(
-    [64, 128], [False, True], (FLAT, CYLINDRICAL, SPHERICAL)))
+    [64, 128], [False, True], 'fcs'))
 def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
     N, wjac, geom = N_wjac_geom
     # Test that mass convervation is fulfilled wrt diffusion.
@@ -157,11 +157,11 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
                  method='adams')
     yout = integr.yout[:, :, 0]
     x /= N
-    if geom == FLAT:
+    if geom == 'f':
         yprim = yout*(x[1:]**1 - x[:-1]**1)
-    elif geom == CYLINDRICAL:
+    elif geom == 'c':
         yprim = yout*(x[1:]**2 - x[:-1]**2)
-    elif geom == SPHERICAL:
+    elif geom == 's':
         yprim = yout*(x[1:]**3 - x[:-1]**3)
     else:
         raise

@@ -7,7 +7,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from chemreac import FLAT, SPHERICAL, CYLINDRICAL, ReactionDiffusion
+from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
@@ -47,8 +47,7 @@ JSON_PATH, BLESSED_PATH = map(
 TRUE_FALSE_PAIRS = list(product([True, False], [True, False]))
 
 Ns = [1]  # change to [1, 3, 7]
-combos = list(product([True, False], [True, False], [1],
-                      [FLAT, SPHERICAL, CYLINDRICAL]))
+combos = list(product([True, False], [True, False], [1], 'fcs'))
 
 
 @pytest.mark.parametrize("combo", combos)

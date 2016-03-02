@@ -20,7 +20,7 @@ tol = {3: 1e5, 5: 1e4, 7: 1e2}  # determined from analytic_N_scaling demo
 
 def _test_gaussian_diffusion(params):
     g, ly, lt, r, nspecies, nstencil = params
-    tout, yout, info, ave_rmsd_over_atol, rd = integrate_rd(
+    tout, yout, info, ave_rmsd_over_atol, rd, rmsd = integrate_rd(
         geom=g, logt=lt, logy=ly, N=128, random=r, nspecies=nspecies,
         nstencil=nstencil, atol=1e-6, rtol=1e-6)
     assert info['success']

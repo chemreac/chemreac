@@ -61,9 +61,7 @@ from itertools import product
 import argh
 import numpy as np
 
-from chemreac import (
-    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL
-)
+from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.util.plotting import save_and_or_show_plot
 
@@ -199,8 +197,10 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
                  D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None,
                  nt=42, logt=False, logy=False, logx=False,
                  random=False, p=0, a=0.2,
-                 linterpol=False, rinterpol=False, num_jacobian=False,
-                 method='bdf', atol=1e-8, rtol=1e-10,
+                 linterpol=False, rinterpol=False, ilu_limit=5.0,
+                 n_jac_diags=-1, num_jacobian=False,
+                 method='bdf', solver='sundials', iterative=0,
+                 atol=1e-8, rtol=1e-10,
                  efield=False, random_seed=42, mobility=0.01,
                  plot=False, savefig='None', verbose=False, yscale='linear',
                  vline_limit=100,
@@ -215,11 +215,10 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
     tout = np.linspace(t0, tend, nt)
 
     assert geom in 'fcs'
-    geom = {'f': FLAT, 'c': CYLINDRICAL, 's': SPHERICAL}[geom]
     analytic = {
-        FLAT: flat_analytic,
-        CYLINDRICAL: cylindrical_analytic,
-        SPHERICAL: spherical_analytic
+        'f': flat_analytic,
+        'c': cylindrical_analytic,
+        's': spherical_analytic
     }[geom]
 
     # Setup the grid
@@ -248,11 +247,13 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
         logx=logx,
         nstencil=nstencil,
         lrefl=not linterpol,
-        rrefl=not rinterpol
+        rrefl=not rinterpol,
+        ilu_limit=ilu_limit,
+        n_jac_diags=n_jac_diags
     )
 
     if efield:
-        if geom != FLAT:
+        if geom != 'f':
             raise ValueError("Only analytic sol. for flat drift implemented.")
         rd.efield = _efield_cb(rd.xcenters)
 
@@ -275,7 +276,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
     # Run the integration
     integr = run(rd, yref[0, ...], tout, atol=atol, rtol=rtol,
                  with_jacobian=(not num_jacobian), method=method,
-                 C0_is_log=logy)
+                 iterative=iterative, C0_is_log=logy, solver=solver)
     info = integr.info
 
     if logy:
@@ -365,7 +366,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
 
-    return tout, integr.yout, info, ave_rmsd_over_atol, rd
+    return tout, integr.yout, info, ave_rmsd_over_atol, rd, rmsd
 
 
 if __name__ == '__main__':

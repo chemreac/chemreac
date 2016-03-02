@@ -558,7 +558,7 @@ namespace block_diag_ilu {
             int ld_blocks = this->view.ld_blocks;
 #else
             const auto blockw = this->view.blockw;
-#pragma omp parallel for
+#pragma omp parallel for schedule(static)
 #endif
             for (std::size_t bi=0; bi<nblocks; ++bi){
 #if defined(WITH_BLOCK_DIAG_ILU_DGETRF)

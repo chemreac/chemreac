@@ -17,7 +17,7 @@ import os
 
 import sympy as sp
 
-from .core import FLAT, CYLINDRICAL, SPHERICAL, ReactionDiffusionBase
+from .core import ReactionDiffusionBase
 from .util.grid import padded_centers, pxci_to_bi, stencil_pxci_lbounds
 
 
@@ -31,7 +31,7 @@ class SymRD(ReactionDiffusionBase):
 
     def __init__(self, n, stoich_active, stoich_prod, k, N=0, D=None,
                  z_chg=None, mobility=None, x=None, stoich_inact=None,
-                 geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
+                 geom='f', logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
                  g_value_parents=None, fields=None, modulated_rxns=None,
@@ -122,20 +122,20 @@ class SymRD(ReactionDiffusionBase):
                 self.A_wghts.append(w[-2][-1])
                 for wi in range(self.nstencil):
                     if self.logx:
-                        if geom == FLAT:
+                        if geom == 'f':
                             self.D_wghts[bi][wi] -= w[-2][-1][wi]
-                        elif geom == CYLINDRICAL:
+                        elif geom == 'c':
                             self.A_wghts[bi][wi] += w[-3][-1][wi]
-                        elif geom == SPHERICAL:
+                        elif geom == 's':
                             self.D_wghts[bi][wi] += w[-2][-1][wi]
                             self.A_wghts[bi][wi] += 2*w[-3][-1][wi]
                         self.D_wghts[bi][wi] *= exp(-2*l_x_rnd)
                         self.A_wghts[bi][wi] *= exp(-l_x_rnd)
                     else:
-                        if geom == CYLINDRICAL:
+                        if geom == 'c':
                             self.D_wghts[bi][wi] += w[-2][-1][wi]/l_x_rnd
                             self.A_wghts[bi][wi] += w[-3][-1][wi]/l_x_rnd
-                        elif geom == SPHERICAL:
+                        elif geom == 's':
                             self.D_wghts[bi][wi] += 2*w[-2][-1][wi]/l_x_rnd
                             self.A_wghts[bi][wi] += 2*w[-3][-1][wi]/l_x_rnd
 

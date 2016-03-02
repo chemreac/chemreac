@@ -18,7 +18,7 @@ from __future__ import (absolute_import, division, print_function)
 
 import numpy as np
 
-from chemreac import ReactionDiffusion, DENSE
+from chemreac import ReactionDiffusion
 from chemreac.integrate import Integration
 
 
@@ -70,7 +70,7 @@ def main(logy=False, logt=False, forgive_fact=1):
         print(method, forgive)
         atol, rtol = 1e-8, 1e-8
         integr4 = Integration('pyodeint', rd, np.asarray(y0), (t0, tend),
-                              method=method, mode=DENSE, dense_output=True,
+                              method=method, mode='dense', dense_output=True,
                               atol=atol, rtol=rtol)
         assert np.allclose(integr4.Cout[:, 0, :], Cref(integr4.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
@@ -87,7 +87,7 @@ def main(logy=False, logt=False, forgive_fact=1):
         print(method, forgive)
         atol, rtol = 1e-8, 1e-8
         integr5 = Integration('pygslodeiv2', rd, np.asarray(y0), (t0, tend),
-                              mode=DENSE, dense_output=True, atol=atol,
+                              mode='dense', dense_output=True, atol=atol,
                               rtol=rtol, method=method)
         assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
                            atol=atol*forgive, rtol=rtol*forgive)

@@ -24,7 +24,6 @@ import time
 
 import numpy as np
 
-from chemreac import DENSE, BANDED
 from chemreac.units import get_derived_unit, to_unitless
 from chemreac.util.analysis import suggest_t0
 
@@ -117,11 +116,11 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     return yout, tout, info
 
 
-def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
+def _integrate_cb(callback, rd, y0, tout, mode='dense', dense_output=None,
                   **kwargs):
     if dense_output is None:
         dense_output = (len(tout) == 2)
-    if mode != DENSE:
+    if mode != 'dense':
         raise NotImplementedError("Currently only dense jacobian is supported")
     new_kwargs = dict(y0=y0, dx0=1e-16*(tout[1]-tout[0]))
     new_kwargs.update(kwargs)
@@ -213,13 +212,13 @@ def integrate_scipy(rd, y0, tout, mode=None,
 
     if mode is None:
         if rd.N == 1:
-            mode = DENSE
+            mode = 'dense'
         elif rd.N > 1:
-            mode = BANDED
+            mode = 'banded'
         else:
-            raise NotImplementedError
+            raise NotImplementedError("Unkown mode %s" % mode)
 
-    if mode == BANDED:
+    if mode == 'banded':
         new_kwargs['lband'] = rd.n
         new_kwargs['uband'] = rd.n
 
@@ -240,12 +239,12 @@ def integrate_scipy(rd, y0, tout, mode=None,
         return fout
     f.neval = 0
 
-    if mode == DENSE:
+    if mode == 'dense':
         jout = rd.alloc_jout(banded=False, order='F')
-    elif mode == BANDED:
+    elif mode == 'banded':
         if scipy_version[0] <= 0 and scipy_version[1] <= 14:
             # Currently SciPy <= v0.14 needs extra padding
-            jout = rd.alloc_jout(banded=True, order='F', pad=rd.n)
+            jout = rd.alloc_jout(banded=True, order='F', pad=True)
         else:
             # SciPy >= v0.15 need no extra padding
             jout = rd.alloc_jout(banded=True, order='F')
@@ -255,10 +254,14 @@ def integrate_scipy(rd, y0, tout, mode=None,
     def jac(t, y, *j_args):
         jac.neval += 1
         jout[...] = 0  # <--- this is very important (clear old LU decomp)
-        if mode == DENSE:
+        if mode == 'dense':
             rd.dense_jac_cmaj(t, y, jout)
         else:
-            rd.banded_packed_jac_cmaj(t, y, jout)
+            if scipy_version[0] <= 0 and scipy_version[1] <= 14:
+                # Currently SciPy <= v0.14 needs extra padding
+                rd.banded_padded_jac_cmaj(t, y, jout)
+            else:
+                rd.banded_packed_jac_cmaj(t, y, jout)
         return jout
     jac.neval = 0
 

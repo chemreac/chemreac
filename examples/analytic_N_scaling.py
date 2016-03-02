@@ -42,9 +42,7 @@ import numpy as np
 from chemreac import Geom_names
 from chemreac.util.plotting import save_and_or_show_plot
 
-from analytic_diffusion import (
-    integrate_rd, FLAT, CYLINDRICAL, SPHERICAL
-)
+from analytic_diffusion import integrate_rd
 
 
 def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
@@ -72,8 +70,6 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
     if plot:
         for idx in range(len(keys)+1):
             plt.figure(idx, figsize=(4*len(nspecies), 10))
-    geoms = [(FLAT, CYLINDRICAL, SPHERICAL)[['f', 'c', 's'].index(_)] for
-             _ in geoms]
     for gi, geom in enumerate(geoms):
         for ni, ns in enumerate(nspecies):
             def _ttl_labels(ylbl):
@@ -87,7 +83,7 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
 
             for si, nstencil in enumerate(nstencils):
                 print(Geom_names[geom], nstencil, ns)
-                tout, yout, info, rmsd_over_atol, sys = zip(*[
+                tout, yout, info, rmsd_over_atol, sys, rmsd = zip(*[
                     integrate_rd(
                         N=N, nstencil=nstencil, nspecies=ns, geom='fcs'[geom],
                         D=D, t0=t0, tend=tend, x0=x0, xend=xend, center=center,

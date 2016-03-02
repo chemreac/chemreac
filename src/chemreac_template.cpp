@@ -355,8 +355,8 @@ ReactionDiffusion::alloc_and_populate_linC(const double * const __restrict__ y,
 {
     int nlinC = n*N;
     double * const linC = (double * const)malloc(nlinC*sizeof(double));
-    // TODO: Tune 42...
-    ${"#pragma omp parallel for if (N > 42)" if WITH_OPENMP else ""}
+    // Possible optimization: tune 42...
+    ${"#pragma omp parallel for schedule(static) if (N > 42)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         for (uint si=0; si<n; ++si){
             if (recip)
@@ -383,7 +383,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
     }
     const double exp_t = (logt) ? exp(t) : 0.0;
     ${"double * const local_r = new double[nr];" if not WITH_OPENMP else ""}
-    ${"#pragma omp parallel for if (N > 2)" if WITH_OPENMP else ""}
+    ${"#pragma omp parallel for schedule(static) if (N > 2)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         // compartment bi
         ${"double * const local_r = new double[nr];" if WITH_OPENMP else ""}
@@ -514,7 +514,7 @@ ReactionDiffusion::${token}(double t,
     if (auto_efield)
         calc_efield(linC);
 
-    ${'#pragma omp parallel for' if WITH_OPENMP else ''}
+    ${'#pragma omp parallel for schedule(static)' if WITH_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
         // Contributions from reactions and fields
