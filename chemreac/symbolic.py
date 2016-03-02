@@ -20,6 +20,8 @@ import sympy as sp
 from .core import ReactionDiffusionBase
 from .util.grid import padded_centers, pxci_to_bi, stencil_pxci_lbounds
 
+FLAT, CYLINDRICAL, SPHERICAL = 0, 1, 2
+
 
 class SymRD(ReactionDiffusionBase):
 
@@ -31,7 +33,7 @@ class SymRD(ReactionDiffusionBase):
 
     def __init__(self, n, stoich_active, stoich_prod, k, N=0, D=None,
                  z_chg=None, mobility=None, x=None, stoich_inact=None,
-                 geom='f', logy=False, logt=False, logx=False, nstencil=None,
+                 geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
                  g_value_parents=None, fields=None, modulated_rxns=None,
@@ -122,22 +124,28 @@ class SymRD(ReactionDiffusionBase):
                 self.A_wghts.append(w[-2][-1])
                 for wi in range(self.nstencil):
                     if self.logx:
-                        if geom == 'f':
+                        if geom == FLAT:
                             self.D_wghts[bi][wi] -= w[-2][-1][wi]
-                        elif geom == 'c':
+                        elif geom == CYLINDRICAL:
                             self.A_wghts[bi][wi] += w[-3][-1][wi]
-                        elif geom == 's':
+                        elif geom == SPHERICAL:
                             self.D_wghts[bi][wi] += w[-2][-1][wi]
                             self.A_wghts[bi][wi] += 2*w[-3][-1][wi]
+                        else:
+                            raise ValueError("Unknown geom: %s" % geom)
                         self.D_wghts[bi][wi] *= exp(-2*l_x_rnd)
                         self.A_wghts[bi][wi] *= exp(-l_x_rnd)
                     else:
-                        if geom == 'c':
+                        if geom == FLAT:
+                            pass
+                        elif geom == CYLINDRICAL:
                             self.D_wghts[bi][wi] += w[-2][-1][wi]/l_x_rnd
                             self.A_wghts[bi][wi] += w[-3][-1][wi]/l_x_rnd
-                        elif geom == 's':
+                        elif geom == SPHERICAL:
                             self.D_wghts[bi][wi] += 2*w[-2][-1][wi]/l_x_rnd
                             self.A_wghts[bi][wi] += 2*w[-3][-1][wi]/l_x_rnd
+                        else:
+                            raise ValueError("Unknown geom: %s" % geom)
 
             for bi, (dw, aw) in enumerate(zip(self.D_wghts, self.A_wghts)):
                 for si in range(self.n):

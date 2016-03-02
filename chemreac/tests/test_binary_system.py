@@ -164,7 +164,7 @@ VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5], 'fcs'))
 def _test_integrate(params):
     logy, logt, N, geom = params
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
-
+    assert rd.geom == 'fcs'.index(geom)
     y0 = np.array(C0*N)
 
     ref = np.genfromtxt(BLESSED_PATH)
