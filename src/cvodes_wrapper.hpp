@@ -459,7 +459,7 @@ namespace cvodes_wrapper {
         // iterative == 3 => iterative (TFQMR)
         const int ny = rd->n*rd->N;
         Integrator integr {(lmm == CV_BDF) ? LMM::BDF : LMM::ADAMS,
-                IterType::NEWTON};
+                (lmm == CV_BDF) ? IterType::NEWTON : IterType::FUNCTIONAL};
                 //(iterative) ? IterType::FUNCTIONAL : IterType::NEWTON};
         integr.set_user_data((void *)rd);
         integr.init(f_cb<OdeSys>, tout[0], y0, ny);
@@ -498,28 +498,24 @@ namespace cvodes_wrapper {
             }
         }
         integr.integrate(nout, ny, tout, y0, 0, yout);
-        // BEGIN DEBUG
-        std::cout << "n_steps=" << integr.get_n_steps() << std::endl;
-        std::cout << "n_rhs_evals=" << integr.get_n_rhs_evals() << std::endl;
-        std::cout << "n_lin_solv_setups=" << integr.get_n_lin_solv_setups() << std::endl;
-        std::cout << "n_err_test_fails=" << integr.get_n_err_test_fails() << std::endl;
-        std::cout << "n_nonlin_solv_iters=" << integr.get_n_nonlin_solv_iters() << std::endl;
-        std::cout << "n_nonlin_solv_conv_fails=" << integr.get_n_nonlin_solv_conv_fails() << std::endl;
+        rd->last_integration_info.clear();
+        rd->last_integration_info["n_steps"] = integr.get_n_steps();
+        rd->last_integration_info["n_rhs_evals"] = integr.get_n_rhs_evals();
+        rd->last_integration_info["n_lin_solv_setups"] = integr.get_n_lin_solv_setups();
+        rd->last_integration_info["n_err_test_fails"] = integr.get_n_err_test_fails();
+        rd->last_integration_info["n_nonlin_solv_iters"] = integr.get_n_nonlin_solv_iters();
+        rd->last_integration_info["n_nonlin_solv_conv_fails"] = integr.get_n_nonlin_solv_conv_fails();
         if (iterative) {
-            std::cout << "Krylov specific:" << std::endl;
-            std::cout << "  n_lin_iters=" << integr.get_n_lin_iters() << std::endl;
-            std::cout << "  n_prec_evals=" << integr.get_n_prec_evals() << std::endl;
-            std::cout << "  n_prec_solves=" << integr.get_n_prec_solves() << std::endl;
-            std::cout << "  n_conv_fails=" << integr.get_n_conv_fails() << std::endl;
-            std::cout << "  n_jac_times_evals=" << integr.get_n_jac_times_evals() << std::endl;
-            std::cout << "  n_iter_rhs=" << integr.get_n_iter_rhs() << std::endl;
-            std::cout.flush();
+            rd->last_integration_info["krylov_n_lin_iters"] = integr.get_n_lin_iters();
+            rd->last_integration_info["krylov_n_prec_evals"] = integr.get_n_prec_evals();
+            rd->last_integration_info["krylov_n_prec_solves"] = integr.get_n_prec_solves();
+            rd->last_integration_info["krylov_n_conv_fails"] = integr.get_n_conv_fails();
+            rd->last_integration_info["krylov_n_jac_times_evals"] = integr.get_n_jac_times_evals();
+            rd->last_integration_info["krylov_n_iter_rhs"] = integr.get_n_iter_rhs();
         } else {
-            std::cout << "Dense linear solver specific:" << std::endl;
-            std::cout << "  n_dls_jac_evals=" << integr.get_n_dls_jac_evals() << std::endl;
-            std::cout << "  n_dls_rhs_evals=" << integr.get_n_dls_rhs_evals() << std::endl;
+            rd->last_integration_info["dense_n_dls_jac_evals"] = integr.get_n_dls_jac_evals();
+            rd->last_integration_info["dense_n_dls_rhs_evals"] = integr.get_n_dls_rhs_evals();
         }
-        // END DEBUG
     }
 }
 #endif /* CHEMREAC_HRX2ZF6DAVDRVP2UH3A3BM7QLE */

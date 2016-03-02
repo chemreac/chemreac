@@ -60,7 +60,8 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
-    new_kwargs['iterative'] = kwargs.pop('iterative', 0)
+    new_kwargs['iterative'] = {'gmres': 1, 'bicgstab': 2, 'tfqmr': 3}.get(
+        kwargs.pop('iterative', 'false').lower(), 0)
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
@@ -91,6 +92,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
         info['njacvec_dot'] = rd.njacvec_dot
         info['nprec_solve_ilu'] = rd.nprec_solve_ilu
         info['nprec_solve_lu'] = rd.nprec_solve_lu
+    info.update(rd.last_integration_info)
     return yout, tout, info
 
 

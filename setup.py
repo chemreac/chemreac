@@ -68,7 +68,7 @@ if WITH_DEBUG:
     options += ['debug']
     flags = []
 else:
-    flags = ['-O2']
+    flags = ['-O3']
     if not (ON_DRONE or ON_TRAVIS):
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda

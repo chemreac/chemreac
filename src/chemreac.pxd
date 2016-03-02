@@ -4,6 +4,8 @@
 from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
+from libcpp.unordered_map cimport unordered_map
+from libcpp.string cimport string
 
 cdef extern from *:
     ctypedef unsigned int uint
@@ -36,6 +38,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         uint n_jac_diags
         double * const efield
         double * xc
+
         long nfev
         long njev
         long nprec_setup
@@ -43,6 +46,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         long njacvec_dot
         long nprec_solve_ilu
         long nprec_solve_lu
+
+        unordered_map[string, int] last_integration_info
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],

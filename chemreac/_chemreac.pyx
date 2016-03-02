@@ -336,6 +336,9 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.nprec_solve_lu
 
+    property last_integration_info:
+        def __get__(self):
+            return self.thisptr.last_integration_info
 
     def zero_counters(self):
         self.thisptr.zero_counters()

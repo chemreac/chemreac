@@ -5,6 +5,7 @@
 #include <utility>
 #include <stdexcept>
 #include <memory> // unique_ptr
+#include <unordered_map>
 #include "block_diag_ilu.hpp"
 
 
@@ -83,6 +84,8 @@ public:
     long njacvec_dot {0};
     long nprec_solve_ilu {0};
     long nprec_solve_lu {0};
+
+    std::unordered_map<std::string, int> last_integration_info;
 
     ReactionDiffusion(uint,
 		      const vector<vector<uint> >,

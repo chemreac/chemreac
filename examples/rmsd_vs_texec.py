@@ -7,7 +7,9 @@ except ImportError:
     import pickle
 
 from collections import OrderedDict
+import gzip
 from itertools import product
+import sys
 
 import numpy as np
 
@@ -15,7 +17,8 @@ from analytic_diffusion import integrate_rd
 
 varied = OrderedDict([
     ('nstencil', [3, 5, 7]),  # categorical
-    ('N', [40, 80, 160, 240, 320])  # continuous  #, 400, 480, 560, 640],
+    ('N', [40, 80, 160, 240, 320]),  # continuous  #, 400, 480, 560, 640],
+    ('method', ['bdf', 'adams'])  # categorical
 ])
 
 constant = dict(
@@ -24,10 +27,11 @@ constant = dict(
     nt=42, logt=False, logy=False, logx=False,
     random=False, p=0, a=2.7,
     linterpol=False, rinterpol=False, n_jac_diags=0, num_jacobian=False,
-    method='bdf', atol=1e-8, rtol=1e-10,
+    atol=1e-8, rtol=1e-10,
     efield=True, random_seed=42, mobility=0.01,
     plot=False, savefig='None', verbose=False, yscale='linear',
-    vline_limit=100, iterative=1, solver='sundials'
+    vline_limit=100, solver='sundials',  iterative='gmres',
+    ilu_limit=1.0,  # method='bdf'
 )
 
 
@@ -50,11 +54,15 @@ def integrate(**kwargs):
 
 def main():
     results = {}
-    for params in product(*varied.values()):
+    all_params = product(*varied.values())
+    sys.stdout.write(str(len(all_params)) + ': ')
+    for params in all_params:
         kwargs = constant.copy()
         kwargs.update(dict(zip(varied.keys(), params)))
         results[params] = integrate(**kwargs)
-    pickle.dump(results, open('analytic_diffusion_results.pkl', 'wb'))
+        sys.stdout.write('.')
+    sys.stdout.write('\n')
+    pickle.dump(results, gzip.open('analytic_diffusion_results.pkl', 'wb'))
 
 if __name__ == '__main__':
     main()
