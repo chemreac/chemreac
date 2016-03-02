@@ -515,21 +515,21 @@ namespace cvodes_wrapper {
             default:
                 throw std::runtime_error("Invalid linear_solver");
             }
-        }
-        if (linear_solver >= 10){
-            if (!with_jacobian)
-                throw std::runtime_error("Iterative method requires an (approximate) jacobian");
-            integr.set_prec_type(PrecType::LEFT);
-            integr.set_iter_eps_lin(eps_lin);
-            integr.set_jac_times_vec_fn(jac_times_vec_cb<OdeSys>);
-            integr.set_preconditioner(prec_setup_cb<OdeSys>,
-                                      jac_prec_solve_cb<OdeSys>);
-            if (linear_solver == 10 || linear_solver == 11) // GMRES
-                integr.set_gram_schmidt_type((linear_solver == 10) ? GramSchmidtType::MODIFIED : GramSchmidtType::CLASSICAL);
-            else if (linear_solver == 20 or linear_solver == 30) // BiCGStab, TFQMR
-                integr.set_krylov_max_len(maxl);
-            else
-                throw std::runtime_error("Unknown linear_solver.");
+            if (linear_solver >= 10){
+                if (!with_jacobian)
+                    throw std::runtime_error("Iterative method requires an (approximate) jacobian");
+                integr.set_prec_type(PrecType::LEFT);
+                integr.set_iter_eps_lin(eps_lin);
+                integr.set_jac_times_vec_fn(jac_times_vec_cb<OdeSys>);
+                integr.set_preconditioner(prec_setup_cb<OdeSys>,
+                                          jac_prec_solve_cb<OdeSys>);
+                if (linear_solver == 10 || linear_solver == 11) // GMRES
+                    integr.set_gram_schmidt_type((linear_solver == 10) ? GramSchmidtType::MODIFIED : GramSchmidtType::CLASSICAL);
+                else if (linear_solver == 20 or linear_solver == 30) // BiCGStab, TFQMR
+                    integr.set_krylov_max_len(maxl);
+                else
+                    throw std::runtime_error("Unknown linear_solver.");
+            }
         }
         integr.integrate(nout, ny, tout, y0, 0, yout);
         rd->last_integration_info.clear();
