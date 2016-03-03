@@ -40,14 +40,14 @@ Installation
 ============
 .. install-start
 
-The easiest way to install chemreac (on linux) is to use
+The easiest way to install ``chemreac`` (on linux) is to use
 `conda <http://docs.continuum.io/anaconda/index.html>`_:
 ::
 
    $ conda config --add channel chemreac
    $ conda install chemreac
 
-and you're done! To check if chemreac is installed correctly you may run:
+and you're done! To check if ``chemreac`` is installed correctly you may run:
 
 ::
 
@@ -56,11 +56,11 @@ and you're done! To check if chemreac is installed correctly you may run:
 
 which should run the test suite (all tests should pass or xfail).
 If you are not using the conda package manager you can still install
-chemreac from source. You will find the instructions for doing so below.
+``chemreac`` from source. You will find the instructions for doing so below.
 
 Building from source
 --------------------
-Below you will find instructions for installation by building chemreac from source.
+Below you will find instructions for installation by building ``chemreac`` from source.
 You may also look in ``scripts/`` folder for automated install scripts used
 on the continuous integration servers.
 

@@ -46,7 +46,7 @@ _generated/const_surf_conc.png: examples/examples/const_surf_conc.py
 	python $< --plot --savefig $@
 
 _generated/const_surf_conc_logy_logx.png: examples/examples/const_surf_conc.py
-	python $< --plot --N 1024 --verbose --nstencil 3 --scaling 1e-20 --logx --logy --factor 1e12 --x0 1e-6 --atol 1e-8 --rtol 1e-8 --savefig $@
+	python $< --logx --logy --x0 1e-6 --scaling 1e-20 --factor 1e12 --plot --savefig $@
 
 
 images-png: $(IMAGES)

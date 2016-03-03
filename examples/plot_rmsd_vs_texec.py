@@ -75,7 +75,8 @@ def get_bokeh_fig():
     return top
 
 
-def plot_with_matplotlib(savefig='none', dpi=300, errorbar=False):
+def plot_with_matplotlib(savefig='none', dpi=300, errorbar=False, linx=False,
+                         liny=False):
     import matplotlib.pyplot as plt
     results, varied_keys, varied_vals = read()
     plt.rc('font', family='serif')
@@ -96,7 +97,10 @@ def plot_with_matplotlib(savefig='none', dpi=300, errorbar=False):
         cb(data[xkey], data[ykey], marker=mrkr, color=data['color'],
            label=label(data), ls='None', **kwargs)
     ax = plt.gca()
-    ax.set_yscale('log')
+    if not linx:
+        ax.set_xscale('log')
+    if not liny:
+        ax.set_yscale('log')
     plt.xlabel('$t_{exec}$')
     plt.ylabel(r'$\mathrm{RMSD}\ /\ \mathrm{atol}$')
 
@@ -111,7 +115,7 @@ def plot_with_matplotlib(savefig='none', dpi=300, errorbar=False):
                 key=operator.itemgetter(1))
     handles2, labels2 = zip(*hl)
 
-    ax.legend(handles2, labels2, numpoints=1)
+    ax.legend(handles2, labels2, numpoints=1, prop={'size': 12})
     if savefig.lower() == 'none':
         plt.show()
     else:

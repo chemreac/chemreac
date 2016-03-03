@@ -16,4 +16,5 @@ cdef extern from "cvodes_wrapper.hpp" namespace "cvodes_wrapper":
         int, 
         int,
         int,
+        double,
         double) except +

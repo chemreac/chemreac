@@ -237,7 +237,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         Requirement on (average) diagonal dominance for performing ILU
         factorization.
     n_jac_diags: int
-        Number of diagonals to include in Jacobian (default: 1)
+        Number of diagonals to include in Jacobian. ``-1`` delegates to
+        environment variable ``CHEMREAC_N_JAC_DIAGS``. ``0`` makes it equal to
+        ``nstencil - 1 / 2``.
     unit_registry: dict (optional)
         default: None, see ``chemreac.units.SI_base_registry`` for an
         example.

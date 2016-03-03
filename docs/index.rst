@@ -6,7 +6,7 @@
 Welcome to chemreac's documentation!
 ====================================
 
-chemreac is an open-source Python library for modeling chemical kinetcs in either:
+``chemreac`` is an open-source Python library for modelling chemical kinetcs in either:
 
 - Homogeneous bulk solution (no concentration gradients)
     - Kinetics governed by law of mass action

@@ -83,6 +83,11 @@ namespace cvodes_wrapper {
             nvector_serial_wrapper::Vector yvec (ny, const_cast<realtype*>(y));
             reinit(t0, yvec.n_vec);
         }
+        void set_init_step(realtype h0){
+            int status = CVodeSetInitStep(this->mem, h0);
+            if (status < 0)
+                throw std::runtime_error("CVodeSetInitStep failed.");
+        }
         void set_tol(realtype rtol, realtype atol){
             int status = CVodeSStolerances(this->mem, rtol, atol);
             if (status < 0)
@@ -184,10 +189,6 @@ namespace cvodes_wrapper {
             int flag = CVSpilsSetMaxl(this->mem, maxl);
             this->cvspils_check_flag(flag);
         }
-        void set_init_step(realtype h0){
-            CVodeSetInitStep(this->mem, h0);
-        }
-
         long int get_n_lin_iters(){
             long int res=0;
             int flag;
@@ -463,7 +464,8 @@ namespace cvodes_wrapper {
                           int iter_type=0,
                           int linear_solver=0,
                           const int maxl=5,
-                          const real_t eps_lin=0.05){
+                          const real_t eps_lin=0.05,
+                          const real_t first_step=0.0){
         // iter_type == 0 => 1 if lmm == CV_ADAMS else 2
         // iter_type == 1 => Functional (ignore linear_solver)
         // iter_type == 2 => Newton
@@ -487,6 +489,7 @@ namespace cvodes_wrapper {
                 (iter_type == 1) ? IterType::FUNCTIONAL : IterType::NEWTON};
         integr.set_user_data((void *)rd);
         integr.init(f_cb<OdeSys>, tout[0], y0, ny);
+        integr.set_init_step(first_step);
         if (atol.size() == 1){
             integr.set_tol(rtol, atol[0]);
         }else{

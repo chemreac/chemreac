@@ -12,9 +12,10 @@ import numpy as np
 
 
 def get_banded(A, n, N, n_jac_diags=1, order='C', padded=False):
-    """
-    Turns a dense matrix (n*N)*(n*N) into a banded matrix
-    including the diagonal and n super-diagonals and n sub-diagonals
+    """ Turns a dense matrix into a banded one
+
+    Turns a dense matrix (n·N) × (n·N) into a banded matrix
+    including the diagonal and n super-diagonals and n sub-diagonals.
 
     Parameters
     ----------
@@ -46,7 +47,7 @@ def get_banded(A, n, N, n_jac_diags=1, order='C', padded=False):
 
 def get_jac_row_from_banded(J, rows, n, n_jac_diags=1):
     """
-    Extracts a rows from a banded matrix J
+    Extracts rows from a banded matrix J
 
     Parameters
     ----------

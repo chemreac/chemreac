@@ -404,12 +404,14 @@ def sundials_integrate(
         CppReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
-        int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05):
+        int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05,
+        double first_step=0.0):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N
     simple_integrate[double, ReactionDiffusion](
         rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], tout.size, &tout[0], &yout[0], with_jacobian, iter_type, linear_solver, maxl, eps_lin)
+        &y0[0], tout.size, &tout[0], &yout[0], with_jacobian, iter_type,
+        linear_solver, maxl, eps_lin, first_step)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 

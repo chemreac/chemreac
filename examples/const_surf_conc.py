@@ -30,12 +30,14 @@ Solving the transformed system (:math:`\\frac{d}{dt} \\ln(c(\\ln(x), t))`):
 
 ::
 
- $ python const_surf_conc.py --plot --N 1024 --verbose --nstencil 3\
- --scaling 1e-20 --logx --logy --factor 1e12 --x0 1e-6\
- --atol 1e-8 --rtol 1e-8 --savefig const_surf_conc_logy_logx.png
+ $ python const_surf_conc.py --logx --logy --x0 1e-6 --scaling 1e-20\
+ --factor 1e12 --plot --savefig const_surf_conc_logy_logx.png
 
 .. image:: ../_generated/const_surf_conc_logy_logx.png
 
+
+note the much better performance of this transformed (and scaled) system
+compared to the untransformed one.
 
 """
 
@@ -71,17 +73,18 @@ def analytic(x, t, D, x0, xend, logx=False, c_s=1):
     return c_s * scipy.special.erfc(x/(2*(D*t)**0.5))
 
 
-def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
+def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
                  nt=42, logt=False, logy=False, logx=False,
                  random=False, k=1.0, nstencil=3, linterpol=False,
                  rinterpol=False, num_jacobian=False, method='bdf',
-                 plot=False, atol=1e-6, rtol=1e-6, factor=1e5,
-                 random_seed=42, savefig='None', verbose=False,
-                 scaling=1.0):
+                 solver='scipy', iter_type='default',
+                 linear_solver='default', atol=1e-8, rtol=1e-10, factor=1e5,
+                 random_seed=42, plot=False, savefig='None', verbose=False,
+                 scaling=1.0, ilu_limit=1000.0, first_step=0.0):
     """
-    Solves the time evolution of diffusion from a constant source term.
-    Optionally plots the results. In the plots time is represented by
-    color scaling from black (:math:`t_0`) to red (:math:`t_{end}`)
+    Solves the time evolution of diffusion from a constant (undepletable)
+    source term. Optionally plots the results. In the plots time is represented
+    by color scaling from black (:math:`t_0`) to red (:math:`t_{end}`)
     """
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
@@ -114,41 +117,45 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
         modulation=[modulation, modulation],
         unit_registry=units,
         faraday=1,
-        vacuum_permittivity=1
+        vacuum_permittivity=1,
+        ilu_limit=ilu_limit
     )
 
     # Calc initial conditions / analytic reference values
     Cref = analytic(rd.xcenters, tout, D, x0, xend, logx).reshape(
         nt, N, 1)
     source = np.zeros_like(Cref[0, ...])
-    source[0, :] = factor
+    source[0, 0] = factor
     y0 = np.concatenate((source, Cref[0, ...]), axis=1)
 
     # Run the integration
     integr = run(rd, y0, tout, atol=atol, rtol=rtol,
-                 with_jacobian=(not num_jacobian), method=method)
+                 with_jacobian=(not num_jacobian), method=method,
+                 solver=solver, iter_type=iter_type,
+                 linear_solver=linear_solver, first_step=first_step)
     Cout, info = integr.Cout, integr.info
-    print("integr.Cout[0, :, 1] = ", integr.Cout[0, :, 1])
-    print("integr.yout[0, :, 1] = ", integr.yout[0, :, 1])
+    if verbose:
+        import pprint
+        pprint.pprint(info)
     spat_ave_rmsd_over_atol = spat_ave_rmsd_vs_time(
         Cout[:, :, 1], Cref[:, :, 0]) / atol
     tot_ave_rmsd_over_atol = np.average(spat_ave_rmsd_over_atol)
+
     if plot:
         # Plot results
         import matplotlib.pyplot as plt
         plt.figure(figsize=(6, 10))
 
-        def _plot(y, c, ttl=None, apply_exp_on_y=False, vlines=False,
+        def _plot(C, c, ttl=None, vlines=False,
                   smooth=True):
             if vlines:
-                plt.vlines(rd.x, 0, np.ones_like(rd.x)*max(y),
+                plt.vlines(rd.x, 0, np.ones_like(rd.x)*max(C),
                            linewidth=1, colors='gray')
             if smooth:
-                plt.plot(rd.xcenters, np.exp(y) if apply_exp_on_y else y,
-                         c=c)
+                plt.plot(rd.xcenters, C, c=c)
             else:
-                for i, _y in enumerate(np.exp(y) if apply_exp_on_y else y):
-                    plt.plot([rd.x[i], rd.x[i+1]], [_y, _y], c=c)
+                for i, _C in enumerate(C):
+                    plt.plot([rd.x[i], rd.x[i+1]], [_C, _C], c=c)
 
             plt.xlabel('x / m')
             plt.ylabel('C / M')
@@ -161,24 +168,19 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
 
             c = 1-tout[i]/tend
             c = (1.0-c, .5-c/2, .5-c/2)
-            plt.subplot(5, 1, 1)
+            plt.subplot(4, 1, 1)
             _plot(Cout[i, :, 1], c, 'Simulation (N={})'.format(rd.N),
                   **kwargs)
 
-            plt.subplot(5, 1, 2)
+            plt.subplot(4, 1, 2)
             _plot(Cref[i, :, 0], c, 'Analytic', **kwargs)
 
-            plt.subplot(5, 1, 3)
-            _plot((Cout[i, :, 1]-Cref[i, :, 0])/atol, c,
-                  "Abs. err. / abs. tol. (atol={0:<.3g})".format(atol),
+            plt.subplot(4, 1, 3)
+            _plot((Cout[i, :, 1]-Cref[i, :, 0]), c,
+                  "Error".format(atol),
                   **kwargs)
 
-            plt.subplot(5, 1, 4)
-            ttl = "Abs. err. / (abs. tol. + rtol*|Cref|)"
-            _plot((Cout[i, :, 1]-Cref[i, :, 0])/(atol + np.abs(
-                rtol*Cref[i, :, 0])), c, ttl, **kwargs)
-
-            plt.subplot(5, 1, 5)
+            plt.subplot(4, 1, 4)
             plt.plot(integr.tout, spat_ave_rmsd_over_atol)
             plt.plot([integr.tout[0], integr.tout[-1]],
                      [tot_ave_rmsd_over_atol]*2, '--')
@@ -186,9 +188,6 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=64,
 
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
-
-    if verbose:
-        print(info)
 
     return tout, Cout, info, rd, tot_ave_rmsd_over_atol
 

@@ -1,6 +1,6 @@
 chemreac.util
 =============
-Utilities used throughout the code base.
+Utilities used throughout the library.
 
 .. toctree::
    :maxdepth: 2

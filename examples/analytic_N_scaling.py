@@ -52,7 +52,8 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
          nt=42, logt=False, logy=False, logx=False,
          random=False, p=0, a=0.2,
          linterpol=False, rinterpol=False, num_jacobian=False,
-         method='bdf', atol=1e-6, rtol=1e-6,
+         method='bdf', solver='sundials', linear_solver='gmres',
+         atol=1e-6, rtol=1e-6,
          efield=False, random_seed=42, mobility=0.01):
     import matplotlib.pyplot as plt
     nfit = [float(_) for _ in nfit.split(',')]
@@ -89,7 +90,8 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
                         D=D, t0=t0, tend=tend, x0=x0, xend=xend, center=center,
                         nt=nt, logt=logt, logy=logy, logx=logx, random=random,
                         p=p, a=a, linterpol=linterpol, rinterpol=rinterpol,
-                        num_jacobian=num_jacobian, method=method, atol=atol,
+                        num_jacobian=num_jacobian, method=method,
+                        solver=solver, linear_solver=linear_solver, atol=atol,
                         rtol=rtol, efield=efield, random_seed=random_seed,
                         mobility=mobility)
                     for N in Ns])

@@ -1,11 +1,11 @@
 Development
 ===========
 
-As an open-source project other researchers/students are encouraged to improve upon
+As an open-source project, other researchers/students are encouraged to improve upon
 the code/documentation. The code is released under the permissive `BSD 2-Clause
 License <http://opensource.org/licenses/BSD-2-Clause>`_. The source
 code repository is found at https://github.com/chemreac/chemreac which is also
-where issues and patches ("pull requests") are posted.
+where issues and patches ("pull requests") are accepted.
 
 
 Coding standards
@@ -49,15 +49,15 @@ generated for each change of the code.
 
 Environment
 -----------
-The documentation assumes a \*NIX like environment, or at
-least familiarity with this environment for tweaking build scripts
-etc. Feedback from users and developers on other platforms is most
-welcome.
+In theory ``chemreac`` should be cross-platform. However, all development (and
+testing) is done on Linux, and the documentation assumes a posix compliant
+environment, or at least familiarity with this environment. Feedback from users
+and developers on other platforms is most welcome.
 
-If you are new to `github <https://github.com/>`_ and the like, a good start is SymPy's wiki
-entry on `development workflow
-<https://github.com/sympy/sympy/wiki/Development-workflow>`_ (minus
-the SymPy specific parts obviously).
+If you are new to `github <https://github.com/>`_ and the like, a good start
+is SymPy's wiki entry on `development workflow 
+<https://github.com/sympy/sympy/wiki/Development-workflow>`_ (minus the SymPy
+specific parts obviously).
 
 Example of setting up a development environment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -95,7 +95,7 @@ to the code:
 ::
 
     $ git commit -am "Fixed a silly bug in the complex-thingy."
-    $ git push
+    $ git push origin --set-upstream fix_silly_bug
 
 
 8. Go to your forked repo on github and create a `pull-request <https://help.github.com/articles/using-pull-requests/>`_ from there.

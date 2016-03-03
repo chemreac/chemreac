@@ -61,14 +61,15 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
     new_kwargs['iter_type'] = {
-        'default': 0, 'functional': 1, 'direct': 2}.get(
-            kwargs.pop('iter_type', 'default').lower())
+        'default': 0, 'functional': 1, 'newton': 2}[
+            kwargs.pop('iter_type', 'default').lower()]
     new_kwargs['linear_solver'] = {
         'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
-        'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}.get(
-            kwargs.pop('linear_solver', 'default').lower())
+        'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[
+            kwargs.pop('linear_solver', 'default').lower()]
     new_kwargs['maxl'] = kwargs.pop('maxl', 5)
     new_kwargs['eps_lin'] = kwargs.pop('eps_lin', 0.05)
+    new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
@@ -235,6 +236,11 @@ def integrate_scipy(rd, y0, tout, mode=None,
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
+    new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
+    if kwargs.pop('iter_type', 'default') != 'default':
+        raise ValueError("iter_type unsupported by SciPy solver")
+    if kwargs.pop('linear_solver', 'default') != 'default':
+        raise ValueError("linear_solver unsupported by SciPy solver")
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
@@ -507,7 +513,7 @@ def run(*args, **kwargs):
     Set ``CHEMREAC_SOLVER`` to indicate what integrator to
     use (default: "scipy").
 
-    Set ``CHEMREAC_SOLVER_KWARGS`` to a string which can be eval'd to
+    Set ``CHEMREAC_SOLVER_KWARGS`` to a string which can be evaluated to
     a python dictionary. e.g. "{'atol': 1e-4, 'rtol'=1e-7}"
     """
     import os

@@ -3,7 +3,7 @@
 """
 chemreac.util.grid
 ------------------
-Grid related utilities for one dimensional grid of arbitrary spacing.
+Grid related utilities for one-dimensional grid of arbitrary spacing.
 """
 
 from __future__ import print_function, division
@@ -37,7 +37,7 @@ def generate_grid(x0, xend, N, logx=False, unit_registry=None, random=False):
 def padded_centers(x, nsidep):
     """
     Parameters
-    ==========
+    ----------
     x: sequence
         strictly monotonically increasing sequence of positions of
         bin separators.
@@ -56,14 +56,14 @@ def pxci_to_bi(nstencil, N):
     at 0, which includes padding bins and into bin indices.
 
     Parameters
-    ==========
+    ----------
     nstencil: integer
         Number of stencil points used
     N: integer
         Number of bins
 
     Returns
-    =======
+    -------
     list of bin indices.
 
     """
