@@ -17,7 +17,7 @@ from analytic_diffusion import integrate_rd
 
 default_varied = OrderedDict([
     ('nstencil', [3, 5, 7]),  # categorical
-    ('N', [40, 80, 160, 240, 320]),  # continuous  #, 400, 480, 560, 640],
+    ('N', list(range(32, 385, 16))),  # continuous  #, 400, 480, 560, 640],
     ('method', ['bdf', 'adams'])  # categorical
 ])
 
@@ -37,14 +37,18 @@ constant = dict(
 
 def integrate(**kwargs):
     texecs = []
-    nrepeat = 3
+    nrepeat = 21
+    ndrop = 7
     for i in range(nrepeat):
         tout, yout, info, rmsd_over_atol, sys, rmsd = integrate_rd(**kwargs)
         texecs.append(info['texec'])
-    texecs.pop(texecs.index(min(texecs)))
-    info['texec'] = sum(texecs) / (nrepeat - 1.0)
+    for _ in range(ndrop):
+        texecs.pop(texecs.index(max(texecs)))
+    texecs = np.array(texecs)
+    info['texec'] = avg = np.average(texecs)
+    info['dtexec'] = np.sqrt(np.sum((texecs - avg)**2/(len(texecs) - 1)))
     info['tout'] = tout
-    info['yout'] = yout
+    # info['yout'] = yout
     info['rmsd'] = rmsd
     info['rmsd_over_atol'] = np.sqrt(np.sum(rmsd_over_atol**2))
     for k in default_varied:
@@ -55,7 +59,10 @@ def integrate(**kwargs):
 def main(varied=None):
     if varied is None:
         varied = default_varied
-    results = {}
+    results = {
+        'varied_keys': list(default_varied.keys()),
+        'varied_values': list(default_varied.values())
+    }
     all_params = list(product(*varied.values()))
     sys.stdout.write(str(len(all_params)) + ': ')
     for params in all_params:
