@@ -13,8 +13,10 @@ xkey, ykey = 'texec', 'rmsd_over_atol'
 
 
 def read():
-    source = os.path.join(os.path.dirname(__file__),
-                          'analytic_diffusion_results.pkl')
+    basename = os.path.splitext(os.path.basename(__file__))[0]
+    assert basename.startswith('plot_')
+    basename = basename[len('plot_'):]
+    source = os.path.join(os.path.dirname(__file__), basename + '.pkl')
     if not os.path.exists(source):
         raise IOError("%s does not exist. Run rmsd_vs_texec.py first" % source)
     results = pickle.load(gzip.open(source, 'rb'))

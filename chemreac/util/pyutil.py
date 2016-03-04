@@ -5,9 +5,12 @@ chemreac.util.pyutil
 Utility functions used throughout chemreac.
 
 """
+from __future__ import (absolute_import, division, print_function)
 
+
+import sys
 import numpy as np
-
+import time
 
 def monotonic(arr, positive=0, strict=False):
     """
@@ -94,3 +97,64 @@ def set_dict_defaults_inplace(dct, *args):
             if k not in ori_dct_keys:
                 new_dct[k] = v
     dct.update(new_dct)
+
+
+class progress(object):
+    """ Print a progress bar of dots
+
+    Parameters
+    ----------
+    iterable: iterable
+        must have :attr:`__len__`
+    output: fileobject
+        default: sys.stdout
+    proc_time: bool
+        show process time (in seconds) passed at end of iteration.
+
+    Examples
+    --------
+    >>> vals = list(range(7))
+    >>> squares = []
+    >>> for val in progress(vals, proc_time=False):
+    ...     squares.append(val**2)
+    ...
+    7: .......
+    >>> squares
+    [0, 1, 4, 9, 16, 25, 36]
+
+    """
+
+    def __init__(self, iterable, output=None, proc_time=True):
+        if proc_time is True:
+            try:
+                proc_time = time.process_time  # Py 3
+            except AttributeError:
+                proc_time = time.clock  # Py 2
+        self._proc_time = proc_time
+        self.iterable = iterable
+        self.output = output
+        self._cur_pos = 0
+        self._len = len(iterable)
+        if proc_time:
+            self._t0 = self._proc_time()
+
+    def __iter__(self):
+        print("%d: " % self._len, file=self.output, end='')
+        return self
+
+    def next(self):
+        if self._cur_pos >= self._len:
+            print(' (%.3f s)\n' % (self._proc_time() - self._t0)
+                  if self._proc_time else '\n', file=self.output, end='')
+            raise StopIteration
+        else:
+            self._cur_pos += 1
+            try:
+                print('.', file=self.output, end='', flush=True)
+            except TypeError:
+                print('.', file=self.output, end='')
+                if self.output is None or self.output is sys.stdout:
+                    sys.stdout.flush()
+            return self.iterable[self._cur_pos - 1]
+
+    __next__ = next
