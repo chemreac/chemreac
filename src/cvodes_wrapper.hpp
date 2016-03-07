@@ -133,7 +133,6 @@ namespace cvodes_wrapper {
             switch (solver) {
             case IterLinSolEnum::GMRES:
                 flag = CVSpgmr(this->mem, (int)PrecType::LEFT, maxl);
-                CVSpilsSetGSType(this->mem, MODIFIED_GS); // FIX THIS
                 break;
             case IterLinSolEnum::BICGSTAB:
                 flag = CVSpbcg(this->mem, (int)PrecType::LEFT, maxl);
@@ -378,8 +377,8 @@ namespace cvodes_wrapper {
 
     template<class OdeSys>
     int f_cb(realtype t, N_Vector y, N_Vector ydot, void *user_data){
-        OdeSys * odesys = (OdeSys*)user_data;
-        odesys->f(t, NV_DATA_S(y), NV_DATA_S(ydot));
+        auto& odesys = *static_cast<OdeSys*>(user_data);
+        odesys.f(t, NV_DATA_S(y), NV_DATA_S(ydot));
         return 0;
     }
 
@@ -391,8 +390,8 @@ namespace cvodes_wrapper {
                      N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
         // callback of req. signature wrapping OdeSys method.
         ignore(N); ignore(tmp1); ignore(tmp2); ignore(tmp3);
-        OdeSys * odesys = (OdeSys*)user_data;
-        odesys->dense_jac_cmaj(t, NV_DATA_S(y), NV_DATA_S(fy), DENSE_COL(Jac, 0),
+        auto& odesys = *static_cast<OdeSys*>(user_data);
+        odesys.dense_jac_cmaj(t, NV_DATA_S(y), NV_DATA_S(fy), DENSE_COL(Jac, 0),
                            Jac->ldim);
         return 0;
     }
@@ -403,10 +402,10 @@ namespace cvodes_wrapper {
                     N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
         // callback of req. signature wrapping OdeSys method.
         ignore(N); ignore(mupper); ignore(mlower); ignore(tmp1); ignore(tmp2); ignore(tmp3);
-        OdeSys * odesys = (OdeSys*)user_data;
-        if (Jac->s_mu != 2*(odesys->n*odesys->n_jac_diags))
+        auto& odesys = *static_cast<OdeSys*>(user_data);
+        if (Jac->s_mu != 2*(odesys.n*odesys.n_jac_diags))
             throw std::runtime_error("Mismatching size of padding.");
-        odesys->banded_padded_jac_cmaj(t, NV_DATA_S(y), NV_DATA_S(fy), Jac->data, Jac->ldim);
+        odesys.banded_padded_jac_cmaj(t, NV_DATA_S(y), NV_DATA_S(fy), Jac->data, Jac->ldim);
         return 0;
     }
 
@@ -416,8 +415,8 @@ namespace cvodes_wrapper {
                          N_Vector fy, void *user_data, N_Vector tmp){
         // callback of req. signature wrapping OdeSys method.
         ignore(tmp);
-        OdeSys * odesys = (OdeSys*)user_data;
-        odesys->jac_times_vec(NV_DATA_S(v), NV_DATA_S(Jv), t, NV_DATA_S(y), NV_DATA_S(fy));
+        auto& odesys = *static_cast<OdeSys*>(user_data);
+        odesys.jac_times_vec(NV_DATA_S(v), NV_DATA_S(Jv), t, NV_DATA_S(y), NV_DATA_S(fy));
         return 0;
     }
 
@@ -428,10 +427,10 @@ namespace cvodes_wrapper {
         // callback of req. signature wrapping OdeSys method.
         //std::cout << "in jac_prec_solve_cb() with lr=" << lr << std::endl; // DEBUG
         ignore(tmp); ignore(delta);
-        OdeSys * odesys = (OdeSys*)user_data;
+        auto& odesys = *static_cast<OdeSys*>(user_data);
         if (lr != 1)
             throw std::runtime_error("Only left preconditioning implemented.");
-        odesys->prec_solve_left(t, NV_DATA_S(y), NV_DATA_S(fy), NV_DATA_S(r),
+        odesys.prec_solve_left(t, NV_DATA_S(y), NV_DATA_S(fy), NV_DATA_S(r),
                                 NV_DATA_S(z), gamma);
         return 0; // Direct solver give no hint on success, hence report success.
     }
@@ -443,9 +442,9 @@ namespace cvodes_wrapper {
         // callback of req. signature wrapping OdeSys method.
         //std::cout << "in prec_setup_cb()" << std::endl; // DEBUG
         ignore(tmp1); ignore(tmp2); ignore(tmp3);
-        OdeSys * odesys = (OdeSys*)user_data;
+        auto& odesys = *static_cast<OdeSys*>(user_data);
         bool jac_recomputed;
-        odesys->prec_setup(t, NV_DATA_S(y), NV_DATA_S(fy),
+        odesys.prec_setup(t, NV_DATA_S(y), NV_DATA_S(fy),
                            (jok == TRUE) ? true : false,
                            jac_recomputed, gamma);
         (*jcurPtr) = (jac_recomputed) ? TRUE : FALSE;
@@ -463,8 +462,8 @@ namespace cvodes_wrapper {
                           const bool with_jacobian=true,
                           int iter_type=0,
                           int linear_solver=0,
-                          const int maxl=5,
-                          const Real_t eps_lin=0.05,
+                          const int maxl=0,
+                          const Real_t eps_lin=0.0,
                           const Real_t first_step=0.0){
         // iter_type == 0 => 1 if lmm == CV_ADAMS else 2
         // iter_type == 1 => Functional (ignore linear_solver)
