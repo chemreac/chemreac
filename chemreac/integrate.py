@@ -38,7 +38,7 @@ class IntegrationError(Exception):
     pass
 
 
-def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
+def integrate_cvode(rd, y0, tout, mode=None, **kwargs):
     """
     see :py:func:`integrate`
 
@@ -52,7 +52,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     new_kwargs = {}
     if mode is not None:
         raise NotImplementedError(
-            "Sundials integrator auto-selects banded for N>1")
+            "Cvode integrator auto-selects banded for N>1")
     atol = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
     if atol.ndim == 0:
         atol = atol.reshape((1,))
@@ -344,7 +344,7 @@ class Integration(object):
     Parameters
     ----------
     solver: string
-        "sundials" or "scipy" where scipy uses VODE
+        "cvode" or "scipy" where scipy uses VODE
         as the solver.
     rd: ReactionDiffusion instance
     C0: array
@@ -395,7 +395,7 @@ class Integration(object):
     """
 
     _callbacks = {
-        'sundials': integrate_sundials,
+        'cvode': integrate_cvode,
         'scipy': integrate_scipy,
         'pyodeint': integrate_pyodeint,
         'pygslodeiv2': integrate_pygslodeiv2,

@@ -31,7 +31,7 @@ constant = dict(
     atol=1e-8, rtol=1e-10,
     efield=True, random_seed=42, mobility=0.01,
     plot=False, savefig='None', verbose=False, yscale='linear',
-    vline_limit=100, solver='sundials', iter_type='default',
+    vline_limit=100, solver='cvode', iter_type='default',
     linear_solver='gmres', ilu_limit=1.0
 )
 

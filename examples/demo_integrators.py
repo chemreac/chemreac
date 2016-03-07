@@ -7,7 +7,7 @@ the numerical integration (stepping with error control). The following
 integrators are used:
 
 - VODE (via SciPy)
-- CVODE (Sundials called directly)
+- CVode (Sundials called directly)
 - odeint (via pyodeint)
 - gsl (via pygslodeiv2)
 
@@ -43,9 +43,9 @@ def main(logy=False, logt=False, forgive_fact=1):
     assert np.allclose(integr1.Cout[:, 0, :], Cref(tout))
     print()
 
-    print('sundials')
-    print('--------')
-    integr2 = Integration('sundials', rd, np.asarray(y0), np.asarray(tout),
+    print('cvode')
+    print('-----')
+    integr2 = Integration('cvode', rd, np.asarray(y0), np.asarray(tout),
                           atol=[1e-8, 1e-8], rtol=1e-8, method='bdf')
     assert np.allclose(integr2.Cout[:, 0, :], Cref(tout))
     print()

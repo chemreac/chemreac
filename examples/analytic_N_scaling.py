@@ -65,7 +65,7 @@ def integrate(**kwargs):
 default_constant = dict(
     D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None, nt=42, logt=False,
     logy=False, logx=False, random=False, p=0, a=0.2, linterpol=False,
-    rinterpol=False, num_jacobian=False, method='bdf', solver='sundials',
+    rinterpol=False, num_jacobian=False, method='bdf', solver='cvode',
     linear_solver='gmres', atol=1e-8, rtol=1e-10, efield=False, random_seed=42,
     mobility=0.01, n_jac_diags=0
 )

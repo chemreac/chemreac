@@ -5,7 +5,7 @@ v0.4
    - linear_solver: {'default', 'dense', 'banded', 'gmres', 'bicgstab', 'tfqmr'}
    - iter_type: {'functional', 'newton'}
 - Drop constants GEOM_ORDER, DENSE, BANDED, SPARSE, GEOMS
-
+- Change solver choice "sundials" to "cvode" (prepare for arkode support).
 
 v0.3
 ====

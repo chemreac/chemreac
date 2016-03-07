@@ -199,13 +199,13 @@ def test_integrators(log):
             'tout': (t0, tend),
             'dense_output': True
         },
-        'sundials1': {
+        'cvode1': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
             'method': 'bdf',
             'tout': tout
         },
-        'sundials2': {
+        'cvode2': {
             'atol': 1e-8,
             'rtol': 1e-8,
             'method': 'adams',
