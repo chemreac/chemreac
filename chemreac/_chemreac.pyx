@@ -40,11 +40,11 @@ cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
     ))
 
 
-cdef class CppReactionDiffusion:
+cdef class PyReactionDiffusion:
     """
     Wrapper around C++ class ReactionDiffusion,
     """
-    cdef ReactionDiffusion *thisptr
+    cdef ReactionDiffusion[double] *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
 
@@ -80,7 +80,7 @@ cdef class CppReactionDiffusion:
                   int n_jac_diags=1,
               ):
         cdef size_t i
-        self.thisptr = new ReactionDiffusion(
+        self.thisptr = new ReactionDiffusion[double](
             n, stoich_active, stoich_prod, k, N,
             D, z_chg, mobility, x, stoich_inact, geom,
             logy, logt, logx, nstencil,
@@ -401,14 +401,14 @@ cdef class CppReactionDiffusion:
 # sundials wrapper:
 
 def sundials_integrate(
-        CppReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
+        PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
         int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05,
         double first_step=0.0):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     assert y0.size == rd.n*rd.N
-    simple_integrate[double, ReactionDiffusion](
+    simple_integrate[double, ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
         &y0[0], tout.size, &tout[0], &yout[0], with_jacobian, iter_type,
         linear_solver, maxl, eps_lin, first_step)
@@ -436,7 +436,7 @@ cdef void _add_5_vecs(int n, double * v1, double * v2, double * v3,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _rk4(ReactionDiffusion * rd,
+cdef void _rk4(ReactionDiffusion[double] * rd,
                cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] y0,
                cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout,
                cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] y0out,
@@ -467,7 +467,7 @@ cdef void _rk4(ReactionDiffusion * rd,
                     1.0, h/6, h/3, h/3, h/6, &y0out[i, 0])
 
 
-def rk4(CppReactionDiffusion rd, y0, tout):
+def rk4(PyReactionDiffusion rd, y0, tout):
     """
     simple explicit, fixed step size, Runge Kutta 4th order integrator.
     Use for debugging/testing.

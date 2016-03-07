@@ -22,6 +22,10 @@
 
 namespace block_diag_ilu {
 
+    template <typename T> constexpr T absval(T a) {
+        return (a >= 0) ? a : -a;
+    }
+
     // make_unique<T[]>() only provided in C++14, work around for C++11:
     // <copy&paste href=http://stackoverflow.com/a/10150181/790973 license=cc-wiki>
     template <class T, class ...Args>
@@ -76,8 +80,8 @@ namespace block_diag_ilu {
 #endif
 
 #if defined(WITH_BLOCK_DIAG_ILU_DGETRF)
-    inline uint dgetrf_square(const uint dim, double * const __restrict__ a,
-                              const uint lda, int * const __restrict__ ipiv) noexcept;
+    template<typename T> inline uint getrf_square(const uint dim, T * const __restrict__ a,
+                                                  const uint lda, int * const __restrict__ ipiv) noexcept;
 #else
     extern "C" void dgetrf_(const int* dim1, const int* dim2, double* a, int* lda, int* ipiv, int* info);
 #endif
@@ -341,10 +345,10 @@ namespace block_diag_ilu {
                 for (uint li = 0; li < this->blockw; ++li){
                     const Real_t diag_val = this->block(bi, li, li);
                     if (bi < this->nblocks - di - 1){
-                        off_diag_factor += std::abs(diag_val/this->sub(di, bi, li));
+                        off_diag_factor += block_diag_ilu::absval<Real_t>(diag_val/this->sub(di, bi, li));
                     }
                     if (bi > di){
-                        off_diag_factor += std::abs(diag_val/this->sup(di, bi - di - 1, li));
+                        off_diag_factor += block_diag_ilu::absval<Real_t>(diag_val/this->sup(di, bi - di - 1, li));
                     }
                 }
             }
@@ -401,15 +405,17 @@ namespace block_diag_ilu {
         }
     };
 
+    template <typename Real_t = double>
     class LU {  // Wrapper around DGBTRF & DGBTRS from LAPACK
+        static_assert(sizeof(Real_t) == 8, "LAPACK DGBTRF & DGBTRS operates on 64-bit IEEE 754 floats.");
 #ifdef BLOCK_DIAG_ILU_UNIT_TEST
     public:
 #endif
         const int dim, nouter, ld;
-        buffer_t<double> data;
+        buffer_t<Real_t> data;
         buffer_t<int> ipiv;
     public:
-        LU(const ColMajBlockDiagView<double>& view) :
+        LU(const ColMajBlockDiagView<Real_t>& view) :
             dim(view.dim),
             nouter(view.nouter),
             ld(view.get_banded_ld()),
@@ -418,14 +424,14 @@ namespace block_diag_ilu {
         {
             factorize();
         }
-        LU(const ColMajBandedView<double>& view) :
+        LU(const ColMajBandedView<Real_t>& view) :
             dim(view.dim),
             nouter(view.nouter),
             ld(view.ld),
-            data(buffer_factory<double>(view.ld*view.dim)),
+            data(buffer_factory<Real_t>(view.ld*view.dim)),
             ipiv(buffer_factory<int>(view.dim))
         {
-            std::memcpy(&data[0], view.data, sizeof(double)*view.ld*view.dim);
+            std::memcpy(&data[0], view.data, sizeof(Real_t)*view.ld*view.dim);
             if (view.ld != banded_ld_(view.nouter)){
                 throw std::runtime_error("LAPACK requires padding");
             }
@@ -441,9 +447,9 @@ namespace block_diag_ilu {
                 throw std::runtime_error("DGBTRF failed.");
             }
         }
-        inline void solve(const double * const b, double * const x){
+        inline void solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x){
             const char trans = 'N'; // no transpose
-            std::memcpy(x, b, sizeof(double)*this->dim);
+            std::memcpy(x, b, sizeof(Real_t)*this->dim);
             int info, nrhs=1;
             dgbtrs_(&trans, &this->dim, &this->nouter, &this->nouter, &nrhs,
                     buffer_get_raw_ptr(this->data), &this->ld,
@@ -525,17 +531,18 @@ namespace block_diag_ilu {
         return n*(N*ndiag - (ndiag*ndiag + ndiag)/2);
     }
 
+    template<typename Real_t = double>
     class ILU_inplace {
     public:
-        ColMajBlockDiagView<double> view;
+        ColMajBlockDiagView<Real_t> view;
         buffer_t<int> ipiv, rowbycol, colbyrow;
 #ifdef BLOCK_DIAG_ILU_UNIT_TEST
         std::size_t nblocks() { return this->view.nblocks; }
         int blockw() { return this->view.blockw; }
         int ndiag() { return this->view.ndiag; }
-        double sub_get(const int diagi, const std::size_t blocki,
+        Real_t sub_get(const int diagi, const std::size_t blocki,
                        const int coli) { return this->view.sub(diagi, blocki, coli); }
-        double sup_get(const int diagi, const std::size_t blocki,
+        Real_t sup_get(const int diagi, const std::size_t blocki,
                        const int coli) { return this->view.sup(diagi, blocki, coli); }
         int piv_get(const int idx) { return this->ipiv[idx]; }
         int rowbycol_get(const int idx) { return this->rowbycol[idx]; }
@@ -544,7 +551,7 @@ namespace block_diag_ilu {
 
         // use ld_blocks and ld_diag in view to avoid false sharing
         // in parallelized execution
-        ILU_inplace(ColMajBlockDiagView<double> view) :
+        ILU_inplace(ColMajBlockDiagView<Real_t> view) :
             view(view),
             ipiv(buffer_factory<int>(view.blockw*view.nblocks)),
             rowbycol(buffer_factory<int>(view.blockw*view.nblocks)),
@@ -562,12 +569,13 @@ namespace block_diag_ilu {
 #endif
             for (std::size_t bi=0; bi<nblocks; ++bi){
 #if defined(WITH_BLOCK_DIAG_ILU_DGETRF)
-                int info = dgetrf_square(
+                int info = getrf_square<Real_t>(
                            blockw,
                            &(this->view.block(bi, 0, 0)),
                            this->view.ld_blocks,
                            &(this->ipiv[bi*blockw]));
 #else
+                static_assert(sizeof(Real_t) == 8, "LAPACK dgetrf operates on 64-bit IEEE 754 floats.");
                 int info;
                 dgetrf_(&blockw,
                         &blockw,
@@ -589,16 +597,16 @@ namespace block_diag_ilu {
             if (info_)
                 throw std::runtime_error("ILU failed!");
         }
-        void solve(const double * const __restrict__ b, double * const __restrict__ x) const {
+        void solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x) const {
             // before calling solve: make sure that the
             // block_data and sup_data pointers are still valid.
             const auto nblocks = this->view.nblocks;
             const int blockw = this->view.blockw; // narrowing cast
             const int ndiag = this->view.ndiag; // narrowing cast
-            auto y = buffer_factory<double>(nblocks*blockw);
+            auto y = buffer_factory<Real_t>(nblocks*blockw);
             for (std::size_t bri = 0; bri < nblocks; ++bri){
                 for (int li = 0; li < blockw; ++li){
-                    double s = 0.0;
+                    Real_t s = 0.0;
                     for (int lci = 0; lci < li; ++lci){
                         s += this->view.block(bri, li, lci)*y[bri*blockw + lci];
                     }
@@ -613,7 +621,7 @@ namespace block_diag_ilu {
             }
             for (std::size_t bri = nblocks; bri > 0; --bri){
                 for (int li = blockw; li > 0; --li){
-                    double s = 0.0;
+                    Real_t s = 0.0;
                     for (int ci = li; ci < blockw; ++ci){
                         s += this->view.block(bri-1, li-1, ci)*x[(bri-1)*blockw + ci];
                     }
@@ -630,14 +638,15 @@ namespace block_diag_ilu {
         }
     };
 
+    template<typename Real_t = double>
     class ILU{
-        ColMajBlockDiagMat<double> m_mat;
-        ILU_inplace m_ilu_inplace;
+        ColMajBlockDiagMat<Real_t> m_mat;
+        ILU_inplace<Real_t> m_ilu_inplace;
     public:
-        ILU(const ColMajBlockDiagView<double>& view) :
+        ILU(const ColMajBlockDiagView<Real_t>& view) :
             m_mat(view.copy_to_matrix()),
-            m_ilu_inplace(ILU_inplace(m_mat.view)) {}
-        inline void solve(const double * const b, double * const x){
+            m_ilu_inplace(ILU_inplace<Real_t>(m_mat.view)) {}
+        inline void solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x){
             m_ilu_inplace.solve(b, x);
         }
     };
@@ -646,22 +655,23 @@ namespace block_diag_ilu {
 
 #if defined(WITH_BLOCK_DIAG_ILU_DGETRF)
 // int will be enough (flops of a LU decomoposition scales as N**3, and besides this is unblocked)
-inline uint block_diag_ilu::dgetrf_square(const uint dim, double * const __restrict__ a,
+template <typename Real_t = double>
+inline uint block_diag_ilu::getrf_square(const uint dim, Real_t * const __restrict__ a,
                                           const uint lda, int * const __restrict__ ipiv) noexcept {
     // Unblocked algorithm for LU decomposition of square matrices
     // employing Doolittle's algorithm with rowswaps.
     //
     // ipiv indexing starts at 1 (Fortran compability)
-    // performance should be acceptable when leading dimension
-    // of the block fits in a L1 cache line. (as of 2016 i.e. 8*float64)
+    // performance is exprect to be good when leading dimension
+    // of the block fits in a L1 cache line (or is a small multiple thereof). (as of 2016 i.e. 8*float64)
 
     if (dim == 0) return 0;
 
     uint info = 0;
-    auto A = [&](uint ri, uint ci) -> double& { return a[ci*lda + ri]; };
+    auto A = [&](uint ri, uint ci) -> Real_t& { return a[ci*lda + ri]; };
     auto swaprows = [&](uint ri1, uint ri2) { // this is not cache friendly
         for (uint ci=0; ci<dim; ++ci){
-            double temp = A(ri1, ci);
+            Real_t temp = A(ri1, ci);
             A(ri1, ci) = A(ri2, ci);
             A(ri2, ci) = temp;
         }
@@ -669,10 +679,10 @@ inline uint block_diag_ilu::dgetrf_square(const uint dim, double * const __restr
 
     for (uint i=0; i<dim-1; ++i) {
         uint pivrow = i;
-        double absmax = std::abs(A(i, i));
+        Real_t absmax = block_diag_ilu::absval<Real_t>(A(i, i));
         for (uint j=i; j<dim; ++j) {
             // Find pivot
-            double curabs = std::abs(A(j, i));
+            Real_t curabs = block_diag_ilu::absval<Real_t>(A(j, i));
             if (curabs > absmax){
                 absmax = curabs;
                 pivrow = j;

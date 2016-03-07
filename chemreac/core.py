@@ -20,7 +20,7 @@ from .util.pyutil import monotonic
 from .units import unit_of, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
-from ._chemreac import CppReactionDiffusion
+from ._chemreac import PyReactionDiffusion
 
 Geom_names = {'f': 'Flat', 'c': 'Cylindrical', 's': 'Spherical'}
 
@@ -153,7 +153,7 @@ def get_unit(unit_registry, key):
         )[key]
 
 
-class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
+class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     """
     Object representing the numerical model, with callbacks for evaluating
     derivatives and jacobian.

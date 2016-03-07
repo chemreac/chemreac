@@ -8,7 +8,7 @@ using std::vector;
 using chemreac::ReactionDiffusion;
 
 int test_integration(int N){
-    ReactionDiffusion rd = get_four_species_system(N);
+    ReactionDiffusion<double> rd = get_four_species_system(N);
     vector<double> y;
     for (int i=0; i<N; ++i){
         y.push_back(1.3);
@@ -22,7 +22,7 @@ int test_integration(int N){
     vector<double> tout {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
     for (uint i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
-    cvodes_wrapper::simple_integrate<double, ReactionDiffusion>
+    cvodes_wrapper::simple_integrate<double, ReactionDiffusion<double >>
         (&rd, atol, rtol, (int)cvodes_wrapper::LMM::BDF, &y[0], tout.size(), &tout[0], yout);
     for (unsigned int tidx=0; tidx<tout.size(); tidx++){
         std::cout << tout[tidx];

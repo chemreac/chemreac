@@ -397,7 +397,7 @@ namespace cvodes_wrapper {
         return 0;
     }
 
-    template <typename OdeSys>
+    template <class OdeSys>
     int jac_band_cb(long int N, long int mupper, long int mlower, realtype t,
                     N_Vector y, N_Vector fy, DlsMat Jac, void *user_data,
                     N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
@@ -411,7 +411,7 @@ namespace cvodes_wrapper {
     }
 
 
-    template <typename OdeSys>
+    template <class OdeSys>
     int jac_times_vec_cb(N_Vector v, N_Vector Jv, realtype t, N_Vector y,
                          N_Vector fy, void *user_data, N_Vector tmp){
         // callback of req. signature wrapping OdeSys method.
@@ -421,7 +421,7 @@ namespace cvodes_wrapper {
         return 0;
     }
 
-    template <typename OdeSys>
+    template <class OdeSys>
     int jac_prec_solve_cb(realtype t, N_Vector y, N_Vector fy, N_Vector r,
                           N_Vector z, realtype gamma, realtype delta, int lr,
                           void *user_data, N_Vector tmp){
@@ -436,7 +436,7 @@ namespace cvodes_wrapper {
         return 0; // Direct solver give no hint on success, hence report success.
     }
 
-    template <typename OdeSys>
+    template <class OdeSys>
     int prec_setup_cb(realtype t, N_Vector y, N_Vector fy, booleantype jok,
                       booleantype *jcurPtr, realtype gamma, void *user_data,
                       N_Vector tmp1, N_Vector tmp2, N_Vector tmp3){
@@ -452,20 +452,20 @@ namespace cvodes_wrapper {
         return 0;
     }
 
-    template <typename real_t, class OdeSys>
+    template <typename Real_t, class OdeSys>
     void simple_integrate(OdeSys * const rd,
-                          const std::vector<real_t> atol,
-                          const real_t rtol, const int lmm,
-                          const real_t * const y0,
+                          const std::vector<Real_t> atol,
+                          const Real_t rtol, const int lmm,
+                          const Real_t * const y0,
                           const std::size_t nout,
-                          const real_t * const tout,
-                          real_t * const yout,
+                          const Real_t * const tout,
+                          Real_t * const yout,
                           const bool with_jacobian=true,
                           int iter_type=0,
                           int linear_solver=0,
                           const int maxl=5,
-                          const real_t eps_lin=0.05,
-                          const real_t first_step=0.0){
+                          const Real_t eps_lin=0.05,
+                          const Real_t first_step=0.0){
         // iter_type == 0 => 1 if lmm == CV_ADAMS else 2
         // iter_type == 1 => Functional (ignore linear_solver)
         // iter_type == 2 => Newton
@@ -488,7 +488,7 @@ namespace cvodes_wrapper {
         Integrator integr {(lmm == CV_ADAMS) ? LMM::ADAMS : LMM::BDF,
                 (iter_type == 1) ? IterType::FUNCTIONAL : IterType::NEWTON};
         integr.set_user_data((void *)rd);
-        integr.init(f_cb<OdeSys>, tout[0], y0, ny);
+        integr.init(f_cb<OdeSys >, tout[0], y0, ny);
         integr.set_init_step(first_step);
         if (atol.size() == 1){
             integr.set_tol(rtol, atol[0]);
@@ -501,12 +501,12 @@ namespace cvodes_wrapper {
             case 1:
                 integr.set_linear_solver_to_dense(ny);
                 if (with_jacobian)
-                    integr.set_dense_jac_fn(jac_dense_cb<OdeSys>);
+                    integr.set_dense_jac_fn(jac_dense_cb<OdeSys >);
                 break;
             case 2:
                 integr.set_linear_solver_to_banded(ny, rd->n*rd->n_jac_diags, rd->n*rd->n_jac_diags);
                 if (with_jacobian)
-                    integr.set_band_jac_fn(jac_band_cb<OdeSys>);
+                    integr.set_band_jac_fn(jac_band_cb<OdeSys >);
                 break;
             case 10:
             case 11:
