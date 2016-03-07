@@ -384,7 +384,7 @@ ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restri
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 template<typename Real_t>
 void
-ReactionDiffusion<Real_t>::f(Real_t t, const Real_t * const y, Real_t * const __restrict__ dydt)
+ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const __restrict__ dydt)
 {
     // note condifiontal call to free at end of this function
     const Real_t * const linC = (logy) ? alloc_and_populate_linC(y, true) : y;
@@ -515,7 +515,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
             fout = const_cast<Real_t *>(fy);
         } else {
             fout = new Real_t[n*N];
-            f(t, y, fout);
+            rhs(t, y, fout);
         }
     }
 
@@ -772,6 +772,31 @@ ReactionDiffusion<Real_t>::get_geom_as_int() const
     default:                 return -1;
     }
 }
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_ny() const
+{
+    return n*N;
+}
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_mlower() const
+{
+    if (N > 1)
+        return n*n_jac_diags;
+    else
+        return -1;
+}
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_mupper() const
+{
+    return this->get_mlower();
+}
+
 
 template<typename Real_t>
 void

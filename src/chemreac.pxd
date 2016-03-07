@@ -80,7 +80,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           uint
                           ) except +
         void zero_counters()
-        void f(T, const T * const, T * const)
+        void rhs(T, const T * const, T * const)
         void dense_jac_rmaj(T, const T * const, const T * const, T * const, int)
         void dense_jac_cmaj(T, const T * const, const T * const, T * const, int)
         void banded_padded_jac_cmaj(T, const T * const, const T * const, T * const, int)

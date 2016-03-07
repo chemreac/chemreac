@@ -7,7 +7,7 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-from cvodes_wrapper cimport simple_integrate
+from cvodes_cxx cimport simple_predefined
 
 from libcpp cimport bool
 from libcpp.vector cimport vector
@@ -95,7 +95,7 @@ cdef class PyReactionDiffusion:
           cnp.ndarray[cnp.float64_t, ndim=1] fout):
         assert y.size == fout.size
         assert y.size >= self.n
-        self.thisptr.f(t, &y[0], &fout[0])
+        self.thisptr.rhs(t, &y[0], &fout[0])
 
     def dense_jac_rmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="c"] Jout):
@@ -407,11 +407,15 @@ def sundials_integrate(
         int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05,
         double first_step=0.0):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
+    cdef:
+        vector[int] root_indices
+        double dx_min = 0.0, dx_max = 0.0
+        int mxsteps=500
     assert y0.size == rd.n*rd.N
-    simple_integrate[double, ReactionDiffusion[double]](
+    simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], tout.size, &tout[0], &yout[0], with_jacobian, iter_type,
-        linear_solver, maxl, eps_lin, first_step)
+        &y0[0], tout.size, &tout[0], &yout[0], root_indices, first_step, dx_min, dx_max, mxsteps,
+        with_jacobian, iter_type, linear_solver, maxl, eps_lin, 0)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
@@ -456,13 +460,13 @@ cdef void _rk4(ReactionDiffusion[double] * rd,
         t = tout[i]
         h = t - tout[i-1]
         k1 = &y1out[i-1, 0]
-        rd.f(t, &y0out[i-1, 0], &k1[0])
+        rd.rhs(t, &y0out[i-1, 0], &k1[0])
         _add_2_vecs(ny, &y0out[i-1, 0], &k1[0], 1.0, h/2, &tmp[0])
-        rd.f(t + h/2, &tmp[0], &k2[0])
+        rd.rhs(t + h/2, &tmp[0], &k2[0])
         _add_2_vecs(ny, &y0out[i-1, 0], &k2[0], 1.0, h/2, &tmp[0])
-        rd.f(t + h/2, &tmp[0], &k3[0])
+        rd.rhs(t + h/2, &tmp[0], &k3[0])
         _add_2_vecs(ny, &y0out[i-1, 0], &k3[0], 1.0, h/2, &tmp[0])
-        rd.f(t + h, &tmp[0], &k4[0])
+        rd.rhs(t + h, &tmp[0], &k4[0])
         _add_5_vecs(ny, &y0out[i-1, 0], &k1[0], &k2[0], &k3[0], &k4[0],
                     1.0, h/6, h/3, h/3, h/6, &y0out[i, 0])
 

@@ -68,6 +68,8 @@ public:
 
     Real_t * const efield; // v_d = mu_el*E
     Real_t * const netchg;
+
+    const int nroots = 0;
 private:
     block_diag_ilu::ColMajBlockDiagMat<Real_t> *jac_cache {nullptr};
     block_diag_ilu::ColMajBlockDiagMat<Real_t> *prec_cache {nullptr};
@@ -122,7 +124,7 @@ public:
 
     void zero_counters();
 
-    void f(Real_t, const Real_t * const, Real_t * const __restrict__);
+    void rhs(Real_t, const Real_t * const, Real_t * const __restrict__);
 
     void dense_jac_rmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, int);
     void dense_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, int);
@@ -150,7 +152,15 @@ public:
 
     void per_rxn_contrib_to_fi(Real_t, const Real_t * const __restrict__, uint, Real_t * const __restrict__) const;
     int get_geom_as_int() const;
+    int get_ny() const;
+    int get_mlower() const;
+    int get_mupper() const;
     void calc_efield(const Real_t * const);
+
+    void roots(Real_t xval, const Real_t * const y, Real_t * const out){
+        throw std::runtime_error("Not implemented!");
+    }
+
 }; // class ReactionDiffusion
 
 } // namespace chemreac
