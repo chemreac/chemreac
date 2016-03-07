@@ -48,10 +48,8 @@ from itertools import product
 import gzip
 import os
 import pickle
-import sys
 
 import argh
-import numpy as np
 
 from chemreac.util.pyutil import progress
 

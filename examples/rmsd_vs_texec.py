@@ -9,6 +9,7 @@ except ImportError:
 from collections import OrderedDict
 import gzip
 from itertools import product
+import os
 
 import numpy as np
 

@@ -4,7 +4,7 @@ from __future__ import (absolute_import, division, print_function)
 
 
 from chemreac import Geom_names
-from collections import defaultdict, OrderedDict
+from collections import OrderedDict
 import gzip
 from itertools import chain, product
 import os
@@ -36,6 +36,7 @@ def to_array(results, varied, categorical, continuous, prop, cb=lambda x: x):
     def _len(key):
         return len(varied[key])
     arr = np.zeros(tuple(map(_len, categorical)) + (len(varied[continuous]),))
+
     def _index(pars):
         d = dict(zip(varied.keys(), pars))
         return tuple([varied[k].index(d[k]) for k
@@ -65,7 +66,6 @@ def plot_with_matplotlib(
                  for ylim in ylims.split(';')]
     nfits = [int(_) for _ in nfits.split(',')]
 
-
     nrows, ncols, nseries = [len(varied[categorical[idx]]) for idx in range(3)]
     xdata = varied[continuous]
     plt.figure(figsize=(4*ncols, 10))
@@ -88,7 +88,8 @@ def plot_with_matplotlib(
             logx, logy = np.log(xdata[:nfit]), np.log(ydata[:nfit])
             pf = np.polyfit(logx, logy, 1)
             ax.plot(xdata[:nfit], np.exp(np.polyval(pf, logx)), ls='--',
-                    c=c[si], label=str(varied[categorical[2]][si])+': '+str(round(-pf[0], 1)))
+                    c=c[si], label='%s: %s' % (str(varied[categorical[2]][si]),
+                                               str(round(-pf[0], 1))))
         if ylims != 'None':
             ax.set_ylim(ylims[0])
         ax.legend(loc='upper right', prop={'size': 10}, numpoints=1)

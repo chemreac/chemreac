@@ -12,6 +12,7 @@ import sys
 import numpy as np
 import time
 
+
 def monotonic(arr, positive=0, strict=False):
     """
     Check monotonicity of a serie

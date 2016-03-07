@@ -82,7 +82,6 @@ def test_plot_C_vs_x():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
-@pytest.mark.xfail
 def test_plot_C_vs_t_and_x():
     import mpl_toolkits
     N = 3
