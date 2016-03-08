@@ -16,6 +16,8 @@ enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
 using std::vector;
 using std::pair;
 
+template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
+
 template <typename Real_t = double>
 class ReactionDiffusion
 {
@@ -28,6 +30,7 @@ public:
     Real_t * A_weight; // Advection weights
     uint n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
+    void * integrator {nullptr};
 
     void fill_local_r_(int, const Real_t * const __restrict__, Real_t * const __restrict__) const;
     void apply_fd_(uint);
@@ -144,11 +147,13 @@ public:
     void prec_setup(Real_t t, const Real_t * const __restrict__ y,
                     const Real_t * const __restrict__ fy,
                     bool jok, bool& jac_recomputed, Real_t gamma);
-    void prec_solve_left(const Real_t t, const Real_t * const __restrict__ y,
-                         const Real_t * const __restrict__ fy,
-                         const Real_t * const __restrict__ r,
-                         Real_t * const __restrict__ z,
-                         Real_t gamma);
+    int prec_solve_left(const Real_t t, const Real_t * const __restrict__ y,
+                        const Real_t * const __restrict__ fy,
+                        const Real_t * const __restrict__ r,
+                        Real_t * const __restrict__ z,
+                        Real_t gamma,
+                        Real_t delta,
+                        const Real_t * const __restrict__ ewt);
 
     void per_rxn_contrib_to_fi(Real_t, const Real_t * const __restrict__, uint, Real_t * const __restrict__) const;
     int get_geom_as_int() const;
@@ -158,6 +163,7 @@ public:
     void calc_efield(const Real_t * const);
 
     void roots(Real_t xval, const Real_t * const y, Real_t * const out){
+        ignore(xval); ignore(y); ignore(out);
         throw std::runtime_error("Not implemented!");
     }
 

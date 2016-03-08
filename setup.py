@@ -131,7 +131,7 @@ else:
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {
                     'src/chemreac.cpp': {
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         # 'fast' doesn't work on drone.io
                         'flags': flags,
                         'options': options +
@@ -146,16 +146,16 @@ else:
                          WITH_BLOCK_DIAG_ILU_DGETRF else []),
                     },
                     'src/chemreac_sundials.cpp': {
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         'flags': flags,
                         'options': options
                     },
                     pyx_or_cpp: {
                         'cy_kwargs': {'annotate': True},
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         'gdb_debug': WITH_DEBUG
                     } if using_pyx else {
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         'inc_py': True,
                     }
                 },
@@ -163,8 +163,9 @@ else:
                 'options': options,
             },
             pycompilation_link_kwargs={
-                'options': (['openmp'] if WITH_OPENMP else []),
-                'std': 'c++0x',
+                'options': ((['WITH_DEBUG'] if WITH_DEBUG else []) +
+                            (['openmp'] if WITH_OPENMP else [])),
+                'std': 'c++11',
             },
             include_dirs=['src/', 'src/finitediff/include/',
                           'src/finitediff/external/newton_interval/include/',

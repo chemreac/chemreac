@@ -43,8 +43,6 @@ using std::count;
 using std::min;
 using std::max;
 
-template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
-
 #include <cstdio>
 
 // 1D discretized reaction diffusion
@@ -669,9 +667,9 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
 {
     ignore(gamma);
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
+    if (jac_cache == nullptr)
+        jac_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
     if (!jok){
-        if (jac_cache == nullptr)
-            jac_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
         const int dummy = 0;
         jac_cache->view.zero_out_diags();
         compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
@@ -686,16 +684,21 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
 #undef A_WEIGHT
 
 template<typename Real_t>
-void
+int
 ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
-                                        const Real_t * const __restrict__ y,
-                                        const Real_t * const __restrict__ fy,
-                                        const Real_t * const __restrict__ r,
-                                        Real_t * const __restrict__ z,
-                                        Real_t gamma)
+                                           const Real_t * const __restrict__ y,
+                                           const Real_t * const __restrict__ fy,
+                                           const Real_t * const __restrict__ r,
+                                           Real_t * const __restrict__ z,
+                                           Real_t gamma,
+                                           Real_t delta,
+                                           const Real_t * const __restrict__ ewt)
 {
     // See 4.6.9 on page 75 in cvs_guide.pdf (Sundials 2.6.2)
     // Solves P*z = r, where P ~= I - gamma*J
+    ignore(delta);
+    if (ewt)
+        throw std::runtime_error("Not implemented.");
     nprec_solve++;
 
     ignore(t); ignore(fy); ignore(y);
@@ -736,14 +739,12 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
 
     if (prec_cache->view.average_diag_weight(0) > ilu_limit) {
         block_diag_ilu::ILU<Real_t> ilu {prec_cache->view};
-        ilu.solve(r, z);
         nprec_solve_ilu++;
-        //std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        return ilu.solve(r, z);
     } else {
         block_diag_ilu::LU<Real_t> lu {prec_cache->view};
-        lu.solve(r, z);
         nprec_solve_lu++;
-        //std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        return lu.solve(r, z);
     }
 }
 

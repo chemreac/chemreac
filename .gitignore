@@ -11,6 +11,7 @@ examples/*.png
 examples/*.pkl
 examples/*.html
 examples/profile.out
+*.pkl
 
 # Rendered sources
 src/tests/chemreac.cpp

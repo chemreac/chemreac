@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <utility>
 #include <memory>
-#include <cmath> // std::abs for float and double, std::sqrt
+#include <cmath> // std::abs for float and double, std::sqrt, std::isnan
 #include <cstdlib> // std::abs for int (must include!!)
 #include <cstring> // memcpy
 
@@ -65,7 +65,7 @@ namespace block_diag_ilu {
     template<typename T> inline constexpr buffer_t<T> buffer_factory(std::size_t n) {
         return make_unique<T[]>(n);
     }
-    template<typename T> inline constexpr T* buffer_get_raw_ptr(buffer_t<T>& buf) {
+    template<typename T> constexpr T* buffer_get_raw_ptr(buffer_t<T>& buf) {
         return buf.get();
     }
 #else
@@ -74,7 +74,7 @@ namespace block_diag_ilu {
     template<typename T> inline constexpr buffer_t<T> buffer_factory(std::size_t n) {
         return buffer_t<T>(n);
     }
-    template<typename T> inline constexpr T* buffer_get_raw_ptr(buffer_t<T>& buf) {
+    template<typename T> constexpr T* buffer_get_raw_ptr(buffer_t<T>& buf) {
         return &buf[0];
     }
 #endif
@@ -90,12 +90,31 @@ namespace block_diag_ilu {
                             const int *nsup, double *ab, const int *ldab, int *ipiv, int *info);
 
     extern "C" void dgbtrs_(const char *trans, const int *dim, const int* nsub,
-                            const int *nsup, const int *nrhs, double *ab,
+                            const int *nsup, const int *nrhs, const double *ab,
                             const int *ldab, const int *ipiv, double *b, const int *ldb, int *info);
 
     constexpr uint nouter_(uint blockw, uint ndiag) { return (ndiag == 0) ? blockw-1 : blockw*ndiag; }
     constexpr uint banded_ld_(uint nouter, int offset=-1) {
         return 1 + 2*nouter + ((offset == -1) ? nouter : offset); // padded for use with LAPACK's dgbtrf
+    }
+
+    template <typename T>
+    uint check_nan(const T * const arr, std::size_t n){
+        // Returns the index of the first occurence of NaN
+        // in input array (starting at 1), returns 0 if no NaN is encountered
+        //
+        // Parameters
+        // ----------
+        // arr: pointer to array of doubles to be checked for occurence of NaN
+        // n: length of array
+        //
+        // Notes
+        // -----
+        // isnan is defined in cmath.h
+        for (std::size_t i=0; i<n; ++i)
+            if (std::isnan(arr[i]))
+                return i+1;
+        return 0; // if no NaN is encountered, -0is returned
     }
 
     template <class T, typename Real_t = double>
@@ -447,15 +466,14 @@ namespace block_diag_ilu {
                 throw std::runtime_error("DGBTRF failed.");
             }
         }
-        inline void solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x){
+        inline int solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x){
             const char trans = 'N'; // no transpose
             std::memcpy(x, b, sizeof(Real_t)*this->dim);
             int info, nrhs=1;
             dgbtrs_(&trans, &this->dim, &this->nouter, &this->nouter, &nrhs,
                     buffer_get_raw_ptr(this->data), &this->ld,
                     buffer_get_raw_ptr(this->ipiv), x, &this->dim, &info);
-            if (info)
-                throw std::runtime_error("DGBTRS failed.");
+            return info;
         };
     };
 
@@ -597,13 +615,21 @@ namespace block_diag_ilu {
             if (info_)
                 throw std::runtime_error("ILU failed!");
         }
-        void solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x) const {
+        int solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x) const {
             // before calling solve: make sure that the
             // block_data and sup_data pointers are still valid.
+            // Returns
+            // -------
+            // if NaN in b:
+            //     index (starting at 1) in b where first nan is found
+            // if any diagonal element in U is zero:
+            //     blockw*nblocks + diagonal index (starting at 1) in U where
+            //     first 0 is found
             const auto nblocks = this->view.nblocks;
             const int blockw = this->view.blockw; // narrowing cast
             const int ndiag = this->view.ndiag; // narrowing cast
             auto y = buffer_factory<Real_t>(nblocks*blockw);
+            int info = check_nan(b, nblocks*blockw);
             for (std::size_t bri = 0; bri < nblocks; ++bri){
                 for (int li = 0; li < blockw; ++li){
                     Real_t s = 0.0;
@@ -633,8 +659,11 @@ namespace block_diag_ilu {
                     }
                     x[(bri-1)*blockw+li-1] = (y[(bri-1)*blockw + li-1] - s)\
                         /(this->view.block(bri-1, li-1, li-1));
+                    if (this->view.block(bri-1, li-1, li-1) == 0 && info == 0)
+                        info = nblocks*blockw + (bri-1)*blockw + (li-1);
                 }
             }
+            return info;
         }
     };
 
@@ -646,8 +675,8 @@ namespace block_diag_ilu {
         ILU(const ColMajBlockDiagView<Real_t>& view) :
             m_mat(view.copy_to_matrix()),
             m_ilu_inplace(ILU_inplace<Real_t>(m_mat.view)) {}
-        inline void solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x){
-            m_ilu_inplace.solve(b, x);
+        inline int solve(const Real_t * const __restrict__ b, Real_t * const __restrict__ x){
+            return m_ilu_inplace.solve(b, x);
         }
     };
 
