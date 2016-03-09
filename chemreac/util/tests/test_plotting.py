@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-import pytest
 import numpy as np
 import matplotlib
 import matplotlib.axes
@@ -82,7 +81,6 @@ def test_plot_C_vs_x():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
-@pytest.mark.xfail
 def test_plot_C_vs_t_and_x():
     import mpl_toolkits
     N = 3
@@ -127,6 +125,7 @@ def test_plot_fields():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
+@slow
 def test_plot_solver_linear_error():
     N = 3
     rd = _get_decay_rd(N)

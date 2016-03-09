@@ -1,6 +1,6 @@
 chemreac.util
 =============
-Utilities used throughout the code base.
+Utilities used throughout the library.
 
 .. toctree::
    :maxdepth: 2
@@ -8,7 +8,6 @@ Utilities used throughout the code base.
    analysis.rst
    banded.rst
    grid.rst
-   physchem.rst
    plotting.rst
    pyutil.rst
    stoich.rst

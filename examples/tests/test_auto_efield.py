@@ -114,7 +114,7 @@ def test_pair_centered_at_x0_different_sigma_flat_logx(params):
     _test_pair_centered_at_x0_different_sigma(params)
 
 
-@veryslow
+@slow
 @pytest.mark.parametrize('params', list(product(EXTRA_COMBOS, 'f', [True])))
 def test_pair_centered_at_x0_different_sigma_flat_logx_extended(params):
     _test_pair_centered_at_x0_different_sigma(params)

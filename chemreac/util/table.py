@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+chemreac.util.table
+-------------------
+
+This module contains functions to generate tables.
+"""
 from __future__ import (absolute_import, division, print_function)
 
 from chempy.units import get_derived_unit, to_unitless
@@ -7,6 +13,21 @@ from chempy.util.table import render_tex_to_pdf, tex_templates
 
 def radyields2pdf_table(rd, output_dir=None, save=True, unit_registry=None,
                         siunitx=False, fmtstr='{0:.3f}', **kwargs):
+    """ Generate a table with radiolytic yields
+
+    Calls chempy.util.table.render_tex_to_pdf
+
+    Parameters
+    ----------
+    rd: ReactionDiffusion
+    output_dir: str
+    save: bool
+    unit_registry: dict
+    siunitx: bool
+    fmtstr: str
+    \*\*kwargs:
+        extends the table template dictionary
+    """
     line_term = r' \\'
     col_delim = ' & '
     header = (col_delim.join(rd.substance_latex_names or rd.substance_names) +

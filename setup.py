@@ -9,8 +9,8 @@ from setuptools import setup
 
 pkg_name = 'chemreac'
 
-with open(os.path.join(pkg_name,'__init__.py')) as f:
-    long_description = f.read().split('"""')[1]
+def _path_under_setup(*args):
+    return os.path.join(os.path.dirname(__file__), *args)
 
 # Reading the version is a bit tricky: the same commit could actually
 # correspond to multiple versions. e.g. a commit could be tagged both:
@@ -51,13 +51,12 @@ else:
     # read __version__ attribute from _release.py:
     exec(open(release_py_path).read())
 
-WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'
 WITH_OPENMP = os.environ.get('WITH_OPENMP', '0') == '1'
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
-WITH_ILU = os.environ.get('WITH_ILU', '0') == '1'
 WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
 WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
 WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'
+WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'
 
 ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
 ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
@@ -69,7 +68,7 @@ if WITH_DEBUG:
     options += ['debug']
     flags = []
 else:
-    flags = ['-O2']
+    flags = ['-O3']
     if not (ON_DRONE or ON_TRAVIS):
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda
@@ -132,7 +131,7 @@ else:
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {
                     'src/chemreac.cpp': {
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         # 'fast' doesn't work on drone.io
                         'flags': flags,
                         'options': options +
@@ -147,16 +146,16 @@ else:
                          WITH_BLOCK_DIAG_ILU_DGETRF else []),
                     },
                     'src/chemreac_sundials.cpp': {
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         'flags': flags,
                         'options': options
                     },
                     pyx_or_cpp: {
                         'cy_kwargs': {'annotate': True},
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         'gdb_debug': WITH_DEBUG
                     } if using_pyx else {
-                        'std': 'c++0x',
+                        'std': 'c++11',
                         'inc_py': True,
                     }
                 },
@@ -164,8 +163,9 @@ else:
                 'options': options,
             },
             pycompilation_link_kwargs={
-                'options': (['openmp'] if WITH_OPENMP else []),
-                'std': 'c++0x',
+                'options': ((['WITH_DEBUG'] if WITH_DEBUG else []) +
+                            (['openmp'] if WITH_OPENMP else [])),
+                'std': 'c++11',
             },
             include_dirs=['src/', 'src/finitediff/include/',
                           'src/finitediff/external/newton_interval/include/',
@@ -197,13 +197,21 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Mathematics',
 ]
 
+long_description = open('README.rst').read()
+with open(_path_under_setup(pkg_name, '__init__.py')) as f:
+    short_description = f.read().split('"""')[1].split('\n')[1]
+assert len(short_description) > 10 and len(short_description) < 256
+
 setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
-    description='Python package for modeling chemical kinetics with diffusion and drift.',
+    description=short_description,
     long_description=long_description,
     author='Björn Dahlgren',
     author_email='bjodah@DELETEMEgmail.com',
+    license='BSD',
+    keywords=["chemical kinetics", "Smoluchowski equation",
+              "advection-diffusion-reaction"],
     url='https://github.com/chemreac/' + pkg_name,
     packages=[pkg_name] + modules + tests,
     package_data=package_data,
@@ -211,7 +219,7 @@ setup_kwargs = dict(
     ext_modules=ext_modules_,
     classifiers=classifiers,
     setup_requires=['pycompilation', 'pycodeexport', 'mako'],
-    install_requires=['numpy', 'chempy', 'quantities', ],
+    install_requires=['numpy', 'chempy', 'quantities', 'block_diag_ilu'],
     extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
                             'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq']}
 

@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
+from __future__ import (absolute_import, division, print_function)
+
 
 from itertools import product
 import os
@@ -8,15 +9,14 @@ import os
 import numpy as np
 import pytest
 
-from chemreac import ReactionDiffusion, FLAT, SPHERICAL, CYLINDRICAL
+from chemreac import ReactionDiffusion
 from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
-from chemreac.util.compressed_jac_store import get_compressed
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
 
 TR_FLS = [True, False]
-TRUE_FALSE_PAIRS = list(product(TR_FLS, TR_FLS))
+TR_FLS_PAIRS = list(product(TR_FLS, TR_FLS))
 
 
 def _test_f(rd, t, y, fref=None):
@@ -131,7 +131,7 @@ def test_ReactionDiffusion__actv_2():
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, -6*r])
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__lrefl_3(log):
     # Diffusion without reaction
     # 3 bins
@@ -208,7 +208,7 @@ def test_ReactionDiffusion__lrefl_3(log):
     _test_dense_jac_rmaj(rd, t, y, jref)
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__rrefl_3(log):
     # Diffusion without reaction
     # 3 bins
@@ -283,7 +283,7 @@ def test_ReactionDiffusion__rrefl_3(log):
 
 
 @slow
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__lrefl_7(log):
     # Diffusion without reaction (7 bins)
     from sympy import finite_diff_weights
@@ -453,7 +453,7 @@ def test_ReactionDiffusion__only_1_field_dep_reaction_logy_logt(N):
     _test_f_and_dense_jac_rmaj(rd, np.log(t0), np.log(y0), fref)
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     # Diffusion without reaction
     # 3 bins
@@ -535,7 +535,7 @@ def test_ReactionDiffusion__D_weight():
 
 
 @slow
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     # Diffusion without reaction
     N = 7
@@ -599,15 +599,42 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
 
-    jout_cmprs = rd.alloc_jout_compressed(nsidep)
+    # compressed_jac_cmaj actually use all diagonals
+    rd = ReactionDiffusion(1, [], [], [], D=[D], x=x,
+                           logy=logy, logt=logt, nstencil=nstencil,
+                           lrefl=False, rrefl=False, n_jac_diags=2)
+    jout_cmprs = rd.alloc_jout_compressed()
     rd.compressed_jac_cmaj(t, y, jout_cmprs)
-    jref_cmprs = get_compressed(jref, 1, N, nsidep)
+    from block_diag_ilu import Compressed_from_dense
+
+    jref2 = np.zeros((N, N))
+    for i in range(N):
+        for j in range(max(0, i-2), min(N, i+3)):
+            if logy:
+                if i-2 <= j <= i+2:
+                    if i == j:
+                        for k in range(nstencil):
+                            cyi = yi[k+lb[i]]
+                            if i == cyi:
+                                continue
+                            jref2[i, i] -= D*weights[i][k]*y0[cyi]/y0[i]
+                    else:
+                        for k in range(nstencil):
+                            if yi[k+lb[i]] == j:
+                                jref2[i, j] += D*weights[i][k]*y0[j]/y0[i]
+
+            else:
+                if i-2 <= j <= i+2:
+                    jref2[i, j] = D*weights[i][j-lb[i]+nsidep]
+    if logt:
+        jref2 *= t0
+    jref_cmprs = Compressed_from_dense(jref2, N, 1, nsidep).data
     assert np.allclose(jout_cmprs, jref_cmprs)
 
 
 @slow
 @pytest.mark.parametrize("geom_refl_logx", list(product(
-    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS, TR_FLS)))
+    'fcs', TR_FLS_PAIRS, TR_FLS)))
 def test_diffusion_jac(geom_refl_logx):
     geom, refl, logx = geom_refl_logx
     lrefl, rrefl = refl
@@ -620,7 +647,7 @@ def test_diffusion_jac(geom_refl_logx):
     _test_f_and_dense_jac_rmaj(rd, 0, y0)
 
 
-COMBOS = list(product((FLAT, CYLINDRICAL, SPHERICAL), TR_FLS))
+COMBOS = list(product('fcs', TR_FLS))
 
 
 @pytest.mark.parametrize("params", COMBOS)
@@ -635,11 +662,11 @@ def test_integrated_conc(params):
     y = xc*np.exp(-xc)
 
     def primitive(t):
-        if geom == FLAT:
+        if geom == 'f':
             return -(t+1)*np.exp(-t)
-        elif geom == CYLINDRICAL:
+        elif geom == 'c':
             return 2*np.exp(-t)*np.pi*(-2 - 2*t - t**2)
-        elif geom == SPHERICAL:
+        elif geom == 's':
             return 4*np.exp(-t)*np.pi*(-6 - 6*t - 3*t**2 - t**3)
         else:
             raise NotImplementedError
@@ -649,8 +676,7 @@ def test_integrated_conc(params):
 
 
 @slow
-@pytest.mark.parametrize("geom_refl", list(product(
-    (FLAT, CYLINDRICAL, SPHERICAL), TRUE_FALSE_PAIRS)))
+@pytest.mark.parametrize("geom_refl", list(product('fcs', TR_FLS_PAIRS)))
 def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         geom_refl):
     # UNSUPPORTED since `bin_k_factor` was replaced with `fields`
@@ -721,13 +747,13 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
             2, local_x_serie, x0=local_x_around
         )
         D_weight.append(w[-1][-1])
-        if geom == FLAT:
+        if geom == 'f':
             pass
-        elif geom == CYLINDRICAL:
+        elif geom == 'c':
             for wi in range(nstencil):
                 # first order derivative
                 D_weight[bi][wi] += w[-2][-1][wi]*1/local_x_around
-        elif geom == SPHERICAL:
+        elif geom == 's':
             for wi in range(nstencil):
                 # first order derivative
                 D_weight[bi][wi] += w[-2][-1][wi]*2/local_x_around
@@ -809,6 +835,11 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     ref_banded_j = get_banded(jref, n, N)
 
+    ref_banded_j_symbolic = rd.alloc_jout(order='F')
+    symrd = SymRD.from_rd(rd)
+    symrd.banded_jac(0.0, y0.flatten(), ref_banded_j_symbolic)
+    assert np.allclose(ref_banded_j_symbolic, ref_banded_j)
+
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
     rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
@@ -831,6 +862,42 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 
-    jout_bnd_padded_cmaj = np.zeros((3*n+1, n*N), order='F')
+    jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
     rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
     assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
+
+
+@pytest.mark.parametrize("n_jac_diags", [-1, 1, 2, 3, 0])
+def test_n_jac_diags(n_jac_diags):
+    N, n, nstencil = 10, 1, 7
+    rd = ReactionDiffusion(n, [], [], [], N=N, nstencil=nstencil,
+                           n_jac_diags=n_jac_diags, D=[9])
+    assert np.allclose(rd.xcenters,
+                       [.05, .15, .25, .35, .45, .55, .65, .75, .85, .95])
+    y0 = np.ones(N)
+
+    # Dense
+    jref_cdns = np.zeros((n*N, n*N), order='F')
+    jout_cdns = np.zeros((n*N, n*N), order='F')
+    sm = SymRD.from_rd(rd)
+    sm.dense_jac(0.0, y0.flatten(), jref_cdns)
+    rd.dense_jac_cmaj(0.0, y0.flatten(), jout_cdns)
+    assert np.allclose(jout_cdns, jref_cdns)
+
+    # Banded
+    for pad in (True, False):
+        jref_cbnd = rd.alloc_jout(order='F', pad=pad)
+        jout_cbnd = rd.alloc_jout(order='F', pad=pad)
+        sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
+        if pad:
+            rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
+        else:
+            rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
+        assert np.allclose(jout_cbnd, jref_cbnd)
+
+    # Compressed
+    jref_cmprs = rd.alloc_jout_compressed()
+    jout_cmprs = rd.alloc_jout_compressed()
+    sm.compressed_jac(0.0, y0.flatten(), jref_cmprs)
+    rd.compressed_jac_cmaj(0.0, y0.flatten(), jout_cmprs)
+    assert np.allclose(jout_cmprs, jref_cmprs)

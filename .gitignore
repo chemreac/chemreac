@@ -8,7 +8,10 @@
 
 # Output files from examples
 examples/*.png
+examples/*.pkl
+examples/*.html
 examples/profile.out
+*.pkl
 
 # Rendered sources
 src/tests/chemreac.cpp
@@ -57,3 +60,5 @@ dec_cha.ipynb
 .ipynb_checkpoints/
 *.egg-info
 *.egg
+*.log
+examples/analytic_N_scaling_output/

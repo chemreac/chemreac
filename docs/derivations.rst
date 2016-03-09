@@ -60,7 +60,6 @@ Diffusion equation
 ------------------
 
 
-
 Laplace operator
 ----------------
 
@@ -71,7 +70,14 @@ Jacobian elements
 
 Boundary conditions
 -------------------
-
+Two types of boundary reflections are supported (both of Robin type): reflective and 
+interpolating. Depending on the situation the user may want to combine these, e.g.
+using a reflective boundary condition close to a particle surface and interpolating
+BC on the other end to simulate an infinite volume.
 
 Finite difference scheme
 ------------------------
+The finite difference scheme employed is that of Fornberg, which allows us to 
+genereate finite difference weights for an arbitrarily spaced grid. This is
+useful for optimizing the grid spacing by using a finer spacing close to e.g.
+reactive surfaces.

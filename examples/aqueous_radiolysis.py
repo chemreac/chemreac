@@ -102,14 +102,14 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
             rd, to_unitless(integr.tout, time_unit),
             to_unitless(integr.Cout, conc_unit),
             0, ax, substances=('H2', 'H2O2'),
-            ttlfmt=bt_fmtstr.format(rd.fields[0][0]),
+            ttlfmt=bt_fmtstr.format(np.round(rd.fields[0][0], 1)),
             ylabel="C / "+str(conc_unit))
         ax = plt.subplot(2, 1, 2)
         plot_C_vs_t_in_bin(
             rd, to_unitless(integr.tout, time_unit),
             to_unitless(integr.Cout, conc_unit),
             N-1, ax, substances=('H2', 'H2O2'),
-            ttlfmt=bt_fmtstr.format(rd.fields[0][N-1]),
+            ttlfmt=bt_fmtstr.format(np.round(rd.fields[0][N-1], 1)),
             ylabel="C / "+str(conc_unit))
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)

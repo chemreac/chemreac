@@ -6,7 +6,7 @@ using std::vector;
 // A      -> B
 // B + 2C -> A + D
 
-ReactionDiffusion get_four_species_system(int N){
+ReactionDiffusion<double> get_four_species_system(int N){
     uint n = 4;
     uint nr = 2;
     vector<vector<uint> > stoich_reac {{0}, {1, 2, 2}};
@@ -28,6 +28,6 @@ ReactionDiffusion get_four_species_system(int N){
 	stoich_actv.push_back(v);
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
-    return ReactionDiffusion(n, stoich_reac, stoich_prod, k, N, D, z_chg,
-                             mobility, x, stoich_actv, geom, logy, logt, logx, nstencil, true, true);
+    return ReactionDiffusion<double>(n, stoich_reac, stoich_prod, k, N, D, z_chg,
+                                     mobility, x, stoich_actv, geom, logy, logt, logx, nstencil, true, true);
 }

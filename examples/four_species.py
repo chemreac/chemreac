@@ -48,7 +48,6 @@ import argh
 import numpy as np
 
 from chempy.util.graph import rsys2graph
-from chemreac import DENSE, BANDED
 from chemreac.chemistry import ReactionSystem
 from chemreac.integrate import run
 from chemreac.serialization import load
@@ -77,9 +76,9 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
 
     if mode is None:
         if rd.N == 1:
-            mode = DENSE
+            mode = 'dense'
         elif rd.N > 1:
-            mode = BANDED
+            mode = 'banded'
     else:
         mode = int(mode)
 
@@ -88,15 +87,17 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
         fout = np.empty(rd.n*rd.N)
         rd.f(t0, y0, fout)
         print(fout)
-        if mode == DENSE:
+        if mode == 'dense':
             jout = np.zeros((rd.n*rd.N, rd.n*rd.N), order='F')
             rd.dense_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(np.abs(jout)))
-        elif mode == BANDED:
+        elif mode == 'banded':
             # note rd.n*3 needed in call from scipy.integrate.ode
             jout = np.zeros((rd.n*2+1, rd.n*rd.N), order='F')
             rd.banded_packed_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(np.abs(jout)))
+        else:
+            raise ValueError("Unknown mode: %s" % mode)
         print(jout)
         plt.show()
     else:

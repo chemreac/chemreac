@@ -3,7 +3,7 @@
 """
 chemreac.util.testing
 ---------------------
-Utility module for unit testing of chemreac library.
+Utility module for unit testing.
 """
 
 from __future__ import (absolute_import, division, print_function)

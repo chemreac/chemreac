@@ -7,7 +7,7 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-from cvodes_wrapper cimport simple_integrate
+from cvodes_cxx cimport simple_predefined
 
 from libcpp cimport bool
 from libcpp.vector cimport vector
@@ -39,15 +39,12 @@ cdef fromaddress(address, shape, dtype=np.float64, strides=None, ro=True):
         version=3,
     ))
 
-def diag_data_len(N, n, ndiag):
-    return n*(N*ndiag - ((ndiag+1)*(ndiag+1) - (ndiag+1))//2)
 
-
-cdef class CppReactionDiffusion:
+cdef class PyReactionDiffusion:
     """
     Wrapper around C++ class ReactionDiffusion,
     """
-    cdef ReactionDiffusion *thisptr
+    cdef ReactionDiffusion[double] *thisptr
     cdef public vector[double] k_err, D_err
     cdef public list names, tex_names
 
@@ -79,16 +76,17 @@ cdef class CppReactionDiffusion:
                   double eps_rel=1.0,
                   double faraday_const=9.64853399e4,
                   double vacuum_permittivity=8.854187817e-12,
-                  ilu_limit=1000.0,
+                  double ilu_limit=1000.0,
+                  int n_jac_diags=1,
               ):
         cdef size_t i
-        self.thisptr = new ReactionDiffusion(
+        self.thisptr = new ReactionDiffusion[double](
             n, stoich_active, stoich_prod, k, N,
             D, z_chg, mobility, x, stoich_inact, geom,
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
-            modulated_rxns, modulation, ilu_limit)
+            modulated_rxns, modulation, ilu_limit, n_jac_diags)
 
     def __dealloc__(self):
         del self.thisptr
@@ -97,7 +95,7 @@ cdef class CppReactionDiffusion:
           cnp.ndarray[cnp.float64_t, ndim=1] fout):
         assert y.size == fout.size
         assert y.size >= self.n
-        self.thisptr.f(t, &y[0], &fout[0])
+        self.thisptr.rhs(t, &y[0], &fout[0])
 
     def dense_jac_rmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="c"] Jout):
@@ -133,9 +131,10 @@ cdef class CppReactionDiffusion:
 
     def compressed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                             cnp.ndarray[cnp.float64_t, ndim=1] Jout):
+        from block_diag_ilu import diag_data_len
         assert y.size >= self.n*self.N
         assert Jout.size >= self.n*self.n*self.N + 2*diag_data_len(
-            self.N, self.n, (self.nstencil-1)//2)
+            self.N, self.n, self.n_jac_diags)
         self.thisptr.compressed_jac_cmaj(
             t, &y[0], NULL, <double *>Jout.data, self.n)
 
@@ -245,6 +244,10 @@ cdef class CppReactionDiffusion:
         def __get__(self):
             return self.thisptr.nstencil
 
+    property nsidep:
+        def __get__(self):
+            return self.thisptr.nsidep
+
     property lrefl:
         def __get__(self):
             return self.thisptr.lrefl
@@ -296,42 +299,49 @@ cdef class CppReactionDiffusion:
         def __set__(self, vector[vector[double]] modulation):
             self.thisptr.modulation = modulation
 
-    property neval_f:
+    property ilu_limit:
         def __get__(self):
-            return self.thisptr.neval_f
-        def __set__(self, long n):
-            self.thisptr.neval_f = n
+            return self.thisptr.ilu_limit
 
-    property neval_j:
+    property n_jac_diags:
         def __get__(self):
-            return self.thisptr.neval_j
-        def __set__(self, long n):
-            self.thisptr.neval_j = n
+            return self.thisptr.n_jac_diags
+
+    property nfev:
+        def __get__(self):
+            return self.thisptr.nfev
+
+    property njev:
+        def __get__(self):
+            return self.thisptr.njev
 
     property nprec_setup:
         def __get__(self):
             return self.thisptr.nprec_setup
-        def __set__(self, long n):
-            self.thisptr.nprec_setup = n
 
     property nprec_solve:
         def __get__(self):
             return self.thisptr.nprec_solve
-        def __set__(self, long n):
-            self.thisptr.nprec_solve = n
+
 
     property njacvec_dot:
         def __get__(self):
             return self.thisptr.njacvec_dot
-        def __set__(self, long n):
-            self.thisptr.njacvec_dot = n
 
-    def zero_out_counters(self):
-        self.neval_f = 0
-        self.neval_j = 0
-        self.nprec_setup = 0
-        self.nprec_solve = 0
-        self.njacvec_dot = 0
+    property nprec_solve_ilu:
+        def __get__(self):
+            return self.thisptr.nprec_solve_ilu
+
+    property nprec_solve_lu:
+        def __get__(self):
+            return self.thisptr.nprec_solve_lu
+
+    property last_integration_info:
+        def __get__(self):
+            return self.thisptr.last_integration_info
+
+    def zero_counters(self):
+        self.thisptr.zero_counters()
 
     # Extra convenience
     def per_rxn_contrib_to_fi(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
@@ -374,10 +384,10 @@ cdef class CppReactionDiffusion:
                                (self.thisptr.N*self.thisptr.nstencil,))
 
     def _stencil_bi_lbound(self, uint bi):
-        return self.thisptr._stencil_bi_lbound(bi)
+        return self.thisptr.stencil_bi_lbound_(bi)
 
     def _xc_bi_map(self, uint xci):
-        return self.thisptr._xc_bi_map(xci)
+        return self.thisptr.xc_bi_map_(xci)
 
     property efield:
         def __get__(self):
@@ -391,15 +401,21 @@ cdef class CppReactionDiffusion:
 # sundials wrapper:
 
 def sundials_integrate(
-        CppReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
+        PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
-        int iterative=0):
+        int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05,
+        double first_step=0.0):
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
+    cdef:
+        vector[int] root_indices
+        double dx_min = 0.0, dx_max = 0.0
+        int mxsteps=500
     assert y0.size == rd.n*rd.N
-    simple_integrate[double, ReactionDiffusion](
+    simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], tout.size, &tout[0], &yout[0], with_jacobian, iterative)
+        &y0[0], tout.size, &tout[0], &yout[0], root_indices, first_step, dx_min, dx_max, mxsteps,
+        with_jacobian, iter_type, linear_solver, maxl, eps_lin, 0)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
@@ -424,7 +440,7 @@ cdef void _add_5_vecs(int n, double * v1, double * v2, double * v3,
 @cython.boundscheck(False)
 @cython.wraparound(False)
 @cython.cdivision(True)
-cdef void _rk4(ReactionDiffusion * rd,
+cdef void _rk4(ReactionDiffusion[double] * rd,
                cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] y0,
                cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout,
                cnp.ndarray[cnp.float64_t, ndim=2, mode='c'] y0out,
@@ -444,18 +460,18 @@ cdef void _rk4(ReactionDiffusion * rd,
         t = tout[i]
         h = t - tout[i-1]
         k1 = &y1out[i-1, 0]
-        rd.f(t, &y0out[i-1, 0], &k1[0])
+        rd.rhs(t, &y0out[i-1, 0], &k1[0])
         _add_2_vecs(ny, &y0out[i-1, 0], &k1[0], 1.0, h/2, &tmp[0])
-        rd.f(t + h/2, &tmp[0], &k2[0])
+        rd.rhs(t + h/2, &tmp[0], &k2[0])
         _add_2_vecs(ny, &y0out[i-1, 0], &k2[0], 1.0, h/2, &tmp[0])
-        rd.f(t + h/2, &tmp[0], &k3[0])
+        rd.rhs(t + h/2, &tmp[0], &k3[0])
         _add_2_vecs(ny, &y0out[i-1, 0], &k3[0], 1.0, h/2, &tmp[0])
-        rd.f(t + h, &tmp[0], &k4[0])
+        rd.rhs(t + h, &tmp[0], &k4[0])
         _add_5_vecs(ny, &y0out[i-1, 0], &k1[0], &k2[0], &k3[0], &k4[0],
                     1.0, h/6, h/3, h/3, h/6, &y0out[i, 0])
 
 
-def rk4(CppReactionDiffusion rd, y0, tout):
+def rk4(PyReactionDiffusion rd, y0, tout):
     """
     simple explicit, fixed step size, Runge Kutta 4th order integrator.
     Use for debugging/testing.

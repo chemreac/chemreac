@@ -2,7 +2,7 @@
 """
 chemreac.core
 =============
-In chemreac.core you will find :py:class:`ReactionDiffusion` which
+In ``chemreac.core`` you will find :py:class:`ReactionDiffusion` which
 is the class describing the system of ODEs.
 
 """
@@ -20,12 +20,9 @@ from .util.pyutil import monotonic
 from .units import unit_of, get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
-from ._chemreac import CppReactionDiffusion, diag_data_len
+from ._chemreac import PyReactionDiffusion
 
-DENSE, BANDED, SPARSE = range(3)
-FLAT, CYLINDRICAL, SPHERICAL = range(3)
-Geom_names = {FLAT: 'Flat', CYLINDRICAL: 'Cylindrical', SPHERICAL: 'Spherical'}
-GEOM_ORDER = ('Flat', 'Cylindrical', 'Spherical')
+Geom_names = {'f': 'Flat', 'c': 'Cylindrical', 's': 'Spherical'}
 
 
 class ReactionDiffusionBase(object):
@@ -115,6 +112,10 @@ class ReactionDiffusionBase(object):
         return np.zeros(self.n*self.N)
 
     def alloc_jout(self, banded=None, order='C', pad=0):
+        if pad is True:
+            pad = self.n*self.n_jac_diags
+        if pad is False:
+            pad = 0
         if banded is None:
             banded = self.N > 1
         if order == 'C':
@@ -125,16 +126,16 @@ class ReactionDiffusionBase(object):
             raise ValueError("Order must be 'C' or 'F'")
 
         if banded:
-            return np.zeros((self.n*2 + 1 + rpad, self.n*self.N + cpad),
-                            order=order)
+            nr = 2*(self.n*self.n_jac_diags) + 1 + rpad
+            nc = self.n*self.N + cpad
+            return np.zeros((nr, nc), order=order)
         else:
             return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
                             order=order)
 
-    def alloc_jout_compressed(self, ndiag):
-        # TODO: ndiag from nstencil
-        return np.zeros(self.n*self.n*self.N + 2*diag_data_len(
-            self.N, self.n, ndiag))
+    def alloc_jout_compressed(self):
+        from block_diag_ilu import alloc_compressed
+        return alloc_compressed(self.N, self.n, self.n_jac_diags)
 
     @property
     def ny(self):
@@ -152,12 +153,16 @@ def get_unit(unit_registry, key):
         )[key]
 
 
-class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
+class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     """
     Object representing the numerical model, with callbacks for evaluating
     derivatives and jacobian.
 
     The instance provides methods:
+
+    - :meth:`f`
+    - :meth:`dense_jac_rmaj`
+
 
     - ``f(t, y, fout)``
     - ``dense_jac_rmaj(t, y, jout)``
@@ -196,8 +201,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         if x is a float it is expanded into linspace(0, x, N+1)
     stoich_inact: list of lists of integer indices
         list of inactive reactant index lists per reaction.n, default: []
-    geom: integer
-        any of (FLAT, SPHERICAL, CYLINDRICAL)
+    geom: str (letter)
+        any in 'fcs' (flat, cylindrical, spherical)
     logy: bool
         f and \*_jac_\* routines operate on log(concentration)
     logt: bool
@@ -231,6 +236,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
     ilu_limit: float
         Requirement on (average) diagonal dominance for performing ILU
         factorization.
+    n_jac_diags: int
+        Number of diagonals to include in Jacobian. ``-1`` delegates to
+        environment variable ``CHEMREAC_N_JAC_DIAGS``. ``0`` makes it equal to
+        ``nstencil - 1 / 2``.
     unit_registry: dict (optional)
         default: None, see ``chemreac.units.SI_base_registry`` for an
         example.
@@ -266,7 +275,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
         self._substance_latex_names = latex_names
 
     def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
-                mobility=None, x=None, stoich_inact=None, geom=FLAT,
+                mobility=None, x=None, stoich_inact=None, geom='f',
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
                 eps_rel=1.0, g_values=None, g_value_parents=None,
@@ -278,6 +287,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
                 vacuum_permittivity=None,  # deprecated
                 k_unitless=None,
                 ilu_limit=None,
+                n_jac_diags=-1,
                 **kwargs):
         if N == 0:
             if x is None:
@@ -328,7 +338,8 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             assert len(stoich_active) == len(k)
         else:
             assert len(stoich_active) == len(k_unitless)
-        assert geom in (FLAT, CYLINDRICAL, SPHERICAL)
+        if geom not in 'fcs':
+            raise ValueError("Unkown geom: %s" % geom)
 
         if surf_chg is None:
             surf_chg = (0.0*get_unit(unit_registry, 'charge'),
@@ -370,6 +381,10 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             if any(len(arr) != N for arr in modulation):
                 raise ValueError("An array in modulation of size != N")
 
+        _k = np.asarray(k_unitless)
+        if _k.ndim != 1:
+            raise ValueError("Rates vector has inproper dimension")
+
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_active, stoich_prod,
             np.asarray(k_unitless),
@@ -379,7 +394,7 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             to_unitless(mobility, get_unit(unit_registry,
                                            'electrical_mobility')),
             to_unitless(_x, get_unit(unit_registry, 'length')),
-            stoich_inact, geom, logy, logt, logx,
+            stoich_inact, 'fcs'.index(geom), logy, logt, logx,
             [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
              yld_unit in zip(g_values, cls.g_units(unit_registry,
                                                    g_value_parents))],
@@ -397,7 +412,9 @@ class ReactionDiffusion(CppReactionDiffusion, ReactionDiffusionBase):
             vacuum_permittivity or get_unitless_constant(
                 unit_registry, 'vacuum_permittivity'),
             ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
-                       ilu_limit is None else ilu_limit)
+                       ilu_limit is None else ilu_limit),
+            n_jac_diags=(int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
+                         n_jac_diags is -1 else n_jac_diags)
         )
 
         rd.unit_registry = unit_registry

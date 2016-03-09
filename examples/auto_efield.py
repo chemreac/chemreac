@@ -37,9 +37,7 @@ from math import log, erf, exp
 import argh
 import numpy as np
 
-from chemreac import (
-    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL
-)
+from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.util.plotting import save_and_or_show_plot
 
@@ -59,16 +57,16 @@ def gaussian(x, mu, sigma, logy, logx, geom):
     # 1/Integrate[E^(-1/2*((x - mu)/sigma)^2), {x, -Infinity, Infinity}]
     # 1/Integrate[2*pi*x*E^(-1/2*((x - mu)/sigma)^2), {x, 0, Infinity}]
     # 1/Integrate[4*pi*x^2*E^(-1/2*((x - mu)/sigma)^2), {x, 0, Infinity}]
-    if geom == FLAT:
+    if geom == 'f':
         a = 1/sigma/(2*np.pi)**0.5
-    elif geom == CYLINDRICAL:
+    elif geom == 'c':
         a = 1/pi/sigma/(2*exp(-mu**2/2/sigma**2)*sigma +
                         mu*sq2*sqpi*(1 + erf(mu/(sq2*sigma))))
-    elif geom == SPHERICAL:
+    elif geom == 's':
         a = 1/2/pi/sigma/(2*exp(-mu**2/2/sigma**2)*mu*sigma +
                           sq2*sqpi*(mu**2 + sigma**2)*(1 + erf(mu/sq2/sigma)))
     else:
-        raise RuntimeError()
+        raise NotImplementedError("Unkown geomtry: %s" % geom)
 
     b = -0.5*((x-mu)/sigma)**2
     if logy:
@@ -105,7 +103,6 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
     if random_seed:
         np.random.seed(random_seed)
     n = 2
-    geom = {'f': FLAT, 'c': CYLINDRICAL, 's': SPHERICAL}[geom]
 
     # Setup the grid
     _x0 = log(x0) if logx else x0

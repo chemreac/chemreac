@@ -27,7 +27,7 @@ def _init_axes(ax=None):
     return ax
 
 
-def save_and_or_show_plot(show=None, savefig='None'):
+def save_and_or_show_plot(show=None, savefig='None', **kwargs):
     """ Save and/or show current matplotlib figure
 
     Parameters
@@ -38,7 +38,8 @@ def save_and_or_show_plot(show=None, savefig='None'):
     savefig: string
         path to output file of figure. If extension is html, mpld3
         will be used to generate a d3 backed html output.
-
+    \*\*kwargs:
+        keyword arguments passed on to ``matplotlib.pyplot.savefig``
     """
     if savefig is not None and savefig != 'None':
         if savefig.endswith('.html'):
@@ -46,7 +47,7 @@ def save_and_or_show_plot(show=None, savefig='None'):
             import mpld3
             open(savefig, 'wt').write(mpld3.fig_to_html(plt.gcf()))
         else:
-            plt.savefig(savefig)
+            plt.savefig(savefig, **kwargs)
 
         if show is None:
             show = False

@@ -10,7 +10,7 @@ _generated/steady_state_approx.html: examples/examples/steady_state_approx.py
 	python $< --plot --savefig $@
 
 _generated/analytic_diffusion.png: examples/examples/analytic_diffusion.py
-	python $< --plot --nstencil 3 --nspecies 2 --geom f --savefig $@
+	python $< --plot --nstencil 3 --nspecies 3 --geom f --savefig $@
 
 _generated/aqueous_radiolysis.png: examples/examples/aqueous_radiolysis.py
 	python $< --doserate 25 --plot --savefig $@
@@ -46,7 +46,7 @@ _generated/const_surf_conc.png: examples/examples/const_surf_conc.py
 	python $< --plot --savefig $@
 
 _generated/const_surf_conc_logy_logx.png: examples/examples/const_surf_conc.py
-	python $< --plot --N 1024 --verbose --nstencil 3 --scaling 1e-20 --logx --logy --factor 1e12 --x0 1e-6 --atol 1e-8 --rtol 1e-8 --savefig $@
+	python $< --logx --logy --x0 1e-6 --scaling 1e-20 --factor 1e12 --plot --savefig $@
 
 
 images-png: $(IMAGES)

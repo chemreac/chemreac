@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-u"""
+"""
 Analytic diffusion
 ------------------
 
@@ -20,18 +20,18 @@ function expressions for respective geometry).
 
 ::
 
- $ python analytic_diffusion.py --plot --efield --mu 0.5 --nstencil 5\
- --nspecies 2 --geom f
+ $ python analytic_diffusion.py --plot --efield --center 0.5\
+ --nstencil 5 --nspecies 3 --geom f
 
- $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 400\
- --nstencil 3
+ $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --center 500\
+ -D 400 --nstencil 3
 
 Note -D 475
 
 ::
 
- $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --mu 500 -D 475\
-  --nstencil 7
+ $ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --center 500\
+ -D 475 --nstencil 7
 
 Still problematic (should not need to be):
 
@@ -61,9 +61,7 @@ from itertools import product
 import argh
 import numpy as np
 
-from chemreac import (
-    ReactionDiffusion, FLAT, CYLINDRICAL, SPHERICAL
-)
+from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.util.plotting import save_and_or_show_plot
 
@@ -195,28 +193,33 @@ def _efield_cb(x):
     return -np.ones_like(x)
 
 
-def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
-                 nt=42, geom='f', logt=False, logy=False, logx=False,
-                 random=False, nspecies=1, p=0, a=0.2, nstencil=3,
-                 linterpol=False, rinterpol=False, num_jacobian=False,
-                 method='bdf', plot=False, atol=1e-6, rtol=1e-6,
-                 efield=False, random_seed=42, savefig='None',
-                 verbose=False, yscale='linear', vline_limit=100):
+def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
+                 D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, center=None,
+                 nt=42, logt=False, logy=False, logx=False,
+                 random=False, p=0, a=0.2,
+                 linterpol=False, rinterpol=False, ilu_limit=5.0,
+                 n_jac_diags=-1, num_jacobian=False,
+                 method='bdf', solver='cvode', iter_type='default',
+                 linear_solver='default',
+                 atol=1e-8, rtol=1e-10,
+                 efield=False, random_seed=42, mobility=0.01,
+                 plot=False, savefig='None', verbose=False, yscale='linear',
+                 vline_limit=100,
+                 ):  # remember: anayltic_N_scaling.main kwargs
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
         np.random.seed(random_seed)
     # decay = (nspecies > 1)
     # n = 2 if decay else 1
-    mu = float(mu or x0)
+    center = float(center or x0)
     tout = np.linspace(t0, tend, nt)
 
     assert geom in 'fcs'
-    geom = {'f': FLAT, 'c': CYLINDRICAL, 's': SPHERICAL}[geom]
     analytic = {
-        FLAT: flat_analytic,
-        CYLINDRICAL: cylindrical_analytic,
-        SPHERICAL: spherical_analytic
+        'f': flat_analytic,
+        'c': cylindrical_analytic,
+        's': spherical_analytic
     }[geom]
 
     # Setup the grid
@@ -229,16 +232,15 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     def _k(si):
         return (si+p)*log(a+1)
     k = [_k(i+1) for i in range(nspecies-1)]
-
     rd = ReactionDiffusion(
         nspecies,
         [[i] for i in range(nspecies-1)],
         [[i+1] for i in range(nspecies-1)],
-        [k[i] for i in range(nspecies-1)],
+        k,
         N,
         D=[D]*nspecies,
         z_chg=[1]*nspecies,
-        mobility=[0.01]*nspecies,
+        mobility=[mobility]*nspecies,
         x=x,
         geom=geom,
         logy=logy,
@@ -246,27 +248,27 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         logx=logx,
         nstencil=nstencil,
         lrefl=not linterpol,
-        rrefl=not rinterpol
+        rrefl=not rinterpol,
+        ilu_limit=ilu_limit,
+        n_jac_diags=n_jac_diags
     )
 
     if efield:
-        if geom != FLAT:
+        if geom != 'f':
             raise ValueError("Only analytic sol. for flat drift implemented.")
         rd.efield = _efield_cb(rd.xcenters)
 
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
-    yref = analytic(rd.xcenters, t, D, mu, x0, xend,
-                    0.01 if efield else 0, logy, logx).reshape(nt, N, 1)
+    yref = analytic(rd.xcenters, t, D, center, x0, xend,
+                    -mobility if efield else 0, logy, logx).reshape(nt, N, 1)
 
     if nspecies > 1:
         from batemaneq import bateman_parent
         bateman_out = np.array(bateman_parent(k, tout)).T
-        print(bateman_out)
         terminal = (1 - np.sum(bateman_out, axis=1)).reshape((nt, 1))
         bateman_out = np.concatenate((bateman_out, terminal), axis=1).reshape(
             (nt, 1, nspecies))
-        print(bateman_out.shape)
         if logy:
             yref = yref + np.log(bateman_out)
         else:
@@ -275,7 +277,8 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
     # Run the integration
     integr = run(rd, yref[0, ...], tout, atol=atol, rtol=rtol,
                  with_jacobian=(not num_jacobian), method=method,
-                 C0_is_log=logy)
+                 iter_type=iter_type, linear_solver=linear_solver,
+                 C0_is_log=logy, solver=solver)
     info = integr.info
 
     if logy:
@@ -304,7 +307,7 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.figure(figsize=(6, 10))
 
         # colors: (0.5, 0.5, 0.5), (0.5, 0.5, 1), ...
-        base_colors = list(product([.5, 1], repeat=3))[1:]
+        base_colors = list(product([.5, 1], repeat=3))[1:-1]
 
         def color(ci, ti):
             return np.array(base_colors[ci % len(base_colors)])*tout[ti]/tend
@@ -346,12 +349,14 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.legend()
 
         plt.subplot(4, 1, 2)
+        plt.title('Analytic solution')
         plt.gca().set_yscale(yscale)
 
         plt.subplot(4, 1, 3)
         plt.title('Linear rel. error / Abs. tol. (={})'.format(atol))
 
         plt.subplot(4, 1, 4)
+        plt.title('RMS error vs. time'.format(atol))
         tspan = [tout[0], tout[-1]]
         for si in range(nspecies):
             plt.plot(tout, rmsd[:, si] / atol, c=color(si, -1))
@@ -363,7 +368,7 @@ def integrate_rd(D=2e-3, t0=3.0, tend=7., x0=0.0, xend=1.0, mu=None, N=64,
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
 
-    return tout, integr.yout, info, ave_rmsd_over_atol, rd
+    return tout, integr.yout, info, ave_rmsd_over_atol, rd, rmsd
 
 
 if __name__ == '__main__':

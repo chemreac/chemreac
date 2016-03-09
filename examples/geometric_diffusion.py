@@ -6,10 +6,7 @@ from __future__ import print_function, division
 import argh
 import numpy as np
 
-from chemreac import (
-    ReactionDiffusion, FLAT, SPHERICAL,
-    CYLINDRICAL, Geom_names
-)
+from chemreac import ReactionDiffusion, Geom_names
 from chemreac.integrate import run
 from chemreac.util.plotting import plot_C_vs_t_and_x, save_and_or_show_plot
 
@@ -18,8 +15,6 @@ Demo of diffusion.
 """
 
 # <geometric_diffusion.png>
-
-GEOMS = (FLAT, SPHERICAL, CYLINDRICAL)
 
 
 def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
@@ -35,9 +30,9 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
     tout = np.linspace(t0, tend, nt)
 
     res, systems = [], []
-    for G in GEOMS:
+    for g in 'fcs':
         rd = ReactionDiffusion(1, [], [], [], N=N, D=[0.02], x=x,
-                               geom=G, nstencil=nstencil, lrefl=not linterpol,
+                               geom=g, nstencil=nstencil, lrefl=not linterpol,
                                rrefl=not rinterpol)
         integr = run(rd, y0, tout, with_jacobian=(not num_jacobian))
         res.append(integr.yout)
@@ -53,13 +48,13 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
         fig = plt.figure()
 
         # Plot spatio-temporal conc. evolution
-        for i, G in enumerate(GEOMS):
+        for i, g in enumerate('fcs'):
             yout = res[i]
-            ax = fig.add_subplot(2, 3, G+1, projection='3d')
+            ax = fig.add_subplot(2, 3, 'fcs'.index(g)+1, projection='3d')
 
             plot_C_vs_t_and_x(rd, tout, yout, 0, ax,
                               rstride=1, cstride=1, cmap=cm.gist_earth)
-            ax.set_title(Geom_names[G])
+            ax.set_title(Geom_names[g])
 
         # Plot mass conservation
         ax = fig.add_subplot(2, 3, 4)
@@ -70,15 +65,15 @@ def main(tend=10.0, N=25, nt=30, nstencil=3, linterpol=False,
         ax.set_title('Mass conservation')
 
         # Plot difference from flat evolution (not too informative..)
-        for i, G in enumerate(GEOMS):
+        for i, g in enumerate('fcs'):
             yout = res[i]  # only one specie
             if i != 0:
                 yout = yout - res[0]  # difference (1 specie)
-                ax = fig.add_subplot(2, 3, 3+G+1, projection='3d')
+                ax = fig.add_subplot(2, 3, 3+'fcs'.index(g)+1, projection='3d')
 
                 plot_C_vs_t_and_x(rd, tout, yout, 0, ax,
                                   rstride=1, cstride=1, cmap=cm.gist_earth)
-                ax.set_title(Geom_names[G] + ' minus ' + Geom_names[0])
+                ax.set_title(Geom_names[g] + ' minus ' + Geom_names[0])
 
         save_and_or_show_plot(savefig)
 

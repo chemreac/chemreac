@@ -23,4 +23,11 @@ git push
 git push --tags
 twine upload dist/${PKG}-${1#v}.tar.gz
 env ${PKG_UPPER}_RELEASE_VERSION=$1 python setup.py upload_sphinx
+
+# Specific for this project:
+SERVER=hera
+scp -r dist/conda-recipe-${1#v}/ $PKG@$SERVER:~/public_html/conda-recipes/
+scp dist/${PKG}-$VERSION.tar.gz $PKG@$SERVER:~/public_html/releases/
+ssh $PKG@$SERVER "source /etc/profile; CONDA_PY=27 conda-build ~/public_html/conda-recipes/conda-recipe-${1#v}/"
+ssh $PKG@$SERVER "source /etc/profile; CONDA_PY=34 conda-build ~/public_html/conda-recipes/conda-recipe-${1#v}/"
 echo "Remember to bump version (and commit and push)!"

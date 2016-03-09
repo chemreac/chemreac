@@ -43,21 +43,20 @@ using std::count;
 using std::min;
 using std::max;
 
-template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
-
 #include <cstdio>
 
 // 1D discretized reaction diffusion
-ReactionDiffusion::ReactionDiffusion(
+template<typename Real_t>
+ReactionDiffusion<Real_t>::ReactionDiffusion(
     uint n,
     const vector<vector<uint> > stoich_active,
     const vector<vector<uint> > stoich_prod,
-    vector<double> k,
+    vector<Real_t> k,
     uint N,
-    vector<double> D,
+    vector<Real_t> D,
     const vector<int> z_chg,
-    vector<double> mobility,
-    const vector<double> x, // separation
+    vector<Real_t> mobility,
+    const vector<Real_t> x, // separation
     vector<vector<uint> > stoich_inact, // vectors of size 0 in stoich_actv_ => "copy from stoich_reac"
     int geom_,
     bool logy,
@@ -67,16 +66,17 @@ ReactionDiffusion::ReactionDiffusion(
     bool lrefl,
     bool rrefl,
     bool auto_efield,
-    pair<double, double> surf_chg,
-    double eps_rel,
-    double faraday_const,
-    double vacuum_permittivity,
-    vector<vector<double>> g_values,
+    pair<Real_t, Real_t> surf_chg,
+    Real_t eps_rel,
+    Real_t faraday_const,
+    Real_t vacuum_permittivity,
+    vector<vector<Real_t>> g_values,
     vector<int> g_value_parents,
-    vector<vector<double>> fields,
+    vector<vector<Real_t>> fields,
     vector<int> modulated_rxns,
-    vector<vector<double> > modulation,
-    double ilu_limit):
+    vector<vector<Real_t> > modulation,
+    Real_t ilu_limit,
+    uint n_jac_diags):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
@@ -85,8 +85,8 @@ ReactionDiffusion::ReactionDiffusion(
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
     vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
-    ilu_limit(ilu_limit),
-    efield(new double[N]), netchg(new double[N])
+    ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags),
+    efield(new Real_t[N]), netchg(new Real_t[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -113,7 +113,6 @@ ReactionDiffusion::ReactionDiffusion(
             throw std::length_error(
                 "Number bin edges != number of compartments + 1.");
     }
-
     switch(geom_) {
     case 0:
         geom = Geom::FLAT;
@@ -129,10 +128,10 @@ ReactionDiffusion::ReactionDiffusion(
     }
 
     // Finite difference scheme
-    D_weight = new double[nstencil*N];
-    A_weight = new double[nstencil*N];
+    D_weight = new Real_t[nstencil*N];
+    A_weight = new Real_t[nstencil*N];
     for (uint i=0; i<N; ++i) efield[i] = 0.0;
-    xc = new double[nsidep + N + nsidep]; // xc padded with virtual bins
+    xc = new Real_t[nsidep + N + nsidep]; // xc padded with virtual bins
     for (uint i=0; i<N; ++i)
         xc[nsidep + i] = (x[i] + x[i + 1])/2;
 
@@ -207,7 +206,8 @@ ReactionDiffusion::ReactionDiffusion(
             throw std::logic_error("illegally sized vector in modulation");
 }
 
-ReactionDiffusion::~ReactionDiffusion()
+template<typename Real_t>
+ReactionDiffusion<Real_t>::~ReactionDiffusion()
 {
     delete []xc;
     delete []efield;
@@ -224,19 +224,35 @@ ReactionDiffusion::~ReactionDiffusion()
         delete jac_cache;
 }
 
-uint ReactionDiffusion::_stencil_bi_lbound(uint bi) const
+template<typename Real_t>
+void
+ReactionDiffusion<Real_t>::zero_counters(){
+    nfev = 0;
+    njev = 0;
+    nprec_setup = 0;
+    nprec_solve = 0;
+    njacvec_dot = 0;
+    nprec_solve_ilu = 0;
+    nprec_solve_lu = 0;
+}
+
+template<typename Real_t>
+uint
+ReactionDiffusion<Real_t>::stencil_bi_lbound_(uint bi) const
 {
     const uint le = lrefl ? 0 : nsidep;
     const uint re = rrefl ? 0 : nsidep;
     return max(le, min(N + 2*nsidep - re - nstencil, bi));
 }
 
-uint ReactionDiffusion::_xc_bi_map(uint xci) const
+template<typename Real_t>
+uint
+ReactionDiffusion<Real_t>::xc_bi_map_(uint xci) const
 {
     if (xci < nsidep)
         return nsidep - xci - 1;
     else if (xci >= N+nsidep)
-        return 2*N - xci;
+        return nsidep + 2*N - xci - 1;
     else
         return xci - nsidep;
 }
@@ -245,9 +261,11 @@ uint ReactionDiffusion::_xc_bi_map(uint xci) const
 #define D_WEIGHT(bi, li) D_weight[nstencil*(bi) + li]
 #define A_WEIGHT(bi, li) A_weight[nstencil*(bi) + li]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
-void ReactionDiffusion::apply_fd_(uint bi){
-    double * const c = new double[3*nstencil];
-    double * const lxc = new double[nstencil]; // local shifted x-centers
+template<typename Real_t>
+void
+ReactionDiffusion<Real_t>::apply_fd_(uint bi){
+    Real_t * const c = new Real_t[3*nstencil];
+    Real_t * const lxc = new Real_t[nstencil]; // local shifted x-centers
     uint around = bi + nsidep;
     uint start  = bi;
     if (!lrefl) // shifted finite diff
@@ -256,7 +274,7 @@ void ReactionDiffusion::apply_fd_(uint bi){
         start = min(N - nstencil + nsidep, start);
     for (uint li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
-    finitediff::populate_weights<double>(0, lxc, nstencil-1, 2, c);
+    finitediff::populate_weights<Real_t>(0, lxc, nstencil-1, 2, c);
     delete []lxc;
 
     for (uint li=0; li<nstencil; ++li){ // li: local index
@@ -297,9 +315,10 @@ void ReactionDiffusion::apply_fd_(uint bi){
 #undef FDWEIGHT
 // D_WEIGHT still defined
 
-double
-ReactionDiffusion::get_mod_k(int bi, int ri) const{
-    double tmp = k[ri];
+template<typename Real_t>
+Real_t
+ReactionDiffusion<Real_t>::get_mod_k(int bi, int ri) const{
+    Real_t tmp = k[ri];
     // Modulation
     int enumer = -1;
     for (auto mi : this->modulated_rxns){
@@ -310,14 +329,15 @@ ReactionDiffusion::get_mod_k(int bi, int ri) const{
     return tmp;
 }
 
+template<typename Real_t>
 void
-ReactionDiffusion::fill_local_r_(int bi, const double * const __restrict__ C,
-                                 double * const __restrict__ local_r) const
+ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict__ C,
+                                 Real_t * const __restrict__ local_r) const
 {
     // intent(out) :: local_r
     for (uint rxni=0; rxni<nr; ++rxni){
         // reaction rxni
-        double tmp = 1;
+        Real_t tmp = 1;
 
         // Kinetically active reactants (law of massaction)
         for (uint rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
@@ -336,14 +356,15 @@ ReactionDiffusion::fill_local_r_(int bi, const double * const __restrict__ C,
 
 
 #define Y(bi, si) y[(bi)*n+(si)]
-const double *
-ReactionDiffusion::alloc_and_populate_linC(const double * const __restrict__ y,
-                                           bool apply_exp=false, bool recip=false) const
+template<typename Real_t>
+const Real_t *
+ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restrict__ y,
+                                                   bool apply_exp, bool recip) const
 {
     int nlinC = n*N;
-    double * const linC = (double * const)malloc(nlinC*sizeof(double));
-    // TODO: Tune 42...
-    ${"#pragma omp parallel for if (N > 42)" if WITH_OPENMP else ""}
+    Real_t * const linC = (Real_t * const)malloc(nlinC*sizeof(Real_t));
+    // Possible optimization: tune 42...
+    ${"#pragma omp parallel for schedule(static) if (N > 42)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         for (uint si=0; si<n; ++si){
             if (recip)
@@ -359,21 +380,22 @@ ReactionDiffusion::alloc_and_populate_linC(const double * const __restrict__ y,
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
+template<typename Real_t>
 void
-ReactionDiffusion::f(double t, const double * const y, double * const __restrict__ dydt)
+ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const __restrict__ dydt)
 {
     // note condifiontal call to free at end of this function
-    const double * const linC = (logy) ? alloc_and_populate_linC(y, true) : y;
-    const double * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) : nullptr;
+    const Real_t * const linC = (logy) ? alloc_and_populate_linC(y, true) : y;
+    const Real_t * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) : nullptr;
     if (auto_efield){
         calc_efield(linC);
     }
-    const double exp_t = (logt) ? exp(t) : 0.0;
-    ${"double * const local_r = new double[nr];" if not WITH_OPENMP else ""}
-    ${"#pragma omp parallel for if (N > 2)" if WITH_OPENMP else ""}
+    const Real_t exp_t = (logt) ? exp(t) : 0.0;
+    ${"Real_t * const local_r = new Real_t[nr];" if not WITH_OPENMP else ""}
+    ${"#pragma omp parallel for schedule(static) if (N > 2)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         // compartment bi
-        ${"double * const local_r = new double[nr];" if WITH_OPENMP else ""}
+        ${"Real_t * const local_r = new Real_t[nr];" if WITH_OPENMP else ""}
 
         for (uint si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
@@ -394,7 +416,7 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         for (uint fi=0; fi<this->fields.size(); ++fi){
             if (fields[fi][bi] == 0)
                 continue; // exit early
-            const double gfact = (g_value_parents[fi] == -1) ? \
+            const Real_t gfact = (g_value_parents[fi] == -1) ? \
                 1.0 : LINC(bi, g_value_parents[fi]);
             for (uint si=0; si<n; ++si)
                 if (g_values[fi][si] != 0)
@@ -414,8 +436,8 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
             }
             for (uint si=0; si<n; ++si){ // species index si
                 if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
-                double unscaled_diffusion = 0;
-                double unscaled_advection = 0;
+                Real_t unscaled_diffusion = 0;
+                Real_t unscaled_advection = 0;
                 for (uint xi=0; xi<nstencil; ++xi){
                     int biw = starti + xi;
                     // reflective logic:
@@ -445,62 +467,64 @@ ReactionDiffusion::f(double t, const double * const y, double * const __restrict
         free((void*)linC);
         free((void*)rlinC);
     }
-    neval_f++;
+    nfev++;
 }
 #undef DYDT
 // D_WEIGHT(bi, li), Y(bi, si) and LINC(bi, si) still defined.
 
+
 #define FOUT(bi, si) fout[(bi)*n+si]
-%for token, imaj, imin in [\
-    ('dense_jac_rmaj',         '(bri)*n+ri', '(bci)*n + ci'),\
-    ('dense_jac_cmaj',         '(bci)*n+ci', '(bri)*n + ri'),\
-    ('banded_packed_jac_cmaj', '(bci)*n+ci', '(1+bri-(bci))*n+ri-ci'),\
-    ('banded_padded_jac_cmaj', '(bci)*n+ci', '(2+bri-(bci))*n+ri-ci'),\
-    ('compressed_jac_cmaj', None, None),\
-    ]:
-%if token.startswith('compressed'):
-#define JAC(bi, ignore_, ri, ci) ja[(bi*n + ci)*n + ri]
-    //define SUB(di, bri, ci) std::cout<< di << " " << bri << " " << ci << std::endl; ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
-#define SUB(di, bri, ci) ja[N*n*n + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri-di)*n + ci]
-#define SUP(di, bri, ci) ja[N*n*n + n*(N*nsidep - (nsidep*nsidep + nsidep)/2) + n*(N*(di-1) - ((di-1)*(di-1) + (di-1))/2) + (bri)*n + ci]
-%else:
-#define JAC(bri, bci, ri, ci) ja[(${imaj})*ldj+${imin}]
-#define SUB(di, bri, ci) JAC(bri, bri-di, ci, ci)
-#define SUP(di, bri, ci) JAC(bri, bri+di, ci, ci)
-%endif
+#define SUP(di, bi, li) jac.sup(di, bi, li)
+%for token in ['dense_jac_rmaj', 'dense_jac_cmaj', 'banded_packed_jac_cmaj', 'banded_padded_jac_cmaj', 'compressed_jac_cmaj']:
+template<typename Real_t>
 void
-ReactionDiffusion::${token}(double t,
-                            const double * const __restrict__ y,
-                            const double * const __restrict__ fy,
-                            double * const __restrict__ ja, int ldj)
+ReactionDiffusion<Real_t>::${token}(Real_t t,
+                            const Real_t * const __restrict__ y,
+                            const Real_t * const __restrict__ fy,
+                            Real_t * const __restrict__ ja, int ldj)
 {
-    // Note: does not return a strictly correct Jacobian for nstecil > 3
-    // (only 1 pair of bands).
+    // Note: blocks are zeroed out, diagnoals only incremented
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
-    ${'ignore(ldj);' if token.startswith('compressed') else ''}
-    const double exp_t = (logt) ? exp(t) : 0.0;
+    %if token.startswith('compressed'):
+    ignore(ldj);
+    block_diag_ilu::ColMajBlockDiagView<Real_t> jac {ja,
+            ja + N*n*n,
+            ja + N*n*n + n*(N*n_jac_diags - (n_jac_diags*n_jac_diags + n_jac_diags)/2),
+            N, n, n_jac_diags};
+    %elif token.startswith('banded_packed_jac_cmaj'):
+    block_diag_ilu::ColMajBandedView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj), 0};
+    %elif token.startswith('banded_padded_jac_cmaj'):
+    block_diag_ilu::ColMajBandedView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
+    %elif token.startswith('dense_jac_cmaj'):
+    block_diag_ilu::DenseView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
+    %elif token.startswith('dense_jac_rmaj'):
+    block_diag_ilu::DenseView<Real_t, false> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
+    %else:
+#error "Unhandled token."
+    %endif
+    const Real_t exp_t = (logt) ? exp(t) : 0.0;
 
-    double * fout = nullptr;
+    Real_t * fout = nullptr;
     if (logy){ // fy useful..
         if (fy){
-            fout = const_cast<double *>(fy);
+            fout = const_cast<Real_t *>(fy);
         } else {
-            fout = new double[n*N];
-            f(t, y, fout);
+            fout = new Real_t[n*N];
+            rhs(t, y, fout);
         }
     }
 
     // note conditional call to free at end of this function
-    const double * const linC = (logy) ? alloc_and_populate_linC(y, true, false) : y;
-    const double * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) :
+    const Real_t * const linC = (logy) ? alloc_and_populate_linC(y, true, false) : y;
+    const Real_t * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) :
         alloc_and_populate_linC(y, false, true);
     if (auto_efield)
         calc_efield(linC);
 
-    ${'#pragma omp parallel for' if WITH_OPENMP else ''}
+    ${'#pragma omp parallel for schedule(static)' if WITH_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
         // Contributions from reactions and fields
@@ -509,31 +533,31 @@ ReactionDiffusion::${token}(double t,
             // species si
             for (uint dsi=0; dsi<n; ++dsi){
                 // derivative wrt species dsi
-                JAC(bi, bi, si, dsi) = 0.0;
+                jac.block(bi, si, dsi) = 0.0;
                 for (uint rxni=0; rxni<nr; ++rxni){
                     // reaction rxni
                     const int Akj = coeff_active[rxni*n + dsi];
                     const int Ski = coeff_total[rxni*n + si];
                     if (Akj == 0 || Ski == 0)
                         continue;
-                    double qkj = get_mod_k(bi, rxni)*Akj*pow(LINC(bi, dsi), Akj-1);
+                    Real_t qkj = get_mod_k(bi, rxni)*Akj*pow(LINC(bi, dsi), Akj-1);
                     for (uint rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
                         const uint rnti_si = stoich_active[rxni][rnti];
                         if (rnti_si == dsi)
                             continue;
                         qkj *= LINC(bi, rnti_si);
                     }
-                    JAC(bi, bi, si, dsi) += Ski*qkj;
-                    // std::cout << JAC(bi, bi, si, dsi) << "\n";
+                    jac.block(bi, si, dsi) += Ski*qkj;
+                    // std::cout << jac.block(bi, si, dsi) << "\n";
                 }
                 // Contribution from particle/electromagnetic fields
                 for (uint fi=0; fi<(this->fields.size()); ++fi){
                     const int Ski = (g_values[fi][si] != 0.0) ? 1 : 0;
                     const int Akj = ((int)dsi == g_value_parents[fi]) ? 1 : 0;
-                    const double rk = fields[fi][bi]*g_values[fi][si];
+                    const Real_t rk = fields[fi][bi]*g_values[fi][si];
                     if (Ski == 0 || Akj == 0 || rk == 0)
                         continue;
-                    JAC(bi, bi, si, dsi) += Akj*Ski*rk;
+                    jac.block(bi, si, dsi) += Akj*Ski*rk;
                 }
             }
         }
@@ -542,57 +566,57 @@ ReactionDiffusion::${token}(double t,
         // Contributions from diffusion
         // ----------------------------
         if (N > 1) {
-            uint lbound = _stencil_bi_lbound(bi);
+            uint lbound = stencil_bi_lbound_(bi);
             for (uint si=0; si<n; ++si){ // species index si
                 if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
-                // All versions except the compressed Jacobian ignore any more sub/super
-                // diagonals than the innermost.
                 for (uint k=0; k<nstencil; ++k){
-                    const uint sbi = _xc_bi_map(lbound+k);
-                    JAC(bi, bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
+                    const uint sbi = xc_bi_map_(lbound+k);
+                    jac.block(bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
                     if (sbi == bi) {
-                        JAC(bi, bi, si, si) += D[si]*D_WEIGHT(bi, k);
-                        JAC(bi, bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += D[si]*D_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
-                        if (bi >= 1)
-                            if (sbi == bi-1){
-                                SUB(1, bi, si) += D[si]*D_WEIGHT(bi, k);
-                                SUB(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
+                        for (uint di=0; di<n_jac_diags; ++di){
+                            if ((bi >= di+1) and (sbi == bi-di-1)){
+                                jac.sub(di, bi-di-1, si) += D[si]*D_WEIGHT(bi, k);
+                                jac.sub(di, bi-di-1, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
                             }
-                        if (bi < N-1)
-                            if (sbi == bi+1){
-                                SUP(1, bi, si) += D[si]*D_WEIGHT(bi, k);
-                                SUP(1, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
+                            if ((bi < N-di-1) and (sbi == bi+di+1)){
+                                jac.sup(di, bi, si) += D[si]*D_WEIGHT(bi, k);
+                                jac.sup(di, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
                             }
+                        }
                     }
                 }
             }
         }
 
         // Logartihmic transformations
-        // ----------------------------
+        // ---------------------------
         if (logy || logt){
             for (uint si=0; si<n; ++si){
                 for (uint dsi=0; dsi<n; ++dsi){
                     if (logy){
-                        JAC(bi, bi, si, dsi) *= LINC(bi, dsi)*RLINC(bi, si);
+                        jac.block(bi, si, dsi) *= LINC(bi, dsi)*RLINC(bi, si);
                     }
                     if (logt)
-                        JAC(bi, bi, si, dsi) *= exp_t;
+                        jac.block(bi, si, dsi) *= exp_t;
                     if (logy && dsi == si)
-                        JAC(bi, bi, si, si) -= FOUT(bi, si);
+                        jac.block(bi, si, si) -= FOUT(bi, si);
                 }
-                if (bi>0){
-                    if (logy)
-                        SUB(1, bi, si) *= LINC(bi-1, si)*RLINC(bi, si);
-                    if (logt)
-                        SUB(1, bi, si) *= exp_t;
-                }
-                if (bi<N-1){
-                    if (logy)
-                        SUP(1, bi, si) *= LINC(bi+1, si)*RLINC(bi, si);
-                    if (logt)
-                        SUP(1, bi, si) *= exp_t;
+                for (uint di=0; di<n_jac_diags; ++di){
+                    if (bi > di){
+                        if (logy)
+                            jac.sub(di, bi-di-1, si) *= LINC(bi-di-1, si)*RLINC(bi, si);
+                        if (logt)
+                            jac.sub(di, bi-di-1, si) *= exp_t;
+                    }
+                    if (bi < N-di-1){
+                        if (logy)
+                            jac.sup(di, bi, si) *= LINC(bi+di+1, si)*RLINC(bi, si);
+                        if (logt)
+                            jac.sup(di, bi, si) *= exp_t;
+                    }
                 }
             }
         }
@@ -602,95 +626,50 @@ ReactionDiffusion::${token}(double t,
     free((void*)rlinC);
     if (logy)
         free((void*)linC);
-    neval_j++;
+    njev++;
 #if defined(WITH_DATA_DUMPING)
     std::ostringstream fname;
-    fname << "jac_" << std::setfill('0') << std::setw(5) << neval_j << ".dat";
+    fname << "jac_" << std::setfill('0') << std::setw(5) << njev << ".dat";
     save_array(ja, ldj*n*N, fname.str());
 #endif
 }
-#undef JAC
-#undef SUB
-#undef SUP
 %endfor
+#undef FOUT
 
-// #define JAC(ri, ci) ja[ri*n + ci]
-// void ReactionDiffusion::local_reaction_jac(const uint bi, const double * const y,
-//                                            double * const __restrict__ ja) const
-// {
-//     const double * const linC = (logy) ? alloc_and_populate_linC(y) : y;
-//     std::unique_ptr<double[]> local_r {new double[nr]};
-//     fill_local_r_(bi, y, local_r);
-//     for (uint si=0; si<n; ++si){
-//         // species si
-//         for (uint dsi=0; dsi<n; ++dsi){
-//             // derivative wrt species dsi
-//             // j_i[si, dsi] = Sum_l(n_lj*Derivative(r[l], local_y[dsi]))
-//             JAC(si, dsi) = 0.0;
-//             for (uint rxni=0; rxni<nr; ++rxni){
-//                 // reaction rxni
-//                 if (coeff_total[rxni*n + si] == 0)
-//                     continue; // species si unaffected by reaction
-//                 if (coeff_active[rxni*n + dsi] == 0)
-//                     continue; // rate of reaction unaffected by species dsi
-//                 double tmp = coeff_total[rxni*n + si]*\
-//                 coeff_active[rxni*n + dsi]*local_r[rxni];
-//                 if (!logy)
-//                     tmp /= Y(bi, dsi);
-//                 JAC(si, dsi) += tmp;
-//             }
-//             if (logy)
-//                 //JAC(bi, bi, si, dsi) *= gamma*exp(-Y(bi, si));
-//                 JAC(si, dsi) /= LINC(bi, si);
-//             JAC(si, dsi) *= gamma;
-//         }
-//     }
-//     if (logy)
-//         free((void*)linC);
-// }
-// #undef JAC
 
-void ReactionDiffusion::jac_times_vec(const double * const __restrict__ vec,
-                                      double * const __restrict__ out,
-                                      double t,
-                                      const double * const __restrict__ y,
-                                      const double * const __restrict__ fy
+template<typename Real_t>
+void
+ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
+                                      Real_t * const __restrict__ out,
+                                      Real_t t,
+                                      const Real_t * const __restrict__ y,
+                                      const Real_t * const __restrict__ fy
                                       )
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
-    // {
-    //     // Do we need a fresh jacobian?
-    //     block_diag_ilu::ColMajBlockDiagMat<double> jmat {this->N, this->n, this->nsidep};
-    //     jmat.view.zero_out_diags(); // compressed_jac_cmaj only increments diagonals
-    //     const int dummy = 0;
-    //     compressed_jac_cmaj(t, y, fy, jmat.get_block_data_raw_ptr(), dummy);
-    //     jmat.view.dot_vec(vec, out);
-    // }
-    {
-        // or can we do with the cache?
-        ignore(y); ignore(fy);
-        if (jac_cache == nullptr){
-            jac_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
-            jac_cache->view.zero_out_diags(); // compressed_jac_cmaj only increments diagonals
-            const int dummy = 0;
-            compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
-        }
-        jac_cache->view.dot_vec(vec, out);
+    if (jac_cache == nullptr){
+        jac_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
+        jac_cache->view.zero_out_diags(); // compressed_jac_cmaj only increments diagonals
+        const int dummy = 0;
+        compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
     }
+    jac_cache->view.dot_vec(vec, out);
     njacvec_dot++;
 }
 
-void ReactionDiffusion::prec_setup(double t,
-                const double * const __restrict__ y,
-                const double * const __restrict__ fy,
-                bool jok, bool& jac_recomputed, double gamma)
+template<typename Real_t>
+void
+ReactionDiffusion<Real_t>::prec_setup(Real_t t,
+                const Real_t * const __restrict__ y,
+                const Real_t * const __restrict__ fy,
+                bool jok, bool& jac_recomputed, Real_t gamma)
 {
     ignore(gamma);
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
+    if (jac_cache == nullptr)
+        jac_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
     if (!jok){
-        if (jac_cache == nullptr)
-            jac_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
         const int dummy = 0;
         jac_cache->view.zero_out_diags();
         compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
@@ -699,27 +678,33 @@ void ReactionDiffusion::prec_setup(double t,
     } else jac_recomputed = false;
     nprec_setup++;
 }
-#undef FOUT
 #undef LINC
 #undef Y
 #undef D_WEIGHT
 #undef A_WEIGHT
 
-void ReactionDiffusion::prec_solve_left(const double t,
-                                        const double * const __restrict__ y,
-                                        const double * const __restrict__ fy,
-                                        const double * const __restrict__ r,
-                                        double * const __restrict__ z,
-                                        double gamma)
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
+                                           const Real_t * const __restrict__ y,
+                                           const Real_t * const __restrict__ fy,
+                                           const Real_t * const __restrict__ r,
+                                           Real_t * const __restrict__ z,
+                                           Real_t gamma,
+                                           Real_t delta,
+                                           const Real_t * const __restrict__ ewt)
 {
     // See 4.6.9 on page 75 in cvs_guide.pdf (Sundials 2.6.2)
     // Solves P*z = r, where P ~= I - gamma*J
+    ignore(delta);
+    if (ewt)
+        throw std::runtime_error("Not implemented.");
     nprec_solve++;
 
     ignore(t); ignore(fy); ignore(y);
     bool recompute = false;
     if (prec_cache == nullptr){
-        prec_cache = new block_diag_ilu::ColMajBlockDiagMat<double>(N, n, nsidep);
+        prec_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
         recompute = true;
     } else {
         if (update_prec_cache or (old_gamma != gamma))
@@ -753,21 +738,23 @@ void ReactionDiffusion::prec_solve_left(const double t,
 #endif
 
     if (prec_cache->view.average_diag_weight(0) > ilu_limit) {
-        block_diag_ilu::ILU_inplace ilu {prec_cache->view};
-        ilu.solve(r, z);
-        std::cout << "ILU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        block_diag_ilu::ILU<Real_t> ilu {prec_cache->view};
+        nprec_solve_ilu++;
+        return ilu.solve(r, z);
     } else {
-        block_diag_ilu::LU lu {prec_cache->view};
-        lu.solve(r, z);
-        std::cout << "LU!" << prec_cache->view.average_diag_weight(0) << std::endl;
+        block_diag_ilu::LU<Real_t> lu {prec_cache->view};
+        nprec_solve_lu++;
+        return lu.solve(r, z);
     }
 }
 
-void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __restrict__ y,
-                                              uint si, double * const __restrict__ out) const
+template<typename Real_t>
+void
+ReactionDiffusion<Real_t>::per_rxn_contrib_to_fi(Real_t t, const Real_t * const __restrict__ y,
+                                              uint si, Real_t * const __restrict__ out) const
 {
     ignore(t);
-    double * const local_r = new double[nr];
+    Real_t * const local_r = new Real_t[nr];
     fill_local_r_(0, y, local_r);
     for (uint ri=0; ri<nr; ++ri){
 	out[ri] = coeff_total[ri*n+si]*local_r[ri];
@@ -775,7 +762,9 @@ void ReactionDiffusion::per_rxn_contrib_to_fi(double t, const double * const __r
     delete []local_r;
 }
 
-int ReactionDiffusion::get_geom_as_int() const
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_geom_as_int() const
 {
     switch(geom){
     case Geom::FLAT :        return 0;
@@ -785,21 +774,48 @@ int ReactionDiffusion::get_geom_as_int() const
     }
 }
 
-void ReactionDiffusion::calc_efield(const double * const linC)
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_ny() const
+{
+    return n*N;
+}
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_mlower() const
+{
+    if (N > 1)
+        return n*n_jac_diags;
+    else
+        return -1;
+}
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_mupper() const
+{
+    return this->get_mlower();
+}
+
+
+template<typename Real_t>
+void
+ReactionDiffusion<Real_t>::calc_efield(const Real_t * const linC)
 {
     // Prototype for self-generated electric field
-    const double F = this->faraday_const; // Faraday's constant
-    const double pi = 3.14159265358979324;
-    const double eps = eps_rel*vacuum_permittivity;
-    double nx, cx = logx ? exp(x[0]) : x[0];
+    const Real_t F = this->faraday_const; // Faraday's constant
+    const Real_t pi = 3.14159265358979324;
+    const Real_t eps = eps_rel*vacuum_permittivity;
+    Real_t nx, cx = logx ? exp(x[0]) : x[0];
     for (uint bi=0; bi<N; ++bi){
         netchg[bi] = 0.0;
         for (uint si=0; si<n; ++si)
             netchg[bi] += z_chg[si]*linC[bi*n+si];
     }
-    double Q = surf_chg.first;
+    Real_t Q = surf_chg.first;
     for (uint bi=0; bi<N; ++bi){
-        const double r = logx ? exp(xc[nsidep+bi]) : xc[nsidep+bi];
+        const Real_t r = logx ? exp(xc[nsidep+bi]) : xc[nsidep+bi];
         nx = logx ? exp(x[bi+1]) : x[bi+1];
         switch(geom){
         case Geom::FLAT:
@@ -827,5 +843,6 @@ void ReactionDiffusion::calc_efield(const double * const linC)
         }
     }
 }
-
 } // namespace chemreac
+
+template class chemreac::ReactionDiffusion<double>; // instantiate template

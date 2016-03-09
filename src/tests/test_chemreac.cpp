@@ -25,14 +25,14 @@ using chemreac::ReactionDiffusion;
 // A      -> B
 // B + 2C -> A + D
 
-int test_f(){
-    ReactionDiffusion rd = get_four_species_system(3);
+int test_rhs(){
+    auto rd = get_four_species_system(3);
     vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
     vector<double> ref_f {-0.05*y[0], 0.05*y[0], -2*3.0*y[2]*y[2]*y[1], 3.0*y[2]*y[2]*y[1],\
 	    -0.05*y[4], 0.05*y[4], -2*3.0*y[6]*y[6]*y[5], 3.0*y[6]*y[6]*y[5],\
             -0.05*y[8], 0.05*y[8], -2*3.0*y[10]*y[10]*y[9], 3.0*y[10]*y[10]*y[9]};
     double f[12];
-    rd.f(0.0, &y[0], f);
+    rd.rhs(0.0, &y[0], f);
     int exit1 = 0;
     for (uint i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-14){
@@ -49,7 +49,7 @@ int test_f(){
 // N = 3 compartments
 #define RJ(i, j) ref_jac[(i)*12+j]
 int test_jac(){
-    ReactionDiffusion rd = get_four_species_system(3);
+    auto rd = get_four_species_system(3);
 
     const double dx = 1.0 / 3;
     vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
@@ -130,27 +130,29 @@ int test_jac(){
     // Compressed jacobian
     vector<double> cmprs_jac(rd.n*rd.n*rd.N + 2*rd.n*(rd.N-1), 0);
     rd.compressed_jac_cmaj(0.0, &y[0], nullptr, &cmprs_jac[0], rd.n);
+    std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
 #define CMPRS(bi, ri, ci) cmprs_jac[bi*rd.n*rd.n + ci*rd.n + ri]
-#define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi+ci]
-#define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi+ci]
+#define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi + ci]
+#define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi + ci]
     // diagonal blocks
     for (uint bi=0; bi<rd.N; ++bi)
         for (uint ci=0; ci<rd.n; ++ci)
             for (uint ri=0; ri<rd.n; ++ri)
                 if (dabs(CMPRS(bi, ri, ci) - DNS(bi*rd.n + ri, bi*rd.n + ci)) > 1e-14){
-                    std::cout << bi << " " << ci << " " << ri << " " << CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
+                    std::cout << "CMPRS: " << bi << " " << ci << " " << ri << " " <<
+                        CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
                     exit2 = exit2 | 4;
                 }
     for (uint bi=0; bi<rd.N-1; ++bi)
         for (uint ci=0; ci<rd.n; ++ci){
             // sub diagonal
             if (dabs(SUB(bi, ci) - DNS((bi+1)*rd.n + ci, bi*rd.n + ci)) > 1e-14){
-                std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
+                std::cout << "SUB: " << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
                 exit2 = exit2 | 4;
             }
             // sup diagonal
             if (dabs(SUP(bi, ci) - DNS(bi*rd.n + ci, (bi+1)*rd.n + ci)) > 1e-14){
-                std::cout << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
+                std::cout << "SUP:" << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
                 exit2 = exit2 | 4;
             }
         }
@@ -191,11 +193,11 @@ int test_jac(){
 }
 #undef RJ
 
-void bench_f(){
+void bench_rhs(){
     double t = 0.0;
     int ntimings = 40;
     int N = 500000; // A ridiculous number of bins for 1D but used for benchmarking
-    ReactionDiffusion rd = get_four_species_system(N);
+    auto rd = get_four_species_system(N);
     vector<double> y;
     vector<double> b;
     vector<double> timings;
@@ -227,7 +229,7 @@ void bench_f(){
 	clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &start);
 #endif
 
-	rd.f(t, y_, dydt); // heavy lifting
+	rd.rhs(t, y_, dydt); // heavy lifting
 
 // Stop stop-watch
 #ifdef _OPENMP
@@ -247,7 +249,7 @@ void bench_f(){
     std::cout << "Average timing: " << std::accumulate(timings.begin(), timings.end(), 0.0)/ntimings << std::endl;
 }
 
-ReactionDiffusion _get_single_specie_system(int N, int z){
+ReactionDiffusion<double> _get_single_specie_system(int N, int z){
     uint n = 1;
     vector<vector<uint> > stoich_reac {};
     vector<vector<uint> > stoich_actv {};
@@ -263,13 +265,13 @@ ReactionDiffusion _get_single_specie_system(int N, int z){
     int nstencil = (N == 1) ? 1 : 3;
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
-    return ReactionDiffusion(n, stoich_reac, stoich_prod, k, N, D, z_chg,
+    return ReactionDiffusion<double>(n, stoich_reac, stoich_prod, k, N, D, z_chg,
                              mobility, x, stoich_actv, geom, logy, logt, logx,
                              nstencil, true, true, true, {0, 0}, 1.0);
 }
 
 int test_calc_efield(){
-    ReactionDiffusion rd = _get_single_specie_system(5, 1);
+    auto rd = _get_single_specie_system(5, 1);
     vector<double> y {1.0, 2.0, 3.0, 2.0, 1.0};
     const double factor = 0.2*96485.3399/8.854187817e-12;
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
@@ -290,14 +292,14 @@ int main(){
     int status = 0;
     try {
         std::cout << "test_f..." << std::endl;
-        status += test_f();
+        status += test_rhs();
         std::cout << "test_jac..." << std::endl;
         status += test_jac();
         std::cout << "test_calc_efield..."  << std::endl;
         status += test_calc_efield();
 #ifdef BENCHMARK
         std::cout << "bench_f..." << std::endl;
-        bench_f();
+        bench_rhs();
 #endif
     } catch (std::exception& e){
         std::cout << e.what() << std::endl;

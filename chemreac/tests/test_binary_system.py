@@ -9,7 +9,7 @@ from itertools import product
 import numpy as np
 import pytest
 
-from chemreac import FLAT, SPHERICAL, CYLINDRICAL, ReactionDiffusion
+from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
@@ -156,17 +156,15 @@ def test_chemistry():
     assert np.allclose(rd.D, serialized_rd.D)
 
 
-COMBOS = list(product(TR_FLS, TR_FLS, [1], [FLAT]))
-SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3],
-                           [FLAT, SPHERICAL, CYLINDRICAL]))
-VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5],
-                               [FLAT, SPHERICAL, CYLINDRICAL]))
+COMBOS = list(product(TR_FLS, TR_FLS, [1], 'f'))
+SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3], 'fcs'))
+VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5], 'fcs'))
 
 
 def _test_integrate(params):
     logy, logt, N, geom = params
     rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
-
+    assert rd.geom == 'fcs'.index(geom)
     y0 = np.array(C0*N)
 
     ref = np.genfromtxt(BLESSED_PATH)

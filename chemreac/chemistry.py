@@ -6,7 +6,8 @@ chemreac.chemistry
 This module collects classes useful for describing substances,
 reactions and reaction systems. The classes have methods to help
 with consistent low-level conversion to numerical parameters of
-the model.
+the model. The classes are from the
+`chempy <https://pypi.python.org/pypi/chempy>`_ package.
 
 """
 from __future__ import print_function, division, absolute_import

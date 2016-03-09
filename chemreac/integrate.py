@@ -24,7 +24,6 @@ import time
 
 import numpy as np
 
-from chemreac import DENSE, BANDED
 from chemreac.units import get_derived_unit, to_unitless
 from chemreac.util.analysis import suggest_t0
 
@@ -39,7 +38,7 @@ class IntegrationError(Exception):
     pass
 
 
-def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
+def integrate_cvode(rd, y0, tout, mode=None, **kwargs):
     """
     see :py:func:`integrate`
 
@@ -53,7 +52,7 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     new_kwargs = {}
     if mode is not None:
         raise NotImplementedError(
-            "Sundials integrator auto-selects banded for N>1")
+            "Cvode integrator auto-selects banded for N>1")
     atol = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
     if atol.ndim == 0:
         atol = atol.reshape((1,))
@@ -61,12 +60,21 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
-    new_kwargs['iterative'] = kwargs.pop('iterative', 0)
+    new_kwargs['iter_type'] = {
+        'default': 0, 'functional': 1, 'newton': 2}[
+            kwargs.pop('iter_type', 'default').lower()]
+    new_kwargs['linear_solver'] = {
+        'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
+        'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[
+            kwargs.pop('linear_solver', 'default').lower()]
+    new_kwargs['maxl'] = kwargs.pop('maxl', 5)
+    new_kwargs['eps_lin'] = kwargs.pop('eps_lin', 0.05)
+    new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
     # Run the integration
-    rd.zero_out_counters()
+    rd.zero_counters()
     texec = time.time()
     try:
         yout = sundials_integrate(rd, np.asarray(y0).flatten(),
@@ -81,15 +89,18 @@ def integrate_sundials(rd, y0, tout, mode=None, **kwargs):
 
     info = new_kwargs.copy()
     info.update({
-        'neval_f': rd.neval_f,
-        'neval_j': rd.neval_j,
+        'nfev': rd.nfev,
+        'njev': rd.njev,
         'texec': texec,
         'success': success
     })
-    if info['iterative'] > 0:
+    if info['linear_solver'] >= 10:
         info['nprec_setup'] = rd.nprec_setup
         info['nprec_solve'] = rd.nprec_solve
         info['njacvec_dot'] = rd.njacvec_dot
+        info['nprec_solve_ilu'] = rd.nprec_solve_ilu
+        info['nprec_solve_lu'] = rd.nprec_solve_lu
+    info.update(rd.last_integration_info)
     return yout, tout, info
 
 
@@ -107,19 +118,19 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     yout, Dyout = rk4(rd, y0, tout)
     texec = time.time() - texec
     info = {
-        'neval_f': 4*(tout.size-1),
-        'neval_j': 0,
+        'nfev': 4*(tout.size-1),
+        'njev': 0,
         'texec': texec,
         'success': True,
     }
     return yout, tout, info
 
 
-def _integrate_cb(callback, rd, y0, tout, mode=DENSE, dense_output=None,
+def _integrate_cb(callback, rd, y0, tout, mode='dense', dense_output=None,
                   **kwargs):
     if dense_output is None:
         dense_output = (len(tout) == 2)
-    if mode != DENSE:
+    if mode != 'dense':
         raise NotImplementedError("Currently only dense jacobian is supported")
     new_kwargs = dict(y0=y0, dx0=1e-16*(tout[1]-tout[0]))
     new_kwargs.update(kwargs)
@@ -211,13 +222,13 @@ def integrate_scipy(rd, y0, tout, mode=None,
 
     if mode is None:
         if rd.N == 1:
-            mode = DENSE
+            mode = 'dense'
         elif rd.N > 1:
-            mode = BANDED
+            mode = 'banded'
         else:
-            raise NotImplementedError
+            raise NotImplementedError("Unkown mode %s" % mode)
 
-    if mode == BANDED:
+    if mode == 'banded':
         new_kwargs['lband'] = rd.n
         new_kwargs['uband'] = rd.n
 
@@ -225,6 +236,11 @@ def integrate_scipy(rd, y0, tout, mode=None,
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
+    new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
+    if kwargs.pop('iter_type', 'default') != 'default':
+        raise ValueError("iter_type unsupported by SciPy solver")
+    if kwargs.pop('linear_solver', 'default') != 'default':
+        raise ValueError("linear_solver unsupported by SciPy solver")
     if kwargs != {}:
         raise KeyError("Unkown kwargs: {}".format(kwargs))
 
@@ -238,12 +254,12 @@ def integrate_scipy(rd, y0, tout, mode=None,
         return fout
     f.neval = 0
 
-    if mode == DENSE:
+    if mode == 'dense':
         jout = rd.alloc_jout(banded=False, order='F')
-    elif mode == BANDED:
+    elif mode == 'banded':
         if scipy_version[0] <= 0 and scipy_version[1] <= 14:
             # Currently SciPy <= v0.14 needs extra padding
-            jout = rd.alloc_jout(banded=True, order='F', pad=rd.n)
+            jout = rd.alloc_jout(banded=True, order='F', pad=True)
         else:
             # SciPy >= v0.15 need no extra padding
             jout = rd.alloc_jout(banded=True, order='F')
@@ -253,10 +269,14 @@ def integrate_scipy(rd, y0, tout, mode=None,
     def jac(t, y, *j_args):
         jac.neval += 1
         jout[...] = 0  # <--- this is very important (clear old LU decomp)
-        if mode == DENSE:
+        if mode == 'dense':
             rd.dense_jac_cmaj(t, y, jout)
         else:
-            rd.banded_packed_jac_cmaj(t, y, jout)
+            if scipy_version[0] <= 0 and scipy_version[1] <= 14:
+                # Currently SciPy <= v0.14 needs extra padding
+                rd.banded_padded_jac_cmaj(t, y, jout)
+            else:
+                rd.banded_packed_jac_cmaj(t, y, jout)
         return jout
     jac.neval = 0
 
@@ -298,8 +318,8 @@ def integrate_scipy(rd, y0, tout, mode=None,
         'integrator_name': integrator_name,
         'success': runner.successful(),
         'texec': texec,
-        'neval_f': f.neval,
-        'neval_j': jac.neval,
+        'nfev': f.neval,
+        'njev': jac.neval,
     })
     return yout.reshape((len(tout), rd.N, rd.n)), tout, info
 
@@ -324,7 +344,7 @@ class Integration(object):
     Parameters
     ----------
     solver: string
-        "sundials" or "scipy" where scipy uses VODE
+        "cvode" or "scipy" where scipy uses VODE
         as the solver.
     rd: ReactionDiffusion instance
     C0: array
@@ -375,7 +395,7 @@ class Integration(object):
     """
 
     _callbacks = {
-        'sundials': integrate_sundials,
+        'cvode': integrate_cvode,
         'scipy': integrate_scipy,
         'pyodeint': integrate_pyodeint,
         'pygslodeiv2': integrate_pygslodeiv2,
@@ -493,7 +513,7 @@ def run(*args, **kwargs):
     Set ``CHEMREAC_SOLVER`` to indicate what integrator to
     use (default: "scipy").
 
-    Set ``CHEMREAC_SOLVER_KWARGS`` to a string which can be eval'd to
+    Set ``CHEMREAC_SOLVER_KWARGS`` to a string which can be evaluated to
     a python dictionary. e.g. "{'atol': 1e-4, 'rtol'=1e-7}"
     """
     import os

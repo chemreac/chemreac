@@ -95,8 +95,7 @@ def suggest_t0(rd, y0, max_f=1.0):
 
 
 def eval_jacobian(rd, x, y):
-    """
-    Calculate the Jacobian matrix
+    """ Evaluates the Jacobian matrix
 
     Parameters
     ----------
