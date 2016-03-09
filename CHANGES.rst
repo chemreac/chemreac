@@ -1,11 +1,19 @@
-v0.4
-====
-- Don't use consants FLAT, CYLINDRICAL, SPHERICAL. Instead use 'f', 'c', 's'
+v0.5.0
+======
+- neval_f, neval_j -> nfev, njev
+- new upstream: block_diag_ilu, pycvodes
+- New parameters: ilu_limit, n_jac_diags, first_step
+- Change solver choice "sundials" to "cvode" (prepare for arkode support).
 - For sundials backend: Don't use iterative 0, 1, 2, 3. Instead use:
    - linear_solver: {'default', 'dense', 'banded', 'gmres', 'bicgstab', 'tfqmr'}
    - iter_type: {'functional', 'newton'}
+- Refactored C++ code generation for jacobian routines
+
+v0.4.0
+======
+- Don't use consants FLAT, CYLINDRICAL, SPHERICAL. Instead use 'f', 'c', 's'
 - Drop constants GEOM_ORDER, DENSE, BANDED, SPARSE, GEOMS
-- Change solver choice "sundials" to "cvode" (prepare for arkode support).
+
 
 v0.3
 ====

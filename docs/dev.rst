@@ -24,8 +24,8 @@ recommended.
 Documentation standard
 ----------------------
 The API docs are generated automatically and `numpydoc
-<https://pypi.python.org/pypi/numpydoc>`_ is used to 
-automatically parse docstrings of functions and classes. 
+<https://pypi.python.org/pypi/numpydoc>`_ is used to
+automatically parse docstrings of functions and classes.
 See the `NumPy/SciPy documentation guide
 <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_ for more info.
 
@@ -43,8 +43,8 @@ Continuous integration
 Test coverage
 ~~~~~~~~~~~~~
 Unit testing is a great tool, provided the tests actually cover the majority
-of the code base. In order to keep track of the test coverage a 
-`report <http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov>`_ is 
+of the code base. In order to keep track of the test coverage a
+`report <http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov>`_ is
 generated for each change of the code.
 
 Environment
@@ -55,7 +55,7 @@ environment, or at least familiarity with this environment. Feedback from users
 and developers on other platforms is most welcome.
 
 If you are new to `github <https://github.com/>`_ and the like, a good start
-is SymPy's wiki entry on `development workflow 
+is SymPy's wiki entry on `development workflow
 <https://github.com/sympy/sympy/wiki/Development-workflow>`_ (minus the SymPy
 specific parts obviously).
 
