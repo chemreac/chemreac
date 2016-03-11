@@ -158,7 +158,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     Object representing the numerical model, with callbacks for evaluating
     derivatives and jacobian.
 
-    The instance provides methods:
+    Instances provide the methods:
 
     - :meth:`f`
     - :meth:`dense_jac_rmaj`
@@ -170,7 +170,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     - ``banded_jac_cmaj(t, y, jout)``
     - ``banded_packed_jac_cmaj(t, y, jout)``
 
-    some of which are used by chemreac.integrate.integrate_scipy
+    some of which are used by e.g. :func:`~chemreac.integrate.integrate_scipy`
 
     Additional convenience attributes (not used by underlying C++ class):
 
@@ -180,59 +180,59 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     Parameters
     ----------
     n: integer
-        number of species
+        Number of species.
     stoich_active: list of lists of integer indices
-        reactant index lists per reaction.
+        Reactant index lists per reaction.
     stoich_prod: list of lists of integer indices
-        product index lists per reaction.
+        Product index lists per reaction.
     k: 1-dimensional array
-        reaction rate coefficients
+        Reaction rate coefficients.
     N: integer
-        number of compartments (default: 1 if x==None else len(x)-1)
+        Number of compartments (default: 1 if ``x==None`` else ``len(x)-1``).
     D: sequence of floats
-        diffusion coefficients (of length n)
+        Diffusion coefficients (of length n).
     z_chg: sequence of integers
-        1-dimensional array ion charges
+        1-dimensional array of ion charges.
     mobility: sequence of floats
-        mobility of ions
+        Mobility of ions.
     x: sequence of floats or pair of flats or float, optional
-        compartment boundaries (of length N+1), default: linspace(0, 1, N+1)
-        if x is a pair of floats it is expanded into linspace(x[0], x[1], N+1).
-        if x is a float it is expanded into linspace(0, x, N+1)
+        Compartment boundaries (of length N+1), if x is a pair of floats it is
+        expanded into ``linspace(x[0], x[1], N+1)``, if x is a float it is
+        expanded into ``linspace(0, x, N+1)``. Default: ``1``.
     stoich_inact: list of lists of integer indices
-        list of inactive reactant index lists per reaction.n, default: []
+        List of inactive reactant index lists per reaction.n, default: ``[]``.
     geom: str (letter)
-        any in 'fcs' (flat, cylindrical, spherical)
+        Any in 'fcs' (flat, cylindrical, spherical).
     logy: bool
-        f and \*_jac_\* routines operate on log(concentration)
+        f and \*_jac_\* routines operate on log(concentration).
     logt: bool
-        f and \*_jac_\* routines operate on log(time)
+        f and \*_jac_\* routines operate on log(time).
     logx: bool
-        f and \*_jac_\* routines operate on log(space)
+        f and \*_jac_\* routines operate on log(space).
     nstencil: integer
-        number of points used in finite difference scheme
+        Number of points used in finite difference scheme.
     lrefl: bool
-        reflective left boundary (default: True)
+        Reflective left boundary (default: True).
     rrefl: bool
-        reflective right boundary (default: True)
+        Reflective right boundary (default: True).
     auto_efield: bool
-        calculate electric field from concentrations (default: False)
+        Calculate electric field from concentrations (default: False).
     surf_chg: pair of floats
-        total charge of surface (defaut: (0.0, 0.0))
+        Total charge of surface (defaut: (0.0, 0.0)).
     eps_rel: float
-        relative permitivity of medium (dielectric constant)
+        Relative permitivity of medium (dielectric constant).
     g_values: sequence of sequences of floats
-        per specie yields (amount / energy) per field type
+        Per specie yields (amount / energy) per field type.
     g_value_parents: sequence of integers (optional)
-        indices of parents for each g_value. -1 denotes no concentration
-        dependence of g_values. default: [-1]*len(g_values)
+        Indices of parents for each g_value. ``-1`` denotes no concentration
+        dependence of g_values. default: ``[-1]*len(g_values)``.
     fields: sequence of sequence of floats
-        per bin field strength (energy / (volume time)) per field type.
-        May be calculated as product between density and doserate
+        Per bin field strength (energy / (volume time)) per field type.
+        May be calculated as product between density and doserate.
     modulated_rxns: sequence of integers
-        Indicies of reactions subject to per bin modulation
+        Indicies of reactions subject to per bin modulation.
     modulation: sequence of sequences of floats
-        Per bin modulation vectors for each index in modulated_rxns
+        Per bin modulation vectors for each index in modulated_rxns.
     ilu_limit: float
         Requirement on (average) diagonal dominance for performing ILU
         factorization.
@@ -241,8 +241,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         environment variable ``CHEMREAC_N_JAC_DIAGS``. ``0`` makes it equal to
         ``nstencil - 1 / 2``.
     unit_registry: dict (optional)
-        default: None, see ``chemreac.units.SI_base_registry`` for an
-        example.
+        See ``chemreac.units.SI_base_registry`` for an example (default: None).
 
     Attributes
     ----------

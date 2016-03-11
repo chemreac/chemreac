@@ -49,8 +49,6 @@ import gzip
 import os
 import pickle
 
-import argh
-
 from chemreac.util.pyutil import progress
 
 from analytic_diffusion import integrate_rd
@@ -72,7 +70,7 @@ default_constant = dict(
 
 
 def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
-         nspecies='1,2,3', nstencils='3,5,7', **kwargs):
+         nspecies='1,2,3', nstencils='3,5,7', verbose=False, **kwargs):
     nstencils = [int(_) for _ in nstencils.split(',')]
     if Ns is None:
         Ns = [8*(2**i) for i in range(nNs)]
@@ -92,7 +90,7 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
     }
 
     all_params = list(product(*varied.values()))
-    for params in progress(all_params):
+    for params in progress(all_params) if verbose else all_params:
         kw2 = kw1.copy()
         kw2.update(dict(zip(varied.keys(), params)))
         results[params] = integrate(**kw2)
@@ -101,4 +99,13 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
 
 
 if __name__ == '__main__':
-    argh.dispatch_command(main, output_file=None)
+    try:
+        import argh
+        argh.dispatch_command(main)
+    except ImportError:
+        import sys
+        if len(sys.argv) > 1:
+            print("Unable to process parameters, argh missing. "
+                  "Run 'pip install --user argh' to fix.", file=sys.stderr)
+            sys.exit(os.EX_USAGE)  # non-ok exit
+        main()

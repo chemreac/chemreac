@@ -80,7 +80,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
                  solver='scipy', iter_type='default',
                  linear_solver='default', atol=1e-8, rtol=1e-10, factor=1e5,
                  random_seed=42, plot=False, savefig='None', verbose=False,
-                 scaling=1.0, ilu_limit=1000.0, first_step=0.0):
+                 scaling=1.0, ilu_limit=1000.0, first_step=0.0, n_jac_diags=0):
     """
     Solves the time evolution of diffusion from a constant (undepletable)
     source term. Optionally plots the results. In the plots time is represented
@@ -118,7 +118,8 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
         unit_registry=units,
         faraday=1,
         vacuum_permittivity=1,
-        ilu_limit=ilu_limit
+        ilu_limit=ilu_limit,
+        n_jac_diags=n_jac_diags,
     )
 
     # Calc initial conditions / analytic reference values

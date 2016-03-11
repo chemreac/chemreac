@@ -4,9 +4,9 @@ chemreac.integrate
 ==================
 
 This module provides functions for integrating the
-system of ODEs which the ReactionDiffusion represent.
-The main class representing a numerical integration of the system
-of ODEs is :py:class:`Integration`.
+system of ODEs which the :py:class:`~chemreac.core.ReactionDiffusion` object
+represents. The main class representing a numerical integration (for a set of
+parameters) of the system of ODEs is :py:class:`Integration`.
 
 If one does not want to hard code the choice of solver and solver parameters
 (e.g. tolerances), one may use :py:func:`run` which defers those choices to
@@ -38,7 +38,7 @@ class IntegrationError(Exception):
     pass
 
 
-def integrate_cvode(rd, y0, tout, mode=None, **kwargs):
+def integrate_cvode(rd, y0, tout, **kwargs):
     """
     see :py:func:`integrate`
 
@@ -50,9 +50,6 @@ def integrate_cvode(rd, y0, tout, mode=None, **kwargs):
 
     # Handle kwargs
     new_kwargs = {}
-    if mode is not None:
-        raise NotImplementedError(
-            "Cvode integrator auto-selects banded for N>1")
     atol = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
     if atol.ndim == 0:
         atol = atol.reshape((1,))
@@ -126,11 +123,11 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     return yout, tout, info
 
 
-def _integrate_cb(callback, rd, y0, tout, mode='dense', dense_output=None,
-                  **kwargs):
+def _integrate_cb(callback, rd, y0, tout, linear_solver='dense',
+                  dense_output=None, **kwargs):
     if dense_output is None:
         dense_output = (len(tout) == 2)
-    if mode != 'dense':
+    if linear_solver != 'dense':
         raise NotImplementedError("Currently only dense jacobian is supported")
     new_kwargs = dict(y0=y0, dx0=1e-16*(tout[1]-tout[0]))
     new_kwargs.update(kwargs)
@@ -187,7 +184,7 @@ def integrate_pygslodeiv2(*args, **kwargs):
                           _no_check(integrate_predefined)), *args, **kwargs)
 
 
-def integrate_scipy(rd, y0, tout, mode=None,
+def integrate_scipy(rd, y0, tout, linear_solver='default',
                     integrator_name='vode', dense_output=None,
                     **kwargs):
     """
@@ -195,18 +192,23 @@ def integrate_scipy(rd, y0, tout, mode=None,
 
     Parameters
     ----------
+    rd: ReactionDiffusion
+    y0: array_like
+        Initial conditions
     tout: array-like
-        at what times to report, e.g.:
-        - np.linspace(t0, tend, nt)
-        - np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt)
-    integrator_name: string (default: vode)
+        At what times to report, e.g.:
+        - ``np.linspace(t0, tend, nt)``
+        - ``np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt)``
+    linear_solver: str (default: 'default')
+        'dense' or 'banded'
+    integrator_name: string (default: 'vode')
     dense_output: bool (default: None)
         if True, tout is taken to be length 2 tuple (t0, tend),
         if unspecified (None), length of tout decides (length 2 => True)
 
     Returns
     =======
-    yout: numpy array of shape (len(tout), rd.N, rd.n)
+    yout: numpy array of shape ``(len(tout), rd.N, rd.n)``.
 
     """
 
@@ -220,15 +222,15 @@ def integrate_scipy(rd, y0, tout, mode=None,
         fmtstr = "y0.size (={})not compatible with rd.n*rd.N (={})"
         raise ValueError(fmtstr.format(y0.size, rd.n*rd.N))
 
-    if mode is None:
+    if linear_solver == 'default':
         if rd.N == 1:
-            mode = 'dense'
+            linear_solver = 'dense'
         elif rd.N > 1:
-            mode = 'banded'
-        else:
-            raise NotImplementedError("Unkown mode %s" % mode)
+            linear_solver = 'banded'
+    if linear_solver not in ('dense', 'banded'):
+        raise NotImplementedError("Unkown linear_solver %s" % linear_solver)
 
-    if mode == 'banded':
+    if linear_solver == 'banded':
         new_kwargs['lband'] = rd.n
         new_kwargs['uband'] = rd.n
 
@@ -254,22 +256,20 @@ def integrate_scipy(rd, y0, tout, mode=None,
         return fout
     f.neval = 0
 
-    if mode == 'dense':
+    if linear_solver == 'dense':
         jout = rd.alloc_jout(banded=False, order='F')
-    elif mode == 'banded':
+    elif linear_solver == 'banded':
         if scipy_version[0] <= 0 and scipy_version[1] <= 14:
             # Currently SciPy <= v0.14 needs extra padding
             jout = rd.alloc_jout(banded=True, order='F', pad=True)
         else:
             # SciPy >= v0.15 need no extra padding
             jout = rd.alloc_jout(banded=True, order='F')
-    else:
-        raise NotImplementedError
 
     def jac(t, y, *j_args):
         jac.neval += 1
         jout[...] = 0  # <--- this is very important (clear old LU decomp)
-        if mode == 'dense':
+        if linear_solver == 'dense':
             rd.dense_jac_cmaj(t, y, jout)
         else:
             if scipy_version[0] <= 0 and scipy_version[1] <= 14:
@@ -348,26 +348,23 @@ class Integration(object):
         as the solver.
     rd: ReactionDiffusion instance
     C0: array
-        initial concentrations (untransformed, i.e. linear)
+        Initial concentrations (untransformed, i.e. linear).
     tout: array
-        times for which to report solver results (untransformed)
+        Times for which to report solver results (untransformed).
     sigm_damp: bool or tuple of (lim: float, n: int)
-        conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
-        if sigm==True then `lim` and `n` are the default of :py:func:`sigm`
+        Conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
+        if sigm==True then `lim` and `n` are the default of :py:func:`sigm`.
     C0_is_log: bool
         If True: passed values in C0 are taken to be the natural logarithm of
         initial concentrations. If False and rd.logy == True: a very small
         number is added to C0 to avoid applying log to zero (see `tiny`).
     tiny: float
-        added to C0 when rd.logy==True and C0_is_log==False. Note that
+        Added to C0 when ``rd.logy==True`` and ``C0_is_log==False``. Note that
         if you explicitly want to avoid adding tiny you need to set it
         to zero (e.g. when manually setting any C0==0 to some epsilon).
-        (default: None => numpy.finfo(np.float64).tiny)
+        (default: None => ``numpy.finfo(np.float64).tiny``).
 
     **kwargs:
-        mode: not supported by Sundials solver (current wrapper
-              code auto selects banded for N>1 and uses dense
-              mode for N==1)
         atol: float or sequence
             absolute tolerance of solution
         rtol: float
@@ -517,12 +514,13 @@ def run(*args, **kwargs):
     a python dictionary. e.g. "{'atol': 1e-4, 'rtol'=1e-7}"
     """
     import os
-    environ_kwargs = os.getenv('CHEMREAC_SOLVER_KWARGS', None)
+    environ_kwargs = os.environ.get('CHEMREAC_SOLVER_KWARGS', None)
     if environ_kwargs:
         environ_kwargs = eval(environ_kwargs)
         if not isinstance(environ_kwargs, dict):
             fmtstr = "CHEMREAC_SOLVER_KWARGS not evaluated to a dictinary: {}"
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
-    solver = kwargs.pop('solver', os.getenv('CHEMREAC_SOLVER', 'scipy'))
+    # print(kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy')))
+    solver = kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy'))
     return Integration(solver, *args, **kwargs)

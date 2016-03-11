@@ -1,16 +1,17 @@
 Modules Reference
 =================
 
-At package level names that are gauranteed to be exported are: ``__version__`` and ``ReactionDiffusion``.
+At package level, variables that are gauranteed to be exported are:
+``__version__`` and ``ReactionDiffusion``.
 For examples of the modules' use, you may look at the examples.
 
 There are a number of environment variables which may be set to change the defaults
 of some runtime parameters. Here is an overview:
 
 +--------------------------------+--------------+----------------------+
-| Environment variable           | Default      |                      |
+| Environment variable           | Default      | Example              |
 +================================+==============+======================+
-| ``CHEMREAC_INTEGRATOR``        | ``sundials`` | ``scipy``            |
+| ``CHEMREAC_INTEGRATOR``        | ``scipy``    | ``sundials``         |
 +--------------------------------+--------------+----------------------+
 | ``CHEMREAC_INTEGRATOR_KWARGS`` | `nil`        | ``{"iterative": 1}`` |
 +--------------------------------+--------------+----------------------+

@@ -20,8 +20,8 @@ Demo of chemical reaction diffusion system.
 # 2C + B -> D + B      k2=3.0
 
 
-def main(tend=3.0, N=30, nt=30, plot=False, mode=None,
-         logy=False, logt=False, savefig='None', verbose=False):
+def main(tend=3.0, N=30, nt=30, plot=False, logy=False, logt=False,
+         savefig='None', verbose=False):
     def mod1(x):
         return x/(x**2+1)
 
