@@ -8,6 +8,9 @@ chemreac
 .. image:: https://img.shields.io/pypi/v/chemreac.svg
    :target: https://pypi.python.org/pypi/chemreac
    :alt: PyPI version
+.. image:: https://zenodo.org/badge/8840/chemreac/chemreac.svg
+   :target: https://zenodo.org/badge/latestdoi/8840/chemreac/chemreac
+   :alt: DOI (digital object identifier) for latest release on Zenodo
 .. image:: https://img.shields.io/pypi/l/chemreac.svg
    :target: https://github.com/bjodah/chemreac/blob/master/LICENSE
    :alt: License
@@ -17,7 +20,6 @@ chemreac
 .. image:: http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov/coverage.svg
    :target: http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov
    :alt: coverage
-
 
 chremreac is an open source library which aims to collect tools and utilities for
 modeling of chemical kinetics problems. It is primarily designed to

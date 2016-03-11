@@ -42,7 +42,7 @@ if [[ -d dist/conda-recipe-${1#v} ]]; then
     rm -r dist/conda-recipe-${1#v}
 fi
 cp -r conda-recipe/ dist/conda-recipe-${1#v}
-sed -i -E -e "s/version:(.+)/version: $VERSION/" -e "s/path:(.+)/fn: $PKG-$VERSION.tar.gz\n    url: https:\/\/pypi.python.org\/packages\/source\/${PKG:0:1}\/$PKG\/$PKG-$VERSION.tar.gz#md5=$MD5\n    md5: $MD5/" dist/conda-recipe-${1#v}/meta.yaml
+sed -i -E -e "s/version:(.+)/version: $VERSION/" -e "s/path:(.+)/fn: $PKG-$VERSION.tar.gz\n  url: https:\/\/pypi.python.org\/packages\/source\/${PKG:0:1}\/$PKG\/$PKG-$VERSION.tar.gz#md5=$MD5\n  md5: $MD5/" dist/conda-recipe-${1#v}/meta.yaml
 
 # Specific for this project:
 SERVER=hera

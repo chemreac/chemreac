@@ -19,6 +19,7 @@ requirements:
     - block_diag_ilu
     - quantities
     - chempy
+    - openblas
   run:
     - python
     - numpy
@@ -30,19 +31,24 @@ requirements:
     - quantities
     - chempy
     - block_diag_ilu
+    - openblas
+
+build:
+  string: np{{np}}py{{py}}_o0
+  features:
+    - openblas
 
 test:
   requires:
     - pytest
     - periodictable
     - argh
-    - block_diag_ilu
   imports:
     - chemreac
-  # commands:
-  #   - py.test --pyargs chemreac
+  commands:
+    - MPLBACKEND=Agg py.test --pyargs chemreac
 
 about:
   home: https://github.com/chemreac/chemreac
   license: BSD License
-  summary: Python package for modeling chemical kinetics with diffusion and drift
+  summary: Python package for modelling chemical kinetics with diffusion and drift
