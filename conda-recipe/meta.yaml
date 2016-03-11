@@ -26,7 +26,6 @@ requirements:
     - scipy
     - sundials
     - matplotlib
-    - future
     - sympy
     - quantities
     - chempy
