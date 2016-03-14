@@ -41,6 +41,8 @@ Per reaction contribution:
 .. image:: ../_generated/four_species_per_reaction.png
 
 """
+from __future__ import (absolute_import, division, print_function)
+
 
 import os
 
@@ -60,9 +62,9 @@ from chemreac.util.plotting import (
 # 2C + B -> D + B      k2=3.0
 
 
-def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
-                 logy=False, logt=False, plot=False, savefig='None',
-                 verbose=False, graph=False):
+def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False,
+                 linear_solver='default', logy=False, logt=False,
+                 plot=False, savefig='None', verbose=False, graph=False):
     """
     Integrates the reaction system defined by
     :download:`four_species.json <examples/four_species.json>`
@@ -74,30 +76,28 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False, mode=None,
     y0 = np.concatenate([y0/(i+1)*(0.25*i**2+1) for i in range(N)])
     t0 = 1e-10
 
-    if mode is None:
+    if linear_solver == 'default':
         if rd.N == 1:
-            mode = 'dense'
+            linear_solver = 'dense'
         elif rd.N > 1:
-            mode = 'banded'
-    else:
-        mode = int(mode)
+            linear_solver = 'banded'
+    if linear_solver not in ('dense', 'banded'):
+        raise NotImplementedError("dense or banded linear_solver")
 
     import matplotlib.pyplot as plt
     if jac_spy:
         fout = np.empty(rd.n*rd.N)
         rd.f(t0, y0, fout)
         print(fout)
-        if mode == 'dense':
+        if linear_solver == 'dense':
             jout = np.zeros((rd.n*rd.N, rd.n*rd.N), order='F')
             rd.dense_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(np.abs(jout)))
-        elif mode == 'banded':
+        elif linear_solver == 'banded':
             # note rd.n*3 needed in call from scipy.integrate.ode
             jout = np.zeros((rd.n*2+1, rd.n*rd.N), order='F')
             rd.banded_packed_jac_cmaj(t0, y0, jout)
             coloured_spy(np.log(np.abs(jout)))
-        else:
-            raise ValueError("Unknown mode: %s" % mode)
         print(jout)
         plt.show()
     else:

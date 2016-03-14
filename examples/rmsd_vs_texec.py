@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+from __future__ import (absolute_import, division, print_function)
+
 
 try:
     import cPickle as pickle
@@ -57,7 +59,7 @@ def integrate(**kwargs):
     return info
 
 
-def main(varied=None):
+def main(varied=None, verbose=False):
     if varied is None:
         varied = default_varied
     results = {
@@ -65,7 +67,7 @@ def main(varied=None):
         'varied_values': list(default_varied.values())
     }
     all_params = list(product(*varied.values()))
-    for params in progress(all_params):
+    for params in progress(all_params) if verbose else all_params:
         kwargs = constant.copy()
         kwargs.update(dict(zip(varied.keys(), params)))
         results[params] = integrate(**kwargs)
@@ -74,4 +76,13 @@ def main(varied=None):
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        import argh
+        argh.dispatch_command(main)
+    except ImportError:
+        import sys
+        if len(sys.argv) > 1:
+            print("Unable to process parameters, argh missing. "
+                  "Run 'pip install --user argh' to fix.", file=sys.stderr)
+            sys.exit(os.EX_USAGE)  # non-ok exit
+        main()

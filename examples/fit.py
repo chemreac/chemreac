@@ -6,7 +6,7 @@ Demo of non-linear fit to rate of binary reaction.
 (e.g. stopped flow where one reactant is in excess)
 """
 
-from __future__ import division
+from __future__ import (absolute_import, division, print_function)
 
 from math import ceil
 

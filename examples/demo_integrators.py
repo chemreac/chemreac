@@ -70,8 +70,8 @@ def main(logy=False, logt=False, forgive_fact=1):
         print(method, forgive)
         atol, rtol = 1e-8, 1e-8
         integr4 = Integration('pyodeint', rd, np.asarray(y0), (t0, tend),
-                              method=method, mode='dense', dense_output=True,
-                              atol=atol, rtol=rtol)
+                              method=method, linear_solver='dense',
+                              dense_output=True, atol=atol, rtol=rtol)
         assert np.allclose(integr4.Cout[:, 0, :], Cref(integr4.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
     print()
@@ -87,8 +87,8 @@ def main(logy=False, logt=False, forgive_fact=1):
         print(method, forgive)
         atol, rtol = 1e-8, 1e-8
         integr5 = Integration('pygslodeiv2', rd, np.asarray(y0), (t0, tend),
-                              mode='dense', dense_output=True, atol=atol,
-                              rtol=rtol, method=method)
+                              linear_solver='dense', dense_output=True,
+                              atol=atol, rtol=rtol, method=method)
         assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
 
