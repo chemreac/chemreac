@@ -789,19 +789,23 @@ namespace cvodes_cxx {
     struct OdeSysBase {
         int nroots {0};
         void * integrator;
+        virtual ~OdeSysBase() {}
         virtual int get_mlower() { return -1; }
         virtual int get_mupper() { return -1; }
         virtual void rhs(double t, const double * const y, double * const f) = 0;
-        virtual void roots(double xval, const double * const y, double * const out);
+        virtual void roots(double xval, const double * const y, double * const out) {
+            ignore(xval); ignore(y); ignore(out);
+            throw std::runtime_error("roots not implemented.");
+        }
         virtual void dense_jac_cmaj(double t, const double * const y, const double * const fy,
                                     double * const jac, long int ldim){
             ignore(t); ignore(y); ignore(fy); ignore(jac); ignore(ldim);
-            throw std::runtime_error("Not implemented!");
+            throw std::runtime_error("dense_jac_cmaj not implemented.");
         }
         virtual void banded_padded_jac_cmaj(double t, const double * const y, const double * const fy,
                                             double * const jac, long int ldim){
             ignore(t); ignore(y); ignore(fy); ignore(jac); ignore(ldim);
-            throw std::runtime_error("Not implemented!");
+            throw std::runtime_error("banded_padded_jac_cmaj not implemented.");
         }
             virtual void jac_times_vec(const double * const vec,
                                        double * const out,
@@ -830,7 +834,7 @@ namespace cvodes_cxx {
             cvodes_cxx::ignore(jok);
             cvodes_cxx::ignore(jac_recomputed);
             cvodes_cxx::ignore(gamma);
-            throw std::runtime_error("Not implemented!");
+            throw std::runtime_error("prec_steup not  implemented.");
         }
         virtual int prec_solve_left(const double t,
                                     const double * const __restrict__ y,
@@ -849,7 +853,7 @@ namespace cvodes_cxx {
             cvodes_cxx::ignore(gamma);
             cvodes_cxx::ignore(delta);
             cvodes_cxx::ignore(ewt);
-            throw std::runtime_error("Not implemented!");
+            throw std::runtime_error("prec_solve_left not implemented.");
             return -1;
         }
     };

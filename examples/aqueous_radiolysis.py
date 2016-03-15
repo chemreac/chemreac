@@ -53,10 +53,12 @@ from chemreac.util.plotting import plot_C_vs_t_in_bin, save_and_or_show_plot
 
 
 def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
-                 doserate=15, N=1000, nt=512, nstencil=0,
+                 doserate=15.0, N=1000, nt=512, nstencil=0,
                  logy=False, logt=False, logx=False, name='aqueous_radiolysis',
+                 solver='scipy', iter_type='default', linear_solver='default',
+                 ilu_limit=1000.0, first_step=0.0, n_jac_diags=0, eps_lin=0.0,
                  num_jacobian=False, savefig='None', verbose=False,
-                 plot=False, plot_jacobians=False):
+                 plot=False, plot_jacobians=False, profile_yep=False):
     """
     Integrates the reaction system defined by
     :download:`aqueous_radiolysis.json <examples/aqueous_radiolysis.json>`
@@ -75,7 +77,7 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
               ReactionDiffusion, N=N, logy=logy,
               logt=logt, logx=logx, fields=[doseratefield*rho,
                                             0*doseratefield*rho],
-              nstencil=nstencil)
+              nstencil=nstencil, ilu_limit=ilu_limit, n_jac_diags=n_jac_diags)
     y0_by_name = json.load(open(os.path.join(os.path.dirname(__file__),
                                              name+'.y0.json'), 'rt'))
 
@@ -85,7 +87,15 @@ def integrate_rd(t0=1e-7, tend=.1, x0=1e-9, xend=0.1,
                    for i in range(rd.N)])*molar
 
     tout = np.logspace(log10(t0), log10(tend), nt)*second
-    integr = run(rd, y0, tout, with_jacobian=(not num_jacobian))
+    if profile_yep:
+        import yep
+        yep.start(os.path.join(os.path.dirname(__file__), name+'.prof'))
+    integr = run(rd, y0, tout, with_jacobian=(not num_jacobian),
+                 solver=solver, iter_type=iter_type,
+                 linear_solver=linear_solver, first_step=first_step,
+                 **(dict(eps_lin=eps_lin) if eps_lin != 0.0 else {}))
+    if profile_yep:
+        yep.stop()
 
     if verbose:
         from pprint import pprint

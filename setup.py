@@ -76,6 +76,9 @@ else:
         # else:
         #     options += ['fast']  # -ffast-math -funroll-loops
 
+if os.environ.get('WITH_PROFILE', '0') == '1':
+    flags += ['-g', '-pg']
+
 if WITH_BLOCK_DIAG_ILU_OPENMP:
     options += ['openmp']
 

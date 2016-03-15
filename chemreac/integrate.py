@@ -72,7 +72,8 @@ def integrate_cvode(rd, y0, tout, **kwargs):
 
     # Run the integration
     rd.zero_counters()
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     try:
         yout = sundials_integrate(rd, np.asarray(y0).flatten(),
                                   np.asarray(tout).flatten(),
@@ -82,13 +83,15 @@ def integrate_cvode(rd, y0, tout, **kwargs):
         success = False
     else:
         success = True
-    texec = time.time() - texec
+    time_wall = time.time() - time_wall
+    time_cpu = time.clock() - time_cpu
 
     info = new_kwargs.copy()
     info.update({
         'nfev': rd.nfev,
         'njev': rd.njev,
-        'texec': texec,
+        'time_wall': time_wall,
+        'time_cpu': time_cpu,
         'success': success
     })
     if info['linear_solver'] >= 10:
@@ -111,13 +114,14 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     see integrate
     """
     from ._chemreac import rk4
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     yout, Dyout = rk4(rd, y0, tout)
-    texec = time.time() - texec
     info = {
         'nfev': 4*(tout.size-1),
         'njev': 0,
-        'texec': texec,
+        'time_wall': time.time() - time_wall,
+        'time_cpu': time.clock() - time_cpu,
         'success': True,
     }
     return yout, tout, info
@@ -149,15 +153,16 @@ def _integrate_cb(callback, rd, y0, tout, linear_solver='dense',
         else:
             dfdx_out[:] = 0
     new_kwargs['check_indexing'] = False
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     if dense_output:
         xout, yout, info_ = callback[0](rd.f, jac, **new_kwargs)
     else:
         xout = tout
         yout, info_ = callback[1](rd.f, jac, **new_kwargs)
-    texec = time.time() - texec
     info.update({
-        'texec': texec,
+        'time_wall': time.time() - time_wall,
+        'time_cpu': time.clock() - time_cpu,
         'success': True,
     })
     info.update(info_)
@@ -231,8 +236,8 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         raise NotImplementedError("Unkown linear_solver %s" % linear_solver)
 
     if linear_solver == 'banded':
-        new_kwargs['lband'] = rd.n
-        new_kwargs['uband'] = rd.n
+        new_kwargs['lband'] = rd.n*rd.n_jac_diags
+        new_kwargs['uband'] = rd.n*rd.n_jac_diags
 
     new_kwargs['atol'] = kwargs.pop('atol', DEFAULTS['atol'])
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
@@ -287,7 +292,8 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
     if dense_output is None:
         dense_output = (len(tout) == 2)
 
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     if dense_output:
         import warnings
         if not len(tout) == 2:
@@ -311,13 +317,15 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
             runner.integrate(tout[i])
             yout[i, :] = runner.y
 
-    texec = time.time() - texec
+    time_wall = time.time() - time_wall
+    time_cpu = time.clock() - time_cpu
 
     info = new_kwargs.copy()
     info.update({
         'integrator_name': integrator_name,
         'success': runner.successful(),
-        'texec': texec,
+        'time_wall': time_wall,
+        'time_cpu': time_cpu,
         'nfev': f.neval,
         'njev': jac.neval,
     })
@@ -378,7 +386,8 @@ class Integration(object):
         output from solver: log(concentrations) if rd.logy == True
     info: dict
         Information from solver. Guaranteed to contain:
-            - 'texec': execution time in seconds.
+            - 'time_wall': execution time in seconds (wall clock).
+            - 'time_cpu': execution time in seconds (cpu time).
             - 'atol': float or array, absolute tolerance(s).
             - 'rtol': float, relative tolerance
     rd: ReactionDiffusion instance
@@ -522,5 +531,7 @@ def run(*args, **kwargs):
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
     # print(kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy')))
-    solver = kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy'))
+    solver = kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'default'))
+    if solver == 'default':
+        solver = 'scipy'
     return Integration(solver, *args, **kwargs)

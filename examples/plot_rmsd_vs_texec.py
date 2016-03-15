@@ -11,7 +11,7 @@ import struct
 
 import numpy as np
 
-xkey, ykey = 'texec', 'rmsd_over_atol'
+xkey, ykey = 'times_cpu', 'rmsd_over_atol'
 
 
 def read():
