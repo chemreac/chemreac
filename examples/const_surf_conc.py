@@ -116,10 +116,10 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
         modulated_rxns=[0, 1],
         modulation=[modulation, modulation],
         unit_registry=units,
-        faraday=1,
-        vacuum_permittivity=1,
         ilu_limit=ilu_limit,
         n_jac_diags=n_jac_diags,
+        faraday_const=1,
+        vacuum_permittivity=1,
     )
 
     # Calc initial conditions / analytic reference values

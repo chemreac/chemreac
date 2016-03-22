@@ -22,10 +22,11 @@ int test_integration(int N){
     vector<double> tout {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
     double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
     vector<int> root_indices;
+    vector<double> roots_output;
     for (uint i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
     cvodes_cxx::simple_predefined<ReactionDiffusion<double> >
         (&rd, atol, rtol, (int)cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
-         root_indices);
+         root_indices, roots_output);
     for (unsigned int tidx=0; tidx<tout.size(); tidx++){
         std::cout << tout[tidx];
         for (int sidx=0; sidx<ny; sidx++){

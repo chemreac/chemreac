@@ -3,6 +3,11 @@
 
 from __future__ import print_function, division, absolute_import
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 from itertools import product
 import os
 
@@ -107,7 +112,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     assert np.allclose(rd.k, k[3:])
     assert np.allclose(rd.xcenters, xc)
     assert np.allclose(rd.fields, fields)
-    assert np.allclose(rd._g_values, g_values)
+    assert np.allclose(rd.g_values, g_values)
     y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N])
     y0 = y0.flatten()
     t0, tend, nt = 1.0, 1.1, 42
@@ -229,3 +234,17 @@ def test_integrators(log):
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])
+
+
+def test_pickle_Integration():
+    # A -> B
+    n = 2
+    k0 = 0.13
+    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0])
+    y0 = [3.0, 1.0]
+    t0, tend, nt = 5.0, 17.0, 42
+    integr = Integration('scipy', rd, y0, tout=np.linspace(t0, tend, nt+1))
+    Cout = integr.Cout.copy()
+    s = pickle.dumps(integr)
+    integr2 = pickle.loads(s)
+    assert np.allclose(integr2.Cout, Cout)

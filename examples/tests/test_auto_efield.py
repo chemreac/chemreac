@@ -55,8 +55,8 @@ def _test_mass_conservation(params):
     # separated gaussians (offset = 0.25)
     N = 64*(4 if ly else 1)*(8 if ns > 3 else 1)
     tout, Cout, info, rd = integrate_rd(
-        D=0.0, t0=1e-6, tend=7, x0=0.1, xend=1.0, N=N,
-        offset=.25, mobility=3e-8, nt=25, sigma_q=101, **kwargs)
+        D=-3e-8, t0=1e-6, tend=7, x0=0.1, xend=1.0, N=N,
+        offset=.25, nt=25, sigma_q=101, **kwargs)
     assert info['success']
     mass_consv = np.array([
         [rd.integrated_conc(Cout[j, :, i]) for i in range(rd.n)]
@@ -98,8 +98,8 @@ def _test_pair_centered_at_x0_different_sigma(params):
     # separated gaussians (offset = 0.25)
     N = 64*(8 if ly else 1)*(4 if ns > 3 else 1)
     tout, Cout, info, rd = integrate_rd(
-        D=0.0, t0=1e-6, tend=7, x0=1e-6, xend=1.0, N=N,
-        base=0, offset=0, mobility=3e-8, nt=25, sigma_q=101,
+        D=-3e-8, t0=1e-6, tend=7, x0=1e-6, xend=1.0, N=N,
+        base=0, offset=0, nt=25, sigma_q=101,
         sigma_skew=0.1, **kwargs)
     assert info['success']
     mass_consv = np.array([

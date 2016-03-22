@@ -146,7 +146,7 @@ def test_ReactionDiffusion__lrefl_3(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
                            lrefl=True, rrefl=False)
-    assert np.allclose(rd._xc, xc)
+    assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[0, 3, 7, 11, 14]
     # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[2])[-1][-1])
@@ -223,7 +223,7 @@ def test_ReactionDiffusion__rrefl_3(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
                            lrefl=False, rrefl=True)
-    assert np.allclose(rd._xc, xc)
+    assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[3, 7, 11, 14, 16]
     # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[1])[-1][-1])
@@ -468,7 +468,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, N=N, logy=logy,
                            logt=logt, lrefl=False, rrefl=False,
                            nstencil=nstencil)
-    assert np.allclose(rd._xc, xc)
+    assert np.allclose(rd.xc, xc)
 
     w = [1/16, -1/8, 1/16]  # finite diff. weights for 2nd order deriv
     for i in range(N):
@@ -720,7 +720,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         rrefl=rrefl, modulated_rxns=modulated_rxns,
         modulation=modulation)
 
-    assert np.allclose(xc_, rd._xc)
+    assert np.allclose(xc_, rd.xc)
 
     lb = stencil_pxci_lbounds(nstencil, N, lrefl, rrefl)
     if lrefl:
