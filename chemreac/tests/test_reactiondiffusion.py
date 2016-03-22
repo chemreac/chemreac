@@ -14,6 +14,7 @@ from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
+from chemreac.units import molar, second, SI_base_registry
 
 TR_FLS = [True, False]
 TR_FLS_PAIRS = list(product(TR_FLS, TR_FLS))
@@ -901,3 +902,9 @@ def test_n_jac_diags(n_jac_diags):
     sm.compressed_jac(0.0, y0.flatten(), jref_cmprs)
     rd.compressed_jac_cmaj(0.0, y0.flatten(), jout_cmprs)
     assert np.allclose(jout_cmprs, jref_cmprs)
+
+
+def test_nondimensionalisation():
+    rd = ReactionDiffusion.nondimensionalisation(
+        2, [[0, 0]], [[1]], [2/molar/second], unit_registry=SI_base_registry)
+    assert rd.k == [2e-3]

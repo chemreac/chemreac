@@ -37,6 +37,7 @@ nanometre = default_units.nanometre
 gram = default_units.gram
 molar = default_units.molar
 hour = default_units.hour
+day = default_units.day
 perMolar_perSecond = default_units.perMolar_perSecond
 per100eV = default_units.per100eV
 umol = default_units.umol

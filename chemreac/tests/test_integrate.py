@@ -17,6 +17,7 @@ import pytest
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run, Integration
 from chemreac.util.testing import veryslow
+from chemreac.units import metre, molar, umol, hour, day, SI_base_registry
 
 """
 Tests the integration routine for the
@@ -248,3 +249,26 @@ def test_pickle_Integration():
     s = pickle.dumps(integr)
     integr2 = pickle.loads(s)
     assert np.allclose(integr2.Cout, Cout)
+
+
+def test_integrate_nondimensionalisation():
+    # 2A -> B
+    rd = ReactionDiffusion.nondimensionalisation(
+        2, [[0, 0]], [[1]], [2e-9/(umol/metre**3)/hour],
+        unit_registry=SI_base_registry)
+    C0 = [3*molar, 4*molar]
+    tout = np.linspace(0, 1)*day
+    integr = Integration.nondimensionalisation('scipy', rd, C0, tout)
+
+    k_m3_p_mol_p_sec = 2e-3/3600
+    t_sec = np.linspace(0, 24*3600)
+    C0_mol_p_m3 = [3000, 4000]
+    Cref_mol_p_m3 = np.empty(integr.Cout.squeeze().shape)
+    Cref_mol_p_m3[:, 0] = 1/(C0_mol_p_m3[0]**-1 + 2*k_m3_p_mol_p_sec*t_sec)
+    missing_A = (C0_mol_p_m3[0] - Cref_mol_p_m3[:, 0])
+    Cref_mol_p_m3[:, 1] = C0_mol_p_m3[1] + missing_A/2
+    assert np.allclose(integr.tout, t_sec)
+    print(integr.Cout.squeeze())
+    print(Cref_mol_p_m3)
+    print(integr.Cout.squeeze() - Cref_mol_p_m3)
+    assert np.allclose(integr.Cout.squeeze(), Cref_mol_p_m3)

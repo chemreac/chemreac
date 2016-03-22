@@ -414,10 +414,8 @@ class Integration(object):
             raise KeyError("Unknown solver %s" % solver)
         self.solver = solver
         self.rd = rd
-        self.C0 = to_unitless(C0, get_derived_unit(
-            rd.unit_registry, 'concentration')).flatten()
-        self.tout = to_unitless(tout, get_derived_unit(
-            rd.unit_registry, 'time'))
+        self.C0 = np.asarray(C0).flatten()
+        self.tout = tout
         self.sigm_damp = sigm_damp
         self.C0_is_log = C0_is_log
         self.tiny = tiny or np.finfo(np.float64).tiny
@@ -428,13 +426,19 @@ class Integration(object):
         self._sanity_checks()
         self._integrate()
 
+    @classmethod
+    def nondimensionalisation(cls, solver, rd, C0, tout, **kw):
+        if rd.unit_registry is None:
+            raise ValueError("rd lacking unit_registry")
+
+        def _n(arg, key):
+            return to_unitless(arg, get_derived_unit(rd.unit_registry, key))
+        return cls(solver, rd, _n(C0, 'concentration'), _n(tout, 'time'), **kw)
+
     def _sanity_checks(self):
         if not self.C0_is_log:
             if np.any(self.C0 < 0):
                 raise ValueError("Negative concentrations encountered in C0")
-
-    def with_units(self, value, key):
-        return value*get_derived_unit(self.rd.unit_registry, key)
 
     def _integrate(self):
         """
@@ -494,15 +498,21 @@ class Integration(object):
         # ---------------
         # Back-transform independent variable into linear time
         if self.rd.logt:
-            unitless_time = (np.exp(self.internal_t) - (t0 if t0_set else 0))
+            self.tout = (np.exp(self.internal_t) - (t0 if t0_set else 0))
         else:
-            unitless_time = self.internal_t
-        self.tout = self.with_units(unitless_time, 'time')
+            self.tout = self.internal_t
 
         # Back-transform integration output into linear concentration
-        self.Cout = self.with_units(
-            np.exp(self.yout) if self.rd.logy else self.yout,
-            'concentration')
+        self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
+
+    def with_unit(self, attr):
+        if attr == 'tout':
+            return self.tout * get_derived_unit(self.rd.unit_registry, 'time')
+        if attr == 'Cout':
+            return self.Cout * get_derived_unit(self.rd.unit_registry,
+                                                'concentration')
+        else:
+            raise ValueError("Unknown attr: %s" % attr)
 
     def internal_iter(self):
         """ Returns an iterator over (t, y) pairs where t is entries in

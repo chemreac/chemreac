@@ -16,10 +16,11 @@ TR_FLS = (True, False)
 def test_simple(params):
     logy, logt = params
     integr, Cref, rd = with_units.main(logy=logy, logt=logt)
+    Cout = integr.with_unit('Cout')
     if logy or logt:
-        assert allclose(integr.Cout[:, 0, :], Cref, atol=2e-5*molar)
+        assert allclose(Cout[:, 0, :], Cref, atol=2e-5*molar)
     else:
-        assert allclose(integr.Cout[:, 0, :], Cref, atol=1e-6*molar)
+        assert allclose(Cout[:, 0, :], Cref, atol=1e-6*molar)
 
 
 def test_simple_other_units():
@@ -27,4 +28,5 @@ def test_simple_other_units():
     unit_registry['length'] = decimetre
     unit_registry['amount'] = umol
     integr, Cref, rd = with_units.main(unit_registry=unit_registry)
-    assert allclose(integr.Cout[:, 0, :], Cref, atol=1e-6*molar)
+    Cout = integr.with_unit('Cout')
+    assert allclose(Cout[:, 0, :], Cref, atol=1e-6*molar)

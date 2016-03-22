@@ -11,6 +11,8 @@ from __future__ import (absolute_import, division, print_function)
 
 import numpy as np
 
+from ..units import get_derived_unit
+
 
 def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     """
@@ -59,14 +61,13 @@ def solver_linear_error_from_integration(integration, ti=slice(None), bi=0,
         atol_i = integration.info['atol'][si]
     except TypeError:
         atol_i = integration.info['atol']
-    return integration.with_units(
-        solver_linear_error(
-            integration.yout[ti, bi, si],
-            integration.info['rtol'],
-            atol_i,
-            integration.rd.logy,
-            **kwargs),
-        'concentration')
+    return solver_linear_error(
+        integration.yout[ti, bi, si],
+        integration.info['rtol'],
+        atol_i,
+        integration.rd.logy,
+        **kwargs
+    ) * get_derived_unit(integration.rd.unit_registry, 'concentration')
 
 
 def suggest_t0(rd, y0, max_f=1.0):

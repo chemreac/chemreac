@@ -2,7 +2,7 @@ v0.6.0
 ======
 - Units handled differently in ``ReactionDiffusion``:
     - ``ReactionDiffusion.__init__`` accepts unitless numbers and a ``unit_registry``
-    - ``ReactionDiffusion.nondimensionalization()`` accepts numbers wiht units and a ``unit_registry``
+    - ``ReactionDiffusion.nondimensionalisation()`` accepts numbers wiht units and a ``unit_registry``
 - ``ReactionDiffusion`` can now be used with ``pickle``
 - New serialization format (json and pickle)
 

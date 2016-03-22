@@ -12,6 +12,7 @@ from math import floor, ceil, log
 
 import numpy as np
 from chemreac.chemistry import mk_sn_dict_from_names
+from chemreac.units import get_derived_unit
 from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
 from chemreac.util.pyutil import set_dict_defaults_inplace
@@ -765,10 +766,9 @@ def plot_solver_linear_excess_error(integration, Cref, ax=None, x=None,
     le_l, le_u = solver_linear_error_from_integration(integration, ti, bi, si)
     Eexcess_l = Cref[ti, bi, si] - le_l  # Excessive if negative
     Eexcess_u = Cref[ti, bi, si] - le_u  # Excessive if positive
-    Eexcess_l[np.argwhere(Eexcess_l >= 0)] = integration.with_units(
-        0, 'concentration')
-    Eexcess_u[np.argwhere(Eexcess_u <= 0)] = integration.with_units(
-        0, 'concentration')
+    u_conc = get_derived_unit(integration.rd.unit_registry, 'concentration')
+    Eexcess_l[np.argwhere(Eexcess_l >= 0)] = 0 * u_conc
+    Eexcess_u[np.argwhere(Eexcess_u <= 0)] = 0 * u_conc
     fused = np.concatenate((Eexcess_l[..., np.newaxis],
                             Eexcess_u[..., np.newaxis]), axis=-1)
     indices = np.argmax(abs(fused), axis=-1)

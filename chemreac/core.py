@@ -441,18 +441,18 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     }
 
     @classmethod
-    def nondimensionalization(cls, n, stoich_active, stoich_prod, k, **kwargs):
+    def nondimensionalisation(cls, n, stoich_active, stoich_prod, k, **kwargs):
         """ Alternative constructor taking arguments with units """
         reac_orders = map(len, stoich_active)
         k_unitless = [to_unitless(kval, kunit) for kval, kunit in zip(
-            kwargs.get('k', []), cls.k_units(kwargs['unit_registry'],
-                                             reac_orders))]
+            k, k_units(kwargs['unit_registry'],
+                       reac_orders))]
         g_values_unitless = [np.asarray(
             [to_unitless(yld, yld_unit) for yld in gv]
         ) for gv, yld_unit in zip(
             kwargs.get('g_values', []),
-            cls.g_units(kwargs['unit_registry'],
-                        kwargs['g_value_parents']))]
+            g_units(kwargs['unit_registry'],
+                    kwargs.get('g_value_parents', [])))]
         for key, rep in cls._prop_unit.items():
             val = kwargs.pop(key, None)
             if val is not None:
