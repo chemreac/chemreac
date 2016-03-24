@@ -465,10 +465,15 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         return cls(n, stoich_active, stoich_prod, k_unitless,
                    g_values=g_values_unitless, **kwargs)
 
+    @property
+    def reac_orders(self):
+        return map(len, self.stoich_active)
+
     def get_with_units(self, prop):
         rep = self._prop_unit[prop]
         if isinstance(rep, tuple):
-            raise NotImplementedError("Not implemented for %s" % prop)
+            return [v*u for v, u in zip(getattr(self, prop), rep[0](
+                self.unit_registry, getattr(self, rep[1])))]
         else:
             return np.asarray(getattr(self, prop))*get_unit(
                 self.unit_registry, rep)
