@@ -8,6 +8,9 @@ chemreac
 .. image:: https://img.shields.io/pypi/v/chemreac.svg
    :target: https://pypi.python.org/pypi/chemreac
    :alt: PyPI version
+.. image:: https://img.shields.io/badge/python-2.7,3.4,3.5-blue.svg
+   :target: https://www.python.org/
+   :alt: Python version
 .. image:: https://zenodo.org/badge/8840/chemreac/chemreac.svg
    :target: https://zenodo.org/badge/latestdoi/8840/chemreac/chemreac
    :alt: DOI (digital object identifier) for latest release on Zenodo
@@ -47,14 +50,12 @@ The easiest way to install ``chemreac`` (on linux) is to use
 
 ::
 
-   $ conda config --add channel chemreac
-   $ conda install chemreac
+   $ conda install -c chemreac chemreac pytest
 
 and you're done! To check if ``chemreac`` is installed correctly you may run:
 
 ::
 
-    $ conda install pytest
     $ pytest --pyargs chemreac
 
 which should run the test suite (all tests should pass or xfail).
