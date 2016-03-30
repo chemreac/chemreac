@@ -45,7 +45,7 @@ def main(logy=False, logt=False, unit_registry=None):
 
     # scipy
     integr1 = Integration.nondimensionalisation(
-        'scipy', rd, y0, tout)
+        rd, y0, tout, solver='scipy')
     return integr1, Cref, rd
 
 

@@ -173,9 +173,9 @@ def integrate_rd(
         tout = np.linspace(t0, tend, nt)*second
 
     integr = Integration.nondimensionalisation(
-        solver, rd, C0, tout, atol=atol, rtol=rtol, with_jacobian=not num_jac,
-        method=method)
-    Cout = integr.with_unit('Cout')
+        rd, C0, tout, solver=solver, atol=atol, rtol=rtol,
+        with_jacobian=not num_jac, method=method)
+    Cout = integr.get_with_units('Cout')
     yout, info = integr.yout, integr.info
     try:
         import mpmath

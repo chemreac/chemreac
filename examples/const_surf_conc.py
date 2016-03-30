@@ -131,11 +131,11 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
 
     # Run the integration
     integr = Integration.nondimensionalisation(
-        solver, rd, y0, tout, atol=atol, rtol=rtol,
+        rd, y0, tout, solver=solver, atol=atol, rtol=rtol,
         with_jacobian=(not num_jacobian), method=method,
         iter_type=iter_type,
         linear_solver=linear_solver, first_step=first_step)
-    Cout = integr.with_unit('Cout')
+    Cout = integr.get_with_units('Cout')
     if verbose:
         import pprint
         pprint.pprint(integr.info)

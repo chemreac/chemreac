@@ -20,6 +20,7 @@ the user of the script through the use of environment variables.
 from __future__ import (absolute_import, division, print_function)
 
 
+import os
 import time
 
 import numpy as np
@@ -351,28 +352,31 @@ class Integration(object):
 
     Parameters
     ----------
-    solver: string
+    solver : string
         "cvode" or "scipy" where scipy uses VODE
-        as the solver.
-    rd: ReactionDiffusion instance
-    C0: array
+        as the solver. The default ``'None'`` leaves the choice to the
+        environmentvariable ``CHEMREAC_SOLVER`` (with ``'scipy'`` as fallback).
+    rd : ReactionDiffusion instance
+    C0 : array
         Initial concentrations (untransformed, i.e. linear).
-    tout: array
+    tout : array
         Times for which to report solver results (untransformed).
-    sigm_damp: bool or tuple of (lim: float, n: int)
+    sigm_damp : bool or tuple of (lim: float, n: int)
         Conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
         if sigm==True then `lim` and `n` are the default of :py:func:`sigm`.
-    C0_is_log: bool
+    C0_is_log : bool
         If True: passed values in C0 are taken to be the natural logarithm of
         initial concentrations. If False and rd.logy == True: a very small
         number is added to C0 to avoid applying log to zero (see `tiny`).
-    tiny: float
+    tiny : float
         Added to C0 when ``rd.logy==True`` and ``C0_is_log==False``. Note that
         if you explicitly want to avoid adding tiny you need to set it
         to zero (e.g. when manually setting any C0==0 to some epsilon).
         (default: None => ``numpy.finfo(np.float64).tiny``).
 
-    **kwargs:
+    **kwargs :
+        Keyword arguments passed on to integartor, e.g.:
+
         atol: float or sequence
             absolute tolerance of solution
         rtol: float
@@ -398,6 +402,7 @@ class Integration(object):
     _integrate()
         performs the integration, automatically called by __init__
 
+
     """
 
     _callbacks = {
@@ -408,8 +413,10 @@ class Integration(object):
         'rk4': _integrate_rk4,
     }
 
-    def __init__(self, solver, rd, C0, tout, sigm_damp=False,
-                 C0_is_log=False, tiny=None, **kwargs):
+    def __init__(self, rd, C0, tout, sigm_damp=False,
+                 C0_is_log=False, tiny=None, solver='None', **kwargs):
+        if solver == 'None':
+            solver = os.environ.get('CHEMREAC_SOLVER', 'scipy')
         if solver not in self._callbacks:
             raise KeyError("Unknown solver %s" % solver)
         self.solver = solver
@@ -427,13 +434,13 @@ class Integration(object):
         self._integrate()
 
     @classmethod
-    def nondimensionalisation(cls, solver, rd, C0, tout, **kw):
+    def nondimensionalisation(cls, rd, C0, tout, **kw):
         if rd.unit_registry is None:
             raise ValueError("rd lacking unit_registry")
 
         def _n(arg, key):
             return to_unitless(arg, get_derived_unit(rd.unit_registry, key))
-        return cls(solver, rd, _n(C0, 'concentration'), _n(tout, 'time'), **kw)
+        return cls(rd, _n(C0, 'concentration'), _n(tout, 'time'), **kw)
 
     def _sanity_checks(self):
         if not self.C0_is_log:
@@ -505,7 +512,7 @@ class Integration(object):
         # Back-transform integration output into linear concentration
         self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
 
-    def with_unit(self, attr):
+    def get_with_units(self, attr):
         if attr == 'tout':
             return self.tout * get_derived_unit(self.rd.unit_registry, 'time')
         if attr == 'Cout':
@@ -515,9 +522,11 @@ class Integration(object):
             raise ValueError("Unknown attr: %s" % attr)
 
     def internal_iter(self):
-        """ Returns an iterator over (t, y) pairs where t is entries in
-        internal_t and y is a (2-dim) vector over the bins (1st dim)
-        with the corresponding dependent variables (2nd dim)."""
+        """ Returns an iterator over (t, y)-pairs
+
+        ``t`` is entries in ``internal_t`` and ``y`` is a (2-dim)
+        array over the bins (1st dim) with the corresponding
+        dependent variables (2nd dim)."""
         for idx, x in np.ndenumerate(self.internal_t):
             yield x, self.yout[idx, ...]
 
@@ -526,22 +535,14 @@ def run(*args, **kwargs):
     """
     ``run`` is provided for environment variable directed solver choice.
 
-    Set ``CHEMREAC_SOLVER`` to indicate what integrator to
-    use (default: "scipy").
-
-    Set ``CHEMREAC_SOLVER_KWARGS`` to a string which can be evaluated to
+    Set ``CHEMREAC_INTEGRATION_KWARGS`` to a string which can be evaluated to
     a python dictionary. e.g. "{'atol': 1e-4, 'rtol'=1e-7}"
     """
-    import os
-    environ_kwargs = os.environ.get('CHEMREAC_SOLVER_KWARGS', None)
+    environ_kwargs = os.environ.get('CHEMREAC_INTEGRATION_KWARGS', None)
     if environ_kwargs:
         environ_kwargs = eval(environ_kwargs)
         if not isinstance(environ_kwargs, dict):
-            fmtstr = "CHEMREAC_SOLVER_KWARGS not evaluated to a dictinary: {}"
+            fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}"
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
-    # print(kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy')))
-    solver = kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'default'))
-    if solver == 'default':
-        solver = 'scipy'
-    return Integration(solver, *args, **kwargs)
+    return Integration(*args, **kwargs)
