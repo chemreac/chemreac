@@ -149,13 +149,6 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom,
                             nstencil=3, lrefl=True, rrefl=True)
-    debug = False
-    if debug:  # From debugging / test design
-        import matplotlib.pyplot as plt
-        plt.subplot(2, 1, 1)
-        plt.plot(sys.xcenters, y0)
-        plt.xlabel('x')
-        plt.ylabel('y0')
 
     tout = np.linspace(0, 10.0, 50)
     atol, rtol = 1e-6, 1e-8
@@ -174,15 +167,6 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     ybis = np.sum(yprim, axis=1)
 
-    if debug:  # From debugging / test design
-        plt.subplot(2, 1, 2)
-        plt.plot(ybis-ybis[0])
-        plt.xlabel('t')
-        plt.ylabel('tot y - tot y0')
-        plt.show()
-        print(y0)
-        print(np.average(ybis) - ybis)
-        print(np.average(ybis))
     assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)
 
 

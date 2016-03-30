@@ -12,7 +12,7 @@ from math import floor, ceil, log
 
 import numpy as np
 from chemreac.chemistry import mk_sn_dict_from_names
-from chemreac.units import get_derived_unit
+from chemreac.units import get_derived_unit, to_unitless
 from chemreac.util.analysis import solver_linear_error_from_integration
 from chemreac.util.banded import get_jac_row_from_banded
 from chemreac.util.pyutil import set_dict_defaults_inplace
@@ -685,7 +685,8 @@ def plot_solver_linear_error(
     plot_solver_linear_excess_error
     """
     ax = _init_axes(ax)
-    Cerr = integration.Cout - Cref
+    Cerr = integration.Cout - to_unitless(Cref, get_derived_unit(
+        integration.rd.unit_registry, 'concentration'))
     if x is None:
         if isinstance(ti, slice):
             x = integration.tout[ti]

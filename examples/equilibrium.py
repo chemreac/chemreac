@@ -245,8 +245,8 @@ def integrate_rd(
                 atol_i = atol[i]
             except:
                 atol_i = atol
-            wtol_i = integr.with_units(atol_i + rtol*yout[:, 0, i],
-                                       'concentration')
+            wtol_i = (atol_i + rtol*yout[:, 0, i])*get_derived_unit(
+                rd.unit_registry, 'concentration')
 
             if np.any(np.abs(linE/wtol_i) > 1000):
                 # Plot true curve in first plot when deviation is large enough

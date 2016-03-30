@@ -916,3 +916,40 @@ def test_get_with_units():
     rd = ReactionDiffusion.nondimensionalisation(
         2, [[0, 0]], [[1]], [2/molar/second], unit_registry=SI_base_registry)
     assert allclose(rd.get_with_units('k'), [2e-3 * metre**3/mole/second])
+
+
+def test_exceptions():
+    ReactionDiffusion(1, [], [], [], N=3, nstencil=3, D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=2, nstencil=3, D=[0])
+    with pytest.raises(KeyError):
+        ReactionDiffusion(1, [], [], [], N=3, nstencil=3, D=[0], foo='bar')
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [3.14], N=3, nstencil=3, D=[0])
+
+    ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 3, 4], D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 1, 4],
+                          D=[0])
+
+    ReactionDiffusion(1, [], [], [], N=5, nstencil=3, x=range(6), D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=5, nstencil=3, x=range(5), D=[0])
+
+    ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 3, 4],
+                      geom='f', D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 3, 4],
+                          geom='p', D=[0])
+
+    ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                      modulated_rxns=[0], modulation=[range(4)], D=[0, 0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                          modulated_rxns=[0], modulation=[range(4)]*2, D=[0]*2)
+
+    ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                      modulated_rxns=[0], modulation=[range(4)], D=[0, 0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                          modulation=[range(4)], D=[0, 0])

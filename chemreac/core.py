@@ -359,9 +359,12 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
 
         if stoich_inact is None:
             stoich_inact = list([[]]*len(stoich_active))
-        assert len(stoich_inact) == len(stoich_active)
-        assert len(stoich_active) == len(stoich_prod)
-        assert len(stoich_active) == len(k)
+        if len(stoich_inact) != len(stoich_active):
+            raise ValueError("length mismatch")
+        if len(stoich_active) != len(stoich_prod):
+            raise ValueError("length mismatch")
+        if len(stoich_active) != len(k):
+            raise ValueError("length mismatch")
 
         if geom not in 'fcs':
             raise ValueError("Unkown geom: %s" % geom)
