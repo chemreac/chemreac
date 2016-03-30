@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 Analytic error scaling vs. number of bins
 -----------------------------------------
@@ -10,7 +9,8 @@ with vaired parameters, :download:`examples/plot_analytic_N_scaling.py`
 plots the error in the solutions vs. number of bins for each set of other
 parameters. For example, one may expect different error scaling for the
 different number of stencil points used.
-(N**-2, N**-4 and N**-6 for 3, 5 and 7 stencil points respectively)
+(:math:`N^{-2}`, :math:`N^{-4}` and :math:`N^{-6}` for 3, 5 and 7 stencil
+points respectively)
 
 ::
 

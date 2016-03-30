@@ -1,6 +1,6 @@
 package:
   name: chemreac
-  version: 0.5.0.git
+  version: 0.6.0.git
   # the version being overridden by the __conda_version__.txt file
   # http://conda.pydata.org/docs/build.html#post-build-version
 

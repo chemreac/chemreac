@@ -3,6 +3,11 @@
 
 from __future__ import print_function, division, absolute_import
 
+try:
+    import cPickle as pickle
+except ImportError:
+    import pickle
+
 from itertools import product
 import os
 
@@ -12,6 +17,7 @@ import pytest
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run, Integration
 from chemreac.util.testing import veryslow
+from chemreac.units import metre, molar, umol, hour, day, SI_base_registry
 
 """
 Tests the integration routine for the
@@ -39,7 +45,7 @@ def test_decay(log):
 
 
 def test_decay_solver_kwargs_env():
-    key = 'CHEMREAC_SOLVER_KWARGS'
+    key = 'CHEMREAC_INTEGRATION_KWARGS'
     try:
         ori_val = os.environ.pop(key)
     except KeyError:
@@ -107,7 +113,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     assert np.allclose(rd.k, k[3:])
     assert np.allclose(rd.xcenters, xc)
     assert np.allclose(rd.fields, fields)
-    assert np.allclose(rd._g_values, g_values)
+    assert np.allclose(rd.g_values, g_values)
     y0 = np.array([[13.0, 23.0, 32.0, 43.0, 12.0, 9.5, 17.0, 27.5]*N])
     y0 = y0.flatten()
     t0, tend, nt = 1.0, 1.1, 42
@@ -143,13 +149,6 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom,
                             nstencil=3, lrefl=True, rrefl=True)
-    debug = False
-    if debug:  # From debugging / test design
-        import matplotlib.pyplot as plt
-        plt.subplot(2, 1, 1)
-        plt.plot(sys.xcenters, y0)
-        plt.xlabel('x')
-        plt.ylabel('y0')
 
     tout = np.linspace(0, 10.0, 50)
     atol, rtol = 1e-6, 1e-8
@@ -168,15 +167,6 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     ybis = np.sum(yprim, axis=1)
 
-    if debug:  # From debugging / test design
-        plt.subplot(2, 1, 2)
-        plt.plot(ybis-ybis[0])
-        plt.xlabel('t')
-        plt.ylabel('tot y - tot y0')
-        plt.show()
-        print(y0)
-        print(np.average(ybis) - ybis)
-        print(np.average(ybis))
     assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)
 
 
@@ -223,9 +213,47 @@ def test_integrators(log):
     results = []
     for solver, kwargs in solver_kwargs.items():
         _y0 = np.log(y0) if kwargs.get('C0_is_log', False) else y0
-        integr = Integration(solver[:-1], rd, _y0, **kwargs)
+        integr = Integration(rd, _y0, solver=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])
+
+
+def test_pickle_Integration():
+    # A -> B
+    n = 2
+    k0 = 0.13
+    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0])
+    y0 = [3.0, 1.0]
+    t0, tend, nt = 5.0, 17.0, 42
+    integr = Integration(rd, y0, tout=np.linspace(t0, tend, nt+1),
+                         solver='scipy')
+    Cout = integr.Cout.copy()
+    s = pickle.dumps(integr)
+    integr2 = pickle.loads(s)
+    assert np.allclose(integr2.Cout, Cout)
+
+
+def test_integrate_nondimensionalisation():
+    # 2A -> B
+    rd = ReactionDiffusion.nondimensionalisation(
+        2, [[0, 0]], [[1]], [2e-9/(umol/metre**3)/hour],
+        unit_registry=SI_base_registry)
+    C0 = [3*molar, 4*molar]
+    tout = np.linspace(0, 1)*day
+    integr = Integration.nondimensionalisation(rd, C0, tout, solver='scipy')
+
+    k_m3_p_mol_p_sec = 2e-3/3600
+    t_sec = np.linspace(0, 24*3600)
+    C0_mol_p_m3 = [3000, 4000]
+    Cref_mol_p_m3 = np.empty(integr.Cout.squeeze().shape)
+    Cref_mol_p_m3[:, 0] = 1/(C0_mol_p_m3[0]**-1 + 2*k_m3_p_mol_p_sec*t_sec)
+    missing_A = (C0_mol_p_m3[0] - Cref_mol_p_m3[:, 0])
+    Cref_mol_p_m3[:, 1] = C0_mol_p_m3[1] + missing_A/2
+    assert np.allclose(integr.tout, t_sec)
+    print(integr.Cout.squeeze())
+    print(Cref_mol_p_m3)
+    print(integr.Cout.squeeze() - Cref_mol_p_m3)
+    assert np.allclose(integr.Cout.squeeze(), Cref_mol_p_m3)

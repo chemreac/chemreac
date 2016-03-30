@@ -39,17 +39,24 @@ constant = dict(
 
 
 def integrate(**kwargs):
-    texecs = []
+    times_cpu, times_wal = [], []
     nrepeat = 21
     ndrop = 7
     for i in range(nrepeat):
         tout, yout, info, rmsd_over_atol, sys, rmsd = integrate_rd(**kwargs)
-        texecs.append(info['texec'])
+        times_cpu.append(info['time_cpu'])
+        times_wal.append(info['time_wall'])
     for _ in range(ndrop):
-        texecs.pop(texecs.index(max(texecs)))
-    texecs = np.array(texecs)
-    info['texec'] = avg = np.average(texecs)
-    info['dtexec'] = np.sqrt(np.sum((texecs - avg)**2/(len(texecs) - 1)))
+        times_cpu.pop(times_cpu.index(max(times_cpu)))
+        times_wal.pop(times_wal.index(max(times_wal)))
+    times_cpu = np.array(times_cpu)
+    times_wal = np.array(times_wal)
+    info['time_cpu'] = avg_cpu = np.average(times_cpu)
+    info['time_wall'] = avg_wal = np.average(times_wal)
+    info['dtime_cpu'] = np.sqrt(
+        np.sum((times_cpu - avg_cpu)**2 / (len(times_cpu) - 1)))
+    info['dtime_wall'] = np.sqrt(
+        np.sum((times_wal - avg_wal)**2 / (len(times_wal) - 1)))
     info['tout'] = tout
     # info['yout'] = yout
     info['rmsd'] = rmsd

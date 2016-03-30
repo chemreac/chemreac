@@ -20,6 +20,7 @@ the user of the script through the use of environment variables.
 from __future__ import (absolute_import, division, print_function)
 
 
+import os
 import time
 
 import numpy as np
@@ -72,7 +73,8 @@ def integrate_cvode(rd, y0, tout, **kwargs):
 
     # Run the integration
     rd.zero_counters()
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     try:
         yout = sundials_integrate(rd, np.asarray(y0).flatten(),
                                   np.asarray(tout).flatten(),
@@ -82,13 +84,15 @@ def integrate_cvode(rd, y0, tout, **kwargs):
         success = False
     else:
         success = True
-    texec = time.time() - texec
+    time_wall = time.time() - time_wall
+    time_cpu = time.clock() - time_cpu
 
     info = new_kwargs.copy()
     info.update({
         'nfev': rd.nfev,
         'njev': rd.njev,
-        'texec': texec,
+        'time_wall': time_wall,
+        'time_cpu': time_cpu,
         'success': success
     })
     if info['linear_solver'] >= 10:
@@ -111,13 +115,14 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     see integrate
     """
     from ._chemreac import rk4
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     yout, Dyout = rk4(rd, y0, tout)
-    texec = time.time() - texec
     info = {
         'nfev': 4*(tout.size-1),
         'njev': 0,
-        'texec': texec,
+        'time_wall': time.time() - time_wall,
+        'time_cpu': time.clock() - time_cpu,
         'success': True,
     }
     return yout, tout, info
@@ -149,15 +154,16 @@ def _integrate_cb(callback, rd, y0, tout, linear_solver='dense',
         else:
             dfdx_out[:] = 0
     new_kwargs['check_indexing'] = False
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     if dense_output:
         xout, yout, info_ = callback[0](rd.f, jac, **new_kwargs)
     else:
         xout = tout
         yout, info_ = callback[1](rd.f, jac, **new_kwargs)
-    texec = time.time() - texec
     info.update({
-        'texec': texec,
+        'time_wall': time.time() - time_wall,
+        'time_cpu': time.clock() - time_cpu,
         'success': True,
     })
     info.update(info_)
@@ -231,8 +237,8 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         raise NotImplementedError("Unkown linear_solver %s" % linear_solver)
 
     if linear_solver == 'banded':
-        new_kwargs['lband'] = rd.n
-        new_kwargs['uband'] = rd.n
+        new_kwargs['lband'] = rd.n*rd.n_jac_diags
+        new_kwargs['uband'] = rd.n*rd.n_jac_diags
 
     new_kwargs['atol'] = kwargs.pop('atol', DEFAULTS['atol'])
     new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
@@ -287,7 +293,8 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
     if dense_output is None:
         dense_output = (len(tout) == 2)
 
-    texec = time.time()
+    time_wall = time.time()
+    time_cpu = time.clock()
     if dense_output:
         import warnings
         if not len(tout) == 2:
@@ -311,13 +318,15 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
             runner.integrate(tout[i])
             yout[i, :] = runner.y
 
-    texec = time.time() - texec
+    time_wall = time.time() - time_wall
+    time_cpu = time.clock() - time_cpu
 
     info = new_kwargs.copy()
     info.update({
         'integrator_name': integrator_name,
         'success': runner.successful(),
-        'texec': texec,
+        'time_wall': time_wall,
+        'time_cpu': time_cpu,
         'nfev': f.neval,
         'njev': jac.neval,
     })
@@ -343,28 +352,31 @@ class Integration(object):
 
     Parameters
     ----------
-    solver: string
+    solver : string
         "cvode" or "scipy" where scipy uses VODE
-        as the solver.
-    rd: ReactionDiffusion instance
-    C0: array
+        as the solver. The default ``'None'`` leaves the choice to the
+        environmentvariable ``CHEMREAC_SOLVER`` (with ``'scipy'`` as fallback).
+    rd : ReactionDiffusion instance
+    C0 : array
         Initial concentrations (untransformed, i.e. linear).
-    tout: array
+    tout : array
         Times for which to report solver results (untransformed).
-    sigm_damp: bool or tuple of (lim: float, n: int)
+    sigm_damp : bool or tuple of (lim: float, n: int)
         Conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
         if sigm==True then `lim` and `n` are the default of :py:func:`sigm`.
-    C0_is_log: bool
+    C0_is_log : bool
         If True: passed values in C0 are taken to be the natural logarithm of
         initial concentrations. If False and rd.logy == True: a very small
         number is added to C0 to avoid applying log to zero (see `tiny`).
-    tiny: float
+    tiny : float
         Added to C0 when ``rd.logy==True`` and ``C0_is_log==False``. Note that
         if you explicitly want to avoid adding tiny you need to set it
         to zero (e.g. when manually setting any C0==0 to some epsilon).
         (default: None => ``numpy.finfo(np.float64).tiny``).
 
-    **kwargs:
+    **kwargs :
+        Keyword arguments passed on to integartor, e.g.:
+
         atol: float or sequence
             absolute tolerance of solution
         rtol: float
@@ -378,7 +390,8 @@ class Integration(object):
         output from solver: log(concentrations) if rd.logy == True
     info: dict
         Information from solver. Guaranteed to contain:
-            - 'texec': execution time in seconds.
+            - 'time_wall': execution time in seconds (wall clock).
+            - 'time_cpu': execution time in seconds (cpu time).
             - 'atol': float or array, absolute tolerance(s).
             - 'rtol': float, relative tolerance
     rd: ReactionDiffusion instance
@@ -388,6 +401,7 @@ class Integration(object):
     -------
     _integrate()
         performs the integration, automatically called by __init__
+
 
     """
 
@@ -399,16 +413,16 @@ class Integration(object):
         'rk4': _integrate_rk4,
     }
 
-    def __init__(self, solver, rd, C0, tout, sigm_damp=False,
-                 C0_is_log=False, tiny=None, **kwargs):
+    def __init__(self, rd, C0, tout, sigm_damp=False,
+                 C0_is_log=False, tiny=None, solver='None', **kwargs):
+        if solver == 'None':
+            solver = os.environ.get('CHEMREAC_SOLVER', 'scipy')
         if solver not in self._callbacks:
             raise KeyError("Unknown solver %s" % solver)
         self.solver = solver
         self.rd = rd
-        self.C0 = to_unitless(C0, get_derived_unit(
-            rd.unit_registry, 'concentration')).flatten()
-        self.tout = to_unitless(tout, get_derived_unit(
-            rd.unit_registry, 'time'))
+        self.C0 = np.asarray(C0).flatten()
+        self.tout = tout
         self.sigm_damp = sigm_damp
         self.C0_is_log = C0_is_log
         self.tiny = tiny or np.finfo(np.float64).tiny
@@ -419,13 +433,19 @@ class Integration(object):
         self._sanity_checks()
         self._integrate()
 
+    @classmethod
+    def nondimensionalisation(cls, rd, C0, tout, **kw):
+        if rd.unit_registry is None:
+            raise ValueError("rd lacking unit_registry")
+
+        def _n(arg, key):
+            return to_unitless(arg, get_derived_unit(rd.unit_registry, key))
+        return cls(rd, _n(C0, 'concentration'), _n(tout, 'time'), **kw)
+
     def _sanity_checks(self):
         if not self.C0_is_log:
             if np.any(self.C0 < 0):
                 raise ValueError("Negative concentrations encountered in C0")
-
-    def with_units(self, value, key):
-        return value*get_derived_unit(self.rd.unit_registry, key)
 
     def _integrate(self):
         """
@@ -485,20 +505,28 @@ class Integration(object):
         # ---------------
         # Back-transform independent variable into linear time
         if self.rd.logt:
-            unitless_time = (np.exp(self.internal_t) - (t0 if t0_set else 0))
+            self.tout = (np.exp(self.internal_t) - (t0 if t0_set else 0))
         else:
-            unitless_time = self.internal_t
-        self.tout = self.with_units(unitless_time, 'time')
+            self.tout = self.internal_t
 
         # Back-transform integration output into linear concentration
-        self.Cout = self.with_units(
-            np.exp(self.yout) if self.rd.logy else self.yout,
-            'concentration')
+        self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
+
+    def get_with_units(self, attr):
+        if attr == 'tout':
+            return self.tout * get_derived_unit(self.rd.unit_registry, 'time')
+        if attr == 'Cout':
+            return self.Cout * get_derived_unit(self.rd.unit_registry,
+                                                'concentration')
+        else:
+            raise ValueError("Unknown attr: %s" % attr)
 
     def internal_iter(self):
-        """ Returns an iterator over (t, y) pairs where t is entries in
-        internal_t and y is a (2-dim) vector over the bins (1st dim)
-        with the corresponding dependent variables (2nd dim)."""
+        """ Returns an iterator over (t, y)-pairs
+
+        ``t`` is entries in ``internal_t`` and ``y`` is a (2-dim)
+        array over the bins (1st dim) with the corresponding
+        dependent variables (2nd dim)."""
         for idx, x in np.ndenumerate(self.internal_t):
             yield x, self.yout[idx, ...]
 
@@ -507,20 +535,14 @@ def run(*args, **kwargs):
     """
     ``run`` is provided for environment variable directed solver choice.
 
-    Set ``CHEMREAC_SOLVER`` to indicate what integrator to
-    use (default: "scipy").
-
-    Set ``CHEMREAC_SOLVER_KWARGS`` to a string which can be evaluated to
+    Set ``CHEMREAC_INTEGRATION_KWARGS`` to a string which can be evaluated to
     a python dictionary. e.g. "{'atol': 1e-4, 'rtol'=1e-7}"
     """
-    import os
-    environ_kwargs = os.environ.get('CHEMREAC_SOLVER_KWARGS', None)
+    environ_kwargs = os.environ.get('CHEMREAC_INTEGRATION_KWARGS', None)
     if environ_kwargs:
         environ_kwargs = eval(environ_kwargs)
         if not isinstance(environ_kwargs, dict):
-            fmtstr = "CHEMREAC_SOLVER_KWARGS not evaluated to a dictinary: {}"
+            fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}"
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
-    # print(kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy')))
-    solver = kwargs.pop('solver', os.environ.get('CHEMREAC_SOLVER', 'scipy'))
-    return Integration(solver, *args, **kwargs)
+    return Integration(*args, **kwargs)

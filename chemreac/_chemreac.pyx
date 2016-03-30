@@ -16,10 +16,6 @@ from libcpp.utility cimport pair
 cdef extern from *:
     ctypedef unsigned int uint
 
-DEF FLAT=0
-DEF CYLINDRICAL=1
-DEF SPHERICAL=2
-
 
 cdef class ArrayWrapper(object):
     cdef public dict __array_interface__
@@ -149,12 +145,14 @@ cdef class PyReactionDiffusion:
         """
         if linC.shape != (self.N,):
             raise ValueError("linC must be of length N")
-        if self.geom == FLAT:
+        if self.geom == 'f':
             return np.sum(np.diff(self.lin_x)*linC)
-        elif self.geom == CYLINDRICAL:
+        elif self.geom == 'c':
             return np.sum(np.pi*np.diff(self.lin_x**2)*linC)
-        elif self.geom == SPHERICAL:
+        elif self.geom == 's':
             return np.sum(4*np.pi/3*np.diff(self.lin_x**3)*linC)
+        else:
+            raise NotImplementedError("Unkown geom %s" % self.geom)
 
     property lin_x:
         def __get__(self):
@@ -177,7 +175,7 @@ cdef class PyReactionDiffusion:
 
     property geom:
         def __get__(self):
-            return self.thisptr.get_geom_as_int()
+            return 'fcs'[self.thisptr.get_geom_as_int()]
 
     property stoich_active:
         def __get__(self):
@@ -191,14 +189,14 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.stoich_inact
 
-    property _k:
+    property k:
         def __get__(self):
             return np.asarray(self.thisptr.k)
         def __set__(self, vector[double] k):
             assert len(k) == self.nr
             self.thisptr.k = k
 
-    property _D:
+    property D:
         def __get__(self):
             return np.asarray(self.thisptr.D)
 
@@ -215,7 +213,7 @@ cdef class PyReactionDiffusion:
             assert len(z_chg) == self.n
             self.thisptr.z_chg = z_chg
 
-    property _mobility:
+    property mobility:
         def __get__(self):
             return np.asarray(self.thisptr.mobility)
 
@@ -268,7 +266,15 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.eps_rel
 
-    property _g_values:
+    property faraday_const:
+        def __get__(self):
+            return self.thisptr.faraday_const
+
+    property vacuum_permittivity:
+        def __get__(self):
+            return self.thisptr.vacuum_permittivity
+
+    property g_values:
         def __get__(self):
             return self.thisptr.g_values
         def __set__(self, vector[vector[double]] g_values):
@@ -280,7 +286,7 @@ cdef class PyReactionDiffusion:
         def __set__(self, vector[int] g_value_parents):
             self.thisptr.g_value_parents = g_value_parents
 
-    property _fields:
+    property fields:
         def __get__(self):
             return self.thisptr.fields
         def __set__(self, vector[vector[double]] fields):
@@ -373,7 +379,7 @@ cdef class PyReactionDiffusion:
                 &self.thisptr.xc[(self.thisptr.nstencil-1)//2]), (self.N,))
 
     # For debugging
-    property _xc:
+    property xc:
         def __get__(self):
             return fromaddress(<long>self.thisptr.xc,
                                (self.N + self.thisptr.nstencil - 1,))
@@ -409,13 +415,14 @@ def sundials_integrate(
     cdef cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
     cdef:
         vector[int] root_indices
+        vector[double] roots_output
         double dx_min = 0.0, dx_max = 0.0
         int mxsteps=500
     assert y0.size == rd.n*rd.N
     simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], tout.size, &tout[0], &yout[0], root_indices, first_step, dx_min, dx_max, mxsteps,
-        with_jacobian, iter_type, linear_solver, maxl, eps_lin, 0)
+        &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, first_step, dx_min,
+        dx_max, mxsteps, with_jacobian, iter_type, linear_solver, maxl, eps_lin, 0)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 

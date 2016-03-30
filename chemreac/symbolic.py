@@ -20,7 +20,7 @@ import sympy as sp
 from .core import ReactionDiffusionBase
 from .util.grid import padded_centers, pxci_to_bi, stencil_pxci_lbounds
 
-FLAT, CYLINDRICAL, SPHERICAL = 0, 1, 2
+FLAT, CYLINDRICAL, SPHERICAL = 'f', 'c', 's'
 
 
 class SymRD(ReactionDiffusionBase):

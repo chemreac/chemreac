@@ -84,7 +84,7 @@ import argh
 import numpy as np
 
 from chemreac import ReactionDiffusion
-from chemreac.integrate import run
+from chemreac.integrate import Integration
 from chemreac.units import (
     SI_base_registry, second, molar, to_unitless, get_derived_unit
 )
@@ -161,19 +161,22 @@ def integrate_rd(
     kf = kf/molar/second
     kb = kb/second
 
-    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb],
-                           logy=logy, logt=logt, unit_registry=registry)
+    rd = ReactionDiffusion.nondimensionalisation(
+        3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb], logy=logy, logt=logt,
+        unit_registry=registry)
 
-    y0 = np.array([A0, B0, C0])*molar
+    C0 = np.array([A0, B0, C0])*molar
     if plotlogt:
         eps = 1e-16
         tout = np.logspace(np.log10(t0+eps), np.log10(tend+eps), nt)*second
     else:
         tout = np.linspace(t0, tend, nt)*second
 
-    integr = run(rd, y0, tout, atol=atol, rtol=rtol, with_jacobian=not num_jac,
-                 solver=solver, method=method)
-    Cout, yout, info = integr.Cout, integr.yout, integr.info
+    integr = Integration.nondimensionalisation(
+        rd, C0, tout, solver=solver, atol=atol, rtol=rtol,
+        with_jacobian=not num_jac, method=method)
+    Cout = integr.get_with_units('Cout')
+    yout, info = integr.yout, integr.info
     try:
         import mpmath
         assert mpmath  # silence pyflakes
@@ -185,7 +188,7 @@ def integrate_rd(
     conc_unit = get_derived_unit(registry, 'concentration')
     Cref = _get_Cref(
         to_unitless(tout - tout[0], time_unit),
-        to_unitless(y0, conc_unit),
+        to_unitless(C0, conc_unit),
         [to_unitless(kf, 1/time_unit/conc_unit),
          to_unitless(kb, 1/time_unit)],
         use_mpmath
@@ -242,8 +245,8 @@ def integrate_rd(
                 atol_i = atol[i]
             except:
                 atol_i = atol
-            wtol_i = integr.with_units(atol_i + rtol*yout[:, 0, i],
-                                       'concentration')
+            wtol_i = (atol_i + rtol*yout[:, 0, i])*get_derived_unit(
+                rd.unit_registry, 'concentration')
 
             if np.any(np.abs(linE/wtol_i) > 1000):
                 # Plot true curve in first plot when deviation is large enough

@@ -9,6 +9,7 @@ is the class describing the system of ODEs.
 from __future__ import (absolute_import, division, print_function)
 
 from functools import reduce
+import inspect
 from itertools import chain
 from operator import add
 import os
@@ -17,7 +18,7 @@ import numpy as np
 
 from .chemistry import mk_sn_dict_from_names, ReactionSystem
 from .util.pyutil import monotonic
-from .units import unit_of, get_derived_unit, to_unitless, linspace
+from .units import get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
 
 from ._chemreac import PyReactionDiffusion
@@ -153,6 +154,30 @@ def get_unit(unit_registry, key):
         )[key]
 
 
+def g_units(unit_registry, g_value_parents):
+    """ Forms the unit of radiolytic yield
+
+    Parameters
+    ----------
+    g_value_parents: iterable of integers
+        parent substance indices (-1 indicates no parent)
+    """
+    g_units = []
+    for parent in g_value_parents:
+        if parent == -1:
+            g_units.append(get_unit(unit_registry, 'radyield'))
+        else:
+            g_units.append(get_unit(unit_registry, 'radyield') /
+                           get_unit(unit_registry, 'concentration'))
+    return g_units
+
+
+def k_units(unit_registry, reaction_orders):
+    return [get_unit(unit_registry, 'concentration')**(
+        1-order)/get_unit(unit_registry, 'time')
+            for order in reaction_orders]
+
+
 class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     """
     Object representing the numerical model, with callbacks for evaluating
@@ -176,6 +201,10 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
 
     - :py:attr:`substance_names`
     - :py:attr:`substance_latex_names`
+
+    .. note::
+        only the four first arguments (up to k) are considered positional
+
 
     Parameters
     ----------
@@ -243,6 +272,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     unit_registry: dict (optional)
         See ``chemreac.units.SI_base_registry`` for an example (default: None).
 
+
     Attributes
     ----------
     unit_registry: dict
@@ -273,7 +303,8 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     def substance_latex_names(self, latex_names):
         self._substance_latex_names = latex_names
 
-    def __new__(cls, n, stoich_active, stoich_prod, k, N=0, D=None, z_chg=None,
+    def __new__(cls, n, stoich_active, stoich_prod, k,  # *, i.e. last pos arg
+                N=0, D=None, z_chg=None,
                 mobility=None, x=None, stoich_inact=None, geom='f',
                 logy=False, logt=False, logx=False, nstencil=None,
                 lrefl=True, rrefl=True, auto_efield=False, surf_chg=None,
@@ -282,11 +313,10 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 modulated_rxns=None,
                 modulation=None,
                 unit_registry=None,
-                faraday=None,  # deprecated
-                vacuum_permittivity=None,  # deprecated
-                k_unitless=None,
                 ilu_limit=None,
                 n_jac_diags=-1,
+                faraday_const=None,
+                vacuum_permittivity=None,
                 **kwargs):
         if N == 0:
             if x is None:
@@ -300,18 +330,17 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         if z_chg is None:
             z_chg = list([0]*n)
         if mobility is None:
-            mobility = np.zeros(n)*get_unit(unit_registry,
-                                            'electrical_mobility')
+            mobility = np.zeros(n)
         if N > 1:
             assert n == len(D)
             assert n == len(z_chg)
             assert n == len(mobility)
         else:
             if D is None:
-                D = np.zeros(n)*get_unit(unit_registry, 'diffusion')
+                D = np.zeros(n)
 
         if x is None:
-            x = 1.0*get_unit(unit_registry, 'length')
+            x = 1.0
 
         try:
             if len(x) == N+1:
@@ -326,23 +355,22 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 raise ValueError("Don't know what to do with len(x) == %d" %
                                  len(x))
         except TypeError:
-            _x = linspace(0*unit_of(x), x, N+1)
+            _x = linspace(0, x, N+1)
 
         if stoich_inact is None:
             stoich_inact = list([[]]*len(stoich_active))
-        assert len(stoich_inact) == len(stoich_active)
-        assert len(stoich_active) == len(stoich_prod)
+        if len(stoich_inact) != len(stoich_active):
+            raise ValueError("length mismatch")
+        if len(stoich_active) != len(stoich_prod):
+            raise ValueError("length mismatch")
+        if len(stoich_active) != len(k):
+            raise ValueError("length mismatch")
 
-        if k is not None:
-            assert len(stoich_active) == len(k)
-        else:
-            assert len(stoich_active) == len(k_unitless)
         if geom not in 'fcs':
             raise ValueError("Unkown geom: %s" % geom)
 
         if surf_chg is None:
-            surf_chg = (0.0*get_unit(unit_registry, 'charge'),
-                        0.0*get_unit(unit_registry, 'charge'))
+            surf_chg = (0.0, 0.0)
 
         # Handle g_values
         if g_values is None:
@@ -356,20 +384,11 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
             g_value_parents = [-1]*len(g_values)
 
         if fields is None:
-            fields = [[0.0*get_unit(unit_registry, 'field')]*N]*len(g_values)
+            fields = [[0.0]*N]*len(g_values)
         else:
             assert len(fields) == len(g_values)
             for fld in fields:
                 assert len(fld) == N
-
-        reac_orders = map(len, stoich_active)
-        if k_unitless is None:
-            k_unitless = [to_unitless(kval, kunit) for kval, kunit in
-                          zip(k, cls.k_units(unit_registry, reac_orders))]
-        else:
-            if k is not None:
-                raise ValueError(
-                    "When passing k_unitless you must set k to None")
 
         if modulated_rxns is not None:
             if len(modulated_rxns) != len(modulation):
@@ -380,34 +399,18 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
             if any(len(arr) != N for arr in modulation):
                 raise ValueError("An array in modulation of size != N")
 
-        _k = np.asarray(k_unitless)
+        _k = np.asarray(k)
         if _k.ndim != 1:
             raise ValueError("Rates vector has inproper dimension")
 
         rd = super(ReactionDiffusion, cls).__new__(
-            cls, n, stoich_active, stoich_prod,
-            np.asarray(k_unitless),
-            N,
-            to_unitless(D, get_unit(unit_registry, 'diffusion')),
-            z_chg,
-            to_unitless(mobility, get_unit(unit_registry,
-                                           'electrical_mobility')),
-            to_unitless(_x, get_unit(unit_registry, 'length')),
-            stoich_inact, 'fcs'.index(geom), logy, logt, logx,
-            [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv,
-             yld_unit in zip(g_values, cls.g_units(unit_registry,
-                                                   g_value_parents))],
-            g_value_parents,
-            [to_unitless(fld, get_unit(unit_registry, 'field'))
-             for fld in fields],
-            modulated_rxns or [],
-            modulation or [],
-            nstencil, lrefl, rrefl, auto_efield,
-            (to_unitless(surf_chg[0], get_unit(unit_registry, 'charge')),
-             to_unitless(surf_chg[1], get_unit(unit_registry, 'charge'))),
-            eps_rel,
-            faraday or get_unitless_constant(unit_registry,
-                                             'Faraday_constant'),
+            cls, n, stoich_active, stoich_prod, _k,
+            N, D, z_chg, mobility, _x, stoich_inact, 'fcs'.index(geom), logy,
+            logt, logx, g_values, g_value_parents, fields,
+            modulated_rxns or [], modulation or [], nstencil, lrefl, rrefl,
+            auto_efield, surf_chg, eps_rel,
+            faraday_const or get_unitless_constant(
+                unit_registry, 'Faraday_constant'),
             vacuum_permittivity or get_unitless_constant(
                 unit_registry, 'vacuum_permittivity'),
             ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
@@ -425,71 +428,63 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
             raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd
 
-    @property
-    def fields(self):
-        return np.asarray(self._fields)*get_unit(self.unit_registry, 'field')
+    def __reduce__(self):
+        args = inspect.getargspec(self.__new__).args[1:]
+        print(args)
+        return (self.__class__, tuple(getattr(self, attr) for attr in args))
 
-    @fields.setter
-    def fields(self, value):
-        self._fields = to_unitless(value, get_unit(self.unit_registry,
-                                                   'field'))
+    _prop_unit = {
+        'mobility': 'electrical_mobility',
+        'D': 'diffusion',
+        'fields': 'field',
+        'k': (k_units, 'reac_orders'),  # special case
+        'g_values': (g_units, 'g_value_parents'),
+        'x': 'length',
+        'surf_chg': 'charge',
+    }
 
-    @staticmethod
-    def g_units(unit_registry, g_value_parents):
-        """ Forms the unit of radiolytic yield
+    @classmethod
+    def nondimensionalisation(cls, n, stoich_active, stoich_prod, k, **kwargs):
+        """ Alternative constructor taking arguments with units """
+        reac_orders = map(len, stoich_active)
+        k_unitless = [to_unitless(kval, kunit) for kval, kunit in zip(
+            k, k_units(kwargs['unit_registry'],
+                       reac_orders))]
+        g_values_unitless = [np.asarray(
+            [to_unitless(yld, yld_unit) for yld in gv]
+        ) for gv, yld_unit in zip(
+            kwargs.get('g_values', []),
+            g_units(kwargs['unit_registry'],
+                    kwargs.get('g_value_parents', [])))]
+        for key, rep in cls._prop_unit.items():
+            val = kwargs.pop(key, None)
+            if val is not None:
+                if isinstance(rep, tuple):
+                    pass
+                else:
+                    kwargs[key] = to_unitless(
+                        val, get_unit(kwargs['unit_registry'], rep))
 
-        Parameters
-        ----------
-        g_value_parents: iterable of integers
-            parent substance indices (-1 indicates no parent)
-        """
-        g_units = []
-        for parent in g_value_parents:
-            if parent == -1:
-                g_units.append(get_unit(unit_registry, 'radyield'))
-            else:
-                g_units.append(get_unit(unit_registry, 'radyield') /
-                               get_unit(unit_registry, 'concentration'))
-        return g_units
-
-    @property
-    def g_values(self):
-        return [np.asarray(gv)*gu for gv, gu in zip(
-            self._g_values, self.g_units(self.unit_registry,
-                                         self.g_value_parents))]
-
-    @staticmethod
-    def k_units(unit_registry, reaction_orders):
-        return [get_unit(unit_registry, 'concentration')**(
-            1-order)/get_unit(unit_registry, 'time')
-                for order in reaction_orders]
-
-    @property
-    def k(self):
-        reac_orders = map(len, self.stoich_active)
-        return [kv*ku for kv, ku in zip(self._k, self.k_units(
-            self.unit_registry, reac_orders))]
-
-    @k.setter
-    def k(self, value):
-        reac_orders = map(len, self.stoich_active)
-        self._k = [to_unitless(kv, ku) for kv, ku in zip(value, self.k_units(
-            self.unit_registry, reac_orders))]
+        return cls(n, stoich_active, stoich_prod, k_unitless,
+                   g_values=g_values_unitless, **kwargs)
 
     @property
-    def D(self):
-        return np.asarray(self._D)*get_unit(self.unit_registry, 'diffusion')
+    def reac_orders(self):
+        return map(len, self.stoich_active)
 
-    @D.setter
-    def D(self, value):
-        self._D = to_unitless(value, get_unit(self.unit_registry, 'diffusion'))
+    def get_with_units(self, prop):
+        rep = self._prop_unit[prop]
+        if isinstance(rep, tuple):
+            return [v*u for v, u in zip(getattr(self, prop), rep[0](
+                self.unit_registry, getattr(self, rep[1])))]
+        else:
+            return np.asarray(getattr(self, prop))*get_unit(
+                self.unit_registry, rep)
 
-    @property
-    def mobility(self):
-        return np.asarray(self._mobility)*get_unit(self.unit_registry,
-                                                   'mobility')
-
-    @mobility.setter
-    def mobility(self, value):
-        self._mobility = to_unitless(value, get_unit(self.unit_registry,
-                                                     'mobility'))
+    def set_with_units(self, prop, val):
+        rep = self._prop_unit[prop]
+        if isinstance(rep, tuple):
+            raise NotImplementedError("Not implemented for %s" % prop)
+        else:
+            setattr(self, prop, to_unitless(val, get_unit(
+                self.unit_registry, rep)))

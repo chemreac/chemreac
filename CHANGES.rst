@@ -1,3 +1,15 @@
+v0.6.0
+======
+- ``chemreac.integrate.run`` used solely for kwargs from environment variable:
+      ``CHEMREAC_INTEGRATION_KWARGS`` (was ``CHEMREAC_SOLVER_KWARGS``)
+- Units handled differently in ``ReactionDiffusion``:
+    - ``ReactionDiffusion.__init__`` accepts unitless numbers and a ``unit_registry``
+    - ``ReactionDiffusion.nondimensionalisation()`` accepts numbers wiht units and a ``unit_registry``
+- ``Integration.nondimensionalistion()`` analogous above.
+
+- ``ReactionDiffusion`` can now be used with ``pickle``
+- New serialization format (json and pickle)
+
 v0.5.0
 ======
 - neval_f, neval_j -> nfev, njev

@@ -36,6 +36,7 @@ from math import log, erf, exp
 
 import argh
 import numpy as np
+from chempy.einstein_smoluchowski import electrical_mobility_from_D
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run
@@ -90,19 +91,33 @@ def pair_of_gaussians(x, offsets, sigma, logy, logx, geom):
     )
 
 
-def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
-                 base=0.5, offset=0.25, mobility=3e-1, nt=25, geom='f',
+def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
+                 base=0.5, offset=0.25, nt=25, geom='f',
                  logt=False, logy=False, logx=False, random=False,
                  nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
                  savefig='None', atol=1e-6, rtol=1e-6, random_seed=42,
                  surf_chg=(0.0, 0.0), sigma_q=101, sigma_skew=0.5,
-                 verbose=False):
+                 verbose=False, eps_rel=80.10):
+    """
+    A negative D (diffusion coefficent) denotes:
+        mobility := -D
+        D := 0
+    A positive D calculates mobility from Einstein-Smoluchowski relation
+
+    """
     assert 0 <= base and base <= 1
     assert 0 <= offset and offset <= 1
     if random_seed:
         np.random.seed(random_seed)
     n = 2
+
+    if D < 0:
+        mobility = -D
+        D = 0
+    else:
+        mobility = electrical_mobility_from_D(D, 1, 298.15)
+        print(D, mobility)
 
     # Setup the grid
     _x0 = log(x0) if logx else x0
@@ -131,9 +146,9 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         rrefl=rrefl,
         auto_efield=True,
         surf_chg=surf_chg,
-        eps_rel=80.10,  # water at 20 deg C
-        faraday=1.0,
-        vacuum_permittivity=1.0
+        eps_rel=eps_rel,  # water at 20 deg C
+        faraday_const=1,
+        vacuum_permittivity=1,
     )
 
     # Initial conditions
@@ -144,6 +159,7 @@ def integrate_rd(D=0., t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         logx, geom)).transpose()
     if logy:
         y0 = sigm(y0)
+
     if plot:
         # Plot initial E-field
         import matplotlib.pyplot as plt

@@ -14,6 +14,9 @@ from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
 from chemreac.util.testing import slow
+from chemreac.units import (
+    mole, metre, molar, second, SI_base_registry, allclose
+)
 
 TR_FLS = [True, False]
 TR_FLS_PAIRS = list(product(TR_FLS, TR_FLS))
@@ -146,7 +149,7 @@ def test_ReactionDiffusion__lrefl_3(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
                            lrefl=True, rrefl=False)
-    assert np.allclose(rd._xc, xc)
+    assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[0, 3, 7, 11, 14]
     # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[2])[-1][-1])
@@ -223,7 +226,7 @@ def test_ReactionDiffusion__rrefl_3(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
                            lrefl=False, rrefl=True)
-    assert np.allclose(rd._xc, xc)
+    assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[3, 7, 11, 14, 16]
     # In [8]: print(finite_diff_weights(2, xlst[1:4], x0=xlst[1])[-1][-1])
@@ -468,7 +471,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, N=N, logy=logy,
                            logt=logt, lrefl=False, rrefl=False,
                            nstencil=nstencil)
-    assert np.allclose(rd._xc, xc)
+    assert np.allclose(rd.xc, xc)
 
     w = [1/16, -1/8, 1/16]  # finite diff. weights for 2nd order deriv
     for i in range(N):
@@ -720,7 +723,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         rrefl=rrefl, modulated_rxns=modulated_rxns,
         modulation=modulation)
 
-    assert np.allclose(xc_, rd._xc)
+    assert np.allclose(xc_, rd.xc)
 
     lb = stencil_pxci_lbounds(nstencil, N, lrefl, rrefl)
     if lrefl:
@@ -901,3 +904,52 @@ def test_n_jac_diags(n_jac_diags):
     sm.compressed_jac(0.0, y0.flatten(), jref_cmprs)
     rd.compressed_jac_cmaj(0.0, y0.flatten(), jout_cmprs)
     assert np.allclose(jout_cmprs, jref_cmprs)
+
+
+def test_nondimensionalisation():
+    rd = ReactionDiffusion.nondimensionalisation(
+        2, [[0, 0]], [[1]], [2/molar/second], unit_registry=SI_base_registry)
+    assert rd.k == [2e-3]
+
+
+def test_get_with_units():
+    rd = ReactionDiffusion.nondimensionalisation(
+        2, [[0, 0]], [[1]], [2/molar/second], unit_registry=SI_base_registry)
+    assert allclose(rd.get_with_units('k'), [2e-3 * metre**3/mole/second])
+
+
+def test_exceptions():
+    ReactionDiffusion(1, [], [], [], N=3, nstencil=3, D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=2, nstencil=3, D=[0])
+    with pytest.raises(KeyError):
+        ReactionDiffusion(1, [], [], [], N=3, nstencil=3, D=[0], foo='bar')
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [3.14], N=3, nstencil=3, D=[0])
+
+    ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 3, 4], D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 1, 4],
+                          D=[0])
+
+    ReactionDiffusion(1, [], [], [], N=5, nstencil=3, x=range(6), D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=5, nstencil=3, x=range(5), D=[0])
+
+    ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 3, 4],
+                      geom='f', D=[0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(1, [], [], [], N=4, nstencil=3, x=[0, 1, 2, 3, 4],
+                          geom='p', D=[0])
+
+    ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                      modulated_rxns=[0], modulation=[range(4)], D=[0, 0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                          modulated_rxns=[0], modulation=[range(4)]*2, D=[0]*2)
+
+    ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                      modulated_rxns=[0], modulation=[range(4)], D=[0, 0])
+    with pytest.raises(ValueError):
+        ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
+                          modulation=[range(4)], D=[0, 0])

@@ -76,6 +76,9 @@ else:
         # else:
         #     options += ['fast']  # -ffast-math -funroll-loops
 
+if os.environ.get('WITH_PROFILE', '0') == '1':
+    flags += ['-g', '-pg']
+
 if WITH_BLOCK_DIAG_ILU_OPENMP:
     options += ['openmp']
 
@@ -151,11 +154,16 @@ else:
                         'options': options
                     },
                     pyx_or_cpp: {
-                        'cy_kwargs': {'annotate': True},
+                        'cy_kwargs': {
+                            'annotate': True,
+                            'embedsignature': True,
+                            'linetrace': not TAGGED_RELEASE},
                         'std': 'c++11',
+                        'define': ['CYTHON_TRACE=1'],
                         'gdb_debug': WITH_DEBUG
                     } if using_pyx else {
                         'std': 'c++11',
+                        'define': ['CYTHON_TRACE=1'],
                         'inc_py': True,
                     }
                 },

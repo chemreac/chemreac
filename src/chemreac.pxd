@@ -29,6 +29,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[uint] bin_k_factor_span
         const pair[T, T] surf_chg
         const T eps_rel
+        const T faraday_const
+        const T vacuum_permittivity
         vector[vector[T]] g_values
         vector[int] g_value_parents
         vector[vector[T]] fields

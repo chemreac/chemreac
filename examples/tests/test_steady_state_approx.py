@@ -5,7 +5,7 @@ from steady_state_approx import integrate_rd
 
 
 def _assert_mp(t, ydot, yout):
-    from sympy.mpmath import odefun
+    from mpmath import odefun
     f = odefun(ydot, 0, [1, 0, 0])
     for tidx, tval in enumerate(t):
         mpvals = f(tval)

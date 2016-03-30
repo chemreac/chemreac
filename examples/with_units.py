@@ -32,8 +32,9 @@ def main(logy=False, logt=False, unit_registry=None):
     k0 = 0.13 * second**-1
     if unit_registry is None:
         unit_registry = SI_base_registry
-    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt,
-                           unit_registry=unit_registry)
+    rd = ReactionDiffusion.nondimensionalisation(
+        n, [[0]], [[1]], k=[k0], logy=logy, logt=logt,
+        unit_registry=unit_registry)
     y0 = [3.0e3 * mole/metre**3, 1.0*molar]
     t0, tend, nt = 5.0*second, 17.0*second, 42
     tout = linspace(t0, tend, nt)
@@ -43,7 +44,8 @@ def main(logy=False, logt=False, unit_registry=None):
                                -0.13*second**-1*(tout-t0)))]).transpose()
 
     # scipy
-    integr1 = Integration('scipy', rd, y0, tout)
+    integr1 = Integration.nondimensionalisation(
+        rd, y0, tout, solver='scipy')
     return integr1, Cref, rd
 
 

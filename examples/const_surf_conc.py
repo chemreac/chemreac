@@ -49,7 +49,7 @@ import argh
 import numpy as np
 
 from chemreac import ReactionDiffusion
-from chemreac.integrate import run
+from chemreac.integrate import Integration
 from chemreac.util.grid import generate_grid
 from chemreac.util.plotting import save_and_or_show_plot
 from chemreac.util.testing import spat_ave_rmsd_vs_time
@@ -99,12 +99,12 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
     x = generate_grid(x0, xend, N, logx, random=random)
     modulation = [1 if (i == 0) else 0 for i in range(N)]
 
-    rd = ReactionDiffusion(
+    rd = ReactionDiffusion.nondimensionalisation(
         2,
         [[0], [1]],
         [[1], [0]],
         [k, factor*k],
-        N,
+        N=N,
         D=[0, D],
         x=x,
         logy=logy,
@@ -116,10 +116,10 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
         modulated_rxns=[0, 1],
         modulation=[modulation, modulation],
         unit_registry=units,
-        faraday=1,
-        vacuum_permittivity=1,
         ilu_limit=ilu_limit,
         n_jac_diags=n_jac_diags,
+        faraday_const=1,
+        vacuum_permittivity=1,
     )
 
     # Calc initial conditions / analytic reference values
@@ -130,14 +130,15 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
     y0 = np.concatenate((source, Cref[0, ...]), axis=1)
 
     # Run the integration
-    integr = run(rd, y0, tout, atol=atol, rtol=rtol,
-                 with_jacobian=(not num_jacobian), method=method,
-                 solver=solver, iter_type=iter_type,
-                 linear_solver=linear_solver, first_step=first_step)
-    Cout, info = integr.Cout, integr.info
+    integr = Integration.nondimensionalisation(
+        rd, y0, tout, solver=solver, atol=atol, rtol=rtol,
+        with_jacobian=(not num_jacobian), method=method,
+        iter_type=iter_type,
+        linear_solver=linear_solver, first_step=first_step)
+    Cout = integr.get_with_units('Cout')
     if verbose:
         import pprint
-        pprint.pprint(info)
+        pprint.pprint(integr.info)
     spat_ave_rmsd_over_atol = spat_ave_rmsd_vs_time(
         Cout[:, :, 1], Cref[:, :, 0]) / atol
     tot_ave_rmsd_over_atol = np.average(spat_ave_rmsd_over_atol)
@@ -190,7 +191,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
 
-    return tout, Cout, info, rd, tot_ave_rmsd_over_atol
+    return tout, Cout, integr.info, rd, tot_ave_rmsd_over_atol
 
 
 if __name__ == '__main__':
