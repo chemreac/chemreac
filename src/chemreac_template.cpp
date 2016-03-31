@@ -358,7 +358,7 @@ ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restri
     int nlinC = n*N;
     Real_t * const linC = (Real_t * const)malloc(nlinC*sizeof(Real_t));
     // Possible optimization: tune 42...
-    ${"#pragma omp parallel for schedule(static) if (N > 255)" if WITH_OPENMP else ""}
+    ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         for (uint si=0; si<n; ++si){
             if (recip)
@@ -386,7 +386,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
     }
     const Real_t exp_t = (logt) ? exp(t) : 0.0;
     ${"Real_t * const local_r = new Real_t[nr];" if not WITH_OPENMP else ""}
-    ${"#pragma omp parallel for schedule(static) if (N > 255)" if WITH_OPENMP else ""}
+    ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
         // compartment bi
         ${"Real_t * const local_r = new Real_t[nr];" if WITH_OPENMP else ""}
@@ -518,7 +518,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     if (auto_efield)
         calc_efield(linC);
 
-    ${'#pragma omp parallel for schedule(static) if (N > 255)' if WITH_OPENMP else ''}
+    ${'#pragma omp parallel for schedule(static) if (N*n*n > 65536)' if WITH_OPENMP else ''}
     for (uint bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
         // Contributions from reactions and fields
