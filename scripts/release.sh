@@ -29,7 +29,9 @@ PKG_UPPER=$(echo $PKG | tr '[:lower:]' '[:upper:]')
 env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION python setup.py sdist
 env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION ./scripts/generate_docs.sh
 for CONDA_PY in 2.7 3.4 3.5; do
-    PATH=$2:$PATH ./scripts/build_conda_recipe.sh v$VERSION --python $CONDA_PY --numpy 1.10
+    for CONDA_NPY in 1.11; do
+        PATH=$2:$PATH ./scripts/build_conda_recipe.sh v$VERSION --python $CONDA_PY --numpy $CONDA_NPY
+    done
 done
 
 # All went well, add a tag and push it.
@@ -42,7 +44,11 @@ if [[ -d dist/conda-recipe-$VERSION ]]; then
     rm -r dist/conda-recipe-$VERSION
 fi
 cp -r conda-recipe/ dist/conda-recipe-$VERSION
-sed -i -E -e "s/version:(.+)/version: $VERSION/" -e "s/path:(.+)/fn: $PKG-$VERSION.tar.gz\n  url: https:\/\/pypi.python.org\/packages\/source\/${PKG:0:1}\/$PKG\/$PKG-$VERSION.tar.gz#md5=$MD5\n  md5: $MD5/" dist/conda-recipe-$VERSION/meta.yaml
+sed -i -E \
+    -e "s/version:(.+)/version: $VERSION/" \
+    -e "s/path:(.+)/fn: $PKG-$VERSION.tar.gz\n  url: https:\/\/pypi.python.org\/packages\/source\/${PKG:0:1}\/$PKG\/$PKG-$VERSION.tar.gz#md5=$MD5\n  md5: $MD5/" \
+    -e "/cython/d" \
+    dist/conda-recipe-$VERSION/meta.yaml
 env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION python setup.py upload_sphinx
 
 # Specific for this project:
@@ -50,7 +56,7 @@ SERVER=$3
 scp -r dist/conda-recipe-$VERSION/ $PKG@$SERVER:~/public_html/conda-recipes/
 scp dist/${PKG}-$VERSION.tar.gz $PKG@$SERVER:~/public_html/releases/
 for CONDA_PY in 2.7 3.4 3.5; do
-    for CONDA_NPY in 1.10; do
+    for CONDA_NPY in 1.11; do
         ssh $PKG@$SERVER "source /etc/profile; conda-build --python $CONDA_PY --numpy $CONDA_NPY ~/public_html/conda-recipes/conda-recipe-$VERSION/"
     done
 done

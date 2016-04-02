@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import io
 import os
 import shutil
 import sys
@@ -8,6 +9,7 @@ import sys
 from setuptools import setup
 
 pkg_name = 'chemreac'
+
 
 def _path_under_setup(*args):
     return os.path.join(os.path.dirname(__file__), *args)
@@ -31,30 +33,33 @@ def _path_under_setup(*args):
 # variables, so for conda based builds to work need setup.py to write
 # the version as a string to a file named '__conda_version__.txt'
 
-CHEMREAC_RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
+RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
 
 # http://conda.pydata.org/docs/build.html#environment-variables-set-during-the-build-process
 CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
 if CONDA_BUILD:
     try:
-        CHEMREAC_RELEASE_VERSION = 'v' + open('__conda_version__.txt', 'rt').readline().rstrip()
+        RELEASE_VERSION = 'v' + io.open('__conda_version__.txt', 'rt',
+                                        encoding='utf-8').readline().rstrip()
     except IOError:
         pass
 
-release_py_path = os.path.join(pkg_name, '_release.py')
+release_py_path = _path_under_setup(pkg_name, '_release.py')
 
-if len(CHEMREAC_RELEASE_VERSION) > 1 and CHEMREAC_RELEASE_VERSION[0] == 'v':
+if len(RELEASE_VERSION) > 1 and RELEASE_VERSION[0] == 'v':
     TAGGED_RELEASE = True
-    __version__ = CHEMREAC_RELEASE_VERSION[1:]
+    __version__ = RELEASE_VERSION[1:]
 else:
     TAGGED_RELEASE = False
     # read __version__ attribute from _release.py:
-    exec(open(release_py_path).read())
+    exec(io.open(release_py_path, encoding='utf-8').read())
 
 WITH_OPENMP = os.environ.get('WITH_OPENMP', '0') == '1'
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
-WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get('WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
-WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get('WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
+WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get(
+    'WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
+WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get(
+    'WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
 WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'
 WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'
 
@@ -106,7 +111,8 @@ else:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
     except ImportError:
         if USE_TEMPLATE:
-            print("This is not source distribution. pycodeexport is needed:", sys.exc_info()[0])
+            print("This is not source distribution. pycodeexport is needed:",
+                  sys.exc_info()[0])
             raise
         # If building from sdist no need for more than pycompilation
         from pycompilation.dist import PCExtension as PCEExtension
@@ -117,7 +123,7 @@ else:
     cmdclass_['sdist'] = pce_sdist
     subsd = {'WITH_OPENMP': WITH_OPENMP}
     pyx_path = 'chemreac/_chemreac.pyx'
-    using_pyx = os.path.exists(pyx_path)  # Cython file missing in source distriubtion
+    using_pyx = os.path.exists(pyx_path)  # No pyx in source dist
     pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
     sources = [
         template_path if USE_TEMPLATE else rendered_path,
@@ -205,8 +211,9 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Mathematics',
 ]
 
-long_description = open('README.rst').read()
-with open(_path_under_setup(pkg_name, '__init__.py')) as f:
+long_description = io.open('README.rst', encoding='utf-8').read()
+with io.open(_path_under_setup(pkg_name, '__init__.py'),
+             encoding='utf-8') as f:
     short_description = f.read().split('"""')[1].split('\n')[1]
 assert len(short_description) > 10 and len(short_description) < 256
 
@@ -240,7 +247,8 @@ if __name__ == '__main__':
             # depending on tagged version (set CHEMREAC_RELEASE_VERSION)
             # this will ensure source distributions contain the correct version
             shutil.move(release_py_path, release_py_path+'__temp__')
-            open(release_py_path, 'wt').write("__version__ = '{}'\n".format(__version__))
+            open(release_py_path, 'wt').write(
+                "__version__ = '{}'\n".format(__version__))
         setup(**setup_kwargs)
     finally:
         if TAGGED_RELEASE:
