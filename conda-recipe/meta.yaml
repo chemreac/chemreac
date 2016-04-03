@@ -43,8 +43,8 @@ test:
     - argh
   imports:
     - chemreac
-  # commands:
-  #   - MPLBACKEND=Agg py.test --pyargs chemreac
+  commands:
+    - MPLBACKEND=Agg py.test --pyargs chemreac
 
 about:
   home: https://github.com/chemreac/chemreac
