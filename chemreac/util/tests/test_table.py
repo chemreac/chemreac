@@ -4,6 +4,7 @@ from __future__ import (absolute_import, division, print_function)
 import shutil
 import tempfile
 
+import pytest
 from chempy.chemistry import Reaction, Substance, ReactionSystem
 
 from chemreac import ReactionDiffusion
@@ -18,6 +19,7 @@ def _get_rsys():
     return rsys
 
 
+@pytest.mark.xfail
 def test_radyields2pdf_table():
     rsys = _get_rsys()
     rd = ReactionDiffusion.from_ReactionSystem(rsys)
