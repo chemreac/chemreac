@@ -134,7 +134,7 @@ def _get_Cref(t, y0, k, use_mpmath=True):
 
 def integrate_rd(
         tend=1.9, A0=4.2, B0=3.1, C0=1.4, nt=100, t0=0.0, kf=0.9, kb=0.23,
-        atol='1e-7,1e-6,1e-5', rtol='1e-6', solver='scipy', method='bdf',
+        atol='1e-7,1e-6,1e-5', rtol='1e-6', integrator='scipy', method='bdf',
         logy=False, logt=False, num_jac=False, plot=False, savefig='None',
         splitplots=False, plotlogy=False, plotsymlogy=False, plotlogt=False,
         scale_err=1.0, scaling=1.0, verbose=False):
@@ -173,7 +173,7 @@ def integrate_rd(
         tout = np.linspace(t0, tend, nt)*second
 
     integr = Integration.nondimensionalisation(
-        rd, C0, tout, solver=solver, atol=atol, rtol=rtol,
+        rd, C0, tout, integrator=integrator, atol=atol, rtol=rtol,
         with_jacobian=not num_jac, method=method)
     Cout = integr.get_with_units('Cout')
     yout, info = integr.yout, integr.info
@@ -297,7 +297,7 @@ def integrate_rd(
             plt.tight_layout()
 
             subplot(3, i, adapt_yscale=False)
-            ttl = 'Excess error in [{}](t) / solver linear error span'
+            ttl = 'Excess error in [{}](t) / integrator linear error span'
             plt.title(ttl.format(
                 'ABC'[i]))
             plt.legend(loc='best')

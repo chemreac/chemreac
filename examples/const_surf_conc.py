@@ -77,7 +77,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
                  nt=42, logt=False, logy=False, logx=False,
                  random=False, k=1.0, nstencil=3, linterpol=False,
                  rinterpol=False, num_jacobian=False, method='bdf',
-                 solver='scipy', iter_type='default',
+                 integrator='scipy', iter_type='default',
                  linear_solver='default', atol=1e-8, rtol=1e-10, factor=1e5,
                  random_seed=42, plot=False, savefig='None', verbose=False,
                  scaling=1.0, ilu_limit=1000.0, first_step=0.0, n_jac_diags=0):
@@ -131,7 +131,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
 
     # Run the integration
     integr = Integration.nondimensionalisation(
-        rd, y0, tout, solver=solver, atol=atol, rtol=rtol,
+        rd, y0, tout, integrator=integrator, atol=atol, rtol=rtol,
         with_jacobian=(not num_jacobian), method=method,
         iter_type=iter_type,
         linear_solver=linear_solver, first_step=first_step)

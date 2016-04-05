@@ -199,7 +199,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
                  random=False, p=0, a=0.2,
                  linterpol=False, rinterpol=False, ilu_limit=5.0,
                  n_jac_diags=-1, num_jacobian=False,
-                 method='bdf', solver='cvode', iter_type='default',
+                 method='bdf', integrator='cvode', iter_type='default',
                  linear_solver='default',
                  atol=1e-8, rtol=1e-10,
                  efield=False, random_seed=42, mobility=0.01,
@@ -278,7 +278,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
     integr = run(rd, yref[0, ...], tout, atol=atol, rtol=rtol,
                  with_jacobian=(not num_jacobian), method=method,
                  iter_type=iter_type, linear_solver=linear_solver,
-                 C0_is_log=logy, solver=solver)
+                 C0_is_log=logy, integrator=integrator)
     info = integr.info
 
     if logy:

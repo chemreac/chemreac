@@ -38,7 +38,8 @@ def main(logy=False, logt=False, forgive_fact=1):
 
     print('scipy')
     print('-----')
-    integr1 = Integration(rd, np.asarray(y0), np.asarray(tout), solver='scipy')
+    integr1 = Integration(rd, np.asarray(y0), np.asarray(tout),
+                          integrator='scipy')
     print(integr1.info)
     assert np.allclose(integr1.Cout[:, 0, :], Cref(tout))
     print()
@@ -46,14 +47,15 @@ def main(logy=False, logt=False, forgive_fact=1):
     print('cvode')
     print('-----')
     integr2 = Integration(rd, np.asarray(y0), np.asarray(tout), atol=1e-8,
-                          rtol=1e-8, solver='cvode', method='bdf')
+                          rtol=1e-8, integrator='cvode', method='bdf')
     assert np.allclose(integr2.Cout[:, 0, :], Cref(tout))
     print()
 
     # rk4 - fixed step size with 42 steps will give poor accuracy
     print('rk4 - fixed step')
     print('----------------')
-    integr3 = Integration(rd, np.asarray(y0), np.asarray(tout), solver='rk4')
+    integr3 = Integration(rd, np.asarray(y0), np.asarray(tout),
+                          integrator='rk4')
     if logt:
         assert np.allclose(integr3.Cout[:, 0, :], Cref(tout),
                            atol=4e-2, rtol=4e-2)
@@ -70,8 +72,9 @@ def main(logy=False, logt=False, forgive_fact=1):
         print(method, forgive)
         atol, rtol = 1e-8, 1e-8
         integr4 = Integration(
-            rd, np.asarray(y0), (t0, tend), solver='pyodeint', method=method,
-            linear_solver='dense', dense_output=True, atol=atol, rtol=rtol)
+            rd, np.asarray(y0), (t0, tend), integrator='pyodeint',
+            method=method, linear_solver='dense', dense_output=True, atol=atol,
+            rtol=rtol)
         assert np.allclose(integr4.Cout[:, 0, :], Cref(integr4.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
     print()
@@ -89,7 +92,7 @@ def main(logy=False, logt=False, forgive_fact=1):
         integr5 = Integration(rd, np.asarray(y0), (t0, tend),
                               linear_solver='dense', dense_output=True,
                               atol=atol, rtol=rtol, method=method,
-                              solver='pygslodeiv2')
+                              integrator='pygslodeiv2')
         assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
 
