@@ -213,7 +213,7 @@ def test_integrators(log):
     results = []
     for solver, kwargs in solver_kwargs.items():
         _y0 = np.log(y0) if kwargs.get('C0_is_log', False) else y0
-        integr = Integration(rd, _y0, solver=solver[:-1], **kwargs)
+        integr = Integration(rd, _y0, integrator=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)
 
@@ -229,7 +229,7 @@ def test_pickle_Integration():
     y0 = [3.0, 1.0]
     t0, tend, nt = 5.0, 17.0, 42
     integr = Integration(rd, y0, tout=np.linspace(t0, tend, nt+1),
-                         solver='scipy')
+                         integrator='scipy')
     Cout = integr.Cout.copy()
     s = pickle.dumps(integr)
     integr2 = pickle.loads(s)
@@ -243,7 +243,8 @@ def test_integrate_nondimensionalisation():
         unit_registry=SI_base_registry)
     C0 = [3*molar, 4*molar]
     tout = np.linspace(0, 1)*day
-    integr = Integration.nondimensionalisation(rd, C0, tout, solver='scipy')
+    integr = Integration.nondimensionalisation(
+        rd, C0, tout, integrator='scipy')
 
     k_m3_p_mol_p_sec = 2e-3/3600
     t_sec = np.linspace(0, 24*3600)

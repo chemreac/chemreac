@@ -64,7 +64,8 @@ from chemreac.util.plotting import (
 
 def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False,
                  linear_solver='default', logy=False, logt=False,
-                 plot=False, savefig='None', verbose=False, graph=False):
+                 plot=False, savefig='None', verbose=False, graph=False,
+                 **kwargs):
     """
     Integrates the reaction system defined by
     :download:`four_species.json <examples/four_species.json>`
@@ -102,14 +103,13 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False,
         plt.show()
     else:
         tout = np.linspace(t0, tend, nt)
-        integr = run(rd, y0, tout)
-        Cout = integr.Cout
+        integr = run(rd, y0, tout, **kwargs)
         if verbose:
             print(integr.info)
         if plot:
             plt.figure(figsize=(6, 4))
             for i, l in enumerate('ABCD'):
-                plt.plot(tout, Cout[:, 0, i], label=l)
+                plt.plot(integr.tout, integr.Cout[:, 0, i], label=l)
             plt.title("Time evolution of concentrations")
             plt.legend()
             save_and_or_show_plot(savefig=savefig)
@@ -117,8 +117,8 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False,
             plt.figure(figsize=(6, 10))
             plot_jacobian(
                 rd,
-                np.log(tout) if rd.logt else tout,
-                np.log(Cout) if rd.logy else Cout,
+                np.log(integr.tout) if rd.logt else integr.tout,
+                np.log(integr.Cout) if rd.logy else integr.Cout,
                 'ABCD',
                 lintreshy=1e-10
             )
@@ -140,6 +140,7 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False,
     if graph:
         print(rsys2graph(ReactionSystem.from_ReactionDiffusion(rd, 'ABCD'),
                          'four_species_graph.png', save='.'))
+    return integr
 
 
 if __name__ == '__main__':

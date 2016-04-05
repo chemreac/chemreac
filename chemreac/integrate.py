@@ -8,9 +8,9 @@ system of ODEs which the :py:class:`~chemreac.core.ReactionDiffusion` object
 represents. The main class representing a numerical integration (for a set of
 parameters) of the system of ODEs is :py:class:`Integration`.
 
-If one does not want to hard code the choice of solver and solver parameters
-(e.g. tolerances), one may use :py:func:`run` which defers those choices to
-the user of the script through the use of environment variables.
+If one does not want to hard code the choice of integrator and solver
+parameters (e.g. tolerances), one may use :py:func:`run` which defers those
+choices to the user of the script through the use of environment variables.
 
 .. note :: Preferred ways to perform the integration is
     using :py:class:`Integration` or :py:func:`run`
@@ -39,7 +39,7 @@ class IntegrationError(Exception):
     pass
 
 
-def integrate_cvode(rd, y0, tout, **kwargs):
+def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
     """
     see :py:func:`integrate`
 
@@ -47,38 +47,40 @@ def integrate_cvode(rd, y0, tout, **kwargs):
       method: linear multistep method: 'bdf' or 'adams'
 
     """
-    from ._chemreac import sundials_integrate
+    from ._chemreac import cvode_predefined, cvode_adaptive
 
     # Handle kwargs
-    new_kwargs = {}
-    atol = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
-    if atol.ndim == 0:
-        atol = atol.reshape((1,))
-    new_kwargs['atol'] = atol
-    new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
-    new_kwargs['method'] = kwargs.pop('method', 'bdf')
-    new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
-    new_kwargs['iter_type'] = {
+    kwargs['atol'] = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
+    if kwargs['atol'].ndim == 0:
+        kwargs['atol'] = kwargs['atol'].reshape((1,))
+    kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
+    kwargs['method'] = kwargs.pop('method', 'bdf')
+    kwargs['iter_type'] = {
         'default': 0, 'functional': 1, 'newton': 2}[
             kwargs.pop('iter_type', 'default').lower()]
-    new_kwargs['linear_solver'] = {
+    kwargs['linear_solver'] = {
         'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
         'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[
             kwargs.pop('linear_solver', 'default').lower()]
-    new_kwargs['maxl'] = kwargs.pop('maxl', 5)
-    new_kwargs['eps_lin'] = kwargs.pop('eps_lin', 0.05)
-    new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
-    if kwargs != {}:
-        raise KeyError("Unkown kwargs: {}".format(kwargs))
+    if dense_output is None:
+        dense_output = (len(tout) == 2)
 
     # Run the integration
     rd.zero_counters()
     time_wall = time.time()
     time_cpu = time.clock()
     try:
-        yout = sundials_integrate(rd, np.asarray(y0).flatten(),
-                                  np.asarray(tout).flatten(),
-                                  **new_kwargs)
+        if dense_output:
+            if not len(tout) == 2:
+                raise ValueError("dense_output implies tout == (t0, tend)")
+            tout, yout = cvode_adaptive(
+                rd, np.asarray(y0).flatten(), tout[0], tout[-1],
+                kwargs.pop('atol'), kwargs.pop('rtol'), kwargs.pop('method'),
+                **kwargs)
+        else:
+            yout = cvode_predefined(rd, np.asarray(y0).flatten(),
+                                    np.asarray(tout).flatten(),
+                                    **kwargs)
     except RuntimeError:
         yout = np.empty((len(tout), rd.N, rd.n), order='C')/0  # NaN
         success = False
@@ -87,22 +89,21 @@ def integrate_cvode(rd, y0, tout, **kwargs):
     time_wall = time.time() - time_wall
     time_cpu = time.clock() - time_cpu
 
-    info = new_kwargs.copy()
-    info.update({
+    kwargs.update({
         'nfev': rd.nfev,
         'njev': rd.njev,
         'time_wall': time_wall,
         'time_cpu': time_cpu,
         'success': success
     })
-    if info['linear_solver'] >= 10:
-        info['nprec_setup'] = rd.nprec_setup
-        info['nprec_solve'] = rd.nprec_solve
-        info['njacvec_dot'] = rd.njacvec_dot
-        info['nprec_solve_ilu'] = rd.nprec_solve_ilu
-        info['nprec_solve_lu'] = rd.nprec_solve_lu
-    info.update(rd.last_integration_info)
-    return yout, tout, info
+    if kwargs['linear_solver'] >= 10:
+        kwargs['nprec_setup'] = rd.nprec_setup
+        kwargs['nprec_solve'] = rd.nprec_solve
+        kwargs['njacvec_dot'] = rd.njacvec_dot
+        kwargs['nprec_solve_ilu'] = rd.nprec_solve_ilu
+        kwargs['nprec_solve_lu'] = rd.nprec_solve_lu
+    kwargs.update(rd.last_integration_info)
+    return yout, tout, kwargs
 
 
 def _integrate_rk4(rd, y0, tout, **kwargs):
@@ -191,7 +192,7 @@ def integrate_pygslodeiv2(*args, **kwargs):
 
 
 def integrate_scipy(rd, y0, tout, linear_solver='default',
-                    integrator_name='vode', dense_output=None,
+                    name='vode', dense_output=None,
                     **kwargs):
     """
     see :class:`Integration`
@@ -207,7 +208,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         - ``np.logspace(np.log10(t0 + 1e-12), np.log10(tend), nt)``
     linear_solver: str (default: 'default')
         'dense' or 'banded'
-    integrator_name: string (default: 'vode')
+    name: string (default: 'vode')
     dense_output: bool (default: None)
         if True, tout is taken to be length 2 tuple (t0, tend),
         if unspecified (None), length of tout decides (length 2 => True)
@@ -287,7 +288,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
     jac.neval = 0
 
     runner = ode(f, jac=jac if new_kwargs['with_jacobian'] else None)
-    runner.set_integrator(integrator_name, **new_kwargs)
+    runner.set_integrator(name, **new_kwargs)
     runner.set_initial_value(y0.flatten(), tout[0])
 
     if dense_output is None:
@@ -323,7 +324,6 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
 
     info = new_kwargs.copy()
     info.update({
-        'integrator_name': integrator_name,
         'success': runner.successful(),
         'time_wall': time_wall,
         'time_cpu': time_cpu,
@@ -348,19 +348,15 @@ def sigm(x, lim=150., n=8):
 class Integration(object):
     """
     Model kinetcs by integrating system of ODEs using
-    user specified solver.
+    user specified integrator.
 
     Parameters
     ----------
-    solver : string
-        "cvode" or "scipy" where scipy uses VODE
-        as the solver. The default ``'None'`` leaves the choice to the
-        environmentvariable ``CHEMREAC_SOLVER`` (with ``'scipy'`` as fallback).
     rd : ReactionDiffusion instance
     C0 : array
         Initial concentrations (untransformed, i.e. linear).
     tout : array
-        Times for which to report solver results (untransformed).
+        Times for which to report results (untransformed).
     sigm_damp : bool or tuple of (lim: float, n: int)
         Conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
         if sigm==True then `lim` and `n` are the default of :py:func:`sigm`.
@@ -373,6 +369,9 @@ class Integration(object):
         if you explicitly want to avoid adding tiny you need to set it
         to zero (e.g. when manually setting any C0==0 to some epsilon).
         (default: None => ``numpy.finfo(np.float64).tiny``).
+    integrator : string
+        "cvode" or "scipy" where scipy uses VODE
+        as the integrator.
 
     **kwargs :
         Keyword arguments passed on to integartor, e.g.:
@@ -387,9 +386,9 @@ class Integration(object):
     Cout: array
         linear output concentrations
     yout: array
-        output from solver: log(concentrations) if rd.logy == True
+        output from integrator: log(concentrations) if rd.logy == True
     info: dict
-        Information from solver. Guaranteed to contain:
+        Information from integrator. Guaranteed to contain:
             - 'time_wall': execution time in seconds (wall clock).
             - 'time_cpu': execution time in seconds (cpu time).
             - 'atol': float or array, absolute tolerance(s).
@@ -414,12 +413,10 @@ class Integration(object):
     }
 
     def __init__(self, rd, C0, tout, sigm_damp=False,
-                 C0_is_log=False, tiny=None, solver='None', **kwargs):
-        if solver == 'None':
-            solver = os.environ.get('CHEMREAC_SOLVER', 'scipy')
-        if solver not in self._callbacks:
-            raise KeyError("Unknown solver %s" % solver)
-        self.solver = solver
+                 C0_is_log=False, tiny=None, integrator='scipy', **kwargs):
+        if integrator not in self._callbacks:
+            raise KeyError("Unknown integrator %s" % integrator)
+        self.integrator = integrator
         self.rd = rd
         self.C0 = np.asarray(C0).flatten()
         self.tout = tout
@@ -450,14 +447,14 @@ class Integration(object):
     def _integrate(self):
         """
         Performs the integration by calling the callback chosen by
-        self.solver. If rd.logy == True, a transformation of self.C0 to
+        :attr:`integrator`. If rd.logy == True, a transformation of self.C0 to
         log(C0) will be performed before running the integration (the same
         is done for self.tout / rd.logt == True).
 
         After the integration is done the attributes `Cout`, `info` and `yout`
         are set. Cout is guaranteed to be linear concentrations (transformed
         from yout by calling exp if rd.logy==True) and yout is the unprocessed
-        output from the solver.
+        output from the integrator.
         """
         # Pre-processing
         # --------------
@@ -497,8 +494,8 @@ class Integration(object):
 
         # Run the integration
         # -------------------
-        self.yout, self.internal_t, self.info = self._callbacks[self.solver](
-            self.rd, y0, t, **self.kwargs)
+        self.yout, self.internal_t, self.info = self._callbacks[
+            self.integrator](self.rd, y0, t, **self.kwargs)
         self.info['t0_set'] = t0 if t0_set else False
 
         # Post processing
@@ -533,10 +530,10 @@ class Integration(object):
 
 def run(*args, **kwargs):
     """
-    ``run`` is provided for environment variable directed solver choice.
+    ``run`` is provided for environment variable directed integration choices.
 
     Set ``CHEMREAC_INTEGRATION_KWARGS`` to a string which can be evaluated to
-    a python dictionary. e.g. "{'atol': 1e-4, 'rtol'=1e-7}"
+    a python dictionary. e.g. "{'integrator': 'cvode', 'atol': 1e-4}"
     """
     environ_kwargs = os.environ.get('CHEMREAC_INTEGRATION_KWARGS', None)
     if environ_kwargs:
@@ -545,4 +542,7 @@ def run(*args, **kwargs):
             fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}"
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
-    return Integration(*args, **kwargs)
+    if kwargs.pop('nondimensionalisation', False):
+        return Integration.nondimensionalisation(*args, **kwargs)
+    else:
+        return Integration(*args, **kwargs)

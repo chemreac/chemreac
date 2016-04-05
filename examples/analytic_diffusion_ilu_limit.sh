@@ -1,1 +1,1 @@
-CHEMREAC_N_JAC_DIAGS=0 CHEMREAC_ILU_LIMIT=2 CHEMREAC_SOLVER_KWARGS="{'iterative': 1}" CHEMREAC_SOLVER=sundials python analytic_diffusion.py  --t0 0.25 --tend 1.5 --efield --center 0.5 --nstencil 7 --nspecies 2 --geom f --N 256 --verbose --plot
+CHEMREAC_N_JAC_DIAGS=0 CHEMREAC_ILU_LIMIT=2 CHEMREAC_INTEGRATION_KWARGS="{'integrator': 'cvode', 'linear_solver': 'gmres'}" python analytic_diffusion.py  --t0 0.25 --tend 1.5 --efield --center 0.5 --nstencil 7 --nspecies 2 --geom f --N 256 --verbose --plot

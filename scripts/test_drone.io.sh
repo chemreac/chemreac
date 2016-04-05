@@ -44,7 +44,7 @@ hash -r
 
 # Build extension module and run test suite
 export WITH_OPENMP=1
-export CHEMREAC_SOLVER=cvode_direct
+export CHEMREAC_INTEGRATION_KWARGS="{'integrator': cvode, 'linear_solver': 'direct'}"
 source ./scripts/ci_conda.sh $PYTHON_VERSION $CONDA_PY $ENV_NAME 1
 if [[ $? != 0 ]]; then
     >&2 echo "./scripts/ci_conda.sh failed."
