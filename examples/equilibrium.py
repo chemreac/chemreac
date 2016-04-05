@@ -175,7 +175,7 @@ def integrate_rd(
     integr = Integration.nondimensionalisation(
         rd, C0, tout, integrator=integrator, atol=atol, rtol=rtol,
         with_jacobian=not num_jac, method=method)
-    Cout = integr.get_with_units('Cout')
+    Cout = integr.with_units('Cout')
     yout, info = integr.yout, integr.info
     try:
         import mpmath

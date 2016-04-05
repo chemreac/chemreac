@@ -472,7 +472,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     def reac_orders(self):
         return map(len, self.stoich_active)
 
-    def get_with_units(self, prop):
+    def with_units(self, prop):
         rep = self._prop_unit[prop]
         if isinstance(rep, tuple):
             return [v*u for v, u in zip(getattr(self, prop), rep[0](

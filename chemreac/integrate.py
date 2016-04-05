@@ -509,7 +509,7 @@ class Integration(object):
         # Back-transform integration output into linear concentration
         self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
 
-    def get_with_units(self, attr):
+    def with_units(self, attr):
         if attr == 'tout':
             return self.tout * get_derived_unit(self.rd.unit_registry, 'time')
         if attr == 'Cout':

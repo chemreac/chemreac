@@ -912,10 +912,10 @@ def test_nondimensionalisation():
     assert rd.k == [2e-3]
 
 
-def test_get_with_units():
+def test_with_units():
     rd = ReactionDiffusion.nondimensionalisation(
         2, [[0, 0]], [[1]], [2/molar/second], unit_registry=SI_base_registry)
-    assert allclose(rd.get_with_units('k'), [2e-3 * metre**3/mole/second])
+    assert allclose(rd.with_units('k'), [2e-3 * metre**3/mole/second])
 
 
 def test_exceptions():
