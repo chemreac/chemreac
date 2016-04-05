@@ -39,7 +39,7 @@ class IntegrationError(Exception):
     pass
 
 
-def integrate_cvode(rd, y0, tout, **kwargs):
+def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
     """
     see :py:func:`integrate`
 
@@ -47,38 +47,40 @@ def integrate_cvode(rd, y0, tout, **kwargs):
       method: linear multistep method: 'bdf' or 'adams'
 
     """
-    from ._chemreac import sundials_integrate
+    from ._chemreac import cvode_predefined, cvode_adaptive
 
     # Handle kwargs
-    new_kwargs = {}
-    atol = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
-    if atol.ndim == 0:
-        atol = atol.reshape((1,))
-    new_kwargs['atol'] = atol
-    new_kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
-    new_kwargs['method'] = kwargs.pop('method', 'bdf')
-    new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
-    new_kwargs['iter_type'] = {
+    kwargs['atol'] = np.asarray(kwargs.pop('atol', DEFAULTS['atol']))
+    if kwargs['atol'].ndim == 0:
+        kwargs['atol'] = kwargs['atol'].reshape((1,))
+    kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
+    kwargs['method'] = kwargs.pop('method', 'bdf')
+    kwargs['iter_type'] = {
         'default': 0, 'functional': 1, 'newton': 2}[
             kwargs.pop('iter_type', 'default').lower()]
-    new_kwargs['linear_solver'] = {
+    kwargs['linear_solver'] = {
         'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
         'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[
             kwargs.pop('linear_solver', 'default').lower()]
-    new_kwargs['maxl'] = kwargs.pop('maxl', 5)
-    new_kwargs['eps_lin'] = kwargs.pop('eps_lin', 0.05)
-    new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
-    if kwargs != {}:
-        raise KeyError("Unkown kwargs: {}".format(kwargs))
+    if dense_output is None:
+        dense_output = (len(tout) == 2)
 
     # Run the integration
     rd.zero_counters()
     time_wall = time.time()
     time_cpu = time.clock()
     try:
-        yout = sundials_integrate(rd, np.asarray(y0).flatten(),
-                                  np.asarray(tout).flatten(),
-                                  **new_kwargs)
+        if dense_output:
+            if not len(tout) == 2:
+                raise ValueError("dense_output implies tout == (t0, tend)")
+            tout, yout = cvode_adaptive(
+                rd, np.asarray(y0).flatten(), tout[0], tout[-1],
+                kwargs.pop('atol'), kwargs.pop('rtol'), kwargs.pop('method'),
+                **kwargs)
+        else:
+            yout = cvode_predefined(rd, np.asarray(y0).flatten(),
+                                    np.asarray(tout).flatten(),
+                                    **kwargs)
     except RuntimeError:
         yout = np.empty((len(tout), rd.N, rd.n), order='C')/0  # NaN
         success = False
@@ -87,22 +89,21 @@ def integrate_cvode(rd, y0, tout, **kwargs):
     time_wall = time.time() - time_wall
     time_cpu = time.clock() - time_cpu
 
-    info = new_kwargs.copy()
-    info.update({
+    kwargs.update({
         'nfev': rd.nfev,
         'njev': rd.njev,
         'time_wall': time_wall,
         'time_cpu': time_cpu,
         'success': success
     })
-    if info['linear_solver'] >= 10:
-        info['nprec_setup'] = rd.nprec_setup
-        info['nprec_solve'] = rd.nprec_solve
-        info['njacvec_dot'] = rd.njacvec_dot
-        info['nprec_solve_ilu'] = rd.nprec_solve_ilu
-        info['nprec_solve_lu'] = rd.nprec_solve_lu
-    info.update(rd.last_integration_info)
-    return yout, tout, info
+    if kwargs['linear_solver'] >= 10:
+        kwargs['nprec_setup'] = rd.nprec_setup
+        kwargs['nprec_solve'] = rd.nprec_solve
+        kwargs['njacvec_dot'] = rd.njacvec_dot
+        kwargs['nprec_solve_ilu'] = rd.nprec_solve_ilu
+        kwargs['nprec_solve_lu'] = rd.nprec_solve_lu
+    kwargs.update(rd.last_integration_info)
+    return yout, tout, kwargs
 
 
 def _integrate_rk4(rd, y0, tout, **kwargs):
@@ -541,4 +542,7 @@ def run(*args, **kwargs):
             fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}"
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
-    return Integration(*args, **kwargs)
+    if kwargs.pop('nondimensionalisation', False):
+        return Integration.nondimensionalisation(*args, **kwargs)
+    else:
+        return Integration(*args, **kwargs)
