@@ -37,20 +37,21 @@ class ReactionDiffusionBase(object):
 
     @classmethod
     def from_ReactionSystem(cls, rsys, ordered_names=None, state=None,
-                            **kwargs):
+                            nondimensionalisation=False, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
 
         Parameters
         ----------
-        substances: sequence of Substance instances
+        substances : sequence of Substance instances
             pass to override rsys.substances (optional)
-        ordered_names: sequence of names
+        ordered_names : sequence of names
             pass to override rsys.ordered_names()
-        state: object
+        state : object
             used to evaluate callable ``Reaction.params`` in ``rsys.rxns``
-        \*\*kwargs:
+        \*\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
+
         """
         ord_names = ordered_names or rsys.substance_names()
         for rxn in rsys.rxns:
@@ -77,7 +78,11 @@ class ReactionDiffusionBase(object):
                  'substance_latex_names']):
             _kwargs_updater(key, attr)
 
-        return ReactionDiffusion(
+        if nondimensionalisation:
+            cb = ReactionDiffusion.nondimensionalisation
+        else:
+            cb = ReactionDiffusion
+        return cb(
             rsys.ns,
             [reduce(add, [[i]*rxn.reac.get(k, 0) for i, k
                           in enumerate(ord_names)]) for rxn in rsys.rxns],

@@ -441,14 +441,13 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
 
 
 def plot_C_vs_t(integr, **kwargs):
-    return plot_C_vs_t_in_bin(integr.rd, integr.tout, integr.Cout, **kwargs)
+    return plot_C_vs_t_in_bin(integr.rd, integr.with_units('tout'), integr.with_units('Cout'), **kwargs)
 
 
 def plot_C_vs_t_in_bin(
         rd, tout, Cout, bi=0, ax=None, labels=None,
         xscale='log', yscale='log', substances=None,
-        ttlfmt=(r"C(t) in bin: {0:.2g} m $\langle$" +
-                r" x $\langle$ {1:.2g} m"), legend_kwargs=None,
+        ttlfmt=None, legend_kwargs=None,
         ls=None, c=None, xlabel=None, ylabel=None):
     """
     Plots bin local concentration as function of time for selected
@@ -478,7 +477,14 @@ def plot_C_vs_t_in_bin(
     Returns
     =======
     Axes instance
+
     """
+    if ttlfmt is None:
+        if rd.N == 1:
+            ttlfmt = "C(t)"
+        else:
+            ttlfmt = (r"C(t) in bin: {0:.2g} m $\langle$" +
+                      r" x $\langle$ {1:.2g} m")
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
                               dict(loc='upper left', prop={'size': 12}))
