@@ -36,7 +36,7 @@ class ReactionDiffusionBase(object):
         return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
 
     @classmethod
-    def from_ReactionSystem(cls, rsys, ordered_names=None, state=None,
+    def from_ReactionSystem(cls, rsys, variables=None,
                             nondimensionalisation=False, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
@@ -47,28 +47,69 @@ class ReactionDiffusionBase(object):
             pass to override rsys.substances (optional)
         ordered_names : sequence of names
             pass to override rsys.ordered_names()
-        state : object
-            used to evaluate callable ``Reaction.params`` in ``rsys.rxns``
+        variables : object
+            used to evaluate callable ``Reaction.param`` in ``rsys.rxns``
         \*\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """
-        ord_names = ordered_names or rsys.substance_names()
+        from chempy.kinetics.rates import MassAction, Radiolytic
+        mass_action_rxns = []
+        radiolytic_rxns = []
         for rxn in rsys.rxns:
             for key in chain(rxn.reac, rxn.prod, rxn.inact_reac):
-                if key not in ord_names:
+                if key not in rsys.substances:
                     raise ValueError("Unkown substance name: %s" % key)
+            if isinstance(rxn.param, (float, MassAction, np.ndarray)):
+                mass_action_rxns.append(rxn)
+            elif isinstance(rxn.param, Radiolytic):
+                radiolytic_rxns.append(rxn)
+            else:
+                raise NotImplementedError("Unsupported RateExpr: %s" % str(rxn.param))
 
+        # Handle radiolytic yields
+        yields = {}
+        for rxn in radiolytic_rxns:
+            doserate_name = rxn.param.parameter_keys[0]
+            if not doserate_name in yields:
+                yields[doserate_name] = {}
+            for k, rate in rxn.rate(variables).items():
+                g_val = rate/variables['density']/variables[doserate_name]
+                if k not in yields[doserate_name]:
+                    yields[doserate_name][k] = g_val
+                else:
+                    yields[doserate_name][k] += g_val
+
+        g_values = [rsys.as_per_substance_array(v) for v in yields.values()] if len(yields) > 0 else []
+        g_value_parents = []
+        for k in yields:
+            parent = None
+            for r in radiolytic_rxns:
+                if parent is None:
+                    parent = r.reac
+                else:
+                    if parent != r.reac:
+                        raise ValueError("Mixed parents for %s" % k)
+                if parent == {}:
+                    g_value_parents.append(-1)
+                else:
+                    if len(parent) != 1:
+                        raise NotimplementedError("Multiple parents not supported")
+                    g_value_parents.append(rsys.as_substance_index(parent.keys()[0]))
+
+        fields = [[variables['density']*variables[doserate_name] for doserate_name in yields]*bi for bi in range(kwargs.get('N', 1))]
+        if fields == [[]]:
+            fields = None
         def _kwargs_updater(key, attr):
             if attr in kwargs:
                 return
             try:
                 kwargs[attr] = [getattr(rsys.substances[sn], key) for sn in
-                                ord_names]
+                                rsys.substances]
             except AttributeError:
                 try:
                     kwargs[attr] = [rsys.substances[sn].other_properties[key]
-                                    for sn in ord_names]
+                                    for sn in rsys.substances]
                 except KeyError:
                     pass
 
@@ -85,15 +126,18 @@ class ReactionDiffusionBase(object):
         return cb(
             rsys.ns,
             [reduce(add, [[i]*rxn.reac.get(k, 0) for i, k
-                          in enumerate(ord_names)]) for rxn in rsys.rxns],
+                          in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
             [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
-                          in enumerate(ord_names)]) for rxn in rsys.rxns],
-            [rxn.param(state) if callable(rxn.param) else rxn.param for
+                          in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
+            [rxn.rate_coeff(variables) if isinstance(rxn.param, MassAction) else rxn.param for
              rxn in rsys.rxns],
             stoich_inact=[reduce(add, [
                 [i]*(0 if rxn.inact_reac is None else
-                     rxn.inact_reac.get(k, 0)) for i, k in enumerate(ord_names)
-            ]) for rxn in rsys.rxns],
+                     rxn.inact_reac.get(k, 0)) for i, k in enumerate(rsys.substances)
+            ]) for rxn in mass_action_rxns],
+            g_values=g_values,
+            g_value_parents=g_value_parents,
+            fields=fields,
             **kwargs)
 
     def to_Reaction(self, ri, substance_names=None):
