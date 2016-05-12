@@ -5,7 +5,6 @@ import io
 
 import argh
 
-from builtins import str
 
 
 def get_abspath(path, cwd=None):
