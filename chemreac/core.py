@@ -37,18 +37,16 @@ class ReactionDiffusionBase(object):
 
     @classmethod
     def from_ReactionSystem(cls, rsys, variables=None,
-                            nondimensionalisation=False, **kwargs):
+                            nondimensionalisation=False, fields=None, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
 
         Parameters
         ----------
-        substances : sequence of Substance instances
-            pass to override rsys.substances (optional)
-        ordered_names : sequence of names
-            pass to override rsys.ordered_names()
-        variables : object
-            used to evaluate callable ``Reaction.param`` in ``rsys.rxns``
+        rsys : ReactionSystem
+        variables : dict
+        nondimensionalisation : bool
+        fields: optional
         \*\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
@@ -71,7 +69,7 @@ class ReactionDiffusionBase(object):
         yields = {}
         for rxn in radiolytic_rxns:
             doserate_name = rxn.param.parameter_keys[0]
-            if not doserate_name in yields:
+            if doserate_name not in yields:
                 yields[doserate_name] = {}
             for k, rate in rxn.rate(variables).items():
                 g_val = rate/variables['density']/variables[doserate_name]
@@ -94,12 +92,14 @@ class ReactionDiffusionBase(object):
                     g_value_parents.append(-1)
                 else:
                     if len(parent) != 1:
-                        raise NotimplementedError("Multiple parents not supported")
+                        raise NotImplementedError("Multiple parents not supported")
                     g_value_parents.append(rsys.as_substance_index(parent.keys()[0]))
 
-        fields = [[variables['density']*variables[doserate_name] for doserate_name in yields]*bi for bi in range(kwargs.get('N', 1))]
-        if fields == [[]]:
-            fields = None
+        if fields is None:
+            fields = [[variables['density']*variables[dname] for dname in yields]*kwargs.get('N', 1)]
+            if fields == [[]]:
+                fields = None
+
         def _kwargs_updater(key, attr):
             if attr in kwargs:
                 return
@@ -305,7 +305,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         Indices of parents for each g_value. ``-1`` denotes no concentration
         dependence of g_values. default: ``[-1]*len(g_values)``.
     fields: sequence of sequence of floats
-        Per bin field strength (energy / (volume time)) per field type.
+        Per bin field strength (energy / volume / time) per field type.
         May be calculated as product between density and doserate.
     modulated_rxns: sequence of integers
         Indicies of reactions subject to per bin modulation.

@@ -6,7 +6,6 @@ import io
 import argh
 
 
-
 def get_abspath(path, cwd=None):
     if os.path.isabs(path):
         return path

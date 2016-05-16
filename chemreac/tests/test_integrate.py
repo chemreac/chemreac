@@ -17,7 +17,9 @@ import pytest
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run, Integration
 from chemreac.util.testing import veryslow
-from chemreac.units import metre, molar, umol, mole, hour, day, SI_base_registry
+from chemreac.units import (
+    metre, molar, umol, hour, day, SI_base_registry
+)
 
 LOG_COMOBS = list(product([True, False], [True, False]))
 
@@ -259,20 +261,24 @@ def test_integrate_nondimensionalisation(from_rsys):
     missing_A = (C0_mol_p_m3[0] - Cref_mol_p_m3[:, 0])
     Cref_mol_p_m3[:, 1] = C0_mol_p_m3[1] + missing_A/2
     assert allclose(integr.with_units('tout'), t_sec*u.s)
-    assert allclose(integr.with_units('Cout').squeeze(), Cref_mol_p_m3*u.mol/u.metre**3, rtol=1e-6)
+    assert allclose(integr.with_units('Cout').squeeze(),
+                    Cref_mol_p_m3*u.mol/u.metre**3, rtol=1e-6)
+
 
 @pytest.mark.parametrize("from_rsys", [False, True])
 def test_integrate_nondimensionalisation__g_values(from_rsys):
     from chempy import Reaction, ReactionSystem
     from chempy.units import allclose, default_units as u
-    print(from_rsys)##
-    # -> H OH
+    rstr = "-> H + OH; Radiolytic({'radiolytic_yield': 2.1e-7*mol/J})"
     if from_rsys:
-        rxn = Reaction.from_string("-> H + OH; Radiolytic({'radiolytic_yield': 2.1e-7*mol/J})", None)
+        rxn = Reaction.from_string(rstr, None)
         rsys = ReactionSystem([rxn], 'H OH')
         rd = ReactionDiffusion.from_ReactionSystem(
             rsys, unit_registry=SI_base_registry, nondimensionalisation=True,
             variables=dict(doserate=0.15*u.Gy/u.s, density=0.998*u.kg/u.dm3))
+        assert rd.g_value_parents == [-1]
+        assert rd.g_values == [[2.1e-7]*2]
+        assert abs(rd.fields[0][0] - 0.15*998) < 1e-14
     else:
         rd = ReactionDiffusion.nondimensionalisation(
             2, [[]], [[0, 1]], [2.1e-7*0.15*0.998*u.molar/u.second],
@@ -281,13 +287,14 @@ def test_integrate_nondimensionalisation__g_values(from_rsys):
     tout = np.linspace(0, 1)*day
     integr = Integration.nondimensionalisation(
         rd, C0, tout, integrator='scipy')
-    print(integr.Cout.squeeze().shape)
     k_m3_p_mol_p_sec = 0.15*998*2.1e-7
     t_sec = np.linspace(0, 24*3600)
     C0_mol_p_m3 = [3000, 4000]
     Cref_mol_p_m3 = np.empty(integr.Cout.squeeze().shape)
     Cref_mol_p_m3[:, 0] = C0_mol_p_m3[0] + k_m3_p_mol_p_sec*t_sec
     Cref_mol_p_m3[:, 1] = C0_mol_p_m3[1] + k_m3_p_mol_p_sec*t_sec
+    print(integr.with_units('Cout').squeeze())
+    print(integr.with_units('Cout').squeeze() - Cref_mol_p_m3*u.mole/u.metre**3)
     assert allclose(integr.with_units('tout'), t_sec*u.s)
-    assert allclose(integr.with_units('Cout').squeeze(), Cref_mol_p_m3*u.mole/u.metre**3)
-    assert False##
+    assert allclose(integr.with_units('Cout').squeeze(),
+                    Cref_mol_p_m3*u.mole/u.metre**3)
