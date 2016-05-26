@@ -55,20 +55,28 @@ def test_decay_solver_kwargs_env():
         os.environ.pop(key)
 
 
-def test_autodimerization():
+@pytest.mark.parametrize("arrhenius", [True, False])
+def test_autodimerization(arrhenius):
     # A + A -> B
     from chemreac.chemistry import (
         Reaction, ReactionSystem, mk_sn_dict_from_names
     )
     sbstncs = mk_sn_dict_from_names('AB')
-    k = 3.0
+    if arrhenius:
+        from chempy.kinetics.arrhenius import ArrheniusParam
+        k = ArrheniusParam(7e11, -8.314472*298.15*(np.log(3) - np.log(7) - 11*np.log(10)))
+        variables = {'temperature': 298.15}
+        param = 3.0
+    else:
+        param = k = 3.0
+        variables = None
     r1 = Reaction({'A': 2}, {'B': 1}, k)
     rsys = ReactionSystem([r1], sbstncs)
-    rd = ReactionDiffusion.from_ReactionSystem(rsys)
+    rd = ReactionDiffusion.from_ReactionSystem(rsys, variables=variables)
     t = np.linspace(0, 5, 3)
     A0, B0 = 1.0, 0.0
     integr = run(rd, [A0, B0], t)
-    Aref = 1/(1/A0+2*k*t)
+    Aref = 1/(1/A0+2*param*t)
     yref = np.vstack((Aref, (A0-Aref)/2)).transpose()
     assert np.allclose(integr.yout[:, 0, :], yref)
 

@@ -51,19 +51,17 @@ class ReactionDiffusionBase(object):
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """
-        from chempy.kinetics.rates import MassAction, Radiolytic
+        from chempy.kinetics.rates import RadiolyticBase
         mass_action_rxns = []
         radiolytic_rxns = []
         for rxn in rsys.rxns:
             for key in chain(rxn.reac, rxn.prod, rxn.inact_reac):
                 if key not in rsys.substances:
                     raise ValueError("Unkown substance name: %s" % key)
-            if isinstance(rxn.param, (float, MassAction, np.ndarray)):
-                mass_action_rxns.append(rxn)
-            elif isinstance(rxn.param, Radiolytic):
+            if isinstance(rxn.param, RadiolyticBase):
                 radiolytic_rxns.append(rxn)
             else:
-                raise NotImplementedError("Unsupported RateExpr: %s" % str(rxn.param))
+                mass_action_rxns.append(rxn)
 
         # Handle radiolytic yields
         yields = {}
@@ -96,6 +94,7 @@ class ReactionDiffusionBase(object):
                     g_value_parents.append(rsys.as_substance_index(parent.keys()[0]))
 
         if fields is None:
+            # Each doserate_name gets its own field:
             fields = [[variables['density']*variables[dname] for dname in yields]*kwargs.get('N', 1)]
             if fields == [[]]:
                 fields = None
@@ -129,8 +128,7 @@ class ReactionDiffusionBase(object):
                           in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
             [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
                           in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
-            [rxn.rate_coeff(variables) if isinstance(rxn.param, MassAction) else rxn.param for
-             rxn in rsys.rxns],
+            [rxn.rate_expr().rate_coeff(variables) for rxn in mass_action_rxns],
             stoich_inact=[reduce(add, [
                 [i]*(0 if rxn.inact_reac is None else
                      rxn.inact_reac.get(k, 0)) for i, k in enumerate(rsys.substances)
