@@ -8,6 +8,7 @@ is the class describing the system of ODEs.
 """
 from __future__ import (absolute_import, division, print_function)
 
+from collections import defaultdict, OrderedDict
 from functools import reduce
 import inspect
 from itertools import chain
@@ -64,11 +65,12 @@ class ReactionDiffusionBase(object):
                 mass_action_rxns.append(rxn)
 
         # Handle radiolytic yields
-        yields = {}
+        yield_unit = get_unit(kwargs['unit_registry'], 'radyield') if nondimensionalisation else 1
+        yields = OrderedDict()
         for rxn in radiolytic_rxns:
             doserate_name = rxn.param.parameter_keys[0]
             if doserate_name not in yields:
-                yields[doserate_name] = {}
+                yields[doserate_name] = defaultdict(lambda: 0*yield_unit)
             for k, rate in rxn.rate(variables).items():
                 g_val = rate/variables['density']/variables[doserate_name]
                 if k not in yields[doserate_name]:
@@ -86,12 +88,12 @@ class ReactionDiffusionBase(object):
                 else:
                     if parent != r.reac:
                         raise ValueError("Mixed parents for %s" % k)
-                if parent == {}:
-                    g_value_parents.append(-1)
-                else:
-                    if len(parent) != 1:
-                        raise NotImplementedError("Multiple parents not supported")
-                    g_value_parents.append(rsys.as_substance_index(parent.keys()[0]))
+            if parent == {}:
+                g_value_parents.append(-1)
+            else:
+                if len(parent) != 1:
+                    raise NotImplementedError("Multiple parents not supported")
+                g_value_parents.append(rsys.as_substance_index(parent.keys()[0]))
 
         if fields is None:
             # Each doserate_name gets its own field:
@@ -429,6 +431,9 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 assert len(gv) == n
         if g_value_parents is None:
             g_value_parents = [-1]*len(g_values)
+        else:
+            if not len(g_values) == len(g_value_parents):
+                raise ValueError("g_values and g_value_parents need to be of same length")
 
         if fields is None:
             fields = [[0.0]*N]*len(g_values)
