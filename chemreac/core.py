@@ -37,8 +37,7 @@ class ReactionDiffusionBase(object):
         return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
 
     @classmethod
-    def from_ReactionSystem(cls, rsys, variables=None,
-                            nondimensionalisation=False, fields=None, **kwargs):
+    def from_ReactionSystem(cls, rsys, variables=None, fields=None, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
 
@@ -46,8 +45,8 @@ class ReactionDiffusionBase(object):
         ----------
         rsys : ReactionSystem
         variables : dict
-        nondimensionalisation : bool
         fields: optional
+        unit_registry : dict, optional
         \*\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
@@ -65,7 +64,10 @@ class ReactionDiffusionBase(object):
                 mass_action_rxns.append(rxn)
 
         # Handle radiolytic yields
-        yield_unit = get_unit(kwargs['unit_registry'], 'radyield') if nondimensionalisation else 1
+        if kwargs.get('unit_registry', None) is not None:
+            yield_unit = get_unit(kwargs['unit_registry'], 'radyield')
+        else:
+            yield_unit = 1
         yields = OrderedDict()
         for rxn in radiolytic_rxns:
             doserate_name = rxn.param.parameter_keys[0]
@@ -109,7 +111,7 @@ class ReactionDiffusionBase(object):
                                 rsys.substances]
             except AttributeError:
                 try:
-                    kwargs[attr] = [rsys.substances[sn].other_properties[key]
+                    kwargs[attr] = [rsys.substances[sn].data[key]
                                     for sn in rsys.substances]
                 except KeyError:
                     pass
@@ -120,10 +122,10 @@ class ReactionDiffusionBase(object):
                  'substance_latex_names']):
             _kwargs_updater(key, attr)
 
-        if nondimensionalisation:
-            cb = ReactionDiffusion.nondimensionalisation
-        else:
+        if kwargs.get('unit_registry', None) is None:
             cb = ReactionDiffusion
+        else:
+            cb = ReactionDiffusion.nondimensionalisation
         return cb(
             rsys.ns,
             [reduce(add, [[i]*rxn.reac.get(k, 0) for i, k

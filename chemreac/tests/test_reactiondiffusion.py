@@ -972,8 +972,7 @@ def test_from_ReactionSystem__g_values__units():
     from chempy.units import SI_base_registry, default_units as u
     rs = RS.from_string('-> H + OH; Radiolytic(2.1*per100eV)', checks=())
     variables = {'density': .998 * u.kg/u.dm3, 'doserate': 0.15*u.Gy/u.s}
-    rd = ReactionDiffusion.from_ReactionSystem(rs, variables=variables, nondimensionalisation=True,
-                                               unit_registry=SI_base_registry)
+    rd = ReactionDiffusion.from_ReactionSystem(rs, variables=variables, unit_registry=SI_base_registry)
     gv = rd.g_values
     per100eV_as_mol_per_joule = 1.0364268556366418e-07
     ref = 2.1 * per100eV_as_mol_per_joule

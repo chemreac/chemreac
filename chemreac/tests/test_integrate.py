@@ -250,8 +250,7 @@ def test_integrate_nondimensionalisation(from_rsys):
     if from_rsys:
         rxn = Reaction.from_string('2 A -> B; 2e-3*metre**3/mol/hour', None)
         rsys = ReactionSystem([rxn], 'A B')
-        rd = ReactionDiffusion.from_ReactionSystem(
-            rsys, unit_registry=SI_base_registry, nondimensionalisation=True)
+        rd = ReactionDiffusion.from_ReactionSystem(rsys, unit_registry=SI_base_registry)
     else:
         rd = ReactionDiffusion.nondimensionalisation(
             2, [[0, 0]], [[1]], [2e-9/(umol/metre**3)/hour],
@@ -282,7 +281,7 @@ def test_integrate_nondimensionalisation__g_values(from_rsys):
         rxn = Reaction.from_string(rstr, None)
         rsys = ReactionSystem([rxn], 'H OH')
         rd = ReactionDiffusion.from_ReactionSystem(
-            rsys, unit_registry=SI_base_registry, nondimensionalisation=True,
+            rsys, unit_registry=SI_base_registry,
             variables=dict(doserate=0.15*u.Gy/u.s, density=0.998*u.kg/u.dm3))
         assert rd.g_value_parents == [-1]
         assert rd.g_values == [[2.1e-7]*2]
