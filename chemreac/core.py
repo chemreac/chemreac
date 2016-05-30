@@ -77,8 +77,10 @@ class ReactionDiffusionBase(object):
                     yields[doserate_name][k] = g_val
                 else:
                     yields[doserate_name][k] += g_val
-
-        g_values = [rsys.as_per_substance_array(v) for v in yields.values()] if len(yields) > 0 else []
+        if len(yields) > 0:
+            g_values = [rsys.as_per_substance_array(v, unit=yield_unit) for v in yields.values()]
+        else:
+            g_values = []
         g_value_parents = []
         for k in yields:
             parent = None
@@ -91,9 +93,7 @@ class ReactionDiffusionBase(object):
             if parent == {}:
                 g_value_parents.append(-1)
             else:
-                if len(parent) != 1:
-                    raise NotImplementedError("Multiple parents not supported")
-                g_value_parents.append(rsys.as_substance_index(parent.keys()[0]))
+                raise NotImplementedError("Concentraion dependent radiolysis not supported.")
 
         if fields is None:
             # Each doserate_name gets its own field:
@@ -482,7 +482,6 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
 
     def __reduce__(self):
         args = inspect.getargspec(self.__new__).args[1:]
-        print(args)
         return (self.__class__, tuple(getattr(self, attr) for attr in args))
 
     _prop_unit = {
@@ -499,15 +498,10 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     def nondimensionalisation(cls, n, stoich_active, stoich_prod, k, **kwargs):
         """ Alternative constructor taking arguments with units """
         reac_orders = map(len, stoich_active)
-        k_unitless = [to_unitless(kval, kunit) for kval, kunit in zip(
-            k, k_units(kwargs['unit_registry'],
-                       reac_orders))]
-        g_values_unitless = [np.asarray(
-            [to_unitless(yld, yld_unit) for yld in gv]
-        ) for gv, yld_unit in zip(
-            kwargs.get('g_values', []),
-            g_units(kwargs['unit_registry'],
-                    kwargs.get('g_value_parents', [])))]
+        _k_units = k_units(kwargs['unit_registry'], reac_orders)
+        k_unitless = [to_unitless(kv, ku) for kv, ku in zip(k, _k_units)]
+        g_values_unitless = [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv, yld_unit in zip(
+            kwargs.get('g_values', []), g_units(kwargs['unit_registry'], kwargs.get('g_value_parents', [])))]
         for key, rep in cls._prop_unit.items():
             val = kwargs.pop(key, None)
             if val is not None:
