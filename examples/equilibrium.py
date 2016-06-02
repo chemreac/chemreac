@@ -172,7 +172,7 @@ def integrate_rd(
     else:
         tout = np.linspace(t0, tend, nt)*second
 
-    integr = Integration.nondimensionalisation(
+    integr = Integration(
         rd, C0, tout, integrator=integrator, atol=atol, rtol=rtol,
         with_jacobian=not num_jac, method=method)
     Cout = integr.with_units('Cout')

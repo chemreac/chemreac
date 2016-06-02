@@ -130,7 +130,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
     y0 = np.concatenate((source, Cref[0, ...]), axis=1)
 
     # Run the integration
-    integr = Integration.nondimensionalisation(
+    integr = Integration(
         rd, y0, tout, integrator=integrator, atol=atol, rtol=rtol,
         with_jacobian=(not num_jacobian), method=method,
         iter_type=iter_type,

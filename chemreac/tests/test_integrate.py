@@ -257,8 +257,7 @@ def test_integrate_nondimensionalisation(from_rsys):
             unit_registry=SI_base_registry)
     C0 = [3*molar, 4*molar]
     tout = np.linspace(0, 1)*day
-    integr = Integration.nondimensionalisation(
-        rd, C0, tout, integrator='scipy')
+    integr = Integration(rd, C0, tout, integrator='scipy')
 
     k_m3_p_mol_p_sec = 2e-3/3600
     t_sec = np.linspace(0, 24*3600)
@@ -292,8 +291,7 @@ def test_integrate_nondimensionalisation__g_values(from_rsys):
             unit_registry=SI_base_registry)
     C0 = [3*molar, 4*molar]
     tout = np.linspace(0, 1)*day
-    integr = Integration.nondimensionalisation(
-        rd, C0, tout, integrator='scipy')
+    integr = Integration(rd, C0, tout, integrator='scipy')
     k_m3_p_mol_p_sec = 0.15*998*2.1e-7
     t_sec = np.linspace(0, 24*3600)
     C0_mol_p_m3 = [3000, 4000]
