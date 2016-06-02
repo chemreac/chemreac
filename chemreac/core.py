@@ -29,7 +29,8 @@ Geom_names = {'f': 'Flat', 'c': 'Cylindrical', 's': 'Spherical'}
 
 class ReactionDiffusionBase(object):
 
-    def to_ReactionSystem(self, substance_names):
+    def to_ReactionSystem(self, substance_names=None):
+        substance_names = substance_names or self.substance_names
         rxns = []
         for ri in range(self.nr):
             rxn = self.to_Reaction(ri, substance_names)
@@ -73,12 +74,14 @@ class ReactionDiffusionBase(object):
             doserate_name = rxn.param.parameter_keys[0]
             if doserate_name not in yields:
                 yields[doserate_name] = defaultdict(lambda: 0*yield_unit)
-            for k, rate in rxn.rate(variables).items():
-                g_val = rate/variables['density']/variables[doserate_name]
+
+            g_val = rxn.rate_expr().g_value(variables)
+            for k in rxn.keys():
+                n, = rxn.net_stoich([k])
                 if k not in yields[doserate_name]:
-                    yields[doserate_name][k] = g_val
+                    yields[doserate_name][k] = n*g_val
                 else:
-                    yields[doserate_name][k] += g_val
+                    yields[doserate_name][k] += n*g_val
         if len(yields) > 0:
             g_values = [rsys.as_per_substance_array(v, unit=yield_unit) for v in yields.values()]
         else:
@@ -99,7 +102,7 @@ class ReactionDiffusionBase(object):
 
         if fields is None:
             # Each doserate_name gets its own field:
-            fields = [[variables['density']*variables[dname] for dname in yields]*kwargs.get('N', 1)]
+            fields = [[variables['density']*variables[dname]]*kwargs.get('N', 1) for dname in yields]
             if fields == [[]]:
                 fields = None
 
