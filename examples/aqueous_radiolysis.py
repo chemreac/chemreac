@@ -91,7 +91,7 @@ def integrate_rd(
     if profile_yep:
         import yep
         yep.start(os.path.join(os.path.dirname(__file__), name+'.prof'))
-    integr = Integration.nondimensionalisation(
+    integr = Integration(
         rd, y0, tout, with_jacobian=(not num_jacobian),
         integrator=integrator, iter_type=iter_type,
         linear_solver=linear_solver, first_step=first_step,

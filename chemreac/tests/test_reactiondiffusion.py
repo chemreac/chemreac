@@ -912,10 +912,10 @@ def test_nondimensionalisation():
     assert rd.k == [2e-3]
 
 
-def test_get_with_units():
+def test_with_units():
     rd = ReactionDiffusion.nondimensionalisation(
         2, [[0, 0]], [[1]], [2/molar/second], unit_registry=SI_base_registry)
-    assert allclose(rd.get_with_units('k'), [2e-3 * metre**3/mole/second])
+    assert allclose(rd.with_units('k'), [2e-3 * metre**3/mole/second])
 
 
 def test_exceptions():
@@ -953,3 +953,31 @@ def test_exceptions():
     with pytest.raises(ValueError):
         ReactionDiffusion(2, [[0]], [[1]], [1.0], N=4, nstencil=3, x=range(5),
                           modulation=[range(4)], D=[0, 0])
+
+
+def test_from_ReactionSystem__g_values():
+    from chempy import ReactionSystem as RS
+    rs = RS.from_string('-> H + OH; Radiolytic(2.1e-7)', checks=())
+    rd = ReactionDiffusion.from_ReactionSystem(rs, variables={'density': 998, 'doserate': 0.15})
+    gv = rd.g_values
+    assert len(gv) == 1
+    assert np.allclose(gv[0], rs.as_per_substance_array({'H': 2.1e-7, 'OH': 2.1e-7}))
+    assert len(rd.fields) == 1
+    assert len(rd.fields[0]) == 1
+    assert np.allclose(rd.fields[0][0], 998*0.15)
+
+
+def test_from_ReactionSystem__g_values__units():
+    from chempy import ReactionSystem as RS
+    from chempy.units import SI_base_registry, default_units as u
+    rs = RS.from_string('-> H + OH; Radiolytic(2.1*per100eV)', checks=())
+    variables = {'density': .998 * u.kg/u.dm3, 'doserate': 0.15*u.Gy/u.s}
+    rd = ReactionDiffusion.from_ReactionSystem(rs, variables=variables, unit_registry=SI_base_registry)
+    gv = rd.g_values
+    per100eV_as_mol_per_joule = 1.0364268556366418e-07
+    ref = 2.1 * per100eV_as_mol_per_joule
+    assert len(gv) == 1
+    assert np.allclose(gv[0], rs.as_per_substance_array({'H': ref, 'OH': ref}))
+    assert len(rd.fields) == 1
+    assert len(rd.fields[0]) == 1
+    assert np.allclose(rd.fields[0][0], 998*0.15)

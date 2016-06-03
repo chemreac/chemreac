@@ -62,3 +62,4 @@ dec_cha.ipynb
 *.egg
 *.log
 examples/analytic_N_scaling_output/
+.eggs/

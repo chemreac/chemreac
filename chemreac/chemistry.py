@@ -43,13 +43,13 @@ def mk_sn_dict_from_names(names, **kwargs):
     kwargs_list = []
     for i in range(len(names)):
         d = {}
-        other_properties = {}
+        data = {}
         for k, v in kwargs.items():
             if k in Substance.attrs:
                 d[k] = v[i]
             else:
-                other_properties[k] = v[i]
-        d['other_properties'] = other_properties
+                data[k] = v[i]
+        d['data'] = data
         kwargs_list.append(d)
 
     return OrderedDict([(s, Substance(s, **kwargs_list[i])) for i, s

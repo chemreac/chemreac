@@ -5,6 +5,7 @@ v0.6.0
 - Units handled differently in ``ReactionDiffusion``:
     - ``ReactionDiffusion.__init__`` accepts unitless numbers and a ``unit_registry``
     - ``ReactionDiffusion.nondimensionalisation()`` accepts numbers wiht units and a ``unit_registry``
+    - ``ReactionDiffusion.with_units`` accessor.
 - ``Integration.nondimensionalistion()`` analogous above.
 - Uses ChemPy > 0.4.1
 - ``ReactionDiffusion`` can now be used with ``pickle``

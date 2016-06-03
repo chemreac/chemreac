@@ -44,7 +44,7 @@ def main(logy=False, logt=False, unit_registry=None):
                                -0.13*second**-1*(tout-t0)))]).transpose()
 
     # scipy
-    integr1 = Integration.nondimensionalisation(
+    integr1 = Integration(
         rd, y0, tout, integrator='scipy')
     return integr1, Cref, rd
 
