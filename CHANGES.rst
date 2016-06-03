@@ -6,7 +6,7 @@ v0.6.0
     - ``ReactionDiffusion.__init__`` accepts unitless numbers and a ``unit_registry``
     - ``ReactionDiffusion.nondimensionalisation()`` accepts numbers wiht units and a ``unit_registry``
 - ``Integration.nondimensionalistion()`` analogous above.
-
+- Uses ChemPy > 0.4.1
 - ``ReactionDiffusion`` can now be used with ``pickle``
 - New serialization format (json and pickle)
 

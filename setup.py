@@ -234,7 +234,7 @@ setup_kwargs = dict(
     ext_modules=ext_modules_,
     classifiers=classifiers,
     setup_requires=['pycompilation', 'pycodeexport', 'mako'],
-    install_requires=['numpy', 'chempy', 'quantities', 'block_diag_ilu'],
+    install_requires=['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu'],
     extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
                             'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq']}
 
