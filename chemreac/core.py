@@ -8,6 +8,7 @@ is the class describing the system of ODEs.
 """
 from __future__ import (absolute_import, division, print_function)
 
+from collections import defaultdict, OrderedDict
 from functools import reduce
 import inspect
 from itertools import chain
@@ -28,7 +29,8 @@ Geom_names = {'f': 'Flat', 'c': 'Cylindrical', 's': 'Spherical'}
 
 class ReactionDiffusionBase(object):
 
-    def to_ReactionSystem(self, substance_names):
+    def to_ReactionSystem(self, substance_names=None):
+        substance_names = substance_names or self.substance_names
         rxns = []
         for ri in range(self.nr):
             rxn = self.to_Reaction(ri, substance_names)
@@ -36,38 +38,84 @@ class ReactionDiffusionBase(object):
         return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
 
     @classmethod
-    def from_ReactionSystem(cls, rsys, ordered_names=None, state=None,
-                            **kwargs):
+    def from_ReactionSystem(cls, rsys, variables=None, fields=None, **kwargs):
         """
         Creates a :class:`ReactionDiffusion` instance from ``rsys``.
 
         Parameters
         ----------
-        substances: sequence of Substance instances
-            pass to override rsys.substances (optional)
-        ordered_names: sequence of names
-            pass to override rsys.ordered_names()
-        state: object
-            used to evaluate callable ``Reaction.params`` in ``rsys.rxns``
-        \*\*kwargs:
+        rsys : ReactionSystem
+        variables : dict
+        fields: optional
+        unit_registry : dict, optional
+        \*\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
+
         """
-        ord_names = ordered_names or rsys.substance_names()
+        from chempy.kinetics.rates import RadiolyticBase
+        mass_action_rxns = []
+        radiolytic_rxns = []
         for rxn in rsys.rxns:
             for key in chain(rxn.reac, rxn.prod, rxn.inact_reac):
-                if key not in ord_names:
+                if key not in rsys.substances:
                     raise ValueError("Unkown substance name: %s" % key)
+            if isinstance(rxn.param, RadiolyticBase):
+                radiolytic_rxns.append(rxn)
+            else:
+                mass_action_rxns.append(rxn)
+
+        # Handle radiolytic yields
+        if kwargs.get('unit_registry', None) is not None:
+            yield_unit = get_unit(kwargs['unit_registry'], 'radyield')
+        else:
+            yield_unit = 1
+        yields = OrderedDict()
+        for rxn in radiolytic_rxns:
+            doserate_name = rxn.param.parameter_keys[0]
+            if doserate_name not in yields:
+                yields[doserate_name] = defaultdict(lambda: 0*yield_unit)
+
+            g_val = rxn.rate_expr().g_value(variables)
+            for k in rxn.keys():
+                n, = rxn.net_stoich([k])
+                if k not in yields[doserate_name]:
+                    yields[doserate_name][k] = n*g_val
+                else:
+                    yields[doserate_name][k] += n*g_val
+        if len(yields) > 0:
+            g_values = [rsys.as_per_substance_array(v, unit=yield_unit) for v in yields.values()]
+        else:
+            g_values = []
+        g_value_parents = []
+        for k in yields:
+            parent = None
+            for r in radiolytic_rxns:
+                if parent is None:
+                    parent = r.reac
+                else:
+                    if parent != r.reac:
+                        raise ValueError("Mixed parents for %s" % k)
+            if parent == {}:
+                g_value_parents.append(-1)
+            else:
+                raise NotImplementedError("Concentraion dependent radiolysis not supported.")
+
+        if fields is None:
+            # Each doserate_name gets its own field:
+            fields = [[variables['density']*variables[dname]]*kwargs.get('N', 1) for dname in yields]
+            if fields == [[]]:
+                fields = None
 
         def _kwargs_updater(key, attr):
             if attr in kwargs:
                 return
             try:
                 kwargs[attr] = [getattr(rsys.substances[sn], key) for sn in
-                                ord_names]
+                                rsys.substances]
             except AttributeError:
                 try:
-                    kwargs[attr] = [rsys.substances[sn].other_properties[key]
-                                    for sn in ord_names]
+                    kwargs[attr] = [rsys.substances[sn].data[key]
+                                    for sn in rsys.substances]
                 except KeyError:
                     pass
 
@@ -77,18 +125,24 @@ class ReactionDiffusionBase(object):
                  'substance_latex_names']):
             _kwargs_updater(key, attr)
 
-        return ReactionDiffusion(
+        if kwargs.get('unit_registry', None) is None:
+            cb = ReactionDiffusion
+        else:
+            cb = ReactionDiffusion.nondimensionalisation
+        return cb(
             rsys.ns,
             [reduce(add, [[i]*rxn.reac.get(k, 0) for i, k
-                          in enumerate(ord_names)]) for rxn in rsys.rxns],
+                          in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
             [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
-                          in enumerate(ord_names)]) for rxn in rsys.rxns],
-            [rxn.param(state) if callable(rxn.param) else rxn.param for
-             rxn in rsys.rxns],
+                          in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
+            [rxn.rate_expr().rate_coeff(variables) for rxn in mass_action_rxns],
             stoich_inact=[reduce(add, [
                 [i]*(0 if rxn.inact_reac is None else
-                     rxn.inact_reac.get(k, 0)) for i, k in enumerate(ord_names)
-            ]) for rxn in rsys.rxns],
+                     rxn.inact_reac.get(k, 0)) for i, k in enumerate(rsys.substances)
+            ]) for rxn in mass_action_rxns],
+            g_values=g_values,
+            g_value_parents=g_value_parents,
+            fields=fields,
             **kwargs)
 
     def to_Reaction(self, ri, substance_names=None):
@@ -256,7 +310,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         Indices of parents for each g_value. ``-1`` denotes no concentration
         dependence of g_values. default: ``[-1]*len(g_values)``.
     fields: sequence of sequence of floats
-        Per bin field strength (energy / (volume time)) per field type.
+        Per bin field strength (energy / volume / time) per field type.
         May be calculated as product between density and doserate.
     modulated_rxns: sequence of integers
         Indicies of reactions subject to per bin modulation.
@@ -382,6 +436,9 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 assert len(gv) == n
         if g_value_parents is None:
             g_value_parents = [-1]*len(g_values)
+        else:
+            if not len(g_values) == len(g_value_parents):
+                raise ValueError("g_values and g_value_parents need to be of same length")
 
         if fields is None:
             fields = [[0.0]*N]*len(g_values)
@@ -430,7 +487,6 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
 
     def __reduce__(self):
         args = inspect.getargspec(self.__new__).args[1:]
-        print(args)
         return (self.__class__, tuple(getattr(self, attr) for attr in args))
 
     _prop_unit = {
@@ -447,15 +503,10 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     def nondimensionalisation(cls, n, stoich_active, stoich_prod, k, **kwargs):
         """ Alternative constructor taking arguments with units """
         reac_orders = map(len, stoich_active)
-        k_unitless = [to_unitless(kval, kunit) for kval, kunit in zip(
-            k, k_units(kwargs['unit_registry'],
-                       reac_orders))]
-        g_values_unitless = [np.asarray(
-            [to_unitless(yld, yld_unit) for yld in gv]
-        ) for gv, yld_unit in zip(
-            kwargs.get('g_values', []),
-            g_units(kwargs['unit_registry'],
-                    kwargs.get('g_value_parents', [])))]
+        _k_units = k_units(kwargs['unit_registry'], reac_orders)
+        k_unitless = [to_unitless(kv, ku) for kv, ku in zip(k, _k_units)]
+        g_values_unitless = [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv, yld_unit in zip(
+            kwargs.get('g_values', []), g_units(kwargs['unit_registry'], kwargs.get('g_value_parents', [])))]
         for key, rep in cls._prop_unit.items():
             val = kwargs.pop(key, None)
             if val is not None:
@@ -472,7 +523,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     def reac_orders(self):
         return map(len, self.stoich_active)
 
-    def get_with_units(self, prop):
+    def with_units(self, prop):
         rep = self._prop_unit[prop]
         if isinstance(rep, tuple):
             return [v*u for v, u in zip(getattr(self, prop), rep[0](

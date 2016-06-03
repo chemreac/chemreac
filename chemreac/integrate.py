@@ -345,6 +345,10 @@ def sigm(x, lim=150., n=8):
     return x/((x/lim)**n+1)**(1./n)
 
 
+def _dedim(arg, key, unit_registry):
+    return to_unitless(arg, get_derived_unit(unit_registry, key))
+
+
 class Integration(object):
     """
     Model kinetcs by integrating system of ODEs using
@@ -416,6 +420,9 @@ class Integration(object):
                  C0_is_log=False, tiny=None, integrator='scipy', **kwargs):
         if integrator not in self._callbacks:
             raise KeyError("Unknown integrator %s" % integrator)
+        if rd.unit_registry is not None:  # nondimensionalisation
+            C0 = _dedim(C0, 'concentration', rd.unit_registry)
+            tout = _dedim(tout, 'time', rd.unit_registry)
         self.integrator = integrator
         self.rd = rd
         self.C0 = np.asarray(C0).flatten()
@@ -429,15 +436,6 @@ class Integration(object):
         self.Cout = None
         self._sanity_checks()
         self._integrate()
-
-    @classmethod
-    def nondimensionalisation(cls, rd, C0, tout, **kw):
-        if rd.unit_registry is None:
-            raise ValueError("rd lacking unit_registry")
-
-        def _n(arg, key):
-            return to_unitless(arg, get_derived_unit(rd.unit_registry, key))
-        return cls(rd, _n(C0, 'concentration'), _n(tout, 'time'), **kw)
 
     def _sanity_checks(self):
         if not self.C0_is_log:
@@ -509,7 +507,7 @@ class Integration(object):
         # Back-transform integration output into linear concentration
         self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
 
-    def get_with_units(self, attr):
+    def with_units(self, attr):
         if attr == 'tout':
             return self.tout * get_derived_unit(self.rd.unit_registry, 'time')
         if attr == 'Cout':
@@ -542,7 +540,4 @@ def run(*args, **kwargs):
             fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}"
             raise TypeError(fmtstr.format(environ_kwargs))
         kwargs.update(environ_kwargs)
-    if kwargs.pop('nondimensionalisation', False):
-        return Integration.nondimensionalisation(*args, **kwargs)
-    else:
-        return Integration(*args, **kwargs)
+    return Integration(*args, **kwargs)
