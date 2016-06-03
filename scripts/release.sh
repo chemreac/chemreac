@@ -2,11 +2,17 @@
 # Usage:
 #
 #    $ ./scripts/release.sh v1.2.3 ~/anaconda2/bin hera
+#    $ ./scripts/release.sh v1.2.3 ~/anaconda2/bin hera upstream
 #
 
 if [[ $1 != v* ]]; then
     echo "Argument does not start with 'v'"
     exit 1
+fi
+if [[ $# == 3 ]]; then
+    REMOTE=origin
+else
+    REMOTE=$4
 fi
 ./scripts/check_clean_repo_on_master.sh
 find . -type f -iname "*.pyc" -exec rm {} +
@@ -36,6 +42,8 @@ done
 
 # All went well, add a tag and push it.
 git tag -a $1 -m $1
-git push
-git push --tags
+git push $REMOTE
+git push $REMOTE --tags
 twine upload dist/${PKG}-$VERSION.tar.gz
+
+echo "Create a new release on github (with custom .tar.gz), then run ./scripts/post_release.sh ..."
