@@ -15,12 +15,15 @@ import numpy as np
 from ..units import get_derived_unit, to_unitless
 
 
-def generate_grid(x0, xend, N, logx=False, unit_registry=None, random=False):
+def generate_grid(x0, xend, N, logx=False, unit_registry=None, random=False, use_log2=False):
     length_unit = get_derived_unit(unit_registry, 'length')
     _x0 = to_unitless(x0, length_unit)
     _xend = to_unitless(xend, length_unit)
     if logx:
         low, high = log(_x0), log(_xend)
+        if use_log2:
+            low /= log(2)
+            high /= log(2)
     else:
         low, high = _x0, _xend
     result = np.linspace(low, high, N+1)

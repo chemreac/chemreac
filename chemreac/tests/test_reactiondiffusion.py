@@ -174,8 +174,8 @@ def test_ReactionDiffusion__lrefl_3(log):
     if logt:
         fref *= t0
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_f(rd, t, y, fref)
 
     if logy:
@@ -206,8 +206,8 @@ def test_ReactionDiffusion__lrefl_3(log):
     if logt:
         jref *= t0
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_dense_jac_rmaj(rd, t, y, jref)
 
 
@@ -250,8 +250,8 @@ def test_ReactionDiffusion__rrefl_3(log):
     if logt:
         fref *= t0
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_f(rd, t, y, fref)
 
     if logy:
@@ -306,8 +306,8 @@ def test_ReactionDiffusion__lrefl_7(log):
                            logt=logt, N=N, nstencil=nstencil,
                            lrefl=lrefl, rrefl=rrefl)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     le = nsidep if lrefl else 0
     D_weight_ref = np.array([
         finite_diff_weights(
@@ -374,7 +374,7 @@ def test_ReactionDiffusion__only_1_reaction__logy(N):
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0], logy=True)
     fref = np.array([(-k, k*y0[i*2]/y0[i*2+1]) for i in range(N)]).flatten()
-    _test_f(rd, t0, np.log(y0), fref)
+    _test_f(rd, t0, rd.logb(y0), fref)
 
     jref = np.zeros((2*N, 2*N))
     for i in range(N):
@@ -382,7 +382,7 @@ def test_ReactionDiffusion__only_1_reaction__logy(N):
         B = y0[i*2+1]
         jref[i*2+1, i*2] = k/B*A
         jref[i*2+1, i*2+1] = -k/B*A
-    _test_dense_jac_rmaj(rd, t0, np.log(y0), jref)
+    _test_dense_jac_rmaj(rd, t0, rd.logb(y0), jref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
@@ -396,7 +396,7 @@ def test_ReactionDiffusion__only_1_reaction__logy__logt(N):
                            logy=True, logt=True)
     fref = np.array([(-k*t0, t0*k*y0[i*2]/y0[i*2+1])
                      for i in range(N)]).flatten()
-    _test_f_and_dense_jac_rmaj(rd, np.log(t0), np.log(y0), fref)
+    _test_f_and_dense_jac_rmaj(rd, rd.logb(t0), np.log(y0), fref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
@@ -433,7 +433,7 @@ def test_ReactionDiffusion__only_1_field_dep_reaction_logy(N):
                          [k*y0[0]/y0[1], -k*y0[0]/y0[1]]])
     else:
         jref = None
-    _test_f_and_dense_jac_rmaj(rd, 0, np.log(y0), fref, jref)
+    _test_f_and_dense_jac_rmaj(rd, 0, rd.logb(y0), fref, jref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
@@ -453,7 +453,7 @@ def test_ReactionDiffusion__only_1_field_dep_reaction_logy_logt(N):
 
     fref = np.array([(-k_(i)*t0, k_(i)*t0*y0[i*2]/y0[i*2+1])
                      for i in range(N)]).flatten()
-    _test_f_and_dense_jac_rmaj(rd, np.log(t0), np.log(y0), fref)
+    _test_f_and_dense_jac_rmaj(rd, rd.logb(t0), np.log(y0), fref)
 
 
 @pytest.mark.parametrize("log", TR_FLS_PAIRS)
@@ -499,8 +499,8 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     if logt:
         jref *= t0
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
     jout_bnd = np.zeros((3, 3), order='F')
@@ -593,8 +593,8 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
                     jref[i, j] = D*weights[i][j-lb[i]+nsidep]
     if logt:
         jref *= t0
-    t = np.log(t0) if logt else t0
-    y = np.log(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
     jout_bnd = np.zeros((3, N), order='F')
@@ -661,7 +661,7 @@ def test_integrated_conc(params):
     x = np.linspace(x0, xend, N+1)
     rd = ReactionDiffusion(1, [], [], [], D=[0], N=N,
                            x=np.log(x) if logx else x, geom=geom, logx=logx)
-    xc = np.exp(rd.xcenters) if logx else rd.xcenters
+    xc = rd.expb(rd.xcenters) if logx else rd.xcenters
     y = xc*np.exp(-xc)
 
     def primitive(t):

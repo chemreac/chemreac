@@ -217,7 +217,7 @@ def test_integrators(log):
 
     results = []
     for solver, kwargs in solver_kwargs.items():
-        _y0 = np.log(y0) if kwargs.get('C0_is_log', False) else y0
+        _y0 = rd.logb(y0) if kwargs.get('C0_is_log', False) else y0
         integr = Integration(rd, _y0, integrator=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)

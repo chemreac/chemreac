@@ -36,7 +36,7 @@ def check_rd_integration_run(cb, forgiveness=10, **kwargs):
         except:
             rtol = info['rtol']
         lb, ub = solver_linear_error(yout[..., i], rtol, atol, rd.logy,
-                                     scale_err=forgiveness)
+                                     scale_err=forgiveness, expb=rd.expb)
         assert np.all(lb < linCref[..., i])
         assert np.all(ub > linCref[..., i])
 

@@ -14,6 +14,10 @@ def test_solver_linear_error():
 def test_solver_linear_error_from_integration(atol):
     class Dummy:
         unit_registry = None
+
+        def expb(self, x):
+            return np.exp(x)
+
     integr = Dummy()
     integr.yout = np.array([1.0]).reshape((1, 1, 1))
     print(integr.yout[slice(None), 0, 0])

@@ -31,13 +31,19 @@ class SymRD(ReactionDiffusionBase):
         return cls(*tuple(kwargs.get(attr, getattr(rd, attr)) for attr in
                           inspect.getargspec(cls.__init__).args[1:]))
 
+    def expb(self, x):
+        if self.use_log2:
+            return 2**x
+        else:
+            return exp(x)
+
     def __init__(self, n, stoich_active, stoich_prod, k, N=0, D=None,
                  z_chg=None, mobility=None, x=None, stoich_inact=None,
                  geom=FLAT, logy=False, logt=False, logx=False, nstencil=None,
                  lrefl=True, rrefl=True, auto_efield=False,
                  surf_chg=(0.0, 0.0), eps_rel=1.0, g_values=None,
                  g_value_parents=None, fields=None, modulated_rxns=None,
-                 modulation=None, n_jac_diags=-1, **kwargs):
+                 modulation=None, n_jac_diags=-1, use_log2=False, **kwargs):
         # Save args
         self.n = n
         self.stoich_active = stoich_active
@@ -68,6 +74,7 @@ class SymRD(ReactionDiffusionBase):
         self.modulation = [] if modulation is None else modulation
         self.n_jac_diags = (int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
                             n_jac_diags is -1 else n_jac_diags)
+        self.use_log2 = use_log2
         if kwargs:
             raise KeyError("Don't know what to do with:", kwargs)
 
@@ -133,8 +140,8 @@ class SymRD(ReactionDiffusionBase):
                             self.A_wghts[bi][wi] += 2*w[-3][-1][wi]
                         else:
                             raise ValueError("Unknown geom: %s" % geom)
-                        self.D_wghts[bi][wi] *= exp(-2*l_x_rnd)
-                        self.A_wghts[bi][wi] *= exp(-l_x_rnd)
+                        self.D_wghts[bi][wi] *= self.expb(-2*l_x_rnd)
+                        self.A_wghts[bi][wi] *= self.expb(-l_x_rnd)
                     else:
                         if geom == FLAT:
                             pass
@@ -167,11 +174,11 @@ class SymRD(ReactionDiffusionBase):
                     if self.logy:
                         self._f[bi*self.n+si] /= self.y(bi, si)
                     if self.logt:
-                        self._f[bi*self.n+si] *= sp.exp(self._t)
+                        self._f[bi*self.n+si] *= 2**self._t if self.use_log2 else sp.exp(self._t)
 
     def y(self, bi, si):
         if self.logy:
-            return sp.exp(self._y[bi*self.n+si])
+            return 2**self._y[bi*self.n+si] if self.use_log2 else sp.exp(self._y[bi*self.n+si])
         else:
             return self._y[bi*self.n+si]
 

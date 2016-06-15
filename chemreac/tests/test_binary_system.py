@@ -101,8 +101,8 @@ def test_f(log):
     ref_f = _get_ref_f(rd, t0, y0, logy, logt)
     fout = rd.alloc_fout()
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     rd.f(t, y, fout)
     assert np.allclose(fout, ref_f)
 
@@ -118,8 +118,8 @@ def test_dense_jac_rmaj(log):
     ref_J = _get_ref_J(rd, t0, y0, logy, logt)
     Jout = np.empty_like(ref_J)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     rd.dense_jac_rmaj(t, y, Jout)
 
     assert np.allclose(Jout, ref_J)
@@ -136,8 +136,8 @@ def test_dense_jac_cmaj(log):
     ref_J = _get_ref_J(rd, t0, y0, logy, logt, order='F')
     Jout = np.empty_like(ref_J)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     rd.dense_jac_cmaj(t, y, Jout)
 
     assert np.allclose(Jout, ref_J)
@@ -177,7 +177,7 @@ def _test_integrate(params):
     tout = np.linspace(t0, tend, nt+1)
     assert np.allclose(tout-t0, ref_t)
 
-    _test_f_and_dense_jac_rmaj(rd, t0, np.log(y0) if logy else y0)
+    _test_f_and_dense_jac_rmaj(rd, t0, rd.logb(y0) if logy else y0)
     integr = run(rd, y0, tout, with_jacobian=True)
     for i in range(N):
         assert np.allclose(integr.Cout[:, i, :], ref_y, atol=1e-4)

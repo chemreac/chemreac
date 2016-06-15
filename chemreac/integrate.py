@@ -390,7 +390,7 @@ class Integration(object):
     Cout: array
         linear output concentrations
     yout: array
-        output from integrator: log(concentrations) if rd.logy == True
+        output from integrator: log_b(concentrations) if rd.logy == True
     info: dict
         Information from integrator. Guaranteed to contain:
             - 'time_wall': execution time in seconds (wall clock).
@@ -446,7 +446,7 @@ class Integration(object):
         """
         Performs the integration by calling the callback chosen by
         :attr:`integrator`. If rd.logy == True, a transformation of self.C0 to
-        log(C0) will be performed before running the integration (the same
+        log_b(C0) will be performed before running the integration (the same
         is done for self.tout / rd.logt == True).
 
         After the integration is done the attributes `Cout`, `info` and `yout`
@@ -461,7 +461,7 @@ class Integration(object):
         # Transform initial concentrations
         if self.rd.logy:
             if not self.C0_is_log:
-                C0 = np.log(C0 + self.tiny)
+                C0 = self.rd.logb(C0 + self.tiny)
 
             if self.sigm_damp is True:
                 y0 = sigm(C0)
@@ -472,11 +472,11 @@ class Integration(object):
         else:
             if self.C0_is_log:
                 if self.sigm_damp is True:
-                    y0 = np.exp(sigm(C0))
+                    y0 = self.rd.expb(sigm(C0))
                 elif isinstance(self.sigm_damp, tuple):
-                    y0 = np.exp(sigm(C0, *self.sigm_damp))
+                    y0 = self.rd.expb(sigm(C0, *self.sigm_damp))
                 else:
-                    y0 = np.exp(C0)
+                    y0 = self.rd.expb(C0)
             else:
                 y0 = C0
 
@@ -485,10 +485,10 @@ class Integration(object):
         if tout[0] == 0.0 and self.rd.logt:
             t0_set = True
             t0 = suggest_t0(self.rd, y0)
-            t = np.log(tout + t0)  # conserve total time
+            t = self.rd.logb(tout + t0)  # conserve total time
         else:
             t0_set = False
-            t = np.log(tout) if self.rd.logt else tout
+            t = self.rd.logb(tout) if self.rd.logt else tout
 
         # Run the integration
         # -------------------
@@ -500,12 +500,12 @@ class Integration(object):
         # ---------------
         # Back-transform independent variable into linear time
         if self.rd.logt:
-            self.tout = (np.exp(self.internal_t) - (t0 if t0_set else 0))
+            self.tout = (self.rd.expb(self.internal_t) - (t0 if t0_set else 0))
         else:
             self.tout = self.internal_t
 
         # Back-transform integration output into linear concentration
-        self.Cout = np.exp(self.yout) if self.rd.logy else self.yout
+        self.Cout = self.rd.expb(self.yout) if self.rd.logy else self.yout
 
     def with_units(self, attr):
         if attr == 'tout':

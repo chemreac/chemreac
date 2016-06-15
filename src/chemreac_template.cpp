@@ -31,13 +31,15 @@
 
 
 namespace chemreac {
-
 using std::vector;
 using std::count;
 using std::min;
 using std::max;
 
 #include <cstdio>
+
+#define expb(arg) (use_log2 ? std::exp2(arg) : std::exp(arg))
+#define logb(arg) (use_log2 ? std::log2(arg) : std::pow(2, arg))
 
 // 1D discretized reaction diffusion
 template<typename Real_t>
@@ -70,7 +72,8 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     vector<int> modulated_rxns,
     vector<vector<Real_t> > modulation,
     Real_t ilu_limit,
-    uint n_jac_diags):
+    uint n_jac_diags,
+    bool use_log2):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
@@ -79,7 +82,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     surf_chg(surf_chg), eps_rel(eps_rel), faraday_const(faraday_const),
     vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
-    ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags),
+    ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags), use_log2(use_log2),
     efield(new Real_t[N]), netchg(new Real_t[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
@@ -287,8 +290,8 @@ ReactionDiffusion<Real_t>::apply_fd_(uint bi){
                 A_WEIGHT(bi, li) += 2*FDWEIGHT(0, li);
                 break;
             }
-            D_WEIGHT(bi, li) *= exp(-2*xc[around]);
-            A_WEIGHT(bi, li) *= exp(-xc[around]);
+            D_WEIGHT(bi, li) *= expb(-2*xc[around]);
+            A_WEIGHT(bi, li) *= expb(-xc[around]);
         } else {
             switch(geom){
             case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
@@ -362,9 +365,9 @@ ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restri
     for (uint bi=0; bi<N; ++bi){
         for (uint si=0; si<n; ++si){
             if (recip)
-                linC[bi*n + si] = (apply_exp) ? exp(-Y(bi, si)) : 1.0/Y(bi, si);
+                linC[bi*n + si] = (apply_exp) ? expb(-Y(bi, si)) : 1.0/Y(bi, si);
             else
-                linC[bi*n + si] = (apply_exp) ? exp(Y(bi, si)) : Y(bi, si);
+                linC[bi*n + si] = (apply_exp) ? expb(Y(bi, si)) : Y(bi, si);
         }
     }
     return linC;
@@ -384,7 +387,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
     if (auto_efield){
         calc_efield(linC);
     }
-    const Real_t exp_t = (logt) ? exp(t) : 0.0;
+    const Real_t expb_t = (logt) ? expb(t) : 0.0;
     ${"Real_t * const local_r = new Real_t[nr];" if not WITH_OPENMP else ""}
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (uint bi=0; bi<N; ++bi){
@@ -452,7 +455,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
             if (logy)
                 DYDT(bi, si) *= RLINC(bi, si);
             if (logt)
-                DYDT(bi, si) *= exp_t;
+                DYDT(bi, si) *= expb_t;
         }
         ${"delete []local_r;" if WITH_OPENMP else ""}
     }
@@ -499,7 +502,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     %else:
 #error "Unhandled token."
     %endif
-    const Real_t exp_t = (logt) ? exp(t) : 0.0;
+    const Real_t expb_t = (logt) ? expb(t) : 0.0;
 
     Real_t * fout = nullptr;
     if (logy){ // fy useful..
@@ -594,7 +597,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                         jac.block(bi, si, dsi) *= LINC(bi, dsi)*RLINC(bi, si);
                     }
                     if (logt)
-                        jac.block(bi, si, dsi) *= exp_t;
+                        jac.block(bi, si, dsi) *= expb_t;
                     if (logy && dsi == si)
                         jac.block(bi, si, si) -= FOUT(bi, si);
                 }
@@ -603,13 +606,13 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                         if (logy)
                             jac.sub(di, bi-di-1, si) *= LINC(bi-di-1, si)*RLINC(bi, si);
                         if (logt)
-                            jac.sub(di, bi-di-1, si) *= exp_t;
+                            jac.sub(di, bi-di-1, si) *= expb_t;
                     }
                     if (bi < N-di-1){
                         if (logy)
                             jac.sup(di, bi, si) *= LINC(bi+di+1, si)*RLINC(bi, si);
                         if (logt)
-                            jac.sup(di, bi, si) *= exp_t;
+                            jac.sup(di, bi, si) *= expb_t;
                     }
                 }
             }
@@ -801,7 +804,7 @@ ReactionDiffusion<Real_t>::calc_efield(const Real_t * const linC)
     const Real_t F = this->faraday_const; // Faraday's constant
     const Real_t pi = 3.14159265358979324;
     const Real_t eps = eps_rel*vacuum_permittivity;
-    Real_t nx, cx = logx ? exp(x[0]) : x[0];
+    Real_t nx, cx = logx ? expb(x[0]) : x[0];
     for (uint bi=0; bi<N; ++bi){
         netchg[bi] = 0.0;
         for (uint si=0; si<n; ++si)
@@ -809,8 +812,8 @@ ReactionDiffusion<Real_t>::calc_efield(const Real_t * const linC)
     }
     Real_t Q = surf_chg.first;
     for (uint bi=0; bi<N; ++bi){
-        const Real_t r = logx ? exp(xc[nsidep+bi]) : xc[nsidep+bi];
-        nx = logx ? exp(x[bi+1]) : x[bi+1];
+        const Real_t r = logx ? expb(xc[nsidep+bi]) : xc[nsidep+bi];
+        nx = logx ? expb(x[bi+1]) : x[bi+1];
         switch(geom){
         case Geom::FLAT:
             efield[bi] = F*Q/eps;
@@ -830,7 +833,7 @@ ReactionDiffusion<Real_t>::calc_efield(const Real_t * const linC)
     if (geom == Geom::FLAT){
         Q = surf_chg.second;
         for (uint bi=N; bi>0; --bi){ // unsigned int..
-            nx = logx ? exp(x[bi-1]) : x[bi-1];
+            nx = logx ? expb(x[bi-1]) : x[bi-1];
             efield[bi-1] -= F*Q/eps;
             Q += netchg[bi-1]*(cx - nx);
             cx = nx;

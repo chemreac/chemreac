@@ -68,6 +68,7 @@ public:
     vector<vector<Real_t> > modulation;
     const Real_t ilu_limit;
     const uint n_jac_diags;
+    const bool use_log2;
 
     Real_t * const efield; // v_d = mu_el*E
     Real_t * const netchg;
@@ -121,7 +122,8 @@ public:
                       vector<int> modulated_rxns={},
                       vector<vector<Real_t> > modulation={},
                       Real_t ilu_limit=1000.0,
-                      uint n_jac_diags=0
+                      uint n_jac_diags=0,
+                      bool use_log2=false
                       );
     ~ReactionDiffusion();
 

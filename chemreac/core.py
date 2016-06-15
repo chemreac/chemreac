@@ -287,11 +287,11 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     geom: str (letter)
         Any in 'fcs' (flat, cylindrical, spherical).
     logy: bool
-        f and \*_jac_\* routines operate on log(concentration).
+        f and \*_jac_\* routines operate on log_b(concentration).
     logt: bool
-        f and \*_jac_\* routines operate on log(time).
+        f and \*_jac_\* routines operate on log_b(time).
     logx: bool
-        f and \*_jac_\* routines operate on log(space).
+        f and \*_jac_\* routines operate on log_b(space).
     nstencil: integer
         Number of points used in finite difference scheme.
     lrefl: bool
@@ -323,6 +323,8 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         Number of diagonals to include in Jacobian. ``-1`` delegates to
         environment variable ``CHEMREAC_N_JAC_DIAGS``. ``0`` makes it equal to
         ``nstencil - 1 / 2``.
+    use_log2: bool
+        Use base 2 for logarithmic transform instead of e.
     unit_registry: dict (optional)
         See ``chemreac.units.SI_base_registry`` for an example (default: None).
 
@@ -369,6 +371,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 unit_registry=None,
                 ilu_limit=None,
                 n_jac_diags=-1,
+                use_log2=False,
                 faraday_const=None,
                 vacuum_permittivity=None,
                 **kwargs):
@@ -473,7 +476,8 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
             ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
                        ilu_limit is None else ilu_limit),
             n_jac_diags=(int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
-                         n_jac_diags is -1 else n_jac_diags)
+                         n_jac_diags is -1 else n_jac_diags),
+            use_log2=use_log2
         )
 
         rd.unit_registry = unit_registry
