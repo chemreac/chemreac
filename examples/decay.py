@@ -89,7 +89,7 @@ def integrate_rd(tend=2.0, A0=1.0, nt=67, t0=0.0,
                  rates='3.40715,4.0', logy=False, logt=False,
                  plot=False, savefig='None', method='bdf',
                  atol='1e-7,1e-6,1e-5', rtol='1e-6', sigm_damp=False,
-                 num_jac=False, scale_err=1.0, small='None',
+                 num_jac=False, scale_err=1.0, small='None', use_log2=False,
                  plotlogy=False, plotlogt=False, verbose=False):
     """
     Analytic solution through Bateman equation =>
@@ -107,7 +107,7 @@ def integrate_rd(tend=2.0, A0=1.0, nt=67, t0=0.0,
 
     rd = ReactionDiffusion(
         n, [[i] for i in range(n-1)], [[i] for i in range(1, n)],
-        k, logy=logy, logt=logt)
+        k, logy=logy, logt=logt, use_log2=use_log2)
 
     y0 = np.zeros(n)
     y0[0] = A0
@@ -163,7 +163,7 @@ def integrate_rd(tend=2.0, A0=1.0, nt=67, t0=0.0,
                 rtol = info['rtol']
 
             le_l, le_u = solver_linear_error(
-                yout[:, 0, i], rtol, atol, rd.logy, scale_err=scale_err)
+                yout[:, 0, i], rtol, atol, rd.logy, scale_err=scale_err, expb=rd.expb)
             plt.fill_between(tout, (le_l - Cout[:, 0, i])/min_atol,
                              (le_u - Cout[:, 0, i])/min_atol,
                              color=c[i], alpha=0.2)

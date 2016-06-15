@@ -452,10 +452,16 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
             }
         }
         for (uint si=0; si<n; ++si){
-            if (logy)
+            if (logy){
                 DYDT(bi, si) *= RLINC(bi, si);
-            if (logt)
+                if (!logt and use_log2)
+                    DYDT(bi, si) /= log(2);
+            }
+            if (logt){
                 DYDT(bi, si) *= expb_t;
+                if (!logy and use_log2)
+                    DYDT(bi, si) *= log(2);
+            }
         }
         ${"delete []local_r;" if WITH_OPENMP else ""}
     }
@@ -502,7 +508,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     %else:
 #error "Unhandled token."
     %endif
-    const Real_t expb_t = (logt) ? expb(t) : 0.0;
+    const Real_t expb_t = (logt) ? expb(t)*(use_log2 ? log(2) : 1) : 0.0;
 
     Real_t * fout = nullptr;
     if (logy){ // fy useful..
