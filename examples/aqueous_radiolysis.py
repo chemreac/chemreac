@@ -58,7 +58,8 @@ def integrate_rd(
         name='aqueous_radiolysis', integrator='scipy', iter_type='default',
         linear_solver='default', ilu_limit=1000.0, first_step=0.0,
         n_jac_diags=0, eps_lin=0.0, num_jacobian=False, savefig='None',
-        verbose=False, plot=False, plot_jacobians=False, profile_yep=False
+        verbose=False, plot=False, plot_jacobians=False, profile_yep=False,
+        use_log2=False,
 ):
     """
     Integrates the reaction system defined by
@@ -68,17 +69,17 @@ def integrate_rd(
     if nstencil == 0:
         nstencil = 3 if N > 1 else 1
     mu = 50.0*metre**-1  # linear attenuation
-    x = generate_grid(x0, xend, N, logx)
-    _cb = (lambda arg: np.exp(arg)) if logx else (lambda arg: arg)
+    x = generate_grid(x0, xend, N, logx, use_log2=use_log2)
+    expb = (lambda x: 2**x) if use_log2 else np.exp
+    _cb = expb if logx else (lambda arg: arg)
     lin_xcenters = _cb(x[:-1]+np.diff(x)/2)*metre
     doserate *= gray / second
     doseratefield = doserate*np.exp(-mu*lin_xcenters)
     rho = 1.0*kilogram*decimetre**-3  # kg/dm3
     rd = load(os.path.join(os.path.dirname(__file__), name+'.json'),
-              ReactionDiffusion, N=N, logy=logy,
-              logt=logt, logx=logx, fields=[doseratefield*rho,
-                                            0*doseratefield*rho],
-              nstencil=nstencil, ilu_limit=ilu_limit, n_jac_diags=n_jac_diags)
+              ReactionDiffusion, N=N, logy=logy, logt=logt, logx=logx,
+              fields=[doseratefield*rho, 0*doseratefield*rho], nstencil=nstencil,
+              ilu_limit=ilu_limit, n_jac_diags=n_jac_diags, use_log2=use_log2)
     y0_by_name = json.load(open(os.path.join(os.path.dirname(__file__),
                                              name+'.y0.json'), 'rt'))
 

@@ -52,7 +52,7 @@ pi = np.pi
 sqpi = pi**0.5
 
 
-def gaussian(x, mu, sigma, logy, logx, geom):
+def _gaussian(x, mu, sigma, logy, logx, geom, use_log2=False):
     # Formula for normalization from derived in following mathematica code:
     # $Assumptions = {(sigma | mu) \[Element] Reals, sigma > 0}
     # 1/Integrate[E^(-1/2*((x - mu)/sigma)^2), {x, -Infinity, Infinity}]
@@ -70,24 +70,26 @@ def gaussian(x, mu, sigma, logy, logx, geom):
         raise NotImplementedError("Unkown geomtry: %s" % geom)
 
     b = -0.5*((x-mu)/sigma)**2
+    logb = (lambda arg: log(arg)/log(2)) if use_log2 else log
     if logy:
-        return log(a) + b
+        return logb(a) + b*logb(np.e)
     else:
         return a*np.exp(b)
 
 
-def pair_of_gaussians(x, offsets, sigma, logy, logx, geom):
+def pair_of_gaussians(x, offsets, sigma, logy, logx, geom, use_log2=False):
     try:
         sigma0, sigma1 = sigma[0], sigma[1]
     except:
         sigma0 = sigma1 = sigma
-    x = np.exp(x) if logx else x
+    expb = (lambda arg: 2**arg) if use_log2 else np.exp
+    x = expb(x) if logx else x
     xspan = (x[-1] - x[0])
     xl = x[0] + offsets[0]*xspan  # lower
     xu = x[0] + offsets[1]*xspan  # upper
     return (
-        gaussian(x, xl, sigma0, logy, logx, geom),
-        gaussian(x, xu, sigma1, logy, logx, geom)
+        _gaussian(x, xl, sigma0, logy, logx, geom, use_log2),
+        _gaussian(x, xu, sigma1, logy, logx, geom, use_log2)
     )
 
 
@@ -98,7 +100,7 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
                  num_jacobian=False, method='bdf', plot=False,
                  savefig='None', atol=1e-6, rtol=1e-6, random_seed=42,
                  surf_chg=(0.0, 0.0), sigma_q=101, sigma_skew=0.5,
-                 verbose=False, eps_rel=80.10):
+                 verbose=False, eps_rel=80.10, use_log2=False):
     """
     A negative D (diffusion coefficent) denotes:
         mobility := -D
@@ -120,8 +122,10 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         print(D, mobility)
 
     # Setup the grid
-    _x0 = log(x0) if logx else x0
-    _xend = log(xend) if logx else xend
+    logb = (lambda arg: log(arg)/log(2)) if use_log2 else log
+
+    _x0 = logb(x0) if logx else x0
+    _xend = logb(xend) if logx else xend
     x = np.linspace(_x0, _xend, N+1)
     if random:
         x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
@@ -149,14 +153,14 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         eps_rel=eps_rel,  # water at 20 deg C
         faraday_const=1,
         vacuum_permittivity=1,
+        use_log2=use_log2
     )
 
     # Initial conditions
     sigma = (xend-x0)/sigma_q
     sigma = [(1-sigma_skew)*sigma, sigma_skew*sigma]
     y0 = np.vstack(pair_of_gaussians(
-        rd.xcenters, [base+offset, base-offset], sigma, logy,
-        logx, geom)).transpose()
+        rd.xcenters, [base+offset, base-offset], sigma, logy, logx, geom, use_log2)).transpose()
     if logy:
         y0 = sigm(y0)
 
@@ -164,7 +168,7 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         # Plot initial E-field
         import matplotlib.pyplot as plt
         plt.figure(figsize=(6, 10))
-        rd.calc_efield((np.exp(y0) if logy else y0).flatten())
+        rd.calc_efield((rd.expb(y0) if logy else y0).flatten())
         plt.subplot(4, 1, 3)
         plt.plot(rd.xcenters, rd.efield, label="E at t=t0")
         plt.plot(rd.xcenters, rd.xcenters*0, label="0")
@@ -183,7 +187,7 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
     if plot:
         def _plot(y, ttl=None,  **kwargs):
             plt.plot(rd.xcenters, y, **kwargs)
-            plt.xlabel(('log({})' if logx else '{}').format('x / m'))
+            plt.xlabel((('log_%s({})' % ('2' if use_log2 else 'e')) if logx else '{}').format('x / m'))
             plt.ylabel('C / M')
             if ttl:
                 plt.title(ttl)
@@ -222,7 +226,7 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
             ylim = plt.gca().get_ylim()
             for d in (-1, 1):
                 center_loc = [x0+(base+d*offset)*(xend-x0)]*2
-                plt.plot(np.log(center_loc) if logx else center_loc,
+                plt.plot(rd.logb(center_loc) if logx else center_loc,
                          ylim, '--k')
         plt.subplot(4, 1, 4)
         for i in range(n):

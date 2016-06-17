@@ -20,24 +20,27 @@ def efield_cb(x, logx=False):
     return -np.ones_like(x)
 
 
-def y0_flat_cb(x, logx=False):
+def y0_flat_cb(x, logx=False, use_log2=False):
     xc = x[:-1] + np.diff(x)/2
     if logx:
-        x, xc = map(np.exp, (x, xc))
+        expb = (lambda arg: 2**arg) if use_log2 else np.exp
+        x, xc = map(expb, (x, xc))
     return 17 - 11*(xc-x[0])/(x[-1]-x[0])
 
 
-def y0_cylindrical_cb(x, logx=False):
+def y0_cylindrical_cb(x, logx=False, use_log2=False):
     xc = x[:-1] + np.diff(x)/2
     if logx:
-        x, xc = map(np.exp, (x, xc))
+        expb = (lambda arg: 2**arg) if use_log2 else np.exp
+        x, xc = map(expb, (x, xc))
     return 17 - np.log((xc-x[0])/(x[-1]-x[0]))
 
 
-def y0_spherical_cb(x, logx=False):
+def y0_spherical_cb(x, logx=False, use_log2=False):
     xc = x[:-1] + np.diff(x)/2
     if logx:
-        x, xc = map(np.exp, (x, xc))
+        expb = (lambda arg: 2**arg) if use_log2 else np.exp
+        x, xc = map(expb, (x, xc))
     return 3 + 0.1/((xc-x[0])/(x[-1]-x[0]))
 
 
@@ -46,7 +49,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
                  random=False, nstencil=3, lrefl=False, rrefl=False,
                  num_jacobian=False, method='bdf', plot=False,
                  atol=1e-6, rtol=1e-6, efield=False, random_seed=42,
-                 verbose=False):
+                 verbose=False, use_log2=False):
     if random_seed:
         np.random.seed(random_seed)
     n = 1
@@ -56,8 +59,10 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
     assert geom in 'fcs'
 
     # Setup the grid
-    _x0 = log(x0) if logx else x0
-    _xend = log(xend) if logx else xend
+    logb = (lambda arg: log(arg)/log(2)) if use_log2 else log
+
+    _x0 = logb(x0) if logx else x0
+    _xend = logb(xend) if logx else xend
     x = np.linspace(_x0, _xend, N+1)
     if random:
         x += (np.random.random(N+1)-0.5)*(_xend-_x0)/(N+2)
@@ -91,6 +96,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         nstencil=nstencil,
         lrefl=lrefl,
         rrefl=rrefl,
+        use_log2=use_log2
     )
 
     if efield:
@@ -123,7 +129,7 @@ def integrate_rd(D=2e-3, t0=3., tend=7., x0=0.0, xend=1.0, mu=None, N=32,
         import matplotlib.pyplot as plt
 
         def _plot(y, c, ttl=None, apply_exp_on_y=False):
-            plt.plot(rd.xcenters, np.exp(y) if apply_exp_on_y else y, c=c)
+            plt.plot(rd.xcenters, rd.expb(y) if apply_exp_on_y else y, c=c)
             if N < 100:
                 plt.vlines(rd.x, 0, np.ones_like(rd.x)*max(y), linewidth=.1,
                            colors='gray')

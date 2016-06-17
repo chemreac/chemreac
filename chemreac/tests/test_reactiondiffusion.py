@@ -20,6 +20,7 @@ from chemreac.units import (
 
 TR_FLS = [True, False]
 TR_FLS_PAIRS = list(product(TR_FLS, TR_FLS))
+TR_FLS_TRIPLES = list(product(TR_FLS, TR_FLS, TR_FLS))
 
 
 def _test_f(rd, t, y, fref=None):
@@ -134,12 +135,12 @@ def test_ReactionDiffusion__actv_2():
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, -6*r])
 
 
-@pytest.mark.parametrize("log", TR_FLS_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_TRIPLES)
 def test_ReactionDiffusion__lrefl_3(log):
     # Diffusion without reaction
     # 3 bins
     t0 = 3.0
-    logy, logt = log
+    logy, logt, use_log2 = log
     D = 17.0
     y0 = np.array([23.0, 27.0, 37.0])
     x = [5.0, 9.0, 13.0, 15.0]
@@ -148,7 +149,7 @@ def test_ReactionDiffusion__lrefl_3(log):
 
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
-                           lrefl=True, rrefl=False)
+                           lrefl=True, rrefl=False, use_log2=use_log2)
     assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[0, 3, 7, 11, 14]
@@ -171,8 +172,12 @@ def test_ReactionDiffusion__lrefl_3(log):
 
     if logy:
         fref /= y0
+        if not logt and use_log2:
+            fref /= np.log(2)
     if logt:
         fref *= t0
+        if not logy and use_log2:
+            fref *= np.log(2)
 
     y = rd.logb(y0) if logy else y0
     t = rd.logb(t0) if logt else t0
@@ -205,18 +210,20 @@ def test_ReactionDiffusion__lrefl_3(log):
 
     if logt:
         jref *= t0
+        if use_log2:
+            jref *= np.log(2)
 
     y = rd.logb(y0) if logy else y0
     t = rd.logb(t0) if logt else t0
     _test_dense_jac_rmaj(rd, t, y, jref)
 
 
-@pytest.mark.parametrize("log", TR_FLS_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_TRIPLES)
 def test_ReactionDiffusion__rrefl_3(log):
     # Diffusion without reaction
     # 3 bins
     t0 = 3.0
-    logy, logt = log
+    logy, logt, use_log2 = log
     D = 17.0
     y0 = np.array([23.0, 27.0, 37.0])
     x = [5.0, 9.0, 13.0, 15.0]
@@ -225,7 +232,7 @@ def test_ReactionDiffusion__rrefl_3(log):
 
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
-                           lrefl=False, rrefl=True)
+                           lrefl=False, rrefl=True, use_log2=use_log2)
     assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[3, 7, 11, 14, 16]
@@ -247,8 +254,12 @@ def test_ReactionDiffusion__rrefl_3(log):
 
     if logy:
         fref /= y0
+        if not logt and use_log2:
+            fref /= np.log(2)
     if logt:
         fref *= t0
+        if not logy and use_log2:
+            fref *= np.log(2)
 
     y = rd.logb(y0) if logy else y0
     t = rd.logb(t0) if logt else t0
@@ -281,6 +292,8 @@ def test_ReactionDiffusion__rrefl_3(log):
 
     if logt:
         jref *= t0
+        if use_log2:
+            jref *= np.log(2)
 
     _test_dense_jac_rmaj(rd, t, y, jref)
 

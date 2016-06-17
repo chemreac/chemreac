@@ -10,6 +10,7 @@ in general.
 from __future__ import print_function, division, absolute_import
 
 from functools import reduce
+import inspect
 from itertools import product
 from math import exp
 from operator import add
@@ -27,7 +28,6 @@ class SymRD(ReactionDiffusionBase):
 
     @classmethod
     def from_rd(cls, rd, **kwargs):
-        import inspect
         return cls(*tuple(kwargs.get(attr, getattr(rd, attr)) for attr in
                           inspect.getargspec(cls.__init__).args[1:]))
 
@@ -169,16 +169,21 @@ class SymRD(ReactionDiffusionBase):
                             add, a_terms))
 
         if self.logy or self.logt:
+            logbfactor = sp.log(2) if use_log2 else 1
             for bi in range(self.N):
                 for si in range(self.n):
                     if self.logy:
                         self._f[bi*self.n+si] /= self.y(bi, si)
+                        if not self.logt:
+                            self._f[bi*self.n+si] /= logbfactor
                     if self.logt:
-                        self._f[bi*self.n+si] *= 2**self._t if self.use_log2 else sp.exp(self._t)
+                        self._f[bi*self.n+si] *= (2**self._t) if self.use_log2 else sp.exp(self._t)
+                        if not self.logy:
+                            self._f[bi*self.n+si] *= logbfactor
 
     def y(self, bi, si):
         if self.logy:
-            return 2**self._y[bi*self.n+si] if self.use_log2 else sp.exp(self._y[bi*self.n+si])
+            return (2**self._y[bi*self.n+si]) if self.use_log2 else sp.exp(self._y[bi*self.n+si])
         else:
             return self._y[bi*self.n+si]
 

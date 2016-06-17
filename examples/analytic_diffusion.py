@@ -66,7 +66,7 @@ from chemreac.integrate import run
 from chemreac.util.plotting import save_and_or_show_plot
 
 
-def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=None):
+def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, use_log2=False):
     r"""
     Evaluates the Green's function:
 
@@ -97,16 +97,18 @@ def flat_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=None):
 
 
     """
-    x = np.exp(x) if logx else x
+    expb = (lambda arg: 2**arg) if use_log2 else np.exp
+    x = expb(x) if logx else x
     a = (4*np.pi*D*t)**-0.5
     b = -(x-mu-v*t)**2/(4*D*t)
     if logy:
+        logb = (lambda arg: np.log(arg)/np.log(2)) if use_log2 else np.log
         return logb(a) + b*logb(np.e) + logb(xend-x0)
     else:
         return a*np.exp(b)*(xend-x0)
 
 
-def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=None):
+def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, use_log2=False):
     r"""
     Evaluates the Green's function:
 
@@ -126,7 +128,7 @@ def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=
 
     .. math ::
 
-        \nabla = \frac{1}{x}
+        \nabla \cdot c = \frac{1}{x}\frac{\partial \left( x c \right)}{\partial x}
 
     and where :math:`\nabla^2` is:
 
@@ -137,16 +139,18 @@ def cylindrical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=
 
 
     """
-    x = np.exp(x) if logx else x
+    expb = (lambda arg: 2**arg) if use_log2 else np.exp
+    x = expb(x) if logx else x
     a = (4*np.pi*D*t)**-1
     b = -(x-mu-v*t)**2/(4*D*t)
     if logy:
+        logb = (lambda arg: np.log(arg)/np.log(2)) if use_log2 else np.log
         return logb(a) + b*logb(np.e) + logb(xend-x0)
     else:
         return a*np.exp(b)*(xend-x0)
 
 
-def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=None):
+def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, use_log2=False):
     r"""
     Evaluates the Green's function:
 
@@ -162,11 +166,11 @@ def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=No
         \frac{\partial c(x, t)}{\partial t} = D\nabla^2
             c(x, t) - \vec{v} \cdot c(x, t)
 
-    where :math:`\nabla` in spherical coordinates for a isotropic system is:
+    where :math:`\nabla` in spherical coordinates for an isotropic system is:
 
     .. math ::
 
-        \nabla = \frac{\partial}{\partial x}
+        \nabla \cdot c = \frac{1}{x^2}\frac{\partial \left( x^2 c \right)}{\partial x}
 
     and where :math:`\nabla^2` is:
 
@@ -177,10 +181,12 @@ def spherical_analytic(x, t, D, mu, x0, xend, v, logy=False, logx=False, logb=No
 
 
     """
-    x = np.exp(x) if logx else x
+    expb = (lambda arg: 2**arg) if use_log2 else np.exp
+    x = expb(x) if logx else x
     a = (4*np.pi*D)**-0.5 * t**-1.5
     b = -(x-mu-v*t)**2/(4*D*t)
     if logy:
+        logb = (lambda arg: np.log(arg)/np.log(2)) if use_log2 else np.log
         return logb(a) + b*logb(np.e) + logb(xend-x0)
     else:
         return a*np.exp(b)*(xend-x0)
@@ -267,7 +273,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
     # Calc initial conditions / analytic reference values
     t = tout.copy().reshape((nt, 1))
     yref = analytic(rd.xcenters, t, D, center, x0, xend,
-                    -mobility if efield else 0, logy, logx, rd.logb).reshape(nt, N, 1)
+                    -mobility if efield else 0, logy, logx, use_log2).reshape(nt, N, 1)
 
     if nspecies > 1:
         from batemaneq import bateman_parent
