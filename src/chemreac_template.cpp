@@ -274,19 +274,23 @@ ReactionDiffusion<Real_t>::apply_fd_(uint bi){
     finitediff::populate_weights<Real_t>(0, lxc, nstencil-1, 2, c);
     delete []lxc;
 
+    const Real_t logbdenom = use_log2 ? 1/log(2) : 1;
+
     for (uint li=0; li<nstencil; ++li){ // li: local index
         D_WEIGHT(bi, li) = FDWEIGHT(2, li);
         A_WEIGHT(bi, li) = FDWEIGHT(1, li);
         if (logx){
+            D_WEIGHT(bi, li) *= logbdenom*logbdenom;
+            A_WEIGHT(bi, li) *= logbdenom;
             switch(geom){
             case Geom::FLAT:
-                D_WEIGHT(bi, li) -= FDWEIGHT(1, li);
+                D_WEIGHT(bi, li) -= FDWEIGHT(1, li)*logbdenom;
                 break;
             case Geom::CYLINDRICAL:
                 A_WEIGHT(bi, li) += FDWEIGHT(0, li);
                 break;
             case Geom::SPHERICAL:
-                D_WEIGHT(bi, li) += FDWEIGHT(1, li);
+                D_WEIGHT(bi, li) += FDWEIGHT(1, li)*logbdenom;
                 A_WEIGHT(bi, li) += 2*FDWEIGHT(0, li);
                 break;
             }
@@ -508,7 +512,8 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     %else:
 #error "Unhandled token."
     %endif
-    const Real_t expb_t = (logt) ? expb(t)*(use_log2 ? log(2) : 1) : 0.0;
+    const Real_t exp_t = (logt) ? expb(t) : 0.0;
+    const Real_t logbfactor = use_log2 ? log(2) : 1;
 
     Real_t * fout = nullptr;
     if (logy){ // fy useful..
@@ -603,22 +608,22 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                         jac.block(bi, si, dsi) *= LINC(bi, dsi)*RLINC(bi, si);
                     }
                     if (logt)
-                        jac.block(bi, si, dsi) *= expb_t;
+                        jac.block(bi, si, dsi) *= exp_t*logbfactor;
                     if (logy && dsi == si)
-                        jac.block(bi, si, si) -= FOUT(bi, si);
+                        jac.block(bi, si, si) -= FOUT(bi, si)*logbfactor;
                 }
                 for (uint di=0; di<n_jac_diags; ++di){
                     if (bi > di){
                         if (logy)
                             jac.sub(di, bi-di-1, si) *= LINC(bi-di-1, si)*RLINC(bi, si);
                         if (logt)
-                            jac.sub(di, bi-di-1, si) *= expb_t;
+                            jac.sub(di, bi-di-1, si) *= exp_t*logbfactor;
                     }
                     if (bi < N-di-1){
                         if (logy)
                             jac.sup(di, bi, si) *= LINC(bi+di+1, si)*RLINC(bi, si);
                         if (logt)
-                            jac.sup(di, bi, si) *= expb_t;
+                            jac.sup(di, bi, si) *= exp_t*logbfactor;
                     }
                 }
             }
