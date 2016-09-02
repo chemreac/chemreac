@@ -97,16 +97,23 @@ if len(sys.argv) > 1:
 elif len(sys.argv) == 1:
     IDEMPOTENT_INVOCATION = True
 
+
+# Source distributions contain rendered sources
+template_path = 'src/chemreac_template.cpp'
+rendered_path = 'src/chemreac.cpp'
+USE_TEMPLATE = os.path.exists(template_path)
+setup_requires=['pycompilation', 'pycodeexport', 'mako'],
+install_requires = ['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu']
+
+
 if IDEMPOTENT_INVOCATION:
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
+    if USE_TEMPLATE:
+        install_requires += setup_requires
 else:
     import pickle
     import numpy as np
-    template_path = 'src/chemreac_template.cpp'
-    rendered_path = 'src/chemreac.cpp'
-    # Source distributions contain rendered sources
-    USE_TEMPLATE = os.path.exists(template_path)
     try:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
     except ImportError:
@@ -233,11 +240,11 @@ setup_kwargs = dict(
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
     classifiers=classifiers,
-    setup_requires=['pycompilation', 'pycodeexport', 'mako'],
-    install_requires=['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu'],
+    setup_requires=setup_requires,
+    install_requires=install_requires,
     extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
-                            'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq']}
-
+                            'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
+                            'sphinx', 'sphinx_rtd_theme', 'numpydoc']}
 )
 
 if __name__ == '__main__':

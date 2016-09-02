@@ -6,8 +6,12 @@ fi
 rm -r build/ dist/* */*.so
 set -e
 python2.7 setup.py sdist
-python2.7 -m pip install --user -e .[all]
-python3.4 -m pip install --user -e .[all]
-PYTHONPATH=$(pwd) PYTHON=python2.7 ./scripts/run_tests.sh
-PYTHONPATH=$(pwd) PYTHON=python3.4 ./scripts/run_tests.sh ${@:2}
+for PY in python2 python3; do
+    $PY -m pip install --user -e .[all]
+    if [[ $PY == *2 ]]; then
+        PYTHON=$PY ./scripts/run_tests.sh
+    else
+        PYTHON=$PY ./scripts/run_tests.sh ${@:2}
+    fi
+done
 ! grep "DO-NOT-MERGE!" -R . --exclude ci.sh

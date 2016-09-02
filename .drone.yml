@@ -1,5 +1,5 @@
 build:
-  image: bjodah/bjodahimg:v1.1
+  image: bjodah/bjodahimg16:v1.2
   environment:
     - WITH_OPENMP=1
   commands:
