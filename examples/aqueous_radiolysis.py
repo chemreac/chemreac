@@ -146,7 +146,7 @@ def integrate_rd(
             print(fname, np.average(B[2*rd.n, :]) /
                   np.average(B[3*rd.n, :-rd.n]))
             print(fname, np.average(B[2*rd.n, :])/np.average(B[rd.n, rd.n:]))
-
+    return integr
 
 if __name__ == '__main__':
-    argh.dispatch_command(integrate_rd)
+    argh.dispatch_command(integrate_rd, output=None)

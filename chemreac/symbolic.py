@@ -216,7 +216,7 @@ class SymRD(ReactionDiffusionBase):
     dense_jac_rmaj = dense_jac_cmaj = dense_jac
 
     def banded_jac(self, t, y, Jout):
-        from pyodesys.util import banded_jacobian
+        from sym.util import banded_jacobian
         jac = banded_jacobian(self._f, self._y,
                               self.n*self.n_jac_diags,
                               self.n*self.n_jac_diags)

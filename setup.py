@@ -242,9 +242,11 @@ setup_kwargs = dict(
     classifiers=classifiers,
     setup_requires=setup_requires,
     install_requires=install_requires,
-    extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
-                            'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
-                            'sphinx', 'sphinx_rtd_theme', 'numpydoc']}
+    extras_require={'all': [
+        'argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
+        'sym', 'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
+        'sphinx', 'sphinx_rtd_theme', 'numpydoc'
+    ]}
 )
 
 if __name__ == '__main__':

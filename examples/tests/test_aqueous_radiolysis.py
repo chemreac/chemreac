@@ -6,4 +6,5 @@ from chemreac.util.testing import veryslow
 
 @veryslow
 def test_integrate_rd():
-    integrate_rd()
+    integr = integrate_rd()
+    assert integr.info['success']
