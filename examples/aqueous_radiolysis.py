@@ -149,4 +149,4 @@ def integrate_rd(
     return integr
 
 if __name__ == '__main__':
-    argh.dispatch_command(integrate_rd, output=None)
+    argh.dispatch_command(integrate_rd, output_file=None)
