@@ -9,7 +9,6 @@ import equilibrium
 from chemreac.util.testing import check_rd_integration_run
 
 
-
 def test_analytic_x():
     assert abs(equilibrium.analytic_x(3, 5, 13, 7, 2, 11) -
                1.18768491286119571) < 1e-14
