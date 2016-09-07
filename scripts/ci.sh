@@ -5,7 +5,6 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
 fi
 rm -r build/ dist/* */*.so
 set -e
-python2.7 setup.py sdist
 for PY in python2 python3; do
     $PY -m pip install --user -e .[all]
     if [[ $PY == *2 ]]; then
@@ -14,4 +13,5 @@ for PY in python2 python3; do
         PYTHON=$PY ./scripts/run_tests.sh ${@:2}
     fi
 done
+
 ! grep "DO-NOT-MERGE!" -R . --exclude ci.sh
