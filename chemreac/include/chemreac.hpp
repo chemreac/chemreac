@@ -7,6 +7,7 @@
 #include <memory> // unique_ptr
 #include <unordered_map>
 #include "block_diag_ilu.hpp"
+#include "anyode.hpp"
 
 
 namespace chemreac {
@@ -19,7 +20,7 @@ using std::pair;
 template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
 
 template <typename Real_t = double>
-class ReactionDiffusion
+class ReactionDiffusion : public AnyODE::OdeSysBase
 {
 public:
     int * coeff_active;
@@ -129,45 +130,43 @@ public:
 
     void zero_counters();
 
-    void rhs(Real_t, const Real_t * const, Real_t * const __restrict__);
+    int get_ny() const override;
+    int get_mlower() const override;
+    int get_mupper() const override;
 
-    void dense_jac_rmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, int);
-    void dense_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, int);
-    void banded_padded_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, int);
-    void banded_packed_jac_cmaj(Real_t, const Real_t * const __restrict__,  const Real_t * const __restrict__, Real_t * const __restrict__, int);
-    void compressed_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, int);
+    AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const __restrict__) override;
+    // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;
+
+    AnyODE::Status dense_jac_rmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int);
+    AnyODE::Status dense_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int) override;
+    AnyODE::Status banded_jac_cmaj(Real_t, const Real_t * const __restrict__,  const Real_t * const __restrict__, Real_t * const __restrict__, long int) override;
+    AnyODE::Status compressed_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int);
 
     Real_t get_mod_k(int bi, int ri) const;
 
     // For iterative linear solver
     // void local_reaction_jac(const uint, const Real_t * const, Real_t * const __restrict__, Real_t) const;
-    void jac_times_vec(const Real_t * const __restrict__ vec,
-                       Real_t * const __restrict__ out,
-                       Real_t t, const Real_t * const __restrict__ y,
-                       const Real_t * const __restrict__ fy
-                       );
-    void prec_setup(Real_t t, const Real_t * const __restrict__ y,
-                    const Real_t * const __restrict__ fy,
-                    bool jok, bool& jac_recomputed, Real_t gamma);
-    int prec_solve_left(const Real_t t, const Real_t * const __restrict__ y,
-                        const Real_t * const __restrict__ fy,
-                        const Real_t * const __restrict__ r,
-                        Real_t * const __restrict__ z,
-                        Real_t gamma,
-                        Real_t delta,
-                        const Real_t * const __restrict__ ewt);
+    AnyODE::Status jac_times_vec(const Real_t * const __restrict__ vec,
+                                 Real_t * const __restrict__ out,
+                                 Real_t t, const Real_t * const __restrict__ y,
+                                 const Real_t * const __restrict__ fy
+                                 ) override;
+    AnyODE::Status prec_setup(Real_t t, const Real_t * const __restrict__ y,
+                              const Real_t * const __restrict__ fy,
+                              bool jok, bool& jac_recomputed, Real_t gamma
+                              ) override;
+    AnyODE::Status prec_solve_left(const Real_t t, const Real_t * const __restrict__ y,
+                                   const Real_t * const __restrict__ fy,
+                                   const Real_t * const __restrict__ r,
+                                   Real_t * const __restrict__ z,
+                                   Real_t gamma,
+                                   Real_t delta,
+                                   const Real_t * const __restrict__ ewt
+                                   ) override;
 
     void per_rxn_contrib_to_fi(Real_t, const Real_t * const __restrict__, uint, Real_t * const __restrict__) const;
     int get_geom_as_int() const;
-    int get_ny() const;
-    int get_mlower() const;
-    int get_mupper() const;
     void calc_efield(const Real_t * const);
-
-    void roots(Real_t xval, const Real_t * const y, Real_t * const out){
-        ignore(xval); ignore(y); ignore(out);
-        throw std::runtime_error("Not implemented!");
-    }
 
 }; // class ReactionDiffusion
 

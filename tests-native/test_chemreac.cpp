@@ -115,7 +115,7 @@ int test_jac(){
     // Banded jacobian
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
     for (uint i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
-    rd.banded_packed_jac_cmaj(0.0, &y[0], nullptr, bnd_jac, (2*rd.n+1));
+    rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac, (2*rd.n+1));
 #define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)

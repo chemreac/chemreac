@@ -280,10 +280,8 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
             rd.dense_jac_cmaj(t, y, jout)
         else:
             if scipy_version[0] <= 0 and scipy_version[1] <= 14:
-                # Currently SciPy <= v0.14 needs extra padding
-                rd.banded_padded_jac_cmaj(t, y, jout)
-            else:
-                rd.banded_packed_jac_cmaj(t, y, jout)
+                raise NotImplementedError("SciPy v0.15 or greater required.")
+            rd.banded_jac_cmaj(t, y, jout)
         return jout
     jac.neval = 0
 

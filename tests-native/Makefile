@@ -71,7 +71,7 @@ LIBDIRS=-L${LOCALLIB}
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
 
-INCLUDE ?= -I.. -I../finitediff/include
+INCLUDE ?= -I../include -I$(shell python3 -c "import finitediff as fd; print(fd.get_include())") -I$(shell python3 -c "import block_diag_ilu as bdi; print(bdi.get_include())") -I$(shell python3 -c "import pycvodes as pc; print(pc.get_include())")
 
 %.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
@@ -83,7 +83,7 @@ all: $(TARGETS)
 clean:
 	rm $(GENERATED)
 
-chemreac.cpp: ../chemreac_template.cpp
+chemreac.cpp: ../src/chemreac_template.cpp
 	python enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
 
 

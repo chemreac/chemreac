@@ -234,6 +234,31 @@ ReactionDiffusion<Real_t>::zero_counters(){
 }
 
 template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_ny() const
+{
+    return n*N;
+}
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_mlower() const
+{
+    if (N > 1)
+        return n*n_jac_diags;
+    else
+        return -1;
+}
+
+template<typename Real_t>
+int
+ReactionDiffusion<Real_t>::get_mupper() const
+{
+    return this->get_mlower();
+}
+
+
+template<typename Real_t>
 uint
 ReactionDiffusion<Real_t>::stencil_bi_lbound_(uint bi) const
 {
@@ -382,7 +407,7 @@ ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restri
 
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 template<typename Real_t>
-void
+AnyODE::Status
 ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const __restrict__ dydt)
 {
     // note condifiontal call to free at end of this function
@@ -475,6 +500,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         free((void*)rlinC);
     }
     nfev++;
+    return AnyODE::Status::success;
 }
 #undef DYDT
 // D_WEIGHT(bi, li), Y(bi, si) and LINC(bi, si) still defined.
@@ -482,13 +508,13 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
 
 #define FOUT(bi, si) fout[(bi)*n+si]
 #define SUP(di, bi, li) jac.sup(di, bi, li)
-%for token in ['dense_jac_rmaj', 'dense_jac_cmaj', 'banded_packed_jac_cmaj', 'banded_padded_jac_cmaj', 'compressed_jac_cmaj']:
+%for token in ['dense_jac_rmaj', 'dense_jac_cmaj', 'banded_jac_cmaj', 'compressed_jac_cmaj']:
 template<typename Real_t>
-void
+AnyODE::Status
 ReactionDiffusion<Real_t>::${token}(Real_t t,
                             const Real_t * const __restrict__ y,
                             const Real_t * const __restrict__ fy,
-                            Real_t * const __restrict__ ja, int ldj)
+                            Real_t * const __restrict__ ja, long int ldj)
 {
     // Note: blocks are zeroed out, diagnoals only incremented
     // `t`: time (log(t) if logt=1)
@@ -501,10 +527,8 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
             ja + N*n*n,
             ja + N*n*n + n*(N*n_jac_diags - (n_jac_diags*n_jac_diags + n_jac_diags)/2),
             N, n, n_jac_diags};
-    %elif token.startswith('banded_packed_jac_cmaj'):
+    %elif token.startswith('banded_jac_cmaj'):
     block_diag_ilu::ColMajBandedView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj), 0};
-    %elif token.startswith('banded_padded_jac_cmaj'):
-    block_diag_ilu::ColMajBandedView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
     %elif token.startswith('dense_jac_cmaj'):
     block_diag_ilu::DenseView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
     %elif token.startswith('dense_jac_rmaj'):
@@ -640,19 +664,20 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     fname << "jac_" << std::setfill('0') << std::setw(5) << njev << ".dat";
     save_array(ja, ldj*n*N, fname.str());
 #endif
+    return AnyODE::Status::success;
 }
 %endfor
 #undef FOUT
 
 
 template<typename Real_t>
-void
+AnyODE::Status
 ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
-                                      Real_t * const __restrict__ out,
-                                      Real_t t,
-                                      const Real_t * const __restrict__ y,
-                                      const Real_t * const __restrict__ fy
-                                      )
+                                         Real_t * const __restrict__ out,
+                                         Real_t t,
+                                         const Real_t * const __restrict__ y,
+                                         const Real_t * const __restrict__ fy
+                                         )
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
@@ -664,15 +689,18 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
     }
     jac_cache->view.dot_vec(vec, out);
     njacvec_dot++;
+    return AnyODE::Status::success;
 }
 
 template<typename Real_t>
-void
+AnyODE::Status
 ReactionDiffusion<Real_t>::prec_setup(Real_t t,
-                const Real_t * const __restrict__ y,
-                const Real_t * const __restrict__ fy,
-                bool jok, bool& jac_recomputed, Real_t gamma)
+                                      const Real_t * const __restrict__ y,
+                                      const Real_t * const __restrict__ fy,
+                                      bool jok, bool& jac_recomputed, Real_t gamma
+                                      )
 {
+    auto status = AnyODE::Status::success;
     ignore(gamma);
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
     if (jac_cache == nullptr)
@@ -680,11 +708,12 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
     if (!jok){
         const int dummy = 0;
         jac_cache->view.zero_out_diags();
-        compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
+        status = compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
         update_prec_cache = true;
         jac_recomputed = true;
     } else jac_recomputed = false;
     nprec_setup++;
+    return status;
 }
 #undef LINC
 #undef Y
@@ -692,7 +721,7 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
 #undef A_WEIGHT
 
 template<typename Real_t>
-int
+AnyODE::Status
 ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
                                            const Real_t * const __restrict__ y,
                                            const Real_t * const __restrict__ fy,
@@ -700,7 +729,8 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
                                            Real_t * const __restrict__ z,
                                            Real_t gamma,
                                            Real_t delta,
-                                           const Real_t * const __restrict__ ewt)
+                                           const Real_t * const __restrict__ ewt
+                                           )
 {
     // See 4.6.9 on page 75 in cvs_guide.pdf (Sundials 2.6.2)
     // Solves P*z = r, where P ~= I - gamma*J
@@ -745,15 +775,19 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
 
 #endif
 
+    int info;
     if (prec_cache->view.average_diag_weight(0) > ilu_limit) {
         block_diag_ilu::ILU<Real_t> ilu {prec_cache->view};
         nprec_solve_ilu++;
-        return ilu.solve(r, z);
+        info = ilu.solve(r, z);
     } else {
         block_diag_ilu::LU<Real_t> lu {prec_cache->view};
         nprec_solve_lu++;
-        return lu.solve(r, z);
+        info = lu.solve(r, z);
     }
+    if (info == 0)
+        return AnyODE::Status::success;
+    return AnyODE::Status::recoverable_error;
 }
 
 template<typename Real_t>
@@ -781,31 +815,6 @@ ReactionDiffusion<Real_t>::get_geom_as_int() const
     default:                 return -1;
     }
 }
-
-template<typename Real_t>
-int
-ReactionDiffusion<Real_t>::get_ny() const
-{
-    return n*N;
-}
-
-template<typename Real_t>
-int
-ReactionDiffusion<Real_t>::get_mlower() const
-{
-    if (N > 1)
-        return n*n_jac_diags;
-    else
-        return -1;
-}
-
-template<typename Real_t>
-int
-ReactionDiffusion<Real_t>::get_mupper() const
-{
-    return this->get_mlower();
-}
-
 
 template<typename Real_t>
 void

@@ -517,7 +517,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
     jout_bnd = np.zeros((3, 3), order='F')
-    rd.banded_packed_jac_cmaj(t, y, jout_bnd)
+    rd.banded_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, 3)
     assert np.allclose(jout_bnd, jref_bnd)
 
@@ -611,7 +611,7 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
     jout_bnd = np.zeros((3, N), order='F')
-    rd.banded_packed_jac_cmaj(t, y, jout_bnd)
+    rd.banded_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
 
@@ -857,7 +857,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
     assert np.allclose(ref_banded_j_symbolic, ref_banded_j)
 
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
-    rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
+    rd.banded_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
     if os.environ.get('plot_tests', False):
         import matplotlib
@@ -878,9 +878,9 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 
-    jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
-    rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
-    assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
+    # jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
+    # rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
+    # assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
 
 
 @pytest.mark.parametrize("n_jac_diags", [-1, 1, 2, 3, 0])
@@ -901,15 +901,11 @@ def test_n_jac_diags(n_jac_diags):
     assert np.allclose(jout_cdns, jref_cdns)
 
     # Banded
-    for pad in (True, False):
-        jref_cbnd = rd.alloc_jout(order='F', pad=pad)
-        jout_cbnd = rd.alloc_jout(order='F', pad=pad)
-        sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
-        if pad:
-            rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
-        else:
-            rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
-        assert np.allclose(jout_cbnd, jref_cbnd)
+    jref_cbnd = rd.alloc_jout(order='F')
+    jout_cbnd = rd.alloc_jout(order='F')
+    sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
+    rd.banded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
+    assert np.allclose(jout_cbnd, jref_cbnd)
 
     # Compressed
     jref_cmprs = rd.alloc_jout_compressed()
