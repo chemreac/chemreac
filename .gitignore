@@ -14,7 +14,7 @@ examples/profile.out
 *.pkl
 
 # Rendered sources
-src/tests/chemreac.cpp
+tests-native/chemreac.cpp
 
 # Files from compilation
 build/
@@ -24,16 +24,16 @@ build/
 */*.o
 */*.mod
 */*.so
-src/tests/test_chemreac
-src/tests/test_chemreac_sundials
-src/tests/test_chemreac_catch
-src/tests/catch.hpp
-src/tests/*.mod
-src/tests/*.o
-src/tests/.coverage*
+tests-native/test_chemreac
+tests-native/test_chemreac_sundials
+tests-native/test_chemreac_catch
+tests-native/catch.hpp
+tests-native/*.mod
+tests-native/*.o
+tests-native/.coverage*
 
 # Output files
-src/tests/*.out
+tests-native/*.out
 
 # Generated files for source distribution
 runtests.py

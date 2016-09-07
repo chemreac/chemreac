@@ -6,6 +6,8 @@
 VERSION=${1#v}
 SERVER=$2
 GITHUBUSER=$3
+PKG=$(find . -maxdepth 2 -name __init__.py -print0 | xargs -0 -n1 dirname | xargs basename)
+PKG_UPPER=$(echo $PKG | tr '[:lower:]' '[:upper:]')
 MD5=$(md5sum dist/${PKG}-$VERSION.tar.gz | cut -f1 -d' ')
 if [[ -d dist/conda-recipe-$VERSION ]]; then
     rm -r dist/conda-recipe-$VERSION
@@ -19,7 +21,6 @@ sed -i -E \
 env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION python setup.py upload_sphinx
 
 # Specific for this project:
-SERVER=$3
 scp -r dist/conda-recipe-$VERSION/ $PKG@$SERVER:~/public_html/conda-recipes/
 scp dist/${PKG}-$VERSION.tar.gz $PKG@$SERVER:~/public_html/releases/
 for CONDA_PY in 2.7 3.4 3.5; do

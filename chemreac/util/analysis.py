@@ -14,7 +14,7 @@ import numpy as np
 from ..units import get_derived_unit
 
 
-def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
+def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0, expb=None):
     """
     Returns linear estimated error bounds from numerical integration
 
@@ -30,6 +30,8 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
          Is y from a run with logarithmic concentration?
     scale_err : float
          scale estimated error bounds (useful for testing)
+    expb : callback
+       exponential function in base b (e or 2 depending on ``use_log2``)
 
     Returns
     =======
@@ -42,7 +44,7 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0):
     """
     solver_err = scale_err*(np.abs(y*rtol) + atol)
     if logy:
-        res = np.exp(y - solver_err), np.exp(y + solver_err)
+        res = expb(y - solver_err), expb(y + solver_err)
     else:
         res = y - solver_err, y + solver_err
     return np.array(res)
@@ -66,6 +68,7 @@ def solver_linear_error_from_integration(integration, ti=slice(None), bi=0,
         integration.info['rtol'],
         atol_i,
         integration.rd.logy,
+        expb=integration.rd.expb,
         **kwargs
     ) * get_derived_unit(integration.rd.unit_registry, 'concentration')
 

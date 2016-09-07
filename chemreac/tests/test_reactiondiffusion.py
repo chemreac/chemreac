@@ -20,6 +20,7 @@ from chemreac.units import (
 
 TR_FLS = [True, False]
 TR_FLS_PAIRS = list(product(TR_FLS, TR_FLS))
+TR_FLS_TRIPLES = list(product(TR_FLS, TR_FLS, TR_FLS))
 
 
 def _test_f(rd, t, y, fref=None):
@@ -134,12 +135,12 @@ def test_ReactionDiffusion__actv_2():
     _test_f_and_dense_jac_rmaj(rd, 0, y0, [-2*r, r, -6*r])
 
 
-@pytest.mark.parametrize("log", TR_FLS_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_TRIPLES)
 def test_ReactionDiffusion__lrefl_3(log):
     # Diffusion without reaction
     # 3 bins
     t0 = 3.0
-    logy, logt = log
+    logy, logt, use_log2 = log
     D = 17.0
     y0 = np.array([23.0, 27.0, 37.0])
     x = [5.0, 9.0, 13.0, 15.0]
@@ -148,7 +149,7 @@ def test_ReactionDiffusion__lrefl_3(log):
 
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
-                           lrefl=True, rrefl=False)
+                           lrefl=True, rrefl=False, use_log2=use_log2)
     assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[0, 3, 7, 11, 14]
@@ -171,11 +172,15 @@ def test_ReactionDiffusion__lrefl_3(log):
 
     if logy:
         fref /= y0
+        if not logt and use_log2:
+            fref /= np.log(2)
     if logt:
         fref *= t0
+        if not logy and use_log2:
+            fref *= np.log(2)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_f(rd, t, y, fref)
 
     if logy:
@@ -205,18 +210,20 @@ def test_ReactionDiffusion__lrefl_3(log):
 
     if logt:
         jref *= t0
+        if use_log2:
+            jref *= np.log(2)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_dense_jac_rmaj(rd, t, y, jref)
 
 
-@pytest.mark.parametrize("log", TR_FLS_PAIRS)
+@pytest.mark.parametrize("log", TR_FLS_TRIPLES)
 def test_ReactionDiffusion__rrefl_3(log):
     # Diffusion without reaction
     # 3 bins
     t0 = 3.0
-    logy, logt = log
+    logy, logt, use_log2 = log
     D = 17.0
     y0 = np.array([23.0, 27.0, 37.0])
     x = [5.0, 9.0, 13.0, 15.0]
@@ -225,7 +232,7 @@ def test_ReactionDiffusion__rrefl_3(log):
 
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x, logy=logy,
                            nstencil=nstencil, logt=logt,
-                           lrefl=False, rrefl=True)
+                           lrefl=False, rrefl=True, use_log2=use_log2)
     assert np.allclose(rd.xc, xc)
 
     # In [7]: xlst=[3, 7, 11, 14, 16]
@@ -247,11 +254,15 @@ def test_ReactionDiffusion__rrefl_3(log):
 
     if logy:
         fref /= y0
+        if not logt and use_log2:
+            fref /= np.log(2)
     if logt:
         fref *= t0
+        if not logy and use_log2:
+            fref *= np.log(2)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_f(rd, t, y, fref)
 
     if logy:
@@ -281,6 +292,8 @@ def test_ReactionDiffusion__rrefl_3(log):
 
     if logt:
         jref *= t0
+        if use_log2:
+            jref *= np.log(2)
 
     _test_dense_jac_rmaj(rd, t, y, jref)
 
@@ -306,8 +319,8 @@ def test_ReactionDiffusion__lrefl_7(log):
                            logt=logt, N=N, nstencil=nstencil,
                            lrefl=lrefl, rrefl=rrefl)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     le = nsidep if lrefl else 0
     D_weight_ref = np.array([
         finite_diff_weights(
@@ -374,7 +387,7 @@ def test_ReactionDiffusion__only_1_reaction__logy(N):
     # A -> B
     rd = ReactionDiffusion(2, [[0]], [[1]], [k], N, D=[0.0, 0.0], logy=True)
     fref = np.array([(-k, k*y0[i*2]/y0[i*2+1]) for i in range(N)]).flatten()
-    _test_f(rd, t0, np.log(y0), fref)
+    _test_f(rd, t0, rd.logb(y0), fref)
 
     jref = np.zeros((2*N, 2*N))
     for i in range(N):
@@ -382,7 +395,7 @@ def test_ReactionDiffusion__only_1_reaction__logy(N):
         B = y0[i*2+1]
         jref[i*2+1, i*2] = k/B*A
         jref[i*2+1, i*2+1] = -k/B*A
-    _test_dense_jac_rmaj(rd, t0, np.log(y0), jref)
+    _test_dense_jac_rmaj(rd, t0, rd.logb(y0), jref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
@@ -396,7 +409,7 @@ def test_ReactionDiffusion__only_1_reaction__logy__logt(N):
                            logy=True, logt=True)
     fref = np.array([(-k*t0, t0*k*y0[i*2]/y0[i*2+1])
                      for i in range(N)]).flatten()
-    _test_f_and_dense_jac_rmaj(rd, np.log(t0), np.log(y0), fref)
+    _test_f_and_dense_jac_rmaj(rd, rd.logb(t0), np.log(y0), fref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
@@ -433,7 +446,7 @@ def test_ReactionDiffusion__only_1_field_dep_reaction_logy(N):
                          [k*y0[0]/y0[1], -k*y0[0]/y0[1]]])
     else:
         jref = None
-    _test_f_and_dense_jac_rmaj(rd, 0, np.log(y0), fref, jref)
+    _test_f_and_dense_jac_rmaj(rd, 0, rd.logb(y0), fref, jref)
 
 
 @pytest.mark.parametrize("N", [1, 3, 4, 5])
@@ -453,7 +466,7 @@ def test_ReactionDiffusion__only_1_field_dep_reaction_logy_logt(N):
 
     fref = np.array([(-k_(i)*t0, k_(i)*t0*y0[i*2]/y0[i*2+1])
                      for i in range(N)]).flatten()
-    _test_f_and_dense_jac_rmaj(rd, np.log(t0), np.log(y0), fref)
+    _test_f_and_dense_jac_rmaj(rd, rd.logb(t0), np.log(y0), fref)
 
 
 @pytest.mark.parametrize("log", TR_FLS_PAIRS)
@@ -499,12 +512,12 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     if logt:
         jref *= t0
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
     jout_bnd = np.zeros((3, 3), order='F')
-    rd.banded_packed_jac_cmaj(t, y, jout_bnd)
+    rd.banded_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, 3)
     assert np.allclose(jout_bnd, jref_bnd)
 
@@ -593,12 +606,12 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
                     jref[i, j] = D*weights[i][j-lb[i]+nsidep]
     if logt:
         jref *= t0
-    t = np.log(t0) if logt else t0
-    y = np.log(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
     jout_bnd = np.zeros((3, N), order='F')
-    rd.banded_packed_jac_cmaj(t, y, jout_bnd)
+    rd.banded_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, N)
     assert np.allclose(jout_bnd, jref_bnd)
 
@@ -661,7 +674,7 @@ def test_integrated_conc(params):
     x = np.linspace(x0, xend, N+1)
     rd = ReactionDiffusion(1, [], [], [], D=[0], N=N,
                            x=np.log(x) if logx else x, geom=geom, logx=logx)
-    xc = np.exp(rd.xcenters) if logx else rd.xcenters
+    xc = rd.expb(rd.xcenters) if logx else rd.xcenters
     y = xc*np.exp(-xc)
 
     def primitive(t):
@@ -844,7 +857,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
     assert np.allclose(ref_banded_j_symbolic, ref_banded_j)
 
     jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
-    rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
+    rd.banded_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
     if os.environ.get('plot_tests', False):
         import matplotlib
@@ -865,9 +878,9 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
 
-    jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
-    rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
-    assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
+    # jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
+    # rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
+    # assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
 
 
 @pytest.mark.parametrize("n_jac_diags", [-1, 1, 2, 3, 0])
@@ -888,15 +901,11 @@ def test_n_jac_diags(n_jac_diags):
     assert np.allclose(jout_cdns, jref_cdns)
 
     # Banded
-    for pad in (True, False):
-        jref_cbnd = rd.alloc_jout(order='F', pad=pad)
-        jout_cbnd = rd.alloc_jout(order='F', pad=pad)
-        sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
-        if pad:
-            rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
-        else:
-            rd.banded_packed_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
-        assert np.allclose(jout_cbnd, jref_cbnd)
+    jref_cbnd = rd.alloc_jout(order='F')
+    jout_cbnd = rd.alloc_jout(order='F')
+    sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
+    rd.banded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
+    assert np.allclose(jout_cbnd, jref_cbnd)
 
     # Compressed
     jref_cmprs = rd.alloc_jout_compressed()

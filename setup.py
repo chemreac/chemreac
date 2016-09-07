@@ -30,8 +30,8 @@ def _path_under_setup(*args):
 # will exec the contents of: ./chemreac/_release.py
 #
 # To complicate things further conda-build drops most environment
-# variables, so for conda based builds to work need setup.py to write
-# the version as a string to a file named '__conda_version__.txt'
+# variables, so for conda based builds to work setup.py reads the
+# version from a string in a file named '__conda_version__.txt'
 
 RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
 
@@ -39,8 +39,8 @@ RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
 CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
 if CONDA_BUILD:
     try:
-        RELEASE_VERSION = 'v' + io.open('__conda_version__.txt', 'rt',
-                                        encoding='utf-8').readline().rstrip()
+        RELEASE_VERSION = 'v' + io.open(
+            '__conda_version__.txt', 'rt', encoding='utf-8').readline().rstrip()
     except IOError:
         pass
 
@@ -91,22 +91,32 @@ cmdclass_ = {}
 
 IDEMPOTENT_INVOCATION = False
 if len(sys.argv) > 1:
-    if '--help' in sys.argv[1:] or sys.argv[1] in (
+    if '--help' in sys.argv[1:] or '-h' in sys.argv[1:] or sys.argv[1] in (
             '--help-commands', 'egg_info', 'clean', '--version'):
         IDEMPOTENT_INVOCATION = True
 elif len(sys.argv) == 1:
     IDEMPOTENT_INVOCATION = True
 
+
+# Source distributions contain rendered sources
+template_path = 'src/chemreac_template.cpp'
+rendered_path = 'src/chemreac.cpp'
+USE_TEMPLATE = os.path.exists(template_path)
+setup_requires=['pycompilation', 'pycodeexport', 'mako', 'block_diag_ilu', 'pycvodes', 'finitediff'],
+install_requires = ['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu', 'pycvodes', 'finitediff']
+
+
 if IDEMPOTENT_INVOCATION:
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []
+    if USE_TEMPLATE:
+        install_requires += setup_requires
 else:
     import pickle
     import numpy as np
-    template_path = 'src/chemreac_template.cpp'
-    rendered_path = 'src/chemreac.cpp'
-    # Source distributions contain rendered sources
-    USE_TEMPLATE = os.path.exists(template_path)
+    import finitediff as fd
+    import pycvodes as pc
+    import block_diag_ilu as bdi
     try:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
     except ImportError:
@@ -181,9 +191,10 @@ else:
                             (['openmp'] if WITH_OPENMP else [])),
                 'std': 'c++11',
             },
-            include_dirs=['src/', 'src/finitediff/include/',
-                          'src/finitediff/external/newton_interval/include/',
-                          np.get_include()],
+            include_dirs=[
+                np.get_include(), fd.get_include(), bdi.get_include(),
+                pc.get_include(), _path_under_setup('include')
+            ],
             libraries=['sundials_cvodes', LLAPACK, 'sundials_nvecserial', 'm'],
             logger=True,
         )
@@ -233,11 +244,13 @@ setup_kwargs = dict(
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
     classifiers=classifiers,
-    setup_requires=['pycompilation', 'pycodeexport', 'mako'],
-    install_requires=['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu'],
-    extras_require={'all': ['argh', 'pytest', 'scipy', 'matplotlib', 'mpld3',
-                            'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq']}
-
+    setup_requires=setup_requires,
+    install_requires=install_requires,
+    extras_require={'all': [
+        'argh', 'pytest', 'scipy>=0.15', 'matplotlib', 'mpld3',
+        'sym', 'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
+        'sphinx', 'sphinx_rtd_theme', 'numpydoc'
+    ]}
 )
 
 if __name__ == '__main__':

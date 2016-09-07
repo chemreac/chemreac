@@ -1,5 +1,4 @@
-#ifndef CHEMREAC_UTIL_H__AZQIEGXT55HCHGTXM3T47G6BRU
-#define CHEMREAC_UTIL_H__AZQIEGXT55HCHGTXM3T47G6BRU
+#pragma once
 
 #include <cstddef>
 #include <string>
@@ -31,4 +30,3 @@ namespace chemreac {
     }
 
 }
-#endif /* CHEMREAC_UTIL_H__AZQIEGXT55HCHGTXM3T47G6BRU */

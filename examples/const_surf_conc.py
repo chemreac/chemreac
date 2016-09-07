@@ -55,7 +55,7 @@ from chemreac.util.plotting import save_and_or_show_plot
 from chemreac.util.testing import spat_ave_rmsd_vs_time
 
 
-def analytic(x, t, D, x0, xend, logx=False, c_s=1):
+def analytic(x, t, D, x0, xend, logx=False, c_s=1, use_log2=False):
     r"""
     Evaluates the analytic expression for the concentration
     in a medium with a constant source term at x=0:
@@ -69,7 +69,8 @@ def analytic(x, t, D, x0, xend, logx=False, c_s=1):
     import scipy.special
     if t.ndim == 1:
         t = t.reshape((t.size, 1))
-    x = np.exp(x) if logx else x
+    expb = (lambda arg: 2**arg) if use_log2 else np.exp
+    x = expb(x) if logx else x
     return c_s * scipy.special.erfc(x/(2*(D*t)**0.5))
 
 
@@ -80,7 +81,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
                  integrator='scipy', iter_type='default',
                  linear_solver='default', atol=1e-8, rtol=1e-10, factor=1e5,
                  random_seed=42, plot=False, savefig='None', verbose=False,
-                 scaling=1.0, ilu_limit=1000.0, first_step=0.0, n_jac_diags=0):
+                 scaling=1.0, ilu_limit=1000.0, first_step=0.0, n_jac_diags=0, use_log2=False):
     """
     Solves the time evolution of diffusion from a constant (undepletable)
     source term. Optionally plots the results. In the plots time is represented
@@ -120,10 +121,11 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
         n_jac_diags=n_jac_diags,
         faraday_const=1,
         vacuum_permittivity=1,
+        use_log2=use_log2
     )
 
     # Calc initial conditions / analytic reference values
-    Cref = analytic(rd.xcenters, tout, D, x0, xend, logx).reshape(
+    Cref = analytic(rd.xcenters, tout, D, x0, xend, logx, use_log2=use_log2).reshape(
         nt, N, 1)
     source = np.zeros_like(Cref[0, ...])
     source[0, 0] = factor

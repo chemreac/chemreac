@@ -65,7 +65,7 @@ default_constant = dict(
     logy=False, logx=False, random=False, p=0, a=0.2, linterpol=False,
     rinterpol=False, num_jacobian=False, method='bdf', integrator='cvode',
     linear_solver='gmres', atol=1e-8, rtol=1e-10, efield=False, random_seed=42,
-    mobility=0.01, n_jac_diags=0
+    mobility=0.01, n_jac_diags=0, use_log2=False,
 )
 
 

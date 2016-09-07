@@ -38,6 +38,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[vector[T]] modulation
         T ilu_limit
         uint n_jac_diags
+        bool use_log2
         T * const efield
         T * xc
 
@@ -79,15 +80,15 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           vector[int],
                           vector[vector[T]],
                           T,
-                          uint
+                          uint,
+                          bool
                           ) except +
         void zero_counters()
         void rhs(T, const T * const, T * const)
-        void dense_jac_rmaj(T, const T * const, const T * const, T * const, int)
-        void dense_jac_cmaj(T, const T * const, const T * const, T * const, int)
-        void banded_padded_jac_cmaj(T, const T * const, const T * const, T * const, int)
-        void banded_packed_jac_cmaj(T, const T * const, const T * const, T * const, int)
-        void compressed_jac_cmaj(T, const T * const, const T * const, T * const, int)
+        void dense_jac_rmaj(T, const T * const, const T * const, T * const, long int)
+        void dense_jac_cmaj(T, const T * const, const T * const, T * const, long int)
+        void banded_jac_cmaj(T, const T * const, const T * const, T * const, long int)
+        void compressed_jac_cmaj(T, const T * const, const T * const, T * const, long int)
 
         void per_rxn_contrib_to_fi(T, const T * const, uint, T * const)
         int get_geom_as_int()

@@ -21,16 +21,16 @@ from chemreac.units import (
     metre, molar, umol, hour, day, SI_base_registry
 )
 
-LOG_COMOBS = list(product([True, False], [True, False]))
+LOG_COMOBS = list(product([True, False], [True, False], [True, False]))
 
 
 @pytest.mark.parametrize("log", LOG_COMOBS)
 def test_decay(log):
     # A -> B
     n = 2
-    logy, logt = log
+    logy, logt, use_log2 = log
     k0 = 0.13
-    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt)
+    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt, use_log2=use_log2)
     y0 = [3.0, 1.0]
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
@@ -90,7 +90,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     # C -> D # mod1 (x**2)
     # E -> F # mod2 (sqrt(x))
     # G -> H # no modulation
-    (logy, logt), geom = log_geom
+    (logy, logt, use_log2), geom = log_geom
     k = np.array([3.0, 7.0, 13.0, 22.0])
     N = 5
     n = 8
@@ -110,7 +110,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
         [[i] for i in range(n-1, n, 2)],
         k=k[3:], N=N, D=D, x=x, fields=fields,
         g_values=g_values, g_value_parents=g_value_parents,
-        logy=logy, logt=logt, geom=geom
+        logy=logy, logt=logt, geom=geom, use_log2=use_log2
     )
     assert rd.n == n
     assert rd.N == N
@@ -177,7 +177,7 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
 @pytest.mark.parametrize("log", LOG_COMOBS)
 def test_integrators(log):
-    logy, logt = log
+    logy, logt, use_log2 = log
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
 
@@ -212,12 +212,12 @@ def test_integrators(log):
     # A -> B
     n = 2
     k0 = 0.13
-    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt)
+    rd = ReactionDiffusion(n, [[0]], [[1]], k=[k0], logy=logy, logt=logt, use_log2=use_log2)
     y0 = [3.0, 1.0]
 
     results = []
     for solver, kwargs in solver_kwargs.items():
-        _y0 = np.log(y0) if kwargs.get('C0_is_log', False) else y0
+        _y0 = rd.logb(y0) if kwargs.get('C0_is_log', False) else y0
         integr = Integration(rd, _y0, integrator=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)

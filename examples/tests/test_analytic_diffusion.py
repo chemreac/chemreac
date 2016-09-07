@@ -18,7 +18,7 @@ EXTRA_COMBOS = list(product('fcs', TR_FLS, TR_FLS, TR_FLS, [1, 2, 3], [5, 7]))
 tol = {3: 1e5, 5: 1e4, 7: 1e2}  # determined from analytic_N_scaling demo
 
 
-def _test_gaussian_diffusion(params):
+def _test_gaussian_diffusion(params, **kwargs):
     g, ly, lt, r, nspecies, nstencil = params
     tout, yout, info, ave_rmsd_over_atol, rd, rmsd = integrate_rd(
         geom=g, logt=lt, logy=ly, N=128, random=r, nspecies=nspecies,
@@ -39,6 +39,10 @@ def _test_gaussian_diffusion(params):
             assert np.all(rmsd < tol[nstencil]*forgiveness)
         else:
             assert np.all(rmsd < tol[nstencil])
+
+
+def test_gaussian_diffusion_logx():
+    _test_gaussian_diffusion(('f', False, False, False, 3, 3), logx=True, x0=1e-6, N=512)
 
 
 @pytest.mark.parametrize('params', COMBOS)

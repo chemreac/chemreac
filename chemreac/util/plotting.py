@@ -190,7 +190,7 @@ def _get_jac_row_over_t(rd, tout, yout, indices, bi=0):
     Jout = np.zeros((rd.n*2+1, rd.n*rd.N), order='F')
     row_out = np.zeros((yout.shape[0], len(indices), rd.n))
     for i, y in enumerate(yout):
-        rd.banded_packed_jac_cmaj(tout[i], y.flatten(), Jout)
+        rd.banded_jac_cmaj(tout[i], y.flatten(), Jout)
         Jtmp = Jout[:, bi*rd.n:(bi + 1)*rd.n]
         row_out[i, :, :] = get_jac_row_from_banded(Jtmp, indices, rd.n)
     return row_out

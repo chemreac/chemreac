@@ -74,6 +74,7 @@ cdef class PyReactionDiffusion:
                   double vacuum_permittivity=8.854187817e-12,
                   double ilu_limit=1000.0,
                   int n_jac_diags=1,
+                  bint use_log2=False,
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion[double](
@@ -82,7 +83,7 @@ cdef class PyReactionDiffusion:
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
-            modulated_rxns, modulation, ilu_limit, n_jac_diags)
+            modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2)
 
     def __dealloc__(self):
         del self.thisptr
@@ -109,20 +110,12 @@ cdef class PyReactionDiffusion:
         self.thisptr.dense_jac_cmaj(
             t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
 
-    def banded_padded_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
-                       cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
-        assert y.size >= self.n*self.N
-        assert Jout.shape[0] >= self.n*3+1
-        assert Jout.shape[1] >= self.n*self.N
-        self.thisptr.banded_padded_jac_cmaj(
-            t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
-
-    def banded_packed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
+    def banded_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
         assert y.size >= self.n*self.N
         assert Jout.shape[0] >= self.n*2+1
         assert Jout.shape[1] >= self.n*self.N
-        self.thisptr.banded_packed_jac_cmaj(
+        self.thisptr.banded_jac_cmaj(
             t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
 
     def compressed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
@@ -312,6 +305,24 @@ cdef class PyReactionDiffusion:
     property n_jac_diags:
         def __get__(self):
             return self.thisptr.n_jac_diags
+
+    property use_log2:
+        def __get__(self):
+            return self.thisptr.use_log2
+
+    def logb(self, x):
+        """ log_2 if self.use_log2 else log_e """
+        result = np.log(x)
+        if self.use_log2:
+            result /= np.log(2)
+        return result
+
+    def expb(self, x):
+        """ 2**x if self.use_log2 else exp(x) """
+        if self.use_log2:
+            return 2**np.asarray(x)
+        else:
+            return np.exp(x)
 
     property nfev:
         def __get__(self):

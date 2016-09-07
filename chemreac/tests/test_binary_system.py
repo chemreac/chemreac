@@ -41,6 +41,7 @@ JSON_PATH, BLESSED_PATH = map(
     ['binary_system.json', 'binary_system_blessed.txt']
 )
 TRUE_FALSE_PAIRS = list(product(TR_FLS, TR_FLS))
+TRUE_FALSE_TRIPLES = list(product(TR_FLS, TR_FLS, TR_FLS))
 C0 = [5.0, 11.0, 7.0]
 D = [0.1, 0.2, 0.3]
 
@@ -54,19 +55,23 @@ def test_serialization():
     assert rd.D.tolist() == [0.1, 0.2, 0.3]
 
 
-def _get_ref_f(rd, t0, y0, logy, logt):
+def _get_ref_f(rd, t0, y0, logy, logt, use_log2=False):
     k = rd.k[0]
     A, B, C = y0
 
     ref_f = np.array([-k*A*B, -k*A*B, k*A*B])
     if logy:
         ref_f /= y0
+        if not logt and use_log2:
+            ref_f /= np.log(2)
     if logt:
         ref_f *= t0
+        if not logy and use_log2:
+            ref_f *= np.log(2)
     return ref_f
 
 
-def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
+def _get_ref_J(rd, t0, y0, logy, logt, order='C', use_log2=False):
     k = rd.k[0]
     A, B, C = y0
     if logy:
@@ -87,57 +92,59 @@ def _get_ref_J(rd, t0, y0, logy, logt, order='C'):
             order=order)
         if logt:
             ref_J *= t0
+    if logt and use_log2:
+        ref_J *= np.log(2)
 
     return ref_J
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS[::-1])
+@pytest.mark.parametrize("log", TRUE_FALSE_TRIPLES[::-1])
 def test_f(log):
-    logy, logt = log
+    logy, logt, use_log2 = log
     N = 1
-    rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, use_log2=use_log2)
     y0 = np.array(C0)
     t0 = 42.0
-    ref_f = _get_ref_f(rd, t0, y0, logy, logt)
+    ref_f = _get_ref_f(rd, t0, y0, logy, logt, use_log2=use_log2)
     fout = rd.alloc_fout()
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     rd.f(t, y, fout)
     assert np.allclose(fout, ref_f)
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TRUE_FALSE_TRIPLES)
 def test_dense_jac_rmaj(log):
-    logy, logt = log
+    logy, logt, use_log2 = log
     N = 1
-    rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, use_log2=use_log2)
     y0 = np.array(C0)
     t0 = 42.0
 
-    ref_J = _get_ref_J(rd, t0, y0, logy, logt)
+    ref_J = _get_ref_J(rd, t0, y0, logy, logt, use_log2=use_log2)
     Jout = np.empty_like(ref_J)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     rd.dense_jac_rmaj(t, y, Jout)
 
     assert np.allclose(Jout, ref_J)
 
 
-@pytest.mark.parametrize("log", TRUE_FALSE_PAIRS)
+@pytest.mark.parametrize("log", TRUE_FALSE_TRIPLES)
 def test_dense_jac_cmaj(log):
-    logy, logt = log
+    logy, logt, use_log2 = log
     N = 1
-    rd = load(JSON_PATH, N=N, logy=logy, logt=logt)
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, use_log2=use_log2)
     y0 = np.array(C0)
     t0 = 42.0
 
-    ref_J = _get_ref_J(rd, t0, y0, logy, logt, order='F')
+    ref_J = _get_ref_J(rd, t0, y0, logy, logt, order='F', use_log2=use_log2)
     Jout = np.empty_like(ref_J)
 
-    y = np.log(y0) if logy else y0
-    t = np.log(t0) if logt else t0
+    y = rd.logb(y0) if logy else y0
+    t = rd.logb(t0) if logt else t0
     rd.dense_jac_cmaj(t, y, Jout)
 
     assert np.allclose(Jout, ref_J)
@@ -156,14 +163,14 @@ def test_chemistry():
     assert np.allclose(rd.D, serialized_rd.D)
 
 
-COMBOS = list(product(TR_FLS, TR_FLS, [1], 'f'))
-SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3], 'fcs'))
-VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5], 'fcs'))
+COMBOS = list(product(TR_FLS, TR_FLS, [1], 'f', TR_FLS))
+SLOW_COMBOS = list(product(TR_FLS, TR_FLS, [3], 'fcs', TR_FLS))
+VERYSLOW_COMBOS = list(product(TR_FLS, TR_FLS, [4, 5], 'fcs', TR_FLS))
 
 
 def _test_integrate(params):
-    logy, logt, N, geom = params
-    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom)
+    logy, logt, N, geom, use_log2 = params
+    rd = load(JSON_PATH, N=N, logy=logy, logt=logt, geom=geom, use_log2=use_log2)
     assert rd.geom == geom
     y0 = np.array(C0*N)
 
@@ -177,7 +184,7 @@ def _test_integrate(params):
     tout = np.linspace(t0, tend, nt+1)
     assert np.allclose(tout-t0, ref_t)
 
-    _test_f_and_dense_jac_rmaj(rd, t0, np.log(y0) if logy else y0)
+    _test_f_and_dense_jac_rmaj(rd, t0, rd.logb(y0) if logy else y0)
     integr = run(rd, y0, tout, with_jacobian=True)
     for i in range(N):
         assert np.allclose(integr.Cout[:, i, :], ref_y, atol=1e-4)
