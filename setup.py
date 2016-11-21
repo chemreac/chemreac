@@ -3,8 +3,11 @@
 
 import io
 import os
+import re
 import shutil
+import subprocess
 import sys
+import warnings
 
 from setuptools import setup
 
@@ -53,6 +56,16 @@ else:
     TAGGED_RELEASE = False
     # read __version__ attribute from _release.py:
     exec(io.open(release_py_path, encoding='utf-8').read())
+    if __version__.endswith('git'):
+        try:
+            _git_version = subprocess.check_output(['git', 'describe']).rstrip().decode('utf-8')
+        except subprocess.CalledProcessError:
+            warnings.warn("A git-archive is being installed - version information incomplete.")
+        else:
+            if 'develop' not in sys.argv:
+                warnings.warn("Using git to derive version: dev-branches may compete.")
+                __version__ = re.sub('v([0-9.]+)-(\d+)-(\w+)', r'\1.post\2+\3', _git_version)  # .dev < '' < .post
+
 
 WITH_OPENMP = os.environ.get('WITH_OPENMP', '0') == '1'
 LLAPACK = os.environ.get('LLAPACK', 'lapack')
