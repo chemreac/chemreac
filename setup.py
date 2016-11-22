@@ -3,6 +3,7 @@
 
 import io
 import os
+import pprint
 import re
 import shutil
 import subprocess
@@ -12,31 +13,23 @@ import warnings
 from setuptools import setup
 
 pkg_name = 'chemreac'
+url = 'https://github.com/chemreac/' + pkg_name
+license = 'BSD'
 
 
 def _path_under_setup(*args):
     return os.path.join(os.path.dirname(__file__), *args)
 
-# Reading the version is a bit tricky: the same commit could actually
-# correspond to multiple versions. e.g. a commit could be tagged both:
-# v0.1.0-rc1, v0.1.0
-#
-# Hence, the build environment needs a way to determine the version based
-# on meta data not contained in the version controlled files.
-# This could be done either by having setup.py inspect git tags
-# (which makes setup.py dependent on git), or have setup.py look for an
-# environment variable.
-#
-# The latter method is used for now:
-# The variable $CHEMREAC_RELEASE_VERSION is matched against "v*" and
-# if valid __version__ is set accordingly. If mathcing fails setup.py
-# will exec the contents of: ./chemreac/_release.py
-#
-# To complicate things further conda-build drops most environment
-# variables, so for conda based builds to work setup.py reads the
-# version from a string in a file named '__conda_version__.txt'
 
-RELEASE_VERSION = os.environ.get('CHEMREAC_RELEASE_VERSION', '')
+release_py_path = _path_under_setup(pkg_name, '_release.py')
+config_py_path = _path_under_setup(pkg_name, '_config.py')
+env = None  # silence pyflakes, 'env' is actually set on the next line
+exec(open(config_py_path).read())
+for k, v in list(env.items()):
+    env[k] = os.environ.get('%s_%s' % (pkg_name.upper(), k), v)
+
+_version_env_var = '%s_RELEASE_VERSION' % pkg_name.upper()
+RELEASE_VERSION = os.environ.get(_version_env_var, '')
 
 # http://conda.pydata.org/docs/build.html#environment-variables-set-during-the-build-process
 CONDA_BUILD = os.environ.get('CONDA_BUILD', '0') == '1'
@@ -47,7 +40,6 @@ if CONDA_BUILD:
     except IOError:
         pass
 
-release_py_path = _path_under_setup(pkg_name, '_release.py')
 
 if len(RELEASE_VERSION) > 1 and RELEASE_VERSION[0] == 'v':
     TAGGED_RELEASE = True
@@ -66,23 +58,17 @@ else:
                 warnings.warn("Using git to derive version: dev-branches may compete.")
                 __version__ = re.sub('v([0-9.]+)-(\d+)-(\w+)', r'\1.post\2+\3', _git_version)  # .dev < '' < .post
 
-
-WITH_OPENMP = os.environ.get('WITH_OPENMP', '0') == '1'
-LLAPACK = os.environ.get('LLAPACK', 'lapack')
-WITH_BLOCK_DIAG_ILU_DGETRF = os.environ.get(
-    'WITH_BLOCK_DIAG_ILU_DGETRF', '0') == '1'
-WITH_BLOCK_DIAG_ILU_OPENMP = os.environ.get(
-    'WITH_BLOCK_DIAG_ILU_OPENMP', '0') == '1'
-WITH_DATA_DUMPING = os.environ.get('WITH_DATA_DUMPING', '0') == '1'
-WITH_DEBUG = os.environ.get('WITH_DEBUG', '0') == '1'
-
 ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
 ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
 
 # See pycompilation for details on "options"
 options = ['pic', 'warn']
-if WITH_DEBUG:
-    print("Building chemreac with debugging enabled.")
+_WITH_DEBUG = env['WITH_DEBUG'] == '1'
+_WITH_OPENMP = env['WITH_OPENMP'] == '1'
+_WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
+
+if _WITH_DEBUG:
+    warnings.warn("Building chemreac with debugging enabled.")
     options += ['debug']
     flags = []
 else:
@@ -91,25 +77,11 @@ else:
         if CONDA_BUILD:
             # -ffast-math buggy in anaconda
             flags += ['-funroll-loops']
-        # else:
-        #     options += ['fast']  # -ffast-math -funroll-loops
 
-if os.environ.get('WITH_PROFILE', '0') == '1':
-    flags += ['-g', '-pg']
-
-if WITH_BLOCK_DIAG_ILU_OPENMP:
+if _WITH_OPENMP or os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '0') == '1':
     options += ['openmp']
 
 cmdclass_ = {}
-
-IDEMPOTENT_INVOCATION = False
-if len(sys.argv) > 1:
-    if '--help' in sys.argv[1:] or '-h' in sys.argv[1:] or sys.argv[1] in (
-            '--help-commands', 'egg_info', 'clean', '--version'):
-        IDEMPOTENT_INVOCATION = True
-elif len(sys.argv) == 1:
-    IDEMPOTENT_INVOCATION = True
-
 
 # Source distributions contain rendered sources
 template_path = 'src/chemreac_template.cpp'
@@ -117,14 +89,11 @@ rendered_path = 'src/chemreac.cpp'
 USE_TEMPLATE = os.path.exists(template_path)
 setup_requires=['pycompilation', 'pycodeexport', 'mako', 'block_diag_ilu', 'pycvodes', 'finitediff'],
 install_requires = ['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu', 'pycvodes', 'finitediff']
+package_include = os.path.join(pkg_name, 'include')
 
 
-if IDEMPOTENT_INVOCATION:
-    # Enbale pip to probe setup.py before all requirements are installed
-    ext_modules_ = []
-    if USE_TEMPLATE:
-        install_requires += setup_requires
-else:
+if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
+        '--help-commands', 'egg_info', 'clean', '--version'):
     import pickle
     import numpy as np
     import finitediff as fd
@@ -134,8 +103,7 @@ else:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
     except ImportError:
         if USE_TEMPLATE:
-            print("This is not source distribution. pycodeexport is needed:",
-                  sys.exc_info()[0])
+            sys.stderr.write("This is not source distribution. pycodeexport is needed.")
             raise
         # If building from sdist no need for more than pycompilation
         from pycompilation.dist import PCExtension as PCEExtension
@@ -144,7 +112,7 @@ else:
 
     cmdclass_['build_ext'] = pce_build_ext
     cmdclass_['sdist'] = pce_sdist
-    subsd = {'WITH_OPENMP': WITH_OPENMP}
+    subsd = {'WITH_OPENMP': _WITH_OPENMP}
     pyx_path = 'chemreac/_chemreac.pyx'
     using_pyx = os.path.exists(pyx_path)  # No pyx in source dist
     pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
@@ -166,16 +134,11 @@ else:
                         'std': 'c++11',
                         # 'fast' doesn't work on drone.io
                         'flags': flags,
-                        'options': options +
-                        (['openmp'] if WITH_OPENMP else []),
-                        'define': [] +
-                        (['WITH_DEBUG'] if WITH_DEBUG else []) +
-                        (['WITH_DATA_DUMPING'] if
-                         WITH_DATA_DUMPING else []) +
-                        (['WITH_BLOCK_DIAG_ILU_OPENMP'] if
-                         WITH_BLOCK_DIAG_ILU_OPENMP else []) +
-                        (['WITH_BLOCK_DIAG_ILU_DGETRF'] if
-                         WITH_BLOCK_DIAG_ILU_DGETRF else []),
+                        'options': options,
+                        'define': (['CHEMREAC_WITH_DEBUG'] if _WITH_DEBUG else []) +
+                        (['CHEMREAC_WITH_DATA_DUMPING'] if _WITH_DATA_DUMPING else []) +
+                        (['BLOCK_DIAG_ILU_WITH_OPENMP'] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else []) +
+                        (['BLOCK_DIAG_ILU_WITH_DGETRF'] if os.environ.get('BLOCK_DIAG_ILU_WITH_DGETRF', '') == '1' else []),
                     },
                     'src/chemreac_sundials.cpp': {
                         'std': 'c++11',
@@ -189,7 +152,7 @@ else:
                             'linetrace': not TAGGED_RELEASE},
                         'std': 'c++11',
                         'define': ['CYTHON_TRACE=1'],
-                        'gdb_debug': WITH_DEBUG
+                        'gdb_debug': _WITH_DEBUG
                     } if using_pyx else {
                         'std': 'c++11',
                         'define': ['CYTHON_TRACE=1'],
@@ -200,18 +163,22 @@ else:
                 'options': options,
             },
             pycompilation_link_kwargs={
-                'options': ((['WITH_DEBUG'] if WITH_DEBUG else []) +
-                            (['openmp'] if WITH_OPENMP else [])),
+                'options': options,
                 'std': 'c++11',
             },
             include_dirs=[
                 np.get_include(), fd.get_include(), bdi.get_include(),
-                pc.get_include(), _path_under_setup('include')
+                pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
             ],
-            libraries=['sundials_cvodes', LLAPACK, 'sundials_nvecserial', 'm'],
+            libraries=pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m'],
             logger=True,
         )
     ]
+else:
+    # Enbale pip to probe setup.py before all requirements are installed
+    ext_modules_ = []
+    if USE_TEMPLATE:
+        install_requires += setup_requires
 
 modules = [
     pkg_name+'.util',
@@ -222,10 +189,6 @@ tests = [
     pkg_name+'.util.tests',
 ]
 
-package_data = {
-    pkg_name: ['tests/*.json', 'tests/*.txt']
-}
-
 classifiers = [
     "Development Status :: 3 - Alpha",
     'License :: OSI Approved :: BSD License',
@@ -235,25 +198,29 @@ classifiers = [
     'Topic :: Scientific/Engineering :: Mathematics',
 ]
 
-long_description = io.open('README.rst', encoding='utf-8').read()
-with io.open(_path_under_setup(pkg_name, '__init__.py'),
-             encoding='utf-8') as f:
+with io.open(_path_under_setup(pkg_name, '__init__.py'), 'rt', encoding='utf-8') as f:
     short_description = f.read().split('"""')[1].split('\n')[1]
-assert len(short_description) > 10 and len(short_description) < 256
+if not 10 < len(short_description) < 255:
+    warnings.warn("Short description from __init__.py proably not read correctly.")
+long_description = io.open(_path_under_setup('README.rst'),
+                           encoding='utf-8').read()
+if not len(long_description) > 100:
+    warnings.warn("Long description from README.rst probably not read correctly.")
+_author, _author_email = io.open(_path_under_setup('AUTHORS'), 'rt', encoding='utf-8').readline().split('<')
 
 setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
     description=short_description,
     long_description=long_description,
-    author='Björn Dahlgren',
-    author_email='bjodah@DELETEMEgmail.com',
-    license='BSD',
+    author=_author.strip(),
+    author_email=_author_email.split('>')[0].strip(),
+    url=url,
+    license=license,
     keywords=["chemical kinetics", "Smoluchowski equation",
               "advection-diffusion-reaction"],
-    url='https://github.com/chemreac/' + pkg_name,
     packages=[pkg_name] + modules + tests,
-    package_data=package_data,
+    include_package_data=True,
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
     classifiers=classifiers,
@@ -269,13 +236,16 @@ setup_kwargs = dict(
 if __name__ == '__main__':
     try:
         if TAGGED_RELEASE:
-            # Same commit should generate different sdist
-            # depending on tagged version (set CHEMREAC_RELEASE_VERSION)
+            # Same commit should generate different sdist files
+            # depending on tagged version (see RELEASE_VERSION)
             # this will ensure source distributions contain the correct version
             shutil.move(release_py_path, release_py_path+'__temp__')
             open(release_py_path, 'wt').write(
                 "__version__ = '{}'\n".format(__version__))
+        shutil.move(config_py_path, config_py_path+'__temp__')
+        open(config_py_path, 'wt').write("env = {}\n".format(pprint.pformat(env)))
         setup(**setup_kwargs)
     finally:
         if TAGGED_RELEASE:
             shutil.move(release_py_path+'__temp__', release_py_path)
+        shutil.move(config_py_path+'__temp__', config_py_path)

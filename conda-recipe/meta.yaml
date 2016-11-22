@@ -1,52 +1,65 @@
+{% set name = "chemreac" %}
+{% set version = "0.7.0+git" %}
+{% set variant = "openblas" %}
+
 package:
-  name: chemreac
-  version: 0.6.0.git
-  # the version being overridden by the __conda_version__.txt file
-  # http://conda.pydata.org/docs/build.html#post-build-version
+  name: {{ name|lower }}
+  version: {{ version }}
 
 source:
-  path: ../
-
-requirements:
-  build:
-    - python
-    - sundials
-    - cython
-    - numpy
-    - pycompilation
-    - pycodeexport
-    - mako
-    - block_diag_ilu
-    - quantities
-    - chempy
-    - lapack
-  run:
-    - python
-    - numpy
-    - scipy
-    - sundials
-    - matplotlib
-    - sympy
-    - quantities
-    - chempy
-    - block_diag_ilu
-    - lapack
-    - libgcc
+  git_url: ../
 
 build:
   number: 0
+  features:
+    - blas_{{ variant }}  # [not win]
+
+requirements:
+  build:
+    - blas 1.1 {{ variant }}  # [not win]
+    - openblas 0.2.19*  # [not win]
+    - python
+    - cython
+    - numpy
+    - sundials
+    - mako
+    - quantities
+    - pycompilation
+    - pycodeexport
+    - block_diag_ilu
+    - chempy
+  run:
+    - blas 1.1 {{ variant }}  # [not win]
+    - openblas 0.2.19*  # [not win]
+    - python
+    - cython
+    - numpy
+    - sundials
+    - mako
+    - quantities
+    - pycompilation
+    - pycodeexport
+    - block_diag_ilu
+    - chempy
 
 test:
   requires:
-    - pytest
     - periodictable
     - argh
   imports:
     - chemreac
+    - chemreac.util
   commands:
     - MPLBACKEND=Agg py.test --pyargs chemreac
 
 about:
-  home: https://github.com/chemreac/chemreac
-  license: BSD License
-  summary: Python package for modelling chemical kinetics with diffusion and drift
+  home: https://chemreac.github.io/
+  license: BSD 2-Clause
+  license_file: LICENSE
+  summary: 'Python package for modelling chemical kinetics with diffusion and drift'
+  doc_url: https://chemreac.github.io/docs/master/
+  dev_url: https://github.com/chemreac/chemreac
+
+extra:
+  recipe-maintainers:
+    - bjodah

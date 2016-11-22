@@ -1,17 +1,18 @@
 build:
-  image: bjodah/bjodahimg16:v1.2
+  image: bjodah/bjodahimg16dev:latest
   environment:
     - WITH_OPENMP=1
   commands:
-    - python2 -m pip install --upgrade pip  # pip 8.1.1 has a bug
-    - python3 -m pip install --upgrade pip  # pip 8.1.1 has a bug
-    - bash -c '[[ $(python setup.py --version) =~ ^[0-9]+.* ]]'
+    - python2 -m pip install git+https://github.com/bjodah/pycvodes@dx0-array
+    - python3 -m pip install git+https://github.com/bjodah/pycvodes@dx0-array
     - ./scripts/ci.sh chemreac
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac --slow --veryslow --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
     - ./scripts/generate_docs.sh
     - ./scripts/prepare_deploy.sh
-    - python2 setup.py sdist
+    - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
+    - PATH=/opt/miniconda3/bin:$PATH conda build conda-recipe
+    - if grep "DO-NOT-MERGE!" -R . --exclude ".drone.yml"; then exit 1; fi
 
 deploy:
 
