@@ -5,6 +5,8 @@ build:
   commands:
     - python2 -m pip install git+https://github.com/bjodah/pycvodes@dx0-array
     - python3 -m pip install git+https://github.com/bjodah/pycvodes@dx0-array
+    - python2 -m pip install git+https://github.com/bjodah/chempy.git@updated-kinets  # DO-NOT-MERGE!
+    - python3 -m pip install git+https://github.com/bjodah/chempy.git@updated-kinets  # DO-NOT-MERGE!
     - ./scripts/ci.sh chemreac
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac --slow --veryslow --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
