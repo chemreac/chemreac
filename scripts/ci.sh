@@ -1,4 +1,5 @@
 #!/bin/bash -x
+PKG_NAME=${1:-${CI_REPO##*/}}
 if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     eval export ${1^^}_RELEASE_VERSION=\$CI_BRANCH
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
