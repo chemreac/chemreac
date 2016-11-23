@@ -512,9 +512,10 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::${token}(Real_t t,
-                            const Real_t * const __restrict__ y,
-                            const Real_t * const __restrict__ fy,
-                            Real_t * const __restrict__ ja, long int ldj)
+                                    const Real_t * const __restrict__ y,
+                                    const Real_t * const __restrict__ fy,
+                                    Real_t * const __restrict__ ja, long int ldj
+                                    ${', double * const __restrict__ /* dfdt */' if token.startswith('dense') else ''})
 {
     // Note: blocks are zeroed out, diagnoals only incremented
     // `t`: time (log(t) if logt=1)

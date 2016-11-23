@@ -40,11 +40,11 @@ class ReactionDiffusionBase(object):
     @classmethod
     def from_ReactionSystem(cls, rsys, variables=None, fields=None, **kwargs):
         """
-        Creates a :class:`ReactionDiffusion` instance from ``rsys``.
+        Make a :class:`ReactionDiffusion` from a :class:`chempy.ReactionSystem`.
 
         Parameters
         ----------
-        rsys : ReactionSystem
+        rsys : chempy.ReactionSystem
         variables : dict
         fields: optional
         unit_registry : dict, optional

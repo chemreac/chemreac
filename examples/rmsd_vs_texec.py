@@ -33,7 +33,7 @@ constant = dict(
     atol=1e-8, rtol=1e-10,
     efield=True, random_seed=42, mobility=0.01,
     plot=False, savefig='None', verbose=False, yscale='linear',
-    vline_limit=100, integrator='cvode', iter_type='default',
+    vline_limit=100, integrator='cvode', iter_type='undecided',
     linear_solver='gmres', ilu_limit=1.0
 )
 

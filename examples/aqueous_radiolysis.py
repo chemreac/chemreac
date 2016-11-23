@@ -55,7 +55,7 @@ from chemreac.util.plotting import plot_C_vs_t, save_and_or_show_plot
 def integrate_rd(
         t0=1e-7, tend=.1, x0=1e-9, xend=0.1, doserate=15.0, N=1000, nt=512,
         nstencil=0, logy=False, logt=False, logx=False,
-        name='aqueous_radiolysis', integrator='scipy', iter_type='default',
+        name='aqueous_radiolysis', integrator='scipy', iter_type='undecided',
         linear_solver='default', ilu_limit=1000.0, first_step=0.0,
         n_jac_diags=0, eps_lin=0.0, num_jacobian=False, savefig='None',
         verbose=False, plot=False, plot_jacobians=False, profile_yep=False,

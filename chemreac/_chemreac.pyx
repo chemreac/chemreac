@@ -7,7 +7,8 @@ import numpy as np
 cimport numpy as cnp
 
 from chemreac cimport ReactionDiffusion
-from cvodes_cxx cimport simple_predefined, simple_adaptive
+from cvodes_cxx cimport lmm_from_name, iter_type_from_name
+from cvodes_anyode cimport simple_predefined, simple_adaptive
 
 from libcpp cimport bool
 from libcpp.vector cimport vector
@@ -421,17 +422,17 @@ def cvode_predefined(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
-        int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05,
-        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int mxsteps=500):
+        basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
+        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500):
     cdef:
         cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
         vector[int] root_indices
         vector[double] roots_output
     assert y0.size == rd.n*rd.N
     simple_predefined[ReactionDiffusion[double]](
-        rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, first_step, dx_min,
-        dx_max, mxsteps, with_jacobian, iter_type, linear_solver, maxl, eps_lin, 0)
+        rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
+        &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
+        dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')), linear_solver, maxl, eps_lin, 0)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
@@ -439,15 +440,16 @@ def cvode_adaptive(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         double t0, double tend,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
-        int iter_type=0, int linear_solver=0, int maxl=5, double eps_lin=0.05,
-        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int mxsteps=500):
+        basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
+        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500):
     cdef:
         vector[int] root_indices
     assert y0.size == rd.n*rd.N
     _tvec, _yvec = simple_adaptive[ReactionDiffusion[double]](
-        rd.thisptr, atol, rtol, {'adams': 1, 'bdf': 2}[method.lower()],
-        &y0[0], t0, tend, root_indices, first_step, dx_min,
-        dx_max, mxsteps, with_jacobian, iter_type, linear_solver, maxl, eps_lin, 0)
+        rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
+        &y0[0], t0, tend, root_indices, nsteps, first_step, dx_min,
+        dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
+        linear_solver, maxl, eps_lin, 0)
     tout = np.asarray(_tvec)
     yout = np.asarray(_yvec)
     return tout, np.asarray(yout).reshape((tout.size, rd.N, rd.n))

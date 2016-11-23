@@ -7,7 +7,7 @@
 #include <memory> // unique_ptr
 #include <unordered_map>
 #include "block_diag_ilu.hpp"
-#include "anyode.hpp"
+#include "anyode/anyode.hpp"
 
 
 namespace chemreac {
@@ -137,8 +137,8 @@ public:
     AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const __restrict__) override;
     // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;
 
-    AnyODE::Status dense_jac_rmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int);
-    AnyODE::Status dense_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int) override;
+    AnyODE::Status dense_jac_rmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int, double * const __restrict__ dfdt=nullptr) override;
+    AnyODE::Status dense_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int, double * const __restrict__ dfdt=nullptr) override;
     AnyODE::Status banded_jac_cmaj(Real_t, const Real_t * const __restrict__,  const Real_t * const __restrict__, Real_t * const __restrict__, long int) override;
     AnyODE::Status compressed_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int);
 

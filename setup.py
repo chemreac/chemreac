@@ -8,6 +8,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 import warnings
 
 from setuptools import setup
@@ -120,7 +121,10 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         template_path if USE_TEMPLATE else rendered_path,
         pyx_or_cpp,
     ]
-
+    _inc_dirs = [
+        np.get_include(), fd.get_include(), bdi.get_include(),
+        pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
+    ]
     ext_modules_ = [
         PCEExtension(
             "chemreac._chemreac",
@@ -148,11 +152,11 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
                     pyx_or_cpp: {
                         'cy_kwargs': {
                             'annotate': True,
-                            'embedsignature': True,
-                            'linetrace': not TAGGED_RELEASE},
+                            'include_path': _inc_dirs
+                        },
                         'std': 'c++11',
                         'define': ['CYTHON_TRACE=1'],
-                        'gdb_debug': _WITH_DEBUG
+                        'gdb_debug': _WITH_DEBUG,
                     } if using_pyx else {
                         'std': 'c++11',
                         'define': ['CYTHON_TRACE=1'],
@@ -166,10 +170,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
                 'options': options,
                 'std': 'c++11',
             },
-            include_dirs=[
-                np.get_include(), fd.get_include(), bdi.get_include(),
-                pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
-            ],
+            include_dirs=_inc_dirs,
             libraries=pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m'],
             logger=True,
         )
@@ -243,9 +244,12 @@ if __name__ == '__main__':
             open(release_py_path, 'wt').write(
                 "__version__ = '{}'\n".format(__version__))
         shutil.move(config_py_path, config_py_path+'__temp__')
-        open(config_py_path, 'wt').write("env = {}\n".format(pprint.pformat(env)))
+        with open(config_py_path, 'wt') as fh:
+            fh.write("env = {}\n".format(pprint.pformat(env)))
         setup(**setup_kwargs)
     finally:
         if TAGGED_RELEASE:
-            shutil.move(release_py_path+'__temp__', release_py_path)
-        shutil.move(config_py_path+'__temp__', config_py_path)
+            shutil.move(_path_under_setup(release_py_path+'__temp__'),
+                        _path_under_setup(release_py_path))
+        shutil.move(_path_under_setup(config_py_path+'__temp__'),
+                    _path_under_setup(config_py_path))
