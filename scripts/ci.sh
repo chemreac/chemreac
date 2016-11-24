@@ -19,7 +19,7 @@ done
 
 python2 setup.py sdist
 cp dist/${PKG_NAME}-*.tar.gz /tmp
-(cd /; python2 -m pip install --ignore-installed /tmp/${PKG_NAME}-*.tar.gz; python2 -c "import $PKG_NAME")
+(cd /; python2 -m pip install --force-reinstall /tmp/${PKG_NAME}-*.tar.gz; python2 -c "import $PKG_NAME")
 
 # Make sure repo is pip installable from git-archive zip
 git archive -o /tmp/$PKG_NAME.zip HEAD
