@@ -966,11 +966,12 @@ def test_exceptions():
 
 def test_from_ReactionSystem__g_values():
     from chempy import ReactionSystem as RS
-    rs = RS.from_string('-> H + OH; Radiolytic(2.1e-7)', checks=())
+    rs = RS.from_string("""-> H + OH; Radiolytic(2.1e-7)
+    H + OH -> H2O; 1e10""", checks=())
     rd = ReactionDiffusion.from_ReactionSystem(rs, variables={'density': 998, 'doserate': 0.15})
     gv = rd.g_values
     assert len(gv) == 1
-    assert np.allclose(gv[0], rs.as_per_substance_array({'H': 2.1e-7, 'OH': 2.1e-7}))
+    assert np.allclose(gv[0], rs.as_per_substance_array({'H': 2.1e-7, 'OH': 2.1e-7, 'H2O': 0}))
     assert len(rd.fields) == 1
     assert len(rd.fields[0]) == 1
     assert np.allclose(rd.fields[0][0], 998*0.15)
