@@ -8,7 +8,6 @@ import re
 import shutil
 import subprocess
 import sys
-import time
 import warnings
 
 from setuptools import setup
