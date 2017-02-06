@@ -100,6 +100,9 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['nprec_solve_ilu'] = rd.nprec_solve_ilu
         kwargs['nprec_solve_lu'] = rd.nprec_solve_lu
     kwargs.update(rd.last_integration_info)
+    # kwargs.update(rd.last_integration_info_dbl)
+    # kwargs.update(rd.last_integration_info_vecdbl)
+    # kwargs.update(rd.last_integration_info_vecint)
     return yout, tout, kwargs
 
 

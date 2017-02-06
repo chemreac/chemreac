@@ -93,8 +93,6 @@ public:
     long nprec_solve_ilu {0};
     long nprec_solve_lu {0};
 
-    std::unordered_map<std::string, int> last_integration_info;
-
     ReactionDiffusion(uint,
 		      const vector<vector<uint> >,
 		      const vector<vector<uint> >,
@@ -133,7 +131,6 @@ public:
     int get_ny() const override;
     int get_mlower() const override;
     int get_mupper() const override;
-    double get_dx0() const { return 0.0; }
 
     AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const __restrict__) override;
     // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;
