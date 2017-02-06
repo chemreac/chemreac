@@ -3,16 +3,12 @@ build:
   environment:
     - WITH_OPENMP=1
   commands:
-    - bash -c '[[ $(python setup.py --version) =~ ^[0-9]+.* ]]'
     - export CPLUS_INCLUDE_PATH=/opt/boost_1_63_0
-    - python2 -m pip install git+https://github.com/bjodah/pyodesys@improve-native  # DO-NOT-MERGE!
-    - python3 -m pip install git+https://github.com/bjodah/pyodesys@improve-native  # DO-NOT-MERGE!
-    - python2 -m pip install git+https://github.com/bjodah/chempy.git@updated-kinets  # DO-NOT-MERGE!
-    - python3 -m pip install git+https://github.com/bjodah/chempy.git@updated-kinets  # DO-NOT-MERGE!
     - ./scripts/ci.sh chemreac
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" PYTHON=python3 ./scripts/run_tests.sh chemreac --slow --veryslow --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
     - ./scripts/generate_docs.sh
+    - bash -c '[[ $(python setup.py --version) =~ ^[0-9]+.* ]]'
     - ./scripts/prepare_deploy.sh
     - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
     - PATH=/opt/miniconda3/bin:$PATH conda build conda-recipe

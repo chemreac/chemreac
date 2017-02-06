@@ -249,7 +249,7 @@ if __name__ == '__main__':
         setup(**setup_kwargs)
     finally:
         if TAGGED_RELEASE:
-            shutil.move(_path_under_setup(release_py_path+'__temp__'),
-                        _path_under_setup(release_py_path))
-        shutil.move(_path_under_setup(config_py_path+'__temp__'),
-                    _path_under_setup(config_py_path))
+            shutil.move(release_py_path+'__temp__',
+                        release_py_path)
+        shutil.move(config_py_path+'__temp__',
+                    config_py_path)
