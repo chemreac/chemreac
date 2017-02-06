@@ -133,6 +133,7 @@ public:
     int get_ny() const override;
     int get_mlower() const override;
     int get_mupper() const override;
+    double get_dx0() const { return 0.0; }
 
     AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const __restrict__) override;
     // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;
