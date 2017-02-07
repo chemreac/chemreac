@@ -50,11 +50,12 @@ test:
   requires:
     - periodictable
     - argh
+    - pytest
   imports:
     - chemreac
     - chemreac.util
   commands:
-    - MPLBACKEND=Agg py.test --pyargs chemreac
+    - MPLBACKEND=Agg python -m pytest --pyargs chemreac
 
 about:
   home: https://chemreac.github.io/

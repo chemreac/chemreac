@@ -137,8 +137,8 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     yref = np.hstack([
         np.hstack([
             np.array([
-                y0[i]*np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)),
-                y0[i+1]+y0[i]*(1-np.exp(-_get_bkf(bi, i/2)*k[i/2]*(tout-t0)))
+                y0[i]*np.exp(-_get_bkf(bi, i//2)*k[i//2]*(tout-t0)),
+                y0[i+1]+y0[i]*(1-np.exp(-_get_bkf(bi, i//2)*k[i//2]*(tout-t0)))
             ]).transpose() for i in range(0, n, 2)
         ]) for bi in range(N)])
     assert np.allclose(integr.Cout.flatten(), yref.flatten())
