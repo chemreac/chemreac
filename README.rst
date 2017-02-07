@@ -1,7 +1,5 @@
-========
 chemreac
 ========
-
 .. image:: http://hera.physchem.kth.se:9090/api/badges/chemreac/chemreac/status.svg
    :target: http://hera.physchem.kth.se:9090/chemreac/chemreac
    :alt: Build status
@@ -23,6 +21,10 @@ chemreac
 .. image:: http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov/coverage.svg
    :target: http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov
    :alt: coverage
+
+.. image:: http://chemreac.github.io/chemreac_logo.svg
+   :alt: chemreac logotype
+   :align: left
 
 chremreac is an open source library which aims to collect tools and utilities for
 modeling of chemical kinetics problems. It is primarily designed to
