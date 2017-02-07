@@ -55,9 +55,6 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['atol'] = kwargs['atol'].reshape((1,))
     kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     kwargs['method'] = kwargs.pop('method', 'bdf')
-    kwargs['iter_type'] = {
-        'default': 0, 'functional': 1, 'newton': 2}[
-            kwargs.pop('iter_type', 'default').lower()]
     kwargs['linear_solver'] = {
         'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
         'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[
@@ -103,6 +100,9 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['nprec_solve_ilu'] = rd.nprec_solve_ilu
         kwargs['nprec_solve_lu'] = rd.nprec_solve_lu
     kwargs.update(rd.last_integration_info)
+    # kwargs.update(rd.last_integration_info_dbl)
+    # kwargs.update(rd.last_integration_info_vecdbl)
+    # kwargs.update(rd.last_integration_info_vecint)
     return yout, tout, kwargs
 
 
@@ -246,7 +246,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
     new_kwargs['method'] = kwargs.pop('method', 'bdf')
     new_kwargs['with_jacobian'] = kwargs.pop('with_jacobian', True)
     new_kwargs['first_step'] = kwargs.pop('first_step', 0.0)
-    if kwargs.pop('iter_type', 'default') != 'default':
+    if kwargs.pop('iter_type', 'undecided') != 'undecided':
         raise ValueError("iter_type unsupported by SciPy solver")
     if kwargs.pop('linear_solver', 'default') != 'default':
         raise ValueError("linear_solver unsupported by SciPy solver")

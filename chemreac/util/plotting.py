@@ -595,7 +595,8 @@ def plot_C_vs_t_and_x(rd, tout, Cout, substance, ax=None, log10=False,
     from mpl_toolkits.mplot3d import Axes3D
     from matplotlib import cm
     ax = ax or plt.subplot(1, 1, 1, projection='3d')
-    assert isinstance(ax, Axes3D)
+    if not isinstance(ax, Axes3D):
+        raise ValueError("Need Axes3D instance as axes object.")
 
     xtC = [rd.xcenters, tout, Cout]
     x_, t_, C_ = list(map(np.log10, xtC)) if log10 else xtC

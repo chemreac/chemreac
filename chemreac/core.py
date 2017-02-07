@@ -40,11 +40,11 @@ class ReactionDiffusionBase(object):
     @classmethod
     def from_ReactionSystem(cls, rsys, variables=None, fields=None, **kwargs):
         """
-        Creates a :class:`ReactionDiffusion` instance from ``rsys``.
+        Make a :class:`ReactionDiffusion` from a :class:`chempy.ReactionSystem`.
 
         Parameters
         ----------
-        rsys : ReactionSystem
+        rsys : chempy.ReactionSystem
         variables : dict
         fields: optional
         unit_registry : dict, optional
@@ -82,10 +82,7 @@ class ReactionDiffusionBase(object):
                     yields[doserate_name][k] = n*g_val
                 else:
                     yields[doserate_name][k] += n*g_val
-        if len(yields) > 0:
-            g_values = [rsys.as_per_substance_array(v, unit=yield_unit) for v in yields.values()]
-        else:
-            g_values = []
+        g_values = [rsys.as_per_substance_array(v, unit=yield_unit, raise_on_unk=True) for v in yields.values()]
         g_value_parents = []
         for k in yields:
             parent = None

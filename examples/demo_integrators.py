@@ -22,7 +22,7 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import Integration
 
 
-def main(logy=False, logt=False, forgive_fact=1):
+def main(logy=False, logt=False, forgive_fact=1, nsteps=500):
     # A -> B
     n = 2
     k0 = 0.13
@@ -47,7 +47,7 @@ def main(logy=False, logt=False, forgive_fact=1):
     print('cvode')
     print('-----')
     integr2 = Integration(rd, np.asarray(y0), np.asarray(tout), atol=1e-8,
-                          rtol=1e-8, integrator='cvode', method='bdf')
+                          rtol=1e-8, integrator='cvode', method='bdf', nsteps=nsteps)
     assert np.allclose(integr2.Cout[:, 0, :], Cref(tout))
     print()
 
@@ -74,7 +74,7 @@ def main(logy=False, logt=False, forgive_fact=1):
         integr4 = Integration(
             rd, np.asarray(y0), (t0, tend), integrator='pyodeint',
             method=method, linear_solver='dense', dense_output=True, atol=atol,
-            rtol=rtol)
+            rtol=rtol, nsteps=nsteps)
         assert np.allclose(integr4.Cout[:, 0, :], Cref(integr4.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
     print()
@@ -92,7 +92,7 @@ def main(logy=False, logt=False, forgive_fact=1):
         integr5 = Integration(rd, np.asarray(y0), (t0, tend),
                               linear_solver='dense', dense_output=True,
                               atol=atol, rtol=rtol, method=method,
-                              integrator='pygslodeiv2')
+                              integrator='pygslodeiv2', nsteps=nsteps)
         assert np.allclose(integr5.Cout[:, 0, :], Cref(integr5.tout),
                            atol=atol*forgive, rtol=rtol*forgive)
 

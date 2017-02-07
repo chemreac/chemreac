@@ -51,6 +51,9 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         long nprec_solve_lu
 
         unordered_map[string, int] last_integration_info
+        unordered_map[string, double] last_integration_info_dbl
+        unordered_map[string, vector[double]] last_integration_info_vecdbl
+        unordered_map[string, vector[int]] last_integration_info_vecint
 
         ReactionDiffusion(uint,
                           const vector[vector[uint]],

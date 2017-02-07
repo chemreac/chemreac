@@ -9,7 +9,7 @@ def test_demo_integrators_ff():
 
 
 def test_demo_integrators_ft():
-    di.main(False, True, 10000)
+    di.main(False, True, 10000, 1034*1.05)
 
 
 def test_demo_integrators_tf():
@@ -17,4 +17,4 @@ def test_demo_integrators_tf():
 
 
 def test_demo_integrators_tt():
-    di.main(True, True, 9000)
+    di.main(True, True, 9000, 1151*1.05)
