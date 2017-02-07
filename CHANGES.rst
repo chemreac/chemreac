@@ -1,3 +1,9 @@
+v0.7.0
+======
+- Refactor to use new versions of chempy, AnyODE
+- Refactored to use separate block_diag_ilu, finitediff, pycvodes
+- Support for base 2 in log-transform.
+
 v0.6.0
 ======
 - ``chemreac.integrate.run`` used solely for kwargs from environment variable:
