@@ -5,9 +5,6 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 
-python2 -m pip install git+https://github.com/bjodah/chempy@ode-multi-units  #DO-NOT-MERGE!
-python3 -m pip install git+https://github.com/bjodah/chempy@ode-multi-units  #DO-NOT-MERGE!
-
 set -e
 for PY in python2 python3; do
     $PY -m pip install --user -e .[all]
