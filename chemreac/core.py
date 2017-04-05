@@ -71,17 +71,15 @@ class ReactionDiffusionBase(object):
             yield_unit = 1
         yields = OrderedDict()
         for rxn in radiolytic_rxns:
-            doserate_name = rxn.param.parameter_keys[0]
-            if doserate_name not in yields:
-                yields[doserate_name] = defaultdict(lambda: 0*yield_unit)
-
-            g_val = rxn.rate_expr().g_value(variables)
-            for k in rxn.keys():
-                n, = rxn.net_stoich([k])
-                if k not in yields[doserate_name]:
-                    yields[doserate_name][k] = n*g_val
-                else:
-                    yields[doserate_name][k] += n*g_val
+            for doserate_name, g_val in rxn.param.g_values(variables).items():
+                if doserate_name not in yields:
+                    yields[doserate_name] = defaultdict(lambda: 0*yield_unit)
+                for k in rxn.keys():
+                    n, = rxn.net_stoich([k])
+                    if k not in yields[doserate_name]:
+                        yields[doserate_name][k] = n*g_val
+                    else:
+                        yields[doserate_name][k] += n*g_val
         g_values = [rsys.as_per_substance_array(v, unit=yield_unit, raise_on_unk=True) for v in yields.values()]
         g_value_parents = []
         for k in yields:
