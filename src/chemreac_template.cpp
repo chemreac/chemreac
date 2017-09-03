@@ -8,8 +8,9 @@
 //#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
-#include "chemreac.hpp"
+#include "anyode/anyode_decomposition.hpp"
 #include "finitediff_templated.hpp" // fintie differences
+#include "chemreac.hpp"
 
 #include <iostream> //DEBUG
 
@@ -119,6 +120,9 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
         break;
     case 2:
         geom = Geom::SPHERICAL;
+        break;
+    case 3:
+        geom = Geom::PERIODIC;
         break;
     default:
         throw std::logic_error("Unknown geom.");
@@ -309,6 +313,7 @@ ReactionDiffusion<Real_t>::apply_fd_(uint bi){
             A_WEIGHT(bi, li) *= logbdenom;
             switch(geom){
             case Geom::FLAT:
+            case Geom::PERIODIC:
                 D_WEIGHT(bi, li) -= FDWEIGHT(1, li)*logbdenom;
                 break;
             case Geom::CYLINDRICAL:
@@ -522,18 +527,15 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
-    %if token.startswith('compressed'):
+ %if token.startswith('compressed'):
     ignore(ldj);
-    block_diag_ilu::ColMajBlockDiagView<Real_t> jac {ja,
-            ja + N*n*n,
-            ja + N*n*n + n*(N*n_jac_diags - (n_jac_diags*n_jac_diags + n_jac_diags)/2),
-            N, n, n_jac_diags};
-    %elif token.startswith('banded_jac_cmaj'):
-    block_diag_ilu::ColMajBandedView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj), 0};
-    %elif token.startswith('dense_jac_cmaj'):
-    block_diag_ilu::DenseView<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
-    %elif token.startswith('dense_jac_rmaj'):
-    block_diag_ilu::DenseView<Real_t, false> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj)};
+    block_diag_ilu::BlockDiagMatrix<Real_t> jac {ja, N, n, n_jac_diags};
+ %elif token.startswith('banded_jac_cmaj'):
+    block_diag_ilu::BlockBandedMatrix<Real_t> jac {ja-get_mlower(), N, n, n_jac_diags, static_cast<int>(ldj)};
+ %elif token.startswith('dense_jac_cmaj'):
+    block_diag_ilu::BlockDenseMatrix<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj), true};
+ %elif token.startswith('dense_jac_rmaj'):
+    block_diag_ilu::BlockDenseMatrix<Real_t> jac {ja, N, n, n_jac_diags, static_cast<uint>(ldj), false};
     %else:
 #error "Unhandled token."
     %endif
@@ -683,12 +685,12 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
     if (jac_cache == nullptr){
-        jac_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
-        jac_cache->view.zero_out_diags(); // compressed_jac_cmaj only increments diagonals
-        const int dummy = 0;
-        compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
+        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep);
+        jac_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
+        const int ld_dummy = 0;
+        compressed_jac_cmaj(t, y, fy, jac_cache->m_data, ld_dummy);
     }
-    jac_cache->view.dot_vec(vec, out);
+    jac_cache->dot_vec(vec, out);
     njacvec_dot++;
     return AnyODE::Status::success;
 }
@@ -705,11 +707,11 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
     ignore(gamma);
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
     if (jac_cache == nullptr)
-        jac_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
+        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep);
     if (!jok){
         const int dummy = 0;
-        jac_cache->view.zero_out_diags();
-        status = compressed_jac_cmaj(t, y, fy, jac_cache->get_block_data_raw_ptr(), dummy);
+        jac_cache->set_to(0);
+        status = compressed_jac_cmaj(t, y, fy, jac_cache->m_data, dummy);
         update_prec_cache = true;
         jac_recomputed = true;
     } else jac_recomputed = false;
@@ -743,7 +745,7 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
     ignore(t); ignore(fy); ignore(y);
     bool recompute = false;
     if (prec_cache == nullptr){
-        prec_cache = new block_diag_ilu::ColMajBlockDiagMat<Real_t>(N, n, nsidep);
+        prec_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep);
         recompute = true;
     } else {
         if (update_prec_cache or (old_gamma != gamma))
@@ -751,13 +753,12 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
     }
     if (recompute){
         old_gamma = gamma;
-        prec_cache->view.set_to_1_minus_gamma_times_view(gamma, jac_cache->view);
+        prec_cache->set_to_eye_plus_scaled_mtx(-gamma, *jac_cache);
 #if defined(WITH_DATA_DUMPING)
         {
             std::ostringstream fname;
             fname << "prec_M_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
-            const auto data_len = prec_cache->view.block_data_len + 2*prec_cache->view.diag_data_len;
-            save_array(prec_cache->get_block_data_raw_ptr(), data_len, fname.str());
+            save_array(prec_cache->m_data, prec_cahe->m_ndata, fname.str());
         }
 #endif
     }
@@ -777,12 +778,14 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
 #endif
 
     int info;
-    if (prec_cache->view.average_diag_weight(0) > ilu_limit) {
-        block_diag_ilu::ILU<Real_t> ilu {prec_cache->view};
+    if (prec_cache->average_diag_weight(0) > ilu_limit) {
+        block_diag_ilu::ILU<Real_t> ilu {*prec_cache};
         nprec_solve_ilu++;
         info = ilu.solve(r, z);
     } else {
-        block_diag_ilu::LU<Real_t> lu {prec_cache->view};
+        AnyODE::BandedMatrix<Real_t> bm {*prec_cache, get_mlower(), get_mupper()};
+        AnyODE::BandedLU<Real_t> lu {&bm};
+        lu.factorize();
         nprec_solve_lu++;
         info = lu.solve(r, z);
     }
@@ -813,6 +816,7 @@ ReactionDiffusion<Real_t>::get_geom_as_int() const
     case Geom::FLAT :        return 0;
     case Geom::CYLINDRICAL : return 1;
     case Geom::SPHERICAL :   return 2;
+    case Geom::PERIODIC :    return 3;
     default:                 return -1;
     }
 }
@@ -848,6 +852,8 @@ ReactionDiffusion<Real_t>::calc_efield(const Real_t * const linC)
             efield[bi] = F*Q/(4*pi*eps*r*r); // Gauss's law
             Q += netchg[bi]*4*pi/3*(nx*nx*nx - cx*cx*cx);
             break;
+        case Geom::PERIODIC:
+            efield[bi] = 0;
         }
         cx = nx;
     }

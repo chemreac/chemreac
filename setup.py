@@ -135,7 +135,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
             pycompilation_compile_kwargs={
                 'per_file_kwargs': {
                     'src/chemreac.cpp': {
-                        'std': 'c++11',
+                        'std': 'c++14',
                         # 'fast' doesn't work on drone.io
                         'flags': flags,
                         'options': options,
@@ -145,7 +145,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
                         (['BLOCK_DIAG_ILU_WITH_DGETRF'] if os.environ.get('BLOCK_DIAG_ILU_WITH_DGETRF', '') == '1' else []),
                     },
                     'src/chemreac_sundials.cpp': {
-                        'std': 'c++11',
+                        'std': 'c++14',
                         'flags': flags,
                         'options': options
                     },
@@ -154,11 +154,11 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
                             'annotate': True,
                             'include_path': _inc_dirs
                         },
-                        'std': 'c++11',
+                        'std': 'c++14',
                         'define': ['CYTHON_TRACE=1'],
                         'gdb_debug': _WITH_DEBUG,
                     } if using_pyx else {
-                        'std': 'c++11',
+                        'std': 'c++14',
                         'define': ['CYTHON_TRACE=1'],
                         'inc_py': True,
                     }
@@ -168,7 +168,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
             },
             pycompilation_link_kwargs={
                 'options': options,
-                'std': 'c++11',
+                'std': 'c++14',
             },
             include_dirs=_inc_dirs,
             libraries=pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m'],

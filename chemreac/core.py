@@ -183,9 +183,9 @@ class ReactionDiffusionBase(object):
             return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
                             order=order)
 
-    def alloc_jout_compressed(self):
+    def alloc_jout_compressed(self, nsat=0):
         from block_diag_ilu import alloc_compressed
-        return alloc_compressed(self.N, self.n, self.n_jac_diags)
+        return alloc_compressed(self.N, self.n, self.n_jac_diags, nsat)
 
     @property
     def ny(self):
