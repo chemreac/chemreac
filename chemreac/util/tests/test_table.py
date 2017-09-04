@@ -5,8 +5,7 @@ import shutil
 import tempfile
 
 import pytest
-from chempy.chemistry import Reaction, Substance, ReactionSystem
-
+from chempy import Reaction, Substance, ReactionSystem
 from chemreac import ReactionDiffusion
 from chemreac.util.table import radyields2pdf_table
 

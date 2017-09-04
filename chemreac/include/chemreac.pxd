@@ -86,16 +86,16 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           uint,
                           bool
                           ) except +
-        void zero_counters()
-        void rhs(T, const T * const, T * const)
-        void dense_jac_rmaj(T, const T * const, const T * const, T * const, long int)
-        void dense_jac_cmaj(T, const T * const, const T * const, T * const, long int)
-        void banded_jac_cmaj(T, const T * const, const T * const, T * const, long int)
-        void compressed_jac_cmaj(T, const T * const, const T * const, T * const, long int)
+        void zero_counters() except +
+        void rhs(T, const T * const, T * const) except +
+        void dense_jac_rmaj(T, const T * const, const T * const, T * const, long int) except +
+        void dense_jac_cmaj(T, const T * const, const T * const, T * const, long int) except +
+        void banded_jac_cmaj(T, const T * const, const T * const, T * const, long int) except +
+        void compressed_jac_cmaj(T, const T * const, const T * const, T * const, long int) except +
 
-        void per_rxn_contrib_to_fi(T, const T * const, uint, T * const)
-        int get_geom_as_int()
-        void calc_efield(const T * const)
+        void per_rxn_contrib_to_fi(T, const T * const, uint, T * const) except +
+        int get_geom_as_int() except +
+        void calc_efield(const T * const) except +
 
-        uint stencil_bi_lbound_(uint)
-        uint xc_bi_map_(uint)
+        uint stencil_bi_lbound_(uint) except +
+        uint xc_bi_map_(uint) except +

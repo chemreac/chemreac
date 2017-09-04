@@ -529,7 +529,9 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
  %if token.startswith('compressed'):
     ignore(ldj);
-    block_diag_ilu::BlockDiagMatrix<Real_t> jac {ja, N, n, n_jac_diags};
+    const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0 ;
+    const int ld = n;
+    block_diag_ilu::BlockDiagMatrix<Real_t> jac {ja, N, n, n_jac_diags, nsat, ld};
  %elif token.startswith('banded_jac_cmaj'):
     block_diag_ilu::BlockBandedMatrix<Real_t> jac {ja-get_mlower(), N, n, n_jac_diags, static_cast<int>(ldj)};
  %elif token.startswith('dense_jac_cmaj'):
@@ -685,7 +687,9 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
     if (jac_cache == nullptr){
-        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep);
+        const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
+        const int ld = n;
+        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
         jac_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
         compressed_jac_cmaj(t, y, fy, jac_cache->m_data, ld_dummy);
@@ -706,8 +710,11 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
     auto status = AnyODE::Status::success;
     ignore(gamma);
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
-    if (jac_cache == nullptr)
-        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep);
+    if (jac_cache == nullptr){
+        const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
+        const int ld = n;
+        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
+    }
     if (!jok){
         const int dummy = 0;
         jac_cache->set_to(0);
@@ -745,7 +752,9 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
     ignore(t); ignore(fy); ignore(y);
     bool recompute = false;
     if (prec_cache == nullptr){
-        prec_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep);
+        const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
+        const int ld = n;
+        prec_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
         recompute = true;
     } else {
         if (update_prec_cache or (old_gamma != gamma))
