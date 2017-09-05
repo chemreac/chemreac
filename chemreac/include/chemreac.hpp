@@ -12,7 +12,7 @@
 
 namespace chemreac {
 
-enum class Geom {FLAT, CYLINDRICAL, SPHERICAL};
+enum class Geom {FLAT, CYLINDRICAL, SPHERICAL, PERIODIC};
 
 using std::vector;
 using std::pair;
@@ -20,7 +20,7 @@ using std::pair;
 template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
 
 template <typename Real_t = double>
-class ReactionDiffusion : public AnyODE::OdeSysBase
+class ReactionDiffusion : public AnyODE::OdeSysBase<Real_t>
 {
 public:
     int * coeff_active;
@@ -76,8 +76,8 @@ public:
 
     const int nroots = 0;
 private:
-    block_diag_ilu::ColMajBlockDiagMat<Real_t> *jac_cache {nullptr};
-    block_diag_ilu::ColMajBlockDiagMat<Real_t> *prec_cache {nullptr};
+    block_diag_ilu::BlockDiagMatrix<Real_t> *jac_cache {nullptr};
+    block_diag_ilu::BlockDiagMatrix<Real_t> *prec_cache {nullptr};
     bool update_prec_cache = false;
     Real_t old_gamma;
 
