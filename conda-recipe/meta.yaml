@@ -30,6 +30,7 @@ requirements:
     - finitediff
     - pycvodes
     - chempy
+    - libgcc
   run:
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.19*  # [not win]
@@ -45,6 +46,7 @@ requirements:
     - finitediff
     - pycvodes
     - chempy
+    - libgcc
 
 test:
   requires:
