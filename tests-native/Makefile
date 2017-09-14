@@ -9,7 +9,7 @@ ifeq ($(COMPILER_VENDOR),intel) # 2013 SP 1
   FLAGS=-Wall
   PROFFLAGS=-prof-gen -prof-dir=./profdata
   PERFFLAGS=-fast
-  CXXFLAGS=-std=c++11 -DDEBUG
+  CXXFLAGS=-std=c++14 -DDEBUG
   OPENMPLIBS=-liomp5
   OPENMPFLAG=-openmp
   C99=-std=c99
@@ -26,7 +26,7 @@ else
   FLAGS=-Wall -Wextra -pedantic
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
-  CXXFLAGS=-std=c++11
+  CXXFLAGS=-std=c++14
   LIBS=-lrt -llapack
   C99=-std=c99
 endif
