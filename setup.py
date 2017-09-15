@@ -88,9 +88,9 @@ cmdclass_ = {}
 template_path = 'src/chemreac_template.cpp'
 rendered_path = 'src/chemreac.cpp'
 USE_TEMPLATE = os.path.exists(template_path)
-setup_requires=['numpy', 'pycompilation', 'pycodeexport', 'mako', 'block_diag_ilu',
-                'pycvodes', 'finitediff'],
-install_requires = ['numpy', 'chempy>=0.4.1', 'quantities', 'block_diag_ilu', 'pycvodes', 'finitediff']
+setup_requires=['numpy', 'pycompilation', 'pycodeexport', 'mako', 'block_diag_ilu>=0.3.3',
+                'pycvodes>=0.8.3', 'finitediff>=0.3.5'],
+install_requires = ['numpy', 'chempy>=0.5.2', 'quantities', 'block_diag_ilu', 'pycvodes>=0.8.3', 'finitediff>=0.3.5']
 package_include = os.path.join(pkg_name, 'include')
 
 
