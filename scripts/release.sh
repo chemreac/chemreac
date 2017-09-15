@@ -35,13 +35,6 @@ env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION python setup.py sdist
 if [[ -e ./scripts/generate_docs.sh ]]; then
     env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION ./scripts/generate_docs.sh
 fi
-for CONDA_PY in 2.7 3.4 3.5; do
-    continue  # we build the conda recipe on another host for now..
-    for CONDA_NPY in 1.11; do
-        PATH=$2:$PATH ./scripts/build_conda_recipe.sh v$VERSION --python $CONDA_PY --numpy $CONDA_NPY
-    done
-done
-
 # All went well, add a tag and push it.
 git tag -a $1 -m $1
 git push $REMOTE

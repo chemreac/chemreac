@@ -19,6 +19,7 @@ requirements:
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.19*  # [not win]
     - python
+    - setuptools
     - cython
     - numpy
     - sundials
@@ -29,7 +30,6 @@ requirements:
     - block_diag_ilu
     - finitediff
     - pycvodes
-    - chempy
     - libgcc
   run:
     - blas 1.1 {{ variant }}  # [not win]
@@ -37,6 +37,7 @@ requirements:
     - python
     - cython
     - numpy
+    - scipy
     - sundials
     - mako
     - quantities
