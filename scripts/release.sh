@@ -20,7 +20,7 @@ find . -type f -iname "*.so" -exec rm {} +
 find . -type d -name "__pycache__" -exec rmdir {} +
 find . -type f -iname ".coverage.*" -exec rm {} +
 ./scripts/check_clean_repo_on_master.sh
-for DIR in build/ dist/ docs/_build/ *.egg-info/ .cache/; do
+for DIR in build/ dist/ doc/_build/ *.egg-info/ .cache/; do
     if [[ -e $DIR ]]; then
         rm -r $DIR
     fi
