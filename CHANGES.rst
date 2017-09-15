@@ -1,3 +1,7 @@
+v0.7.1
+======
+- Bumpy AnyODE version
+
 v0.7.0
 ======
 - Refactor to use new versions of chempy, AnyODE
