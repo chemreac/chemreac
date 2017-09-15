@@ -439,16 +439,19 @@ def cvode_predefined(
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
-        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500):
+        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
+        bool return_on_error=False, bool with_jtimes=False):
     cdef:
         cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
         vector[int] root_indices
         vector[double] roots_output
+        int nderiv = 0
     assert y0.size == rd.n*rd.N
     simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
-        dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')), linear_solver, maxl, eps_lin, 0)
+        dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')), linear_solver,
+        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
@@ -457,15 +460,17 @@ def cvode_adaptive(
         double t0, double tend,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
-        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500):
+        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
+        int autorestart=0, bool return_on_error=False, bool with_jtimes=False):
     cdef:
         vector[int] root_indices
+        int nderiv = 0
     assert y0.size == rd.n*rd.N
     _tvec, _yvec = simple_adaptive[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         &y0[0], t0, tend, root_indices, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
-        linear_solver, maxl, eps_lin, 0)
+        linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
     tout = np.asarray(_tvec)
     yout = np.asarray(_yvec)
     return tout, np.asarray(yout).reshape((tout.size, rd.N, rd.n))
