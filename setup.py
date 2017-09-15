@@ -223,6 +223,9 @@ setup_kwargs = dict(
               "advection-diffusion-reaction"],
     packages=[pkg_name] + modules + tests,
     include_package_data=True,
+    package_data={
+        'chemreac.tests': ['*.json', '*.txt']
+    },
     cmdclass=cmdclass_,
     ext_modules=ext_modules_,
     classifiers=classifiers,

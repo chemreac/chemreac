@@ -1,3 +1,7 @@
+v0.7.2
+======
+- Setup fix: explicit package_data in setup.py (conda related)
+
 v0.7.1
 ======
 - Bumpy AnyODE version
