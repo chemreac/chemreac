@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # distutils: language = c++
 
+from libc.stdlib cimport malloc
 import cython
 
 import numpy as np
@@ -16,6 +17,11 @@ from libcpp.utility cimport pair
 
 cdef extern from *:
     ctypedef unsigned int uint
+
+cdef extern from "numpy/arrayobject.h":
+    void PyArray_ENABLEFLAGS(cnp.ndarray arr, int flags)
+
+cnp.import_array()  # Numpy C-API initialization
 
 
 cdef class ArrayWrapper(object):
@@ -463,17 +469,26 @@ def cvode_adaptive(
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
         int autorestart=0, bool return_on_error=False, bool with_jtimes=False):
     cdef:
+        int nout, nderiv = 0, td = 1
         vector[int] root_indices
-        int nderiv = 0
+        double * xyout = <double *>malloc(td*(y0.size*(nderiv+1) + 1)*sizeof(double))
+        cnp.npy_intp xyout_dims[2]
     assert y0.size == rd.n*rd.N
-    _tvec, _yvec = simple_adaptive[ReactionDiffusion[double]](
-        rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
-        &y0[0], t0, tend, root_indices, nsteps, first_step, dx_min,
+    xyout[0] = t0
+    for i in range(y0.size):
+        xyout[i+1] = y0[i]
+    nout = simple_adaptive[ReactionDiffusion[double]](
+        &xyout, &td, rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
+        tend, root_indices, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
-    tout = np.asarray(_tvec)
-    yout = np.asarray(_yvec)
-    return tout, np.asarray(yout).reshape((tout.size, rd.N, rd.n))
+    xyout_dims[0] = nout + 1
+    xyout_dims[1] = y0.size*(nderiv+1) + 1
+    xyout_arr = cnp.PyArray_SimpleNewFromData(2, xyout_dims, cnp.NPY_DOUBLE, <void *>xyout)
+    PyArray_ENABLEFLAGS(xyout_arr, cnp.NPY_OWNDATA)
+    tout = xyout_arr[:, 0]
+    yout = xyout_arr[:, 1:]
+    return tout, yout.reshape((tout.size, rd.N, rd.n))
 
 
 
