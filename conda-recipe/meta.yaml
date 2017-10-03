@@ -24,7 +24,7 @@ requirements:
     - numpy
     - sundials
     - mako
-    - quantities
+    - quantities >=0.12.1
     - pycompilation
     - pycodeexport
     - block_diag_ilu
@@ -40,7 +40,7 @@ requirements:
     - scipy
     - sundials
     - mako
-    - quantities
+    - quantities >=0.12.1
     - pycompilation
     - pycodeexport
     - block_diag_ilu
