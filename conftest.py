@@ -4,7 +4,7 @@ from __future__ import print_function, division, absolute_import
 
 import pytest
 
-collect_ignore = ['setup.py', 'docs/conf.py', 'conda-recipe/run_test.py']
+collect_ignore = ['setup.py', 'doc/conf.py', 'conda-recipe/run_test.py']
 
 
 def pytest_addoption(parser):
