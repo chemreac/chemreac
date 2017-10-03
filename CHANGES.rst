@@ -1,3 +1,7 @@
+v0.7.3
+======
+- Use pycvodes-0.9.0 (ABI change)
+
 v0.7.2
 ======
 - Setup fix: explicit package_data in setup.py (conda related)
