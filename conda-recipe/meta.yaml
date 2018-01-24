@@ -22,7 +22,7 @@ requirements:
     - setuptools
     - cython
     - numpy
-    - sundials
+    - sundials <3.0.0
     - mako
     - quantities >=0.12.1
     - pycompilation
@@ -38,7 +38,7 @@ requirements:
     - cython
     - numpy
     - scipy
-    - sundials
+    - sundials <3.0.0
     - mako
     - quantities >=0.12.1
     - pycompilation
