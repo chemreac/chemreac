@@ -490,8 +490,8 @@ class Integration(object):
 
         # Run the integration
         # -------------------
-        self.yout, self.internal_t, self.info = self._callbacks[
-            self.integrator](self.rd, y0, t, **self.kwargs)
+        self.yout, self.internal_t, self.info = self._callbacks[self.integrator](
+            self.rd, y0, t, **self.kwargs)
         self.info['t0_set'] = t0 if t0_set else False
 
         # Post processing
