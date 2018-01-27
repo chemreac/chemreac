@@ -140,6 +140,10 @@ class ReactionDiffusionBase(object):
             fields=fields,
             **kwargs)
 
+    def as_odesys(self):
+        from .odesys import ODESys
+        return ODESys(self)
+
     def to_Reaction(self, ri, substance_names=None):
         """
         Convenience method for making a Reaction instance
@@ -480,6 +484,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         for attr in cls.kwarg_attrs:
             if attr in kwargs:
                 setattr(rd, '_' + attr, kwargs.pop(attr))
+        rd.param_names = kwargs.pop('param_names', None)
         if kwargs:
             raise KeyError("Unkown kwargs: ", kwargs.keys())
         return rd
