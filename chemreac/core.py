@@ -140,9 +140,9 @@ class ReactionDiffusionBase(object):
             fields=fields,
             **kwargs)
 
-    def as_odesys(self):
-        from .odesys import ODESys
-        return ODESys(self)
+    def _as_odesys(self, **kwargs):
+        from ._odesys import ODESys
+        return ODESys(self, **kwargs)
 
     def to_Reaction(self, ri, substance_names=None):
         """
