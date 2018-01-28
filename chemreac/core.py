@@ -509,8 +509,11 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         reac_orders = map(len, stoich_active)
         _k_units = k_units(kwargs['unit_registry'], reac_orders)
         k_unitless = [to_unitless(kv, ku) for kv, ku in zip(k, _k_units)]
-        g_values_unitless = [np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv, yld_unit in zip(
-            kwargs.get('g_values', []), g_units(kwargs['unit_registry'], kwargs.get('g_value_parents', [])))]
+        g_values_unitless = [
+            np.asarray([to_unitless(yld, yld_unit) for yld in gv]) for gv, yld_unit in zip(
+                kwargs.get('g_values', []),
+                g_units(kwargs['unit_registry'], kwargs.get('g_value_parents', []))
+            )]
         for key, rep in cls._prop_unit.items():
             val = kwargs.pop(key, None)
             if val is not None:

@@ -461,6 +461,56 @@ def cvode_predefined(
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
+def cvode_predefined_durations_modulations(
+        PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
+        cnp.ndarray[cnp.float64_t, ndim=1] durations,
+        cnp.ndarray[cnp.float64_t, ndim=1] modulations,
+        vector[double] atol, double rtol, basestring method,
+        int npoints=2,
+        bool with_jacobian=True,
+        basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
+        double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
+        bool return_on_error=False, bool with_jtimes=False):
+    cdef:
+        cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout = np.empty(durations.size*npoints + 1)
+        cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] yout = np.empty(tout.size*rd.n*rd.N)
+        cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tbuf = np.zeros(npoints+1)
+        vector[int] root_indices
+        vector[double] roots_output
+        int nderiv = 0
+        int i, offset, j
+    assert npoints > 0
+    assert durations.size == modulations.size
+    assert y0.size == rd.n*rd.N
+    assert len(rd.modulated_rxns) == 1, 'only one modulation group assumed for now'
+    for i in range(rd.n*rd.N):
+        yout[i] = y0[i]
+
+    tout[0] = 0.0
+    tout[npoints::npoints] = np.cumsum(durations)
+    for i in range(1, npoints):
+        tout[i::npoints] = tout[:-1:npoints] + i*durations/npoints
+    assert np.all(np.diff(tout) > 0)
+    rd.zero_counters()
+    for i in range(durations.size):
+        offset = i*npoints*rd.n*rd.N
+        rd.modulation = [[modulations[i]]]
+        print(tbuf[0])
+        for j in range(1, npoints+1):
+            tbuf[j] = j*durations[i]/npoints
+            print(tbuf[j])
+        nreached = simple_predefined[ReactionDiffusion[double]](
+            rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
+            &yout[offset], npoints+1, &tbuf[0], &yout[offset],
+            root_indices, roots_output, nsteps, first_step, dx_min,
+            dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
+            linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
+
+        if nreached != npoints+1:
+            raise ValueError("Did not reach all points for index %d" % i)
+    return tout, yout.reshape((tout.size, rd.N, rd.n))
+
+
 def cvode_adaptive(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         double t0, double tend,

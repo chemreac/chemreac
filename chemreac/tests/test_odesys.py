@@ -46,3 +46,30 @@ def test_decay_params():
     tout, yout, info = odesys.integrate([0, 5], ic, p)
     yref = np.array([a(y0, k, tout) for a in analytic]).transpose()
     assert np.allclose(yout, yref)
+
+
+def test_chained_parameter_variation():
+    # A -> B
+    names = ['A', 'B']
+    rd = ReactionDiffusion(len(names), [[0]], [[1]], k=[1.0],
+                           substance_names=names, modulated_rxns=[0], modulation=[[1.0]])
+    durations = [1, 3, 2]
+    y0 = [13, 7]
+    ic = dict(zip(names, y0))
+    modulations = [.3, .11, .7]
+    npoints = 3
+    odesys = rd._as_odesys()
+    res = odesys.chained_parameter_variation(durations, ic, {'doserate': modulations}, npoints=npoints)
+    assert res.xout.size == npoints*len(durations) + 1
+    assert res.xout[0] == 0
+    assert np.all(res.yout[0, :] == y0)
+    cumulative = 0.0
+    for k, dur in zip(modulations, durations):
+        mask = (cumulative <= res.xout) & (res.xout <= cumulative + dur)
+        cumulative += dur
+        t, y = res.xout[mask], res.yout[mask, :]
+        a, b = y[:, 0], y[:, 1]
+        refa = a[0]*np.exp(-k*(t-t[0]))
+        refb = b[0] + a[0] - a
+        assert np.allclose(refa, a)
+        assert np.allclose(refb, b)
