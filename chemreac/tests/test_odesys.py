@@ -3,7 +3,7 @@ from collections import defaultdict
 import numpy as np
 from chemreac import ReactionDiffusion
 from chempy import ReactionSystem
-from chempy.units import to_unitless, SI_base_registry, get_derived_unit, default_units as u
+from chempy.units import to_unitless, SI_base_registry, get_derived_unit, allclose, default_units as u
 
 analytic = [
     lambda y0, k, t: (
@@ -20,28 +20,28 @@ analytic = [
 ]
 
 
-def _get_odesys(k):
+def _get_odesys():
     names = ['A', 'B', 'C']
     pns = ['kA', 'kB']
-    rd = ReactionDiffusion(len(names), [[0], [1]], [[1], [2]], k=k,
+    rd = ReactionDiffusion(len(names), [[0], [1]], [[1], [2]], k=[0, 0],
                            substance_names=names, param_names=pns)
     return rd._as_odesys(k_from_params=lambda self, p: [p[k] for k in self.param_names])
 
 
 def test_decay():
     kA = 0.13
-    odesys = _get_odesys([kA, 0])
+    odesys = _get_odesys()
     y0 = dict(A=3, B=1, C=0)
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
-    result = odesys.integrate(tout, y0)
+    result = odesys.integrate(tout, y0, dict(kA=kA, kB=0))
     yref = np.array([y0['A']*np.exp(-kA*(tout-t0)),
                      y0['B']+y0['A']*(1-np.exp(-kA*(tout-t0)))]).transpose()
     assert np.allclose(result.yout[:, :2], yref)
 
 
 def test_decay_params():
-    odesys = _get_odesys([0, 0])
+    odesys = _get_odesys()
     y0 = 42, 7, 4
     k = .7, .3
     ic = dict(zip(odesys.names, y0))
@@ -127,3 +127,8 @@ def test_chained_parameter_variation_from_ReactionSystem():
             e_accum_molar += ld*g_E_mol_J*dr_Gy_s*dens_kg_dm3
             assert abs(N2_M[i*npoints + j + 1] - e_accum_molar)/e_accum_molar < 1e-3
             assert abs(H2O2_M[i*npoints + j + 1] - e_accum_molar)/e_accum_molar < 1e-3
+
+    res2 = odesys.integrate(durations[0], ic, {'doserate': doserates[0]}, integrator='cvode')
+    dr2 = res2.params[res2.odesys.param_names.index('doserate')]
+    assert np.asarray(res2.params).shape[-1] == len(odesys.param_names)
+    assert allclose(dr2, doserates[0])

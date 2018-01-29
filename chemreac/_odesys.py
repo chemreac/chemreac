@@ -25,10 +25,11 @@ class ODESys(_ODESys):
     # par_by_name = True
 
     def integrate(self, x, y0, params=None, **kwargs):
-        if params is not None:
+        if params is not None and self.k_from_params is not None:
             self.rd.k = self.k_from_params(self, params)
         integr = run(self.rd, [y0[k] for k in self.names], x, **kwargs)
-        return Result(integr.tout, integr.Cout[:, 0, :], None, integr.info, self)
+        pout = [params[k] for k in self.param_names] if self.param_names else None
+        return Result(integr.tout, integr.Cout[:, 0, :], pout, integr.info, self)
 
     def chained_parameter_variation(self, durations, y0, varied_params, default_params=None,
                                     integrate_kwargs=None, x0=None, npoints=1, numpy=None):
