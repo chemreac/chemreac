@@ -424,6 +424,8 @@ class Integration(object):
         self.integrator = integrator
         self.rd = rd
         self.C0 = np.asarray(C0).flatten()
+        if isinstance(tout, float) or getattr(tout, 'size', 0) == 1:
+            tout = np.array([0.0, tout])
         self.tout = tout
         self.sigm_damp = sigm_damp
         self.C0_is_log = C0_is_log

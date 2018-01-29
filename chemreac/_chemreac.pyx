@@ -495,11 +495,8 @@ def cvode_predefined_durations_fields(
     for i in range(durations.size):
         offset = i*npoints*rd.n*rd.N
         rd.fields = [[fields[i]]]
-        print(rd.fields)#DO-NOT-MERGE!
-        print(tbuf[0])#DO-NOT-MERGE!
         for j in range(1, npoints+1):
             tbuf[j] = j*durations[i]/npoints
-            print(tbuf[j])
         nreached = simple_predefined[ReactionDiffusion[double]](
             rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
             &yout[offset], npoints+1, &tbuf[0], &yout[offset],

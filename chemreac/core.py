@@ -227,8 +227,7 @@ def g_units(unit_registry, g_value_parents):
 
 
 def k_units(unit_registry, reaction_orders):
-    return [get_unit(unit_registry, 'concentration')**(
-        1-order)/get_unit(unit_registry, 'time')
+    return [get_unit(unit_registry, 'concentration')**(1-order)/get_unit(unit_registry, 'time')
             for order in reaction_orders]
 
 

@@ -25,7 +25,7 @@ def _get_odesys(k):
     pns = ['kA', 'kB']
     rd = ReactionDiffusion(len(names), [[0], [1]], [[1], [2]], k=k,
                            substance_names=names, param_names=pns)
-    return rd._as_odesys(k_from_params=lambda p: [p[k] for k in pns])
+    return rd._as_odesys(k_from_params=lambda self, p: [p[k] for k in self.param_names])
 
 
 def test_decay():
@@ -55,18 +55,23 @@ def test_chained_parameter_variation():
     # A -> B
     names = ['A', 'B']
     rd = ReactionDiffusion(len(names), [], [], k=[],
-                           substance_names=names, g_value_parents=[0], g_values=[[0, 1]])
+                           substance_names=names, g_value_parents=[0], g_values=[[0, 1]],
+                           param_names=['doserate'])
     durations = [1., 3., 2.]
     y0 = [13., 7.]
     ic = dict(zip(names, y0))
     doserates = [.3, .11, .7]
     npoints = 3
-    odesys = rd._as_odesys()
+    odesys = rd._as_odesys(variables_from_params=dict(
+        density=lambda self, params: 1.0
+    ))
     res = odesys.chained_parameter_variation(
-        durations, ic, {'doserate': doserates}, {'density': 1.0}, npoints=npoints)
+        durations, ic, {'doserate': doserates}, npoints=npoints)
     assert res.xout.size == npoints*len(durations) + 1
     assert res.xout[0] == 0
     assert np.all(res.yout[0, :] == y0)
+    expected = [.3]*npoints + [.11]*npoints + [.7]*(npoints+1)
+    assert np.all(res.params[:, odesys.param_names.index('doserate')] == expected)
     cumulative = 0.0
     for dr, dur in zip(doserates, durations):
         mask = (cumulative <= res.xout) & (res.xout <= cumulative + dur)
@@ -93,18 +98,21 @@ def test_chained_parameter_variation_from_ReactionSystem():
     )
     ureg = SI_base_registry
     field_u = get_derived_unit(ureg, 'doserate') * get_derived_unit(ureg, 'density')
-    rd = ReactionDiffusion.from_ReactionSystem(rsys, fields=[[0*field_u]], unit_registry=ureg)
-    odesys = rd._as_odesys()
+    rd = ReactionDiffusion.from_ReactionSystem(rsys, fields=[[0*field_u]], unit_registry=ureg,
+                                               param_names=['doserate'])
+    dens_kg_dm3 = 0.998
+    odesys = rd._as_odesys(
+        variables_from_params=dict(
+            density=lambda self, params: dens_kg_dm3*1e3*u.kg/u.m**3
+        )
+    )
     npoints = 5
     durations = [59*u.second, 42*u.minute, 2*u.hour]
     doserates = [135*u.Gy/u.s, 11*u.Gy/u.s, 180*u.Gy/u.minute]
     M = u.molar
     ic = defaultdict(lambda: 0*M, {'H2O': 55.4*M, 'H+': 1e-7*M, 'OH-': 1e-7*M, 'N2O': 20e-3*M})
-    dens_kg_dm3 = 0.998
 
-    result = odesys.chained_parameter_variation(
-        durations, ic, {'doserate': doserates}, {'density': dens_kg_dm3*1e3*u.kg/u.m**3},
-        npoints=npoints)
+    result = odesys.chained_parameter_variation(durations, ic, {'doserate': doserates}, npoints=npoints)
 
     N2_M = to_unitless(result.named_dep('N2'), u.M)
     H2O2_M = to_unitless(result.named_dep('H2O2'), u.M)

@@ -206,7 +206,19 @@ def test_integrators(log):
             'method': 'adams',
             'tout': tout,
             'C0_is_log': True
-        }
+        },
+        'cvode3': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8,
+            'method': 'bdf',
+            'tout': (t0, tend),
+        },
+        'cvode4': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8,
+            'method': 'bdf',
+            'tout': tend-t0,
+        },
     }
 
     # A -> B
