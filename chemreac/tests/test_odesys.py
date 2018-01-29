@@ -31,10 +31,10 @@ def _get_odesys():
 def test_decay():
     kA = 0.13
     odesys = _get_odesys()
-    y0 = dict(A=3, B=1, C=0)
+    y0 = dict(A=3., B=1., C=0.)
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
-    result = odesys.integrate(tout, y0, dict(kA=kA, kB=0))
+    result = odesys.integrate(tout, y0, dict(kA=kA, kB=0.0))
     yref = np.array([y0['A']*np.exp(-kA*(tout-t0)),
                      y0['B']+y0['A']*(1-np.exp(-kA*(tout-t0)))]).transpose()
     assert np.allclose(result.yout[:, :2], yref)
@@ -42,7 +42,7 @@ def test_decay():
 
 def test_decay_params():
     odesys = _get_odesys()
-    y0 = 42, 7, 4
+    y0 = 42., 7., 4.
     k = .7, .3
     ic = dict(zip(odesys.names, y0))
     p = dict(zip('kA kB'.split(), k))
@@ -133,6 +133,7 @@ def test_chained_parameter_variation_from_ReactionSystem():
     assert np.asarray(res2.params).shape[-1] == len(odesys.param_names)
     assert allclose(dr2, doserates[0])
     assert allclose(res2.xout[-1], durations[0])
+    assert allclose(res2.named_dep('N2')[-1], durations[0]*doserates[0]*g_E_mol_J*u.mol/u.J*dens_kg_dm3*u.kg/u.dm3)
     to_unitless(res2.xout, u.s)
     to_unitless(res2.yout, u.molar)
     to_unitless(dr2, u.Gy/u.s)

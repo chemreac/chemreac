@@ -37,10 +37,12 @@ class ODESys(_ODESys):
             dr_u = get_derived_unit(self.rd.unit_registry, 'doserate')
         return locals()
 
-    def integrate(self, x, y0, params=None, **kwargs):
+    def integrate(self, x, y0, params=None, integrator='cvode', **kwargs):
         if params is not None and self.k_from_params is not None:
             self.rd.k = self.k_from_params(self, params)
-        integr = run(self.rd, [y0[k] for k in self.names], x, **kwargs)
+        if 'doserate' in (params or {}):
+            self.rd.set_with_units('fields', [[self.variables_from_params['density'](self, params)*params['doserate']]])
+        integr = run(self.rd, [y0[k] for k in self.names], x, integrator=integrator, **kwargs)
         pout = [params[k] for k in self.param_names] if self.param_names else None
         return Result(integr.with_units('tout'), integr.with_units('Cout')[:, 0, :], pout, integr.info, self)
 
