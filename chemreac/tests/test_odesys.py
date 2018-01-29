@@ -73,8 +73,8 @@ def test_chained_parameter_variation():
         cumulative += dur
         t, y = res.xout[mask], res.yout[mask, :]
         a, b = y[:, 0], y[:, 1]
-        refa = y0[0]
-        refb = y0[1] + t*dr*y0[0]
+        refa = a[0]
+        refb = b[0] + (t - t[0])*dr*a[0]
         assert np.allclose(refa, a)
         assert np.allclose(refb, b)
 
@@ -83,8 +83,8 @@ def test_chained_parameter_variation_from_ReactionSystem():
     g_E_mol_J = 2.1e-7
     rsys = ReactionSystem.from_string(
         """
-        (H2O) -> e-(aq) + H+ + OH; Radiology(%.2e*mol/Gy)
-        2 OH -> H2O2; 3.6e-9/M/s
+        (H2O) -> e-(aq) + H+ + OH; Radiolytic(%.2e*mol/J)
+        2 OH -> H2O2; 3.6e9/M/s
         H+ + OH- -> H2O; 1.4e11/M/s
         H2O -> H+ + OH-; 1.4e-3/s
         N2O + e-(aq) -> N2 + O-; 9.6e9/M/s
@@ -93,7 +93,7 @@ def test_chained_parameter_variation_from_ReactionSystem():
     )
     ureg = SI_base_registry
     field_u = get_derived_unit(ureg, 'doserate') * get_derived_unit(ureg, 'density')
-    rd = ReactionDiffusion.from_ReactionSystem(rsys, fields=[0*field_u], unit_registry=ureg)
+    rd = ReactionDiffusion.from_ReactionSystem(rsys, fields=[[0*field_u]], unit_registry=ureg)
     odesys = rd._as_odesys()
     npoints = 5
     durations = [59*u.second, 42*u.minute, 2*u.hour]
@@ -117,5 +117,5 @@ def test_chained_parameter_variation_from_ReactionSystem():
         # local_ic = {k: result.named_dep(k)[i*npoints] for k in odesys.names}
         for j, (lt, ld) in enumerate(zip(local_ts[1:], np.diff(local_ts))):
             e_accum_molar += ld*g_E_mol_J*dr_Gy_s*dens_kg_dm3
-            assert abs(N2_M[i*npoints + j] - e_accum_molar)/e_accum_molar < 1e-3
-            assert abs(H2O2_M[i*npoints + j] - 2*e_accum_molar)/e_accum_molar < 1e-3
+            assert abs(N2_M[i*npoints + j + 1] - e_accum_molar)/e_accum_molar < 1e-3
+            assert abs(H2O2_M[i*npoints + j + 1] - e_accum_molar)/e_accum_molar < 1e-3

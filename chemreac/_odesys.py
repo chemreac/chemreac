@@ -3,6 +3,7 @@ import time
 import numpy as np
 from pyodesys import ODESys as _ODESys
 from pyodesys.results import Result
+from chempy.units import get_derived_unit, unitless_in_registry, uniform
 from .integrate import run
 from ._chemreac import cvode_predefined_durations_fields
 
@@ -34,9 +35,11 @@ class ODESys(_ODESys):
         if self.rd.unit_registry is None:
             _dedim = lambda x: np.array(x)
             time_u = 1
+            conc_u = 1
         else:
             _dedim = lambda x: unitless_in_registry(x, self.rd.unit_registry)
             time_u = get_derived_unit(self.rd.unit_registry, 'time')
+            conc_u = get_derived_unit(self.rd.unit_registry, 'concentration')
 
         density = _dedim(default_params.pop('density'))
         if default_params:
@@ -55,7 +58,7 @@ class ODESys(_ODESys):
         tout, yout = cvode_predefined_durations_fields(
             self.rd, _dedim([y0[k] for k in self.names]),
             _dedim(durations),
-            _dedim(varied_params['doserate']*density),
+            _dedim(uniform(varied_params['doserate'])*density),
             atol=atol, rtol=rtol, method=method, npoints=npoints, **integrate_kwargs)
         info = dict(
             nfev=self.rd.nfev,
@@ -64,4 +67,4 @@ class ODESys(_ODESys):
             time_cpu=time.clock() - time_cpu,
             success=True
         )
-        return Result(tout, yout[:, 0, :], None, info, self)
+        return Result(tout*time_u, yout[:, 0, :]*conc_u, None, info, self)
