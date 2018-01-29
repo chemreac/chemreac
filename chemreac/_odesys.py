@@ -41,10 +41,12 @@ class ODESys(_ODESys):
         if params is not None and self.k_from_params is not None:
             self.rd.k = self.k_from_params(self, params)
         if 'doserate' in (params or {}):
-            self.rd.set_with_units('fields', [[self.variables_from_params['density'](self, params)*params['doserate']]])
+            self.rd.set_with_units(
+                'fields', [[self.variables_from_params['density'](self, params)*params['doserate']]])
         integr = run(self.rd, [y0[k] for k in self.names], x, integrator=integrator, **kwargs)
         pout = [params[k] for k in self.param_names] if self.param_names else None
-        return Result(integr.with_units('tout'), integr.with_units('Cout')[:, 0, :], pout, integr.info, self)
+        return Result(integr.with_units('tout'), integr.with_units('Cout')[:, 0, :],
+                      pout, integr.info, self)
 
     def chained_parameter_variation(self, durations, y0, varied_params, default_params=None,
                                     integrate_kwargs=None, x0=None, npoints=1, numpy=None):
