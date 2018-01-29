@@ -80,7 +80,8 @@ class ReactionDiffusionBase(object):
                         yields[doserate_name][k] = n*g_val
                     else:
                         yields[doserate_name][k] += n*g_val
-        g_values = [rsys.as_per_substance_array(v, unit=yield_unit, raise_on_unk=True) for v in yields.values()]
+        g_values = [rsys.as_per_substance_array(v, unit=yield_unit, raise_on_unk=True)
+                    for v in yields.values()]
         g_value_parents = []
         for k in yields:
             parent = None

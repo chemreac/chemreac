@@ -461,10 +461,10 @@ def cvode_predefined(
     return yout.reshape((tout.size, rd.N, rd.n))
 
 
-def cvode_predefined_durations_modulations(
+def cvode_predefined_durations_fields(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] durations,
-        cnp.ndarray[cnp.float64_t, ndim=1] modulations,
+        cnp.ndarray[cnp.float64_t, ndim=1] fields,
         vector[double] atol, double rtol, basestring method,
         int npoints=2,
         bool with_jacobian=True,
@@ -480,9 +480,9 @@ def cvode_predefined_durations_modulations(
         int nderiv = 0
         int i, offset, j
     assert npoints > 0
-    assert durations.size == modulations.size
+    assert durations.size == fields.size
     assert y0.size == rd.n*rd.N
-    assert len(rd.modulated_rxns) == 1, 'only one modulation group assumed for now'
+    assert len(rd.g_values) == 1, 'only field type assumed for now'
     for i in range(rd.n*rd.N):
         yout[i] = y0[i]
 
@@ -494,8 +494,9 @@ def cvode_predefined_durations_modulations(
     rd.zero_counters()
     for i in range(durations.size):
         offset = i*npoints*rd.n*rd.N
-        rd.modulation = [[modulations[i]]]
-        print(tbuf[0])
+        rd.fields = [[fields[i]]]
+        print(rd.fields)#DO-NOT-MERGE!
+        print(tbuf[0])#DO-NOT-MERGE!
         for j in range(1, npoints+1):
             tbuf[j] = j*durations[i]/npoints
             print(tbuf[j])

@@ -4,7 +4,7 @@ import numpy as np
 from pyodesys import ODESys as _ODESys
 from pyodesys.results import Result
 from .integrate import run
-from ._chemreac import cvode_predefined_durations_modulations
+from ._chemreac import cvode_predefined_durations_fields
 
 
 class ODESys(_ODESys):
@@ -31,10 +31,19 @@ class ODESys(_ODESys):
                                     integrate_kwargs=None, x0=None, npoints=1, numpy=None):
         if list(varied_params) != ['doserate']:
             raise NotImplementedError("For now only varied doserate is supported")
-        if default_params is not None:
-            self.rd.k = self.k_from_params(default_params)
+        if self.rd.unit_registry is None:
+            _dedim = lambda x: np.array(x)
+            time_u = 1
+        else:
+            _dedim = lambda x: unitless_in_registry(x, self.rd.unit_registry)
+            time_u = get_derived_unit(self.rd.unit_registry, 'time')
+
+        density = _dedim(default_params.pop('density'))
+        if default_params:
+            self.rd.k = _dedim(self.k_from_params(default_params))
+
         if x0 is not None:
-            assert x0 == 0
+            assert x0 == 0*time_u
         integrate_kwargs = integrate_kwargs or {}
         atol = integrate_kwargs.pop('atol', 1e-8)
         if isinstance(atol, float):
@@ -43,10 +52,10 @@ class ODESys(_ODESys):
         method = integrate_kwargs.pop('method', 'bdf')
         time_cpu = time.clock()
         time_wall = time.time()
-        tout, yout = cvode_predefined_durations_modulations(
-            self.rd, np.array([y0[k] for k in self.names], dtype=np.float64),
-            np.array(durations, dtype=np.float64),
-            np.array(varied_params['doserate'], dtype=np.float64),
+        tout, yout = cvode_predefined_durations_fields(
+            self.rd, _dedim([y0[k] for k in self.names]),
+            _dedim(durations),
+            _dedim(varied_params['doserate']*density),
             atol=atol, rtol=rtol, method=method, npoints=npoints, **integrate_kwargs)
         info = dict(
             nfev=self.rd.nfev,
