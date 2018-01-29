@@ -24,19 +24,7 @@ class ODESys(_ODESys):
     # dep_by_name = True
     # par_by_name = True
 
-    def integrate(self, x, y0, params=None, **kwargs):
-        if params is not None and self.k_from_params is not None:
-            self.rd.k = self.k_from_params(self, params)
-        integr = run(self.rd, [y0[k] for k in self.names], x, **kwargs)
-        pout = [params[k] for k in self.param_names] if self.param_names else None
-        return Result(integr.tout, integr.Cout[:, 0, :], pout, integr.info, self)
-
-    def chained_parameter_variation(self, durations, y0, varied_params, default_params=None,
-                                    integrate_kwargs=None, x0=None, npoints=1, numpy=None):
-        if list(varied_params) != ['doserate']:
-            raise NotImplementedError("For now only varied doserate is supported")
-        if self.param_names != ['doserate']:
-            raise NotImplementedError("We expect doserate to be varied for now")
+    def _get_units_util(self):
         if self.rd.unit_registry is None:
             _dedim = lambda x: np.array(x)
             time_u = 1
@@ -47,7 +35,23 @@ class ODESys(_ODESys):
             time_u = get_derived_unit(self.rd.unit_registry, 'time')
             conc_u = get_derived_unit(self.rd.unit_registry, 'concentration')
             dr_u = get_derived_unit(self.rd.unit_registry, 'doserate')
+        return locals()
 
+    def integrate(self, x, y0, params=None, **kwargs):
+        if params is not None and self.k_from_params is not None:
+            self.rd.k = self.k_from_params(self, params)
+        integr = run(self.rd, [y0[k] for k in self.names], x, **kwargs)
+        pout = [params[k] for k in self.param_names] if self.param_names else None
+        return Result(integr.with_units('tout'), integr.with_units('Cout')[:, 0, :], pout, integr.info, self)
+
+    def chained_parameter_variation(self, durations, y0, varied_params, default_params=None,
+                                    integrate_kwargs=None, x0=None, npoints=1, numpy=None):
+        if list(varied_params) != ['doserate']:
+            raise NotImplementedError("For now only varied doserate is supported")
+        if self.param_names != ['doserate']:
+            raise NotImplementedError("We expect doserate to be varied for now")
+        uutil = self._get_units_util()
+        _dedim, time_u, conc_u, dr_u = [uutil[k] for k in '_dedim time_u conc_u dr_u'.split()]
         density = _dedim(self.variables_from_params['density'](self, default_params))
         if default_params:
             self.rd.k = _dedim(self.k_from_params(self, default_params))

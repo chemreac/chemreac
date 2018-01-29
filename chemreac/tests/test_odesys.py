@@ -132,3 +132,7 @@ def test_chained_parameter_variation_from_ReactionSystem():
     dr2 = res2.params[res2.odesys.param_names.index('doserate')]
     assert np.asarray(res2.params).shape[-1] == len(odesys.param_names)
     assert allclose(dr2, doserates[0])
+    assert allclose(res2.xout[-1], durations[0])
+    to_unitless(res2.xout, u.s)
+    to_unitless(res2.yout, u.molar)
+    to_unitless(dr2, u.Gy/u.s)
