@@ -424,6 +424,8 @@ class Integration(object):
         self.integrator = integrator
         self.rd = rd
         self.C0 = np.asarray(C0).flatten()
+        if isinstance(tout, float) or getattr(tout, 'size', 0) == 1:
+            tout = np.array([0.0, tout])
         self.tout = tout
         self.sigm_damp = sigm_damp
         self.C0_is_log = C0_is_log
@@ -490,8 +492,8 @@ class Integration(object):
 
         # Run the integration
         # -------------------
-        self.yout, self.internal_t, self.info = self._callbacks[
-            self.integrator](self.rd, y0, t, **self.kwargs)
+        self.yout, self.internal_t, self.info = self._callbacks[self.integrator](
+            self.rd, y0, t, **self.kwargs)
         self.info['t0_set'] = t0 if t0_set else False
 
         # Post processing

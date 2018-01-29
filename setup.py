@@ -234,7 +234,7 @@ setup_kwargs = dict(
     extras_require={'all': [
         'argh', 'pytest', 'scipy>=0.15', 'matplotlib', 'mpld3',
         'sym', 'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
-        'sphinx', 'sphinx_rtd_theme', 'numpydoc'
+        'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7'
     ]}
 )
 

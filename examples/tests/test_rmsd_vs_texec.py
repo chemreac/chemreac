@@ -9,7 +9,7 @@ from chemreac.util.testing import veryslow
 @veryslow
 def test_integrate_rd():
     main(OrderedDict([
-            ('nstencil', [3, 5]),
-            ('N', [40, 80]),
-            ('method', ['bdf', 'adams'])
+        ('nstencil', [3, 5]),
+        ('N', [40, 80]),
+        ('method', ['bdf', 'adams'])
     ]))
