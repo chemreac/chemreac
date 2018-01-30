@@ -91,7 +91,9 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         'njev': rd.njev,
         'time_wall': time_wall,
         'time_cpu': time_cpu,
-        'success': success
+        'success': success,
+        'nsteps': -1,
+        'integrator': ['cvode'],
     })
     if kwargs['linear_solver'] >= 10:
         kwargs['nprec_setup'] = rd.nprec_setup
@@ -125,11 +127,13 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
         'time_wall': time.time() - time_wall,
         'time_cpu': time.clock() - time_cpu,
         'success': True,
+        'integrator': ['rk4'],
+        'nsteps': -1,
     }
     return yout, tout, info
 
 
-def _integrate_cb(callback, rd, y0, tout, linear_solver='dense',
+def _integrate_cb(callbacks, integrator, rd, y0, tout, linear_solver='dense',
                   dense_output=None, **kwargs):
     if dense_output is None:
         dense_output = (len(tout) == 2)
@@ -158,14 +162,15 @@ def _integrate_cb(callback, rd, y0, tout, linear_solver='dense',
     time_wall = time.time()
     time_cpu = time.clock()
     if dense_output:
-        xout, yout, info_ = callback[0](rd.f, jac, **new_kwargs)
+        xout, yout, info_ = callbacks[0](rd.f, jac, **new_kwargs)
     else:
         xout = tout
-        yout, info_ = callback[1](rd.f, jac, **new_kwargs)
+        yout, info_ = callbacks[1](rd.f, jac, **new_kwargs)
     info.update({
         'time_wall': time.time() - time_wall,
         'time_cpu': time.clock() - time_cpu,
         'success': True,
+        'integrator': [integrator],
     })
     info.update(info_)
     return yout.reshape((xout.size, rd.N, rd.n)), xout, info
@@ -182,13 +187,15 @@ def _no_check(cb):
 def integrate_pyodeint(*args, **kwargs):
     from pyodeint import integrate_adaptive, integrate_predefined
     return _integrate_cb((_no_check(integrate_adaptive),
-                          _no_check(integrate_predefined)), *args, **kwargs)
+                          _no_check(integrate_predefined)),
+                         'pyodeint', *args, **kwargs)
 
 
 def integrate_pygslodeiv2(*args, **kwargs):
     from pygslodeiv2 import integrate_adaptive, integrate_predefined
     return _integrate_cb((_no_check(integrate_adaptive),
-                          _no_check(integrate_predefined)), *args, **kwargs)
+                          _no_check(integrate_predefined)),
+                         'pygslodeiv2', *args, **kwargs)
 
 
 def integrate_scipy(rd, y0, tout, linear_solver='default',
@@ -327,6 +334,8 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         'time_cpu': time_cpu,
         'nfev': f.neval,
         'njev': jac.neval,
+        'nsteps': -1,
+        'integrator': ['scipy'],
     })
     return yout.reshape((len(tout), rd.N, rd.n)), tout, info
 

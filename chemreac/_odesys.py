@@ -3,7 +3,7 @@ import time
 import numpy as np
 from pyodesys import ODESys as _ODESys
 from pyodesys.results import Result
-from chempy.units import get_derived_unit, unitless_in_registry, uniform
+from chempy.units import get_derived_unit, unitless_in_registry, uniform, patched_numpy as pnp
 from .integrate import run
 from ._chemreac import cvode_predefined_durations_fields
 
@@ -21,6 +21,8 @@ class ODESys(_ODESys):
     names = property(lambda self: self.rd.substance_names)
     latex_names = property(lambda self: self.rd.substance_latex_names)
     param_names = property(lambda self: self.rd.param_names)
+    autonomous_interface = property(lambda self: not self.rd.logt)
+    numpy = pnp
     # dep_by_name = True
     # par_by_name = True
 
@@ -43,7 +45,8 @@ class ODESys(_ODESys):
         if 'doserate' in (params or {}):
             self.rd.set_with_units(
                 'fields', [[self.variables_from_params['density'](self, params)*params['doserate']]])
-        integr = run(self.rd, [y0[k] for k in self.names], x, integrator=integrator, **kwargs)
+        integr = run(self.rd, [y0[k] for k in self.names] if isinstance(y0, dict) else y0,
+                     x, integrator=integrator, **kwargs)
         pout = [params[k] for k in self.param_names] if self.param_names else None
         return Result(integr.with_units('tout'), integr.with_units('Cout')[:, 0, :],
                       pout, integr.info, self)
@@ -68,7 +71,8 @@ class ODESys(_ODESys):
             atol = [atol]
         rtol = integrate_kwargs.pop('rtol', 1e-8)
         method = integrate_kwargs.pop('method', 'bdf')
-        if integrate_kwargs.pop('integrator', 'cvode') != 'cvode':
+        integrator = integrate_kwargs.pop('integrator', 'cvode')
+        if integrator != 'cvode':
             raise NotImplementedError("chained_parameter_variation requires cvode for now")
         drate = uniform(varied_params['doserate'])
         time_cpu = time.clock()
@@ -79,11 +83,16 @@ class ODESys(_ODESys):
             _dedim(drate*density),
             atol=atol, rtol=rtol, method=method, npoints=npoints, **integrate_kwargs)
         info = dict(
+            nsteps=-1,
             nfev=self.rd.nfev,
             njev=self.rd.njev,
             time_wall=time.time() - time_wall,
             time_cpu=time.clock() - time_cpu,
-            success=True
+            success=True,
+            integrator=[integrator],
+            t0_set=False,
+            linear_solver=0,  # pyodesys.results.Result work-around for now (not important)
         )
+        info.update(self.rd.last_integration_info)
         dr_out = np.concatenate((np.repeat(drate, npoints), drate[-1:]))
         return Result(tout*time_u, yout[:, 0, :]*conc_u, dr_out.reshape((-1, 1))*dr_u, info, self)
