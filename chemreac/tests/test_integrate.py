@@ -315,3 +315,21 @@ def test_integrate_nondimensionalisation__g_values(from_rsys):
     assert allclose(integr.with_units('tout'), t_sec*u.s)
     assert allclose(integr.with_units('Cout').squeeze(),
                     Cref_mol_p_m3*u.mole/u.metre**3)
+
+
+def test_chempy_Radiolytic__units__multi():
+    from chempy import Reaction, ReactionSystem
+    from chempy.kinetics.rates import Radiolytic
+    from chempy.units import allclose, default_units as u
+    rad = Radiolytic([2.4e-7*u.mol/u.joule])
+    rxn = Reaction({}, {'C': 3, 'D': 2}, rad, {'A': 4, 'B': 1})
+    rsys = ReactionSystem([rxn], 'A B C D')
+    variables = dict(doserate=0.15*u.Gy/u.s, density=0.998*u.kg/u.dm3)
+    rd = ReactionDiffusion.from_ReactionSystem(rsys, unit_registry=SI_base_registry, variables=variables)
+    odesys = rd._as_odesys()
+    init_conc = {'A': 3*u.molar, 'B': 5*u.molar, 'C': 11*u.molar, 'D': 13*u.molar}
+    t = 37*u.second
+    result = odesys.integrate(t, init_conc)
+    y = result.xout*variables['doserate']*variables['density']*rad.args[0]
+    for sk in rsys.substances:
+        assert allclose(result.named_dep(sk), init_conc[sk] + y*rxn.net_stoich(sk)[0])

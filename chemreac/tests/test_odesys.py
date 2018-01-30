@@ -3,7 +3,9 @@ from collections import defaultdict
 import numpy as np
 from chemreac import ReactionDiffusion
 from chempy import ReactionSystem
-from chempy.units import to_unitless, SI_base_registry, get_derived_unit, allclose, default_units as u
+from chempy.units import (
+    linspace, to_unitless, SI_base_registry, get_derived_unit, allclose, default_units as u
+)
 
 analytic = [
     lambda y0, k, t: (
@@ -118,8 +120,18 @@ def test_chained_parameter_variation_from_ReactionSystem():
     doserates = [135*u.Gy/u.s, 11*u.Gy/u.s, 180*u.Gy/u.minute]
     M = u.molar
     ic = defaultdict(lambda: 0*M, {'H2O': 55.4*M, 'H+': 1e-7*M, 'OH-': 1e-7*M, 'N2O': 20e-3*M})
+    intkw = dict(nsteps=650)
 
-    result = odesys.chained_parameter_variation(durations, ic, {'doserate': doserates}, npoints=npoints)
+    _dr, _rho, _g = 7*u.Gy/u.s, dens_kg_dm3*u.kg/u.dm3, g_E_mol_J*u.mol/u.J
+    for _t in [[42*u.s], linspace(0*u.s, 42*u.s)]:
+        res0 = odesys.integrate(_t, ic, {'doserate': _dr}, return_on_error=True, **intkw)
+        _N2O_consumed = _rho*_g*_dr*res0.xout
+        assert allclose(res0.named_dep('N2O'), ic['N2O'] - _N2O_consumed)
+        assert res0.info['success']
+        assert allclose(res0.xout[-1], _t[-1])
+
+    result = odesys.chained_parameter_variation(durations, ic, {'doserate': doserates}, npoints=npoints,
+                                                integrate_kwargs=intkw)
 
     N2_M = to_unitless(result.named_dep('N2'), u.M)
     H2O2_M = to_unitless(result.named_dep('H2O2'), u.M)

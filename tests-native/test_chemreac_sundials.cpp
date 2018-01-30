@@ -1,7 +1,7 @@
 #include <iostream>
 #include <vector>
-#include "chemreac.hpp"
-#include "cvodes_cxx.hpp"
+#include "chemreac/chemreac.hpp"
+#include "cvodes_anyode.hpp"
 #include "test_utils.h"
 
 using std::vector;
@@ -23,9 +23,9 @@ int test_integration(int N){
     double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
     vector<int> root_indices;
     vector<double> roots_output;
-    for (uint i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
-    cvodes_cxx::simple_predefined<ReactionDiffusion<double> >
-        (&rd, atol, rtol, (int)cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
+    for (int i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
+    cvodes_anyode::simple_predefined<ReactionDiffusion<double> >
+        (&rd, atol, rtol, cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
          root_indices, roots_output);
     for (unsigned int tidx=0; tidx<tout.size(); tidx++){
         std::cout << tout[tidx];

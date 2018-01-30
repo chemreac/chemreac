@@ -991,3 +991,13 @@ def test_from_ReactionSystem__g_values__units():
     assert len(rd.fields) == 1
     assert len(rd.fields[0]) == 1
     assert np.allclose(rd.fields[0][0], 998*0.15)
+
+
+def test_ReactionDiffusion__per_rxn_contrib_to_fi():
+    y0 = np.array([2.0, 3.0])
+    k = 5.0
+    # A -> B
+    rd = ReactionDiffusion(2, [[0]], [[1]], [k])
+    out = np.ones((1,))*99
+    rd.per_rxn_contrib_to_fi(0.0, y0, 0, out)
+    assert abs(out[0] - (-5.0*99))

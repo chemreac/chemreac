@@ -71,7 +71,10 @@ _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 if _WITH_DEBUG:
     warnings.warn("Building chemreac with debugging enabled.")
     options += ['debug']
-    flags = []
+    # LD_PRELOAD=/usr/lib/x86_64-linux-gnu/libasan.so.2
+    # ASAN_SYMBOLIZER_PATH=/usr/bin/llvm-symbolizer-3.8 ASAN_OPTIONS=symbolize=1
+    flags = ['-D_GLIBCXX_DEBUG']  # ['-fsanitize=address']
+    flags = '-static-libstdc++ -static-libasan -O -g -fsanitize=address -fno-omit-frame-pointer'.split()
 else:
     flags = ['-O3']
     if not (ON_DRONE or ON_TRAVIS):
@@ -176,6 +179,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
             logger=True,
         )
     ]
+    ext_modules_[0].extra_link_args = flags # + ['-Wc,-fsanitize=address']
 else:
     # Enbale pip to probe setup.py before all requirements are installed
     ext_modules_ = []

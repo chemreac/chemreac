@@ -3,7 +3,7 @@
 #include <numeric> // std::accumulate
 #include <algorithm> // min, max
 #include <cassert>
-#include "chemreac.hpp"
+#include "chemreac/chemreac.hpp"
 #include "test_utils.h"
 
 #ifdef _OPENMP
@@ -34,7 +34,7 @@ int test_rhs(){
     double f[12];
     rd.rhs(0.0, &y[0], f);
     int exit1 = 0;
-    for (uint i=0; i<12; ++i)
+    for (int i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-14){
             std::cout << i << " " << f[i] << " " << ref_f[i] << std::endl;
             exit1 = 1;
@@ -56,7 +56,7 @@ int test_jac(){
     double ref_jac[12*12];
     double dense_jac[12*12];
 
-    for (uint i=0; i<12*12; ++i){
+    for (int i=0; i<12*12; ++i){
         ref_jac[i] = 0.0;
         dense_jac[i] = 0.0;
     }
@@ -106,7 +106,7 @@ int test_jac(){
 
     rd.dense_jac_rmaj(0.0, &y[0], nullptr, dense_jac, 12);
     int exit2 = 0;
-    for (uint i=0; i<12*12; ++i)
+    for (int i=0; i<12*12; ++i)
 	if (dabs(dense_jac[i]-ref_jac[i]) > 1e-14){
             printf("i=%d, dense_jac[i]=%.3f, ref_jac[i]=%.3f\n", i, dense_jac[i], ref_jac[i]);
             exit2 = exit2 | 1;
@@ -114,12 +114,12 @@ int test_jac(){
 
     // Banded jacobian
     double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
-    for (uint i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
+    for (int i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
     rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac, (2*rd.n+1));
 #define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)
-	for (uint ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
+	for (int ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
 	    if (dabs(BND(ri,ci) - DNS(ri,ci)) > 1e-14){
 		std::cout << ri << " " << ci << " " << BND(ri,ci) << " " << DNS(ri,ci) << std::endl;
                 exit2 = exit2 | 2;
@@ -135,16 +135,16 @@ int test_jac(){
 #define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi + ci]
 #define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi + ci]
     // diagonal blocks
-    for (uint bi=0; bi<rd.N; ++bi)
-        for (uint ci=0; ci<rd.n; ++ci)
-            for (uint ri=0; ri<rd.n; ++ri)
+    for (int bi=0; bi<rd.N; ++bi)
+        for (int ci=0; ci<rd.n; ++ci)
+            for (int ri=0; ri<rd.n; ++ri)
                 if (dabs(CMPRS(bi, ri, ci) - DNS(bi*rd.n + ri, bi*rd.n + ci)) > 1e-14){
                     std::cout << "CMPRS: " << bi << " " << ci << " " << ri << " " <<
                         CMPRS(bi, ri, ci) << " " << DNS(bi*rd.n + ri, bi*rd.n + ci) << std::endl;
                     exit2 = exit2 | 4;
                 }
-    for (uint bi=0; bi<rd.N-1; ++bi)
-        for (uint ci=0; ci<rd.n; ++ci){
+    for (int bi=0; bi<rd.N-1; ++bi)
+        for (int ci=0; ci<rd.n; ++ci){
             // sub diagonal
             if (dabs(SUB(bi, ci) - DNS((bi+1)*rd.n + ci, bi*rd.n + ci)) > 1e-14){
                 std::cout << "SUB: " << bi << " " << ci << " " << SUB(bi, ci) << " " << DNS((bi+1)*rd.n + ci, bi*rd.n + ci) << std::endl;
@@ -250,16 +250,16 @@ void bench_rhs(){
 }
 
 ReactionDiffusion<double> _get_single_specie_system(int N, int z){
-    uint n = 1;
-    vector<vector<uint> > stoich_reac {};
-    vector<vector<uint> > stoich_actv {};
-    vector<vector<uint> > stoich_prod {};
+    int n = 1;
+    vector<vector<int> > stoich_reac {};
+    vector<vector<int> > stoich_actv {};
+    vector<vector<int> > stoich_prod {};
     vector<double> k {};
     vector<double> D {1.0};
     vector<int> z_chg {z};
     vector<double> mobility {1.0};
     vector<double> x;
-    vector<uint> v;
+    vector<int> v;
     int geom = 0;
     bool logy = false, logt = false, logx = false;
     int nstencil = (N == 1) ? 1 : 3;
@@ -277,7 +277,7 @@ int test_calc_efield(){
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
     rd.calc_efield(&y[0]);
     int fail = 0;
-    for (uint i=0; i<ref_efield.size(); ++i)
+    for (int i=0; i < static_cast<int>(ref_efield.size()); ++i)
 	if (dabs((rd.efield[i]-ref_efield[i])/ref_efield[i]) > 1e-10){
             std::cout << i << " " << rd.efield[i] << " " << ref_efield[i] << std::endl;
             fail = 1;
@@ -287,6 +287,7 @@ int test_calc_efield(){
     else
         return 0;
 }
+
 
 int main(){
     int status = 0;
