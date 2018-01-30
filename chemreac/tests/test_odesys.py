@@ -31,13 +31,18 @@ def _get_odesys():
 def test_decay():
     kA = 0.13
     odesys = _get_odesys()
+    # pyodesys compliance:
+    assert odesys.autonomous_interface
+    assert callable(odesys.numpy.linspace)
     y0 = dict(A=3., B=1., C=0.)
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
-    result = odesys.integrate(tout, y0, dict(kA=kA, kB=0.0))
+    params = dict(kA=kA, kB=0.0)
+    result = odesys.integrate(tout, y0, params)
     yref = np.array([y0['A']*np.exp(-kA*(tout-t0)),
                      y0['B']+y0['A']*(1-np.exp(-kA*(tout-t0)))]).transpose()
     assert np.allclose(result.yout[:, :2], yref)
+    result.extend_by_integration(tend+1, params)
 
 
 def test_decay_params():
@@ -82,6 +87,8 @@ def test_chained_parameter_variation():
         refb = b[0] + (t - t[0])*dr*a[0]
         assert np.allclose(refa, a)
         assert np.allclose(refb, b)
+    res.extend_by_integration(np.sum(durations)+1, dict(doserate=doserates[-1]), integrator='cvode')
+    assert abs(res.yout[-1, 1] - (refb[-1] + doserates[-1]*a[0])) < 1e-8
 
 
 def test_chained_parameter_variation_from_ReactionSystem():
