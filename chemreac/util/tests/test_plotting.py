@@ -10,10 +10,31 @@ from chemreac.util.plotting import (
     coloured_spy, plot_jacobian, plot_per_reaction_contribution,
     plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_fields,
     plot_solver_linear_error, plot_solver_linear_excess_error,
+    _get_per_rxn_out
 )
 from chemreac.util.testing import slow
 
 matplotlib.use('Agg')  # travis-ci has no DISPLAY env var.
+
+
+def test__get_per_rxn_out():
+    # A + B -> C
+    # C -> A + B
+    kf, kb = 0.9, 0.23
+    rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb])
+    specie_indices = [1, 2]
+    tout = np.linspace(0, .42, 4)
+    y0 = [3, 4, 5]
+    integr = run(rd, y0, tout)
+    spids = [0, 1, 2]
+    out = _get_per_rxn_out(rd, integr.tout, integr.yout, spids)
+    assert out.shape == (tout.size, len(spids), rd.nr)
+    a, b, c = [integr.yout[:, 0, i] for i in range(rd.n)]
+    rs = kf*a*b, kb*c
+    ref = np.empty_like(out)
+    for si, signs in enumerate([(-1, 1), (-1, 1), (1, -1)]):
+        ref[:, si, :] = np.array([s*r for s, r in zip(signs, rs)]).T
+    assert np.allclose(out, ref)
 
 
 def _get_decay_rd(N):

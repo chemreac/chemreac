@@ -876,6 +876,7 @@ ReactionDiffusion<Real_t>::per_rxn_contrib_to_fi(Real_t t, const Real_t * const 
     fill_local_r_(t, y, local_r);
     int ii = 0;
     for (int ri=0; ri<nr; ++ri){
+        out[ridxs[ri]] = 0;
         for (int jj=0; jj<n_net_affects[ri]; ++jj){
             const auto& stoich = idx_net_stoich[ii + jj];
             if (stoich.first == si){

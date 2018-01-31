@@ -6,7 +6,7 @@ chemreac
 .. image:: https://img.shields.io/pypi/v/chemreac.svg
    :target: https://pypi.python.org/pypi/chemreac
    :alt: PyPI version
-.. image:: https://img.shields.io/badge/python-2.7,3.4,3.5-blue.svg
+.. image:: https://img.shields.io/badge/python-2.7,3.5,3.6-blue.svg
    :target: https://www.python.org/
    :alt: Python version
 .. image:: https://zenodo.org/badge/8840/chemreac/chemreac.svg
@@ -78,10 +78,10 @@ Prerequisites
 ~~~~~~~~~~~~~
 Version numbers of dependencies indicate what has been tested:
 
-- C++ compiler with C++11 support (e.g. `GCC <https://gcc.gnu.org/>`_ >= 4.8)
+- C++ compiler with C++14 support (e.g. `GCC <https://gcc.gnu.org/>`_ >= 5.1)
 - LAPACK (provided by e.g. `OpenBLAS <http://www.openblas.net/>`_)
-- `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.6.2
-- Python (2.7 or >=3.4)
+- `Sundials <http://computation.llnl.gov/casc/sundials/main.html>`_ 2.7.0
+- Python (2.7 or >=3.5)
 
 In addition to the standard library provided by Python, a number of python
 packages are required (see `setup.py <./setup.py>`_), they are found on `PyPI

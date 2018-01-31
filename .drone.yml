@@ -13,7 +13,7 @@ build:
     - python2 -m pip install --ignore-installed --no-deps quantities==0.12.1  # https://github.com/python-quantities/python-quantities/issues/122
     - python3 -m pip install --ignore-installed --no-deps quantities==0.12.1
     - ./scripts/ci.sh chemreac
-    - (cd tests-native/; make -B CXX=clang++ EXTRA_COMPILE_ARGS="-fsanitize=address -O0 -g")
+    - (cd tests-native/; make -B CONTEXT="" CXX=clang++-5.0 EXTRA_COMPILE_ARGS="-fsanitize=address -O0 -g")
     - (cd tests-native/; make -B CXX=g++ EXTRA_COMPILE_ARGS="-DNDEBUG -O2")
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" PYTHON=python3 ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
