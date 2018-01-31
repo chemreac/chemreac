@@ -23,7 +23,7 @@ int test_integration(int N){
     double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
     vector<int> root_indices;
     vector<double> roots_output;
-    for (int i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
+    for (int i=0; i < static_cast<int>(tout.size())*ny; ++i) {yout[i]=0.0;}
     cvodes_anyode::simple_predefined<ReactionDiffusion<double> >
         (&rd, atol, rtol, cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
          root_indices, roots_output);

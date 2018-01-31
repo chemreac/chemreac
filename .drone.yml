@@ -9,12 +9,16 @@ build:
     - ASAN_OPTIONS=symbolize=1
     - PYCVODES_LAPACK=lapack,blas
     - MPLBACKEND=Agg
+    - LSAN_OPTIONS=verbosity=1:log_threads=1
   commands:
     - python2 -m pip install --ignore-installed --no-deps quantities==0.12.1  # https://github.com/python-quantities/python-quantities/issues/122
     - python3 -m pip install --ignore-installed --no-deps quantities==0.12.1
     - ./scripts/ci.sh chemreac
+    - curl -Ls https://github.com/bjodah/anyode/archive/99b518fb96d4a307eec9cdc914c7e9f5a336b213.tar.gz | tar xz
+    - mv anyode-99b5*/include/anyode chemreac/include/
+    - apt-get --quiet update && apt-get --quiet --assume-yes install libomp-dev
     - (cd tests-native/; make -B CONTEXT="" CXX=clang++-5.0 EXTRA_COMPILE_ARGS="-fsanitize=address -O0 -g")
-    - (cd tests-native/; make -B CXX=g++ EXTRA_COMPILE_ARGS="-DNDEBUG -O2")
+    - (cd tests-native/; make -B CXX=g++ EXTRA_COMPILE_ARGS="-O2")
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" PYTHON=python3 ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
     - ./scripts/generate_docs.sh

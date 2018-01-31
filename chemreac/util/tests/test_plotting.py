@@ -22,9 +22,8 @@ def test__get_per_rxn_out():
     # C -> A + B
     kf, kb = 0.9, 0.23
     rd = ReactionDiffusion(3, [[0, 1], [2]], [[2], [0, 1]], [kf, kb])
-    specie_indices = [1, 2]
     tout = np.linspace(0, .42, 4)
-    y0 = [3, 4, 5]
+    y0 = [3., 4., 5.]
     integr = run(rd, y0, tout)
     spids = [0, 1, 2]
     out = _get_per_rxn_out(rd, integr.tout, integr.yout, spids)
