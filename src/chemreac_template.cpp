@@ -13,7 +13,7 @@
 #include "chemreac/chemreac.hpp"
 
 #include <iostream> //DEBUG
-
+#include <numeric>
 
 #if defined(WITH_DATA_DUMPING)
 #include <cstdio>
@@ -46,7 +46,7 @@ using std::max;
 template <typename T>
 vector<int> indices_from_sort(const vector<T> v){
     vector<int> indices(v.size());
-    iota(indices.begin(), indices.end(), 0);
+    std::iota(indices.begin(), indices.end(), 0);
     sort(indices.begin(), indices.end(), [&v](size_t i1, size_t i2){ return v[i1].size() < v[i2].size(); });
     return indices;
 }
