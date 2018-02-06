@@ -1,3 +1,8 @@
+v0.7.4
+======
+- New attr for ReactionDiffusion: param_names
+- New (provisional) module: ``chemreac._odesys``.
+
 v0.7.3
 ======
 - Use pycvodes-0.9.0 (ABI change)
