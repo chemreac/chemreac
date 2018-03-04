@@ -121,6 +121,10 @@ def test_chained_parameter_variation_from_ReactionSystem():
     ic = defaultdict(lambda: 0*M, {'H2O': 55.4*M, 'H+': 1e-7*M, 'OH-': 1e-7*M, 'N2O': 20e-3*M})
 
     result = odesys.chained_parameter_variation(durations, ic, {'doserate': doserates}, npoints=npoints)
+    ref_xout_s = [0]
+    for dur in map(lambda dur: to_unitless(dur, u.s), durations):
+        ref_xout_s += list(np.linspace(ref_xout_s[-1], ref_xout_s[-1] + dur, npoints+1)[1:])
+    assert allclose(result.xout, ref_xout_s*u.s)
 
     N2_M = to_unitless(result.named_dep('N2'), u.M)
     H2O2_M = to_unitless(result.named_dep('H2O2'), u.M)
