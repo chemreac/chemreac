@@ -1,3 +1,8 @@
+v0.7.5
+======
+- AnyODE v12
+- chemreac._odesys.ODESys now accepts atol in the form of a dict
+
 v0.7.4
 ======
 - New attr for ReactionDiffusion: param_names

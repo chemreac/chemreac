@@ -101,7 +101,6 @@ def main(plot=False, savefig='None', geoms='fcs', nNs=7, Ns=None,
 if __name__ == '__main__':
     try:
         import argh
-        argh.dispatch_command(main)
     except ImportError:
         import sys
         if len(sys.argv) > 1:
@@ -109,3 +108,5 @@ if __name__ == '__main__':
                   "Run 'pip install --user argh' to fix.", file=sys.stderr)
             sys.exit(os.EX_USAGE)  # non-ok exit
         main()
+    else:
+        argh.dispatch_command(main)
