@@ -1,0 +1,326 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Aqueous radiolysis &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="chemreac 0.8.0.dev0+git documentation" href="../index.html"/>
+        <link rel="up" title="Examples" href="index.html"/>
+        <link rel="next" title="Automatic electric field computation" href="auto_efield.html"/>
+        <link rel="prev" title="Analytic error scaling vs. number of bins" href="analytic_N_scaling.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="analytic_diffusion.html">Analytic diffusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analytic_N_scaling.html">Analytic error scaling vs. number of bins</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Aqueous radiolysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="auto_efield.html">Automatic electric field computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="const_surf_conc.html">Diffusion from constant concentration surface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decay.html">Two coupled decays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="equilibrium.html">Equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="four_species.html">Four species two reactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steady_state_approx.html">Steady state approximation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">chemreac</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Examples</a> &raquo;</li>
+        
+      <li>Aqueous radiolysis</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/examples/aqueous_radiolysis.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-aqueous_radiolysis"></span><div class="section" id="aqueous-radiolysis">
+<h1>Aqueous radiolysis<a class="headerlink" href="#aqueous-radiolysis" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference download internal" href="../_downloads/aqueous_radiolysis.py" download=""><code class="xref download docutils literal notranslate"><span class="pre">examples/aqueous_radiolysis.py</span></code></a> is an example of a rather large
+system of reactions.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --help
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>usage: aqueous_radiolysis.py [-h] [--t0 T0] [--tend TEND] [--x0 X0]
+                             [--xend XEND] [-d DOSERATE] [-N N] [--nt NT]
+                             [--nstencil NSTENCIL] [--logy] [--logt] [--logx]
+                             [--name NAME] [--integrator INTEGRATOR]
+                             [--iter-type ITER_TYPE]
+                             [--linear-solver LINEAR_SOLVER]
+                             [--ilu-limit ILU_LIMIT] [-f FIRST_STEP]
+                             [--n-jac-diags N_JAC_DIAGS] [-e EPS_LIN]
+                             [--num-jacobian] [-s SAVEFIG] [-v] [--plot]
+                             [--plot-jacobians] [--profile-yep] [-u]
+
+    Integrates the reaction system defined by
+    :download:`aqueous_radiolysis.json &lt;examples/aqueous_radiolysis.json&gt;`
+
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --t0 T0               1e-07
+  --tend TEND           0.1
+  --x0 X0               1e-09
+  --xend XEND           0.1
+  -d DOSERATE, --doserate DOSERATE
+                        15.0
+  -N N, --N N           1000
+  --nt NT               512
+  --nstencil NSTENCIL   0
+  --logy                False
+  --logt                False
+  --logx                False
+  --name NAME           &#39;aqueous_radiolysis&#39;
+  --integrator INTEGRATOR
+                        &#39;scipy&#39;
+  --iter-type ITER_TYPE
+                        &#39;undecided&#39;
+  --linear-solver LINEAR_SOLVER
+                        &#39;default&#39;
+  --ilu-limit ILU_LIMIT
+                        1000.0
+  -f FIRST_STEP, --first-step FIRST_STEP
+                        0.0
+  --n-jac-diags N_JAC_DIAGS
+                        0
+  -e EPS_LIN, --eps-lin EPS_LIN
+                        0.0
+  --num-jacobian        False
+  -s SAVEFIG, --savefig SAVEFIG
+                        &#39;None&#39;
+  -v, --verbose         False
+  --plot                False
+  --plot-jacobians      False
+  --profile-yep         False
+  -u, --use-log2        False
+</pre></div>
+</div>
+<p>Here is an example generated by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --doserate 25 --plot     --savefig analytic_diffusion.png
+</pre></div>
+</div>
+<img alt="../_images/aqueous_radiolysis.png" src="../_images/aqueous_radiolysis.png" />
+<dl class="function">
+<dt id="aqueous_radiolysis.integrate_rd">
+<code class="descclassname">aqueous_radiolysis.</code><code class="descname">integrate_rd</code><span class="sig-paren">(</span><em>t0=1e-07</em>, <em>tend=0.1</em>, <em>x0=1e-09</em>, <em>xend=0.1</em>, <em>doserate=15.0</em>, <em>N=1000</em>, <em>nt=512</em>, <em>nstencil=0</em>, <em>logy=False</em>, <em>logt=False</em>, <em>logx=False</em>, <em>name='aqueous_radiolysis'</em>, <em>integrator='scipy'</em>, <em>iter_type='undecided'</em>, <em>linear_solver='default'</em>, <em>ilu_limit=1000.0</em>, <em>first_step=0.0</em>, <em>n_jac_diags=0</em>, <em>eps_lin=0.0</em>, <em>num_jacobian=False</em>, <em>savefig='None'</em>, <em>verbose=False</em>, <em>plot=False</em>, <em>plot_jacobians=False</em>, <em>profile_yep=False</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/aqueous_radiolysis.html#integrate_rd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#aqueous_radiolysis.integrate_rd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Integrates the reaction system defined by
+<a class="reference download internal" href="../_downloads/aqueous_radiolysis.json" download=""><code class="xref download docutils literal notranslate"><span class="pre">aqueous_radiolysis.json</span></code></a></p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="auto_efield.html" class="btn btn-neutral float-right" title="Automatic electric field computation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="analytic_N_scaling.html" class="btn btn-neutral" title="Analytic error scaling vs. number of bins" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2016, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8.0.dev0+git',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

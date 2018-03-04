@@ -1,0 +1,343 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Automatic electric field computation &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../genindex.html"/>
+        <link rel="search" title="Search" href="../search.html"/>
+    <link rel="top" title="chemreac 0.8.0.dev0+git documentation" href="../index.html"/>
+        <link rel="up" title="Examples" href="index.html"/>
+        <link rel="next" title="Diffusion from constant concentration surface" href="const_surf_conc.html"/>
+        <link rel="prev" title="Aqueous radiolysis" href="aqueous_radiolysis.html"/> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="analytic_diffusion.html">Analytic diffusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analytic_N_scaling.html">Analytic error scaling vs. number of bins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aqueous_radiolysis.html">Aqueous radiolysis</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Automatic electric field computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="const_surf_conc.html">Diffusion from constant concentration surface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decay.html">Two coupled decays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="equilibrium.html">Equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="four_species.html">Four species two reactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steady_state_approx.html">Steady state approximation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">chemreac</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Examples</a> &raquo;</li>
+        
+      <li>Automatic electric field computation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/examples/auto_efield.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-auto_efield"></span><div class="section" id="automatic-electric-field-computation">
+<h1>Automatic electric field computation<a class="headerlink" href="#automatic-electric-field-computation" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference download internal" href="../_downloads/auto_efield.py" download=""><code class="xref download docutils literal notranslate"><span class="pre">examples/auto_efield.py</span></code></a> demonstrates how
+drift can be added self-consistently by calculating the
+electric field generated from the concentration profile
+of charged species.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python auto_efield.py --help
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">auto_efield</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">D</span> <span class="n">D</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t0</span> <span class="n">T0</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">tend</span> <span class="n">TEND</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">x0</span> <span class="n">X0</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">--</span><span class="n">xend</span> <span class="n">XEND</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">b</span> <span class="n">BASE</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">o</span> <span class="n">OFFSET</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nt</span> <span class="n">NT</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">GEOM</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">logt</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">logy</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">logx</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">random</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">--</span><span class="n">nstencil</span> <span class="n">NSTENCIL</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">lrefl</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rrefl</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">jacobian</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">m</span> <span class="n">METHOD</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">p</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">savefig</span> <span class="n">SAVEFIG</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">-</span><span class="n">a</span> <span class="n">ATOL</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rtol</span> <span class="n">RTOL</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">random</span><span class="o">-</span><span class="n">seed</span> <span class="n">RANDOM_SEED</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">--</span><span class="n">surf</span><span class="o">-</span><span class="n">chg</span> <span class="n">SURF_CHG</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">sigma</span><span class="o">-</span><span class="n">q</span> <span class="n">SIGMA_Q</span><span class="p">]</span>
+                      <span class="p">[</span><span class="o">--</span><span class="n">sigma</span><span class="o">-</span><span class="n">skew</span> <span class="n">SIGMA_SKEW</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">v</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">e</span> <span class="n">EPS_REL</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">u</span><span class="p">]</span>
+
+    <span class="n">A</span> <span class="n">negative</span> <span class="n">D</span> <span class="p">(</span><span class="n">diffusion</span> <span class="n">coefficent</span><span class="p">)</span> <span class="n">denotes</span><span class="p">:</span>
+        <span class="n">mobility</span> <span class="p">:</span><span class="o">=</span> <span class="o">-</span><span class="n">D</span>
+        <span class="n">D</span> <span class="p">:</span><span class="o">=</span> <span class="mi">0</span>
+    <span class="n">A</span> <span class="n">positive</span> <span class="n">D</span> <span class="n">calculates</span> <span class="n">mobility</span> <span class="kn">from</span> <span class="nn">Einstein</span><span class="o">-</span><span class="n">Smoluchowski</span> <span class="n">relation</span>
+
+
+
+<span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">-</span><span class="n">D</span> <span class="n">D</span><span class="p">,</span> <span class="o">--</span><span class="n">D</span> <span class="n">D</span>           <span class="o">-</span><span class="mf">0.3</span>
+  <span class="o">--</span><span class="n">t0</span> <span class="n">T0</span>               <span class="mf">0.0</span>
+  <span class="o">--</span><span class="n">tend</span> <span class="n">TEND</span>           <span class="mf">7.0</span>
+  <span class="o">--</span><span class="n">x0</span> <span class="n">X0</span>               <span class="mf">0.1</span>
+  <span class="o">--</span><span class="n">xend</span> <span class="n">XEND</span>           <span class="mf">1.0</span>
+  <span class="o">-</span><span class="n">N</span> <span class="n">N</span><span class="p">,</span> <span class="o">--</span><span class="n">N</span> <span class="n">N</span>           <span class="mi">1024</span>
+  <span class="o">-</span><span class="n">b</span> <span class="n">BASE</span><span class="p">,</span> <span class="o">--</span><span class="n">base</span> <span class="n">BASE</span>  <span class="mf">0.5</span>
+  <span class="o">-</span><span class="n">o</span> <span class="n">OFFSET</span><span class="p">,</span> <span class="o">--</span><span class="n">offset</span> <span class="n">OFFSET</span>
+                        <span class="mf">0.25</span>
+  <span class="o">--</span><span class="n">nt</span> <span class="n">NT</span>               <span class="mi">25</span>
+  <span class="o">-</span><span class="n">g</span> <span class="n">GEOM</span><span class="p">,</span> <span class="o">--</span><span class="n">geom</span> <span class="n">GEOM</span>  <span class="s1">&#39;f&#39;</span>
+  <span class="o">--</span><span class="n">logt</span>                <span class="kc">False</span>
+  <span class="o">--</span><span class="n">logy</span>                <span class="kc">False</span>
+  <span class="o">--</span><span class="n">logx</span>                <span class="kc">False</span>
+  <span class="o">--</span><span class="n">random</span>              <span class="kc">False</span>
+  <span class="o">--</span><span class="n">nstencil</span> <span class="n">NSTENCIL</span>   <span class="mi">3</span>
+  <span class="o">--</span><span class="n">lrefl</span>               <span class="kc">False</span>
+  <span class="o">--</span><span class="n">rrefl</span>               <span class="kc">False</span>
+  <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">jacobian</span>        <span class="kc">False</span>
+  <span class="o">-</span><span class="n">m</span> <span class="n">METHOD</span><span class="p">,</span> <span class="o">--</span><span class="n">method</span> <span class="n">METHOD</span>
+                        <span class="s1">&#39;bdf&#39;</span>
+  <span class="o">-</span><span class="n">p</span><span class="p">,</span> <span class="o">--</span><span class="n">plot</span>            <span class="kc">False</span>
+  <span class="o">--</span><span class="n">savefig</span> <span class="n">SAVEFIG</span>     <span class="s1">&#39;None&#39;</span>
+  <span class="o">-</span><span class="n">a</span> <span class="n">ATOL</span><span class="p">,</span> <span class="o">--</span><span class="n">atol</span> <span class="n">ATOL</span>  <span class="mf">1e-06</span>
+  <span class="o">--</span><span class="n">rtol</span> <span class="n">RTOL</span>           <span class="mf">1e-06</span>
+  <span class="o">--</span><span class="n">random</span><span class="o">-</span><span class="n">seed</span> <span class="n">RANDOM_SEED</span>
+                        <span class="mi">42</span>
+  <span class="o">--</span><span class="n">surf</span><span class="o">-</span><span class="n">chg</span> <span class="n">SURF_CHG</span>   <span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+  <span class="o">--</span><span class="n">sigma</span><span class="o">-</span><span class="n">q</span> <span class="n">SIGMA_Q</span>     <span class="mi">101</span>
+  <span class="o">--</span><span class="n">sigma</span><span class="o">-</span><span class="n">skew</span> <span class="n">SIGMA_SKEW</span>
+                        <span class="mf">0.5</span>
+  <span class="o">-</span><span class="n">v</span><span class="p">,</span> <span class="o">--</span><span class="n">verbose</span>         <span class="kc">False</span>
+  <span class="o">-</span><span class="n">e</span> <span class="n">EPS_REL</span><span class="p">,</span> <span class="o">--</span><span class="n">eps</span><span class="o">-</span><span class="n">rel</span> <span class="n">EPS_REL</span>
+                        <span class="mf">80.1</span>
+  <span class="o">-</span><span class="n">u</span><span class="p">,</span> <span class="o">--</span><span class="n">use</span><span class="o">-</span><span class="n">log2</span>        <span class="kc">False</span>
+</pre></div>
+</div>
+<p>Here is an example generated by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python auto_efield.py --plot --savefig auto_efield.png
+</pre></div>
+</div>
+<img alt="../_images/auto_efield.png" src="../_images/auto_efield.png" />
+<dl class="function">
+<dt id="auto_efield.integrate_rd">
+<code class="descclassname">auto_efield.</code><code class="descname">integrate_rd</code><span class="sig-paren">(</span><em>D=-0.3</em>, <em>t0=0.0</em>, <em>tend=7.0</em>, <em>x0=0.1</em>, <em>xend=1.0</em>, <em>N=1024</em>, <em>base=0.5</em>, <em>offset=0.25</em>, <em>nt=25</em>, <em>geom='f'</em>, <em>logt=False</em>, <em>logy=False</em>, <em>logx=False</em>, <em>random=False</em>, <em>nstencil=3</em>, <em>lrefl=False</em>, <em>rrefl=False</em>, <em>num_jacobian=False</em>, <em>method='bdf'</em>, <em>plot=False</em>, <em>savefig='None'</em>, <em>atol=1e-06</em>, <em>rtol=1e-06</em>, <em>random_seed=42</em>, <em>surf_chg=(0.0</em>, <em>0.0)</em>, <em>sigma_q=101</em>, <em>sigma_skew=0.5</em>, <em>verbose=False</em>, <em>eps_rel=80.1</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/auto_efield.html#integrate_rd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#auto_efield.integrate_rd" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="docutils">
+<dt>A negative D (diffusion coefficent) denotes:</dt>
+<dd>mobility := -D
+D := 0</dd>
+</dl>
+<p>A positive D calculates mobility from Einstein-Smoluchowski relation</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="auto_efield.pair_of_gaussians">
+<code class="descclassname">auto_efield.</code><code class="descname">pair_of_gaussians</code><span class="sig-paren">(</span><em>x</em>, <em>offsets</em>, <em>sigma</em>, <em>logy</em>, <em>logx</em>, <em>geom</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/auto_efield.html#pair_of_gaussians"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#auto_efield.pair_of_gaussians" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="auto_efield.sigm">
+<code class="descclassname">auto_efield.</code><code class="descname">sigm</code><span class="sig-paren">(</span><em>x</em>, <em>lim=150.0</em>, <em>n=8</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/auto_efield.html#sigm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#auto_efield.sigm" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="const_surf_conc.html" class="btn btn-neutral float-right" title="Diffusion from constant concentration surface" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="aqueous_radiolysis.html" class="btn btn-neutral" title="Aqueous radiolysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2016, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8.0.dev0+git',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

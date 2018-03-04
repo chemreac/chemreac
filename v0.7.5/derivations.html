@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Derivations &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="genindex.html"/>
+        <link rel="search" title="Search" href="search.html"/>
+    <link rel="top" title="chemreac 0.8.0.dev0+git documentation" href="index.html"/>
+        <link rel="next" title="Modules Reference" href="modules.html"/>
+        <link rel="prev" title="Installation" href="install.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Derivations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#law-of-mass-action">Law of mass action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#diffusion-equation">Diffusion equation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#laplace-operator">Laplace operator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#jacobian-elements">Jacobian elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#boundary-conditions">Boundary conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#finite-difference-scheme">Finite difference scheme</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">chemreac</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Derivations</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/derivations.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="derivations">
+<h1>Derivations<a class="headerlink" href="#derivations" title="Permalink to this headline">¶</a></h1>
+<p>Explicit formulae have been derived for the Smoluchowski equation
+in isotropic media for different geometries and for its logarithmically
+transformed version (concentration, time, space).</p>
+<div class="section" id="law-of-mass-action">
+<h2>Law of mass action<a class="headerlink" href="#law-of-mass-action" title="Permalink to this headline">¶</a></h2>
+<p>The well established law of mass action give the rate of change of a
+concentration <span class="math notranslate">\(c_i\)</span> of species <span class="math notranslate">\(i\)</span>:</p>
+<div class="math notranslate">
+\[\frac{\partial c_i}{\partial t} = \sum_l r_l S_{il}\]</div>
+<p><span class="math notranslate">\(t\)</span> is time, <span class="math notranslate">\(c_i\)</span> is the concentration of species
+<span class="math notranslate">\(i\)</span>, <span class="math notranslate">\(S_{il}\)</span> is the net stoichiometric coefficient
+of species <span class="math notranslate">\(i\)</span> in reaction <span class="math notranslate">\(l\)</span> and <span class="math notranslate">\(r_l\)</span>
+is the rate of reaction <span class="math notranslate">\(l\)</span>, which for a mass-action
+type of rate law is given by:</p>
+<div class="math notranslate">
+\[\begin{split}r_l = \begin{cases} \kappa_l\prod_k c_k^{R_{kl}} &amp;\mbox{if } \sum_k R_{kl} &gt; 0 \\
+0 &amp;\mbox{otherwise} \end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate">\(\kappa_l\)</span> is the rate constant, <span class="math notranslate">\(R_{kl}\)</span> is the
+stoichiometric coefficient of species <span class="math notranslate">\(k\)</span> on the reactant side.</p>
+<p>If we introduce the logarithmically transormed concentration <span class="math notranslate">\(z\)</span>:</p>
+<div class="math notranslate">
+\[z_i &amp;= \log(c_i)\]</div>
+<p>we have:</p>
+<div class="math notranslate">
+\[\frac{\partial z_i}{\partial t} &amp;= \frac{\frac{\partial c_i}{\partial t}}{c_i}\]</div>
+<p>which can be expressed in <span class="math notranslate">\(z_i\)</span>:</p>
+<div class="math notranslate">
+\[\frac{\partial z_i}{\partial t} &amp;= e^{-z_i} \sum_l r_l S_{il}\]</div>
+<p>where we may now express <span class="math notranslate">\(r_l\)</span> as:</p>
+<div class="math notranslate">
+\[\begin{split}r_l = \begin{cases} \kappa_l e^{\sum_k R_{kl} z_k} &amp;\mbox{if } \sum_k R_{kl} &gt; 0 \\
+    0 &amp;\mbox{otherwise} \end{cases}\end{split}\]</div>
+</div>
+<div class="section" id="diffusion-equation">
+<h2>Diffusion equation<a class="headerlink" href="#diffusion-equation" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="laplace-operator">
+<h2>Laplace operator<a class="headerlink" href="#laplace-operator" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="jacobian-elements">
+<h2>Jacobian elements<a class="headerlink" href="#jacobian-elements" title="Permalink to this headline">¶</a></h2>
+</div>
+<div class="section" id="boundary-conditions">
+<h2>Boundary conditions<a class="headerlink" href="#boundary-conditions" title="Permalink to this headline">¶</a></h2>
+<p>Two types of boundary reflections are supported (both of Robin type): reflective and
+interpolating. Depending on the situation the user may want to combine these, e.g.
+using a reflective boundary condition close to a particle surface and interpolating
+BC on the other end to simulate an infinite volume.</p>
+</div>
+<div class="section" id="finite-difference-scheme">
+<h2>Finite difference scheme<a class="headerlink" href="#finite-difference-scheme" title="Permalink to this headline">¶</a></h2>
+<p>The finite difference scheme employed is that of Fornberg, which allows us to
+genereate finite difference weights for an arbitrarily spaced grid. This is
+useful for optimizing the grid spacing by using a finer spacing close to e.g.
+reactive surfaces.</p>
+</div>
+</div>
+
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="modules.html" class="btn btn-neutral float-right" title="Modules Reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="install.html" class="btn btn-neutral" title="Installation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2016, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8.0.dev0+git',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>

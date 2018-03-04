@@ -1,0 +1,1019 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>chemreac.util.plotting &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+        <link rel="index" title="Index"
+              href="../../../genindex.html"/>
+        <link rel="search" title="Search" href="../../../search.html"/>
+    <link rel="top" title="chemreac 0.8.0.dev0+git documentation" href="../../../index.html"/>
+        <link rel="up" title="Module code" href="../../index.html"/> 
+
+  
+  <script src="../../../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../modules.html">Modules Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">chemreac</a>
+        
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+      <li>chemreac.util.plotting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/_modules/chemreac/util/plotting.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for chemreac.util.plotting</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">chemreac.util.plotting</span>
+<span class="sd">----------------------</span>
+
+<span class="sd">This module collects convenience functions to create matplotlib plots</span>
+<span class="sd">of results.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">math</span> <span class="k">import</span> <span class="n">floor</span><span class="p">,</span> <span class="n">ceil</span><span class="p">,</span> <span class="n">log</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">chemreac.chemistry</span> <span class="k">import</span> <span class="n">mk_sn_dict_from_names</span>
+<span class="kn">from</span> <span class="nn">chemreac.units</span> <span class="k">import</span> <span class="n">get_derived_unit</span><span class="p">,</span> <span class="n">to_unitless</span>
+<span class="kn">from</span> <span class="nn">chemreac.util.analysis</span> <span class="k">import</span> <span class="n">solver_linear_error_from_integration</span>
+<span class="kn">from</span> <span class="nn">chemreac.util.banded</span> <span class="k">import</span> <span class="n">get_jac_row_from_banded</span>
+<span class="kn">from</span> <span class="nn">chemreac.util.pyutil</span> <span class="k">import</span> <span class="n">set_dict_defaults_inplace</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+
+<span class="k">def</span> <span class="nf">_init_axes</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="s1">&#39;plot&#39;</span><span class="p">):</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">axes</span><span class="p">(</span><span class="o">**</span><span class="n">ax</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<div class="viewcode-block" id="save_and_or_show_plot"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.save_and_or_show_plot">[docs]</a><span class="k">def</span> <span class="nf">save_and_or_show_plot</span><span class="p">(</span><span class="n">show</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; Save and/or show current matplotlib figure</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    show: bool or None</span>
+<span class="sd">        Show plot, when None only show when savefig is not used</span>
+<span class="sd">        default: None</span>
+<span class="sd">    savefig: string</span>
+<span class="sd">        path to output file of figure. If extension is html, mpld3</span>
+<span class="sd">        will be used to generate a d3 backed html output.</span>
+<span class="sd">    \*\*kwargs:</span>
+<span class="sd">        keyword arguments passed on to ``matplotlib.pyplot.savefig``</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">savefig</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">savefig</span> <span class="o">!=</span> <span class="s1">&#39;None&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">savefig</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.html&#39;</span><span class="p">):</span>
+            <span class="c1"># Export using mpld3</span>
+            <span class="kn">import</span> <span class="nn">mpld3</span>
+            <span class="nb">open</span><span class="p">(</span><span class="n">savefig</span><span class="p">,</span> <span class="s1">&#39;wt&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">mpld3</span><span class="o">.</span><span class="n">fig_to_html</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gcf</span><span class="p">()))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="n">savefig</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">show</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">show</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">show</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">show</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">if</span> <span class="n">show</span><span class="p">:</span></div>
+        <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+
+<span class="c1"># if True:</span>
+<span class="c1">#     SymLogNorm if np.any(A&lt;0) else LogNorm</span>
+<span class="c1"># if isinstance(log, int):</span>
+<span class="c1">#     SymLogNorm(10**log)</span>
+<span class="c1"># note: &quot;norm&quot; in kwargs overrides this.</span>
+
+<div class="viewcode-block" id="coloured_spy"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.coloured_spy">[docs]</a><span class="k">def</span> <span class="nf">coloured_spy</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">cmap_name</span><span class="o">=</span><span class="s1">&#39;coolwarm&#39;</span><span class="p">,</span> <span class="n">log</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                 <span class="n">symmetric_colorbar</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience function for using matplotlib to</span>
+<span class="sd">    generate a spy plot for inspecting e.g. a jacobian</span>
+<span class="sd">    matrix or its LU decomposition.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    A: 2D array</span>
+<span class="sd">        Array to inspect, populated e.g. by jacobian callback.</span>
+<span class="sd">    cmap_name: string (default: coolwarm)</span>
+<span class="sd">        name of matplotlib colormap to use, kwargs[&quot;cmap&quot;] overrides this.</span>
+<span class="sd">    log: bool or int</span>
+<span class="sd">        when True: LogNorm/SymLogNorm is used,</span>
+<span class="sd">        when integer: SymlogNorm(10**log). Note that &quot;norm&quot; in kwargs</span>
+<span class="sd">        override this.</span>
+<span class="sd">    symmetric_colorbar: bool or float</span>
+<span class="sd">        to make divergent colormaps pass through zero as intended.</span>
+<span class="sd">        if float: max abolute value of colormap (linear)</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Pair (tuple) of axes plotted to (spy, colorbar)</span>
+
+<span class="sd">    .. note:: colorbar does not play nicely with</span>
+<span class="sd">            SymLogNorm why a custom colorbar axes is drawn.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.ticker</span> <span class="k">import</span> <span class="n">MaxNLocator</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.cm</span> <span class="k">import</span> <span class="n">get_cmap</span>
+    <span class="kn">from</span> <span class="nn">matplotlib.colors</span> <span class="k">import</span> <span class="n">LogNorm</span><span class="p">,</span> <span class="n">SymLogNorm</span>
+    <span class="kn">from</span> <span class="nn">mpl_toolkits.axes_grid</span> <span class="k">import</span> <span class="n">make_axes_locatable</span>
+
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">A</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;cmap&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;cmap&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">get_cmap</span><span class="p">(</span><span class="n">cmap_name</span><span class="p">)</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">ax_imshow</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">log</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span> <span class="ow">and</span> <span class="s1">&#39;norm&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">symmetric_colorbar</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">))</span> <span class="ow">and</span>
+           <span class="n">symmetric_colorbar</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">):</span>
+            <span class="n">Amin</span> <span class="o">=</span> <span class="o">-</span><span class="n">symmetric_colorbar</span>
+            <span class="n">Amax</span> <span class="o">=</span> <span class="n">symmetric_colorbar</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">Amin</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">A</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)])</span>
+            <span class="n">Amax</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">A</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">A</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)])</span>
+
+        <span class="k">if</span> <span class="n">symmetric_colorbar</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">Amin</span> <span class="o">=</span> <span class="o">-</span><span class="nb">max</span><span class="p">(</span><span class="o">-</span><span class="n">Amin</span><span class="p">,</span> <span class="n">Amax</span><span class="p">)</span>
+            <span class="n">Amax</span> <span class="o">=</span> <span class="o">-</span><span class="n">Amin</span>
+
+        <span class="k">if</span> <span class="n">log</span> <span class="ow">is</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">A</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="n">log</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Amax</span><span class="p">)</span> <span class="o">-</span> <span class="mi">13</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">minlog</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Amin</span><span class="p">)))</span>
+                <span class="n">maxlog</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Amax</span><span class="p">)))</span>
+                <span class="n">tick_locations</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="o">**</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">minlog</span><span class="p">,</span> <span class="n">maxlog</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span>
+                <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;norm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">LogNorm</span><span class="p">()</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">log</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">tick_locations</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">if</span> <span class="n">Amin</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">minlog</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="o">-</span><span class="n">Amin</span><span class="p">)))</span>
+                <span class="n">tick_locations</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="o">-</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+                    <span class="n">minlog</span><span class="p">,</span> <span class="n">log</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)])</span>
+                <span class="n">tick_locations</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tick_locations</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+                <span class="n">minlog</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">floor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Amin</span><span class="p">)))</span>
+                <span class="n">tick_locations</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">10</span><span class="o">**</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">minlog</span><span class="p">,</span> <span class="n">log</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+
+            <span class="k">if</span> <span class="n">Amax</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">pass</span>  <span class="c1"># Ticks already reach 0</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">maxlog</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">ceil</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Amax</span><span class="p">)))</span>
+                <span class="n">tick_locations</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="mi">10</span><span class="o">**</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">log</span><span class="p">,</span> <span class="n">maxlog</span><span class="o">+</span><span class="mi">1</span><span class="p">)])</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;norm&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SymLogNorm</span><span class="p">(</span><span class="mi">10</span><span class="o">**</span><span class="n">log</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;log kwarg not understood: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">log</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">tick_locations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">A</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">A</span><span class="p">),</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="n">ax_imshow</span><span class="o">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">A</span><span class="p">,</span> <span class="n">interpolation</span><span class="o">=</span><span class="s1">&#39;none&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">ya</span> <span class="o">=</span> <span class="n">ax_imshow</span><span class="o">.</span><span class="n">get_yaxis</span><span class="p">()</span>
+    <span class="n">ya</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">integer</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">xa</span> <span class="o">=</span> <span class="n">ax_imshow</span><span class="o">.</span><span class="n">get_xaxis</span><span class="p">()</span>
+    <span class="n">xa</span><span class="o">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">MaxNLocator</span><span class="p">(</span><span class="n">integer</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+
+    <span class="n">divider</span> <span class="o">=</span> <span class="n">make_axes_locatable</span><span class="p">(</span><span class="n">ax_imshow</span><span class="p">)</span>
+    <span class="n">ax_colorbar</span> <span class="o">=</span> <span class="n">divider</span><span class="o">.</span><span class="n">append_axes</span><span class="p">(</span><span class="s2">&quot;right&quot;</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="s2">&quot;5%&quot;</span><span class="p">,</span> <span class="n">pad</span><span class="o">=</span><span class="mf">0.05</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">colorbar</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log10threshy</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">norm</span><span class="p">,</span> <span class="p">(</span><span class="n">LogNorm</span><span class="p">,</span> <span class="n">SymLogNorm</span><span class="p">)):</span>
+            <span class="n">levels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">ticks</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">],</span> <span class="mi">9</span><span class="p">,</span> <span class="n">endpoint</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span>
+                <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="p">]</span><span class="o">+</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">ticks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]])])</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">levels</span> <span class="o">=</span> <span class="n">ticks</span>
+        <span class="n">xc</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">levels</span><span class="p">)]</span>
+        <span class="n">yc</span> <span class="o">=</span> <span class="p">[</span><span class="n">levels</span><span class="p">,</span> <span class="n">levels</span><span class="p">]</span>
+        <span class="n">ax_colorbar</span><span class="o">.</span><span class="n">contourf</span><span class="p">(</span><span class="n">xc</span><span class="p">,</span> <span class="n">yc</span><span class="p">,</span> <span class="n">yc</span><span class="p">,</span> <span class="n">levels</span><span class="o">=</span><span class="n">levels</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">norm</span><span class="p">,</span>
+                             <span class="n">cmap</span><span class="o">=</span><span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;cmap&#39;</span><span class="p">])</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">norm</span><span class="p">,</span> <span class="n">LogNorm</span><span class="p">):</span>
+            <span class="n">ax_colorbar</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">norm</span><span class="p">,</span> <span class="n">SymLogNorm</span><span class="p">):</span>
+            <span class="n">ax_colorbar</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;symlog&#39;</span><span class="p">,</span> <span class="n">linthreshy</span><span class="o">=</span><span class="mi">10</span><span class="o">**</span><span class="n">log</span><span class="p">)</span>
+        <span class="n">ax_colorbar</span><span class="o">.</span><span class="n">yaxis</span><span class="o">.</span><span class="n">tick_right</span><span class="p">()</span>
+        <span class="n">ax_colorbar</span><span class="o">.</span><span class="n">set_xticks</span><span class="p">([])</span>
+        <span class="n">ax_colorbar</span><span class="o">.</span><span class="n">set_yticks</span><span class="p">(</span><span class="n">ticks</span><span class="p">)</span>
+
+    <span class="n">colorbar</span><span class="p">(</span><span class="n">ticks</span><span class="o">=</span><span class="n">tick_locations</span><span class="p">,</span> <span class="n">norm</span><span class="o">=</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;norm&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span></div>
+    <span class="k">return</span> <span class="n">ax_imshow</span><span class="p">,</span> <span class="n">ax_colorbar</span>
+
+
+<span class="k">def</span> <span class="nf">_get_jac_row_over_t</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">bi</span><span class="o">=</span><span class="mi">0</span><span class="p">):</span>
+    <span class="c1"># Note that you really need yout - not Cout</span>
+    <span class="n">Jout</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="o">*</span><span class="mi">2</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="o">*</span><span class="n">rd</span><span class="o">.</span><span class="n">N</span><span class="p">),</span> <span class="n">order</span><span class="o">=</span><span class="s1">&#39;F&#39;</span><span class="p">)</span>
+    <span class="n">row_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">yout</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">yout</span><span class="p">):</span>
+        <span class="n">rd</span><span class="o">.</span><span class="n">banded_jac_cmaj</span><span class="p">(</span><span class="n">tout</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="n">y</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="n">Jout</span><span class="p">)</span>
+        <span class="n">Jtmp</span> <span class="o">=</span> <span class="n">Jout</span><span class="p">[:,</span> <span class="n">bi</span><span class="o">*</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">:(</span><span class="n">bi</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">row_out</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">get_jac_row_from_banded</span><span class="p">(</span><span class="n">Jtmp</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">row_out</span>
+
+
+<span class="k">def</span> <span class="nf">_get_per_rxn_out</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">specie_indices</span><span class="p">):</span>
+    <span class="c1"># Note that you really need yout - not Cout</span>
+    <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">yout</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">specie_indices</span><span class="p">),</span> <span class="n">rd</span><span class="o">.</span><span class="n">nr</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">ti</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">yout</span><span class="p">):</span>
+        <span class="n">flat_y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">si</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specie_indices</span><span class="p">):</span>
+            <span class="n">rd</span><span class="o">.</span><span class="n">per_rxn_contrib_to_fi</span><span class="p">(</span><span class="n">tout</span><span class="p">[</span><span class="n">ti</span><span class="p">],</span> <span class="n">flat_y</span><span class="p">,</span> <span class="n">si</span><span class="p">,</span> <span class="n">out</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="n">j</span><span class="p">,</span> <span class="p">:])</span>
+    <span class="k">return</span> <span class="n">out</span>
+
+
+<span class="c1"># It is bad practice to have global state in module, refactor this:</span>
+<span class="n">DEFAULT</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">ls</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;-&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">,</span> <span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="s1">&#39;-.&#39;</span><span class="p">],</span>
+    <span class="n">c</span><span class="o">=</span><span class="s1">&#39;krgbycm&#39;</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_plot_analysis</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                   <span class="n">titles</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">lintreshy</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                   <span class="n">legend_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    cb: callback</span>
+<span class="sd">        callback with signature (rd, tout, yout, indices) returning</span>
+<span class="sd">        3-dimensional array with shape (tout.size, len(axes), len(labels))</span>
+<span class="sd">    labels: sequence of strings</span>
+<span class="sd">        labels of individual plots</span>
+<span class="sd">    rd: ReactionDiffusion instance</span>
+<span class="sd">    tout: 1-dimensional array of floats</span>
+<span class="sd">    yout: solver output</span>
+<span class="sd">    indices: 4th argument for callback</span>
+<span class="sd">    axes: sequence of matplotlib Axes instances</span>
+<span class="sd">        (default: len(indices) number of subplot axes)</span>
+<span class="sd">    titles: titles per axis</span>
+<span class="sd">    lintreshy: float</span>
+<span class="sd">        symlog option &#39;linthreshy&#39; (default: 1e-10)</span>
+<span class="sd">    logx: set x scale to &#39;log&#39;</span>
+<span class="sd">    legend_kwargs: dict</span>
+<span class="sd">        dict of kwargs to pass to matplotlib legend function</span>
+<span class="sd">        (default: {&#39;loc&#39;: None, &#39;prop&#39;: {&#39;size&#39;: 12}}), set</span>
+<span class="sd">        to False to suppress legend.</span>
+<span class="sd">    ls: sequence of strings</span>
+<span class="sd">        linestyles</span>
+<span class="sd">    c: sequence of strings</span>
+<span class="sd">        colors</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">legend_kwargs</span> <span class="o">=</span> <span class="n">legend_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">set_dict_defaults_inplace</span><span class="p">(</span><span class="n">legend_kwargs</span><span class="p">,</span>
+                              <span class="nb">dict</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">}))</span>
+    <span class="k">if</span> <span class="n">axes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">axes</span> <span class="o">=</span> <span class="p">[</span><span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">),</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">))]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">indices</span><span class="p">)</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">ls</span> <span class="ow">or</span> <span class="n">DEFAULT</span><span class="p">[</span><span class="s1">&#39;ls&#39;</span><span class="p">]</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">c</span> <span class="ow">or</span> <span class="n">DEFAULT</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">]</span>
+    <span class="n">row_out</span> <span class="o">=</span> <span class="n">cb</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">indices</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ax</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">axes</span><span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="s1">&#39;symlog&#39;</span><span class="p">,</span> <span class="n">linthreshy</span><span class="o">=</span><span class="n">lintreshy</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">logx</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="s1">&#39;log&#39;</span><span class="p">)</span>
+        <span class="n">istl</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># style counter</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">labels</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">row_out</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">&lt;</span> <span class="n">lintreshy</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tout</span><span class="p">,</span> <span class="n">row_out</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">lbl</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="n">istl</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)],</span>
+                    <span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">[</span><span class="n">istl</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">)])</span>
+            <span class="n">istl</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="n">legend_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="o">**</span><span class="n">legend_kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">titles</span><span class="p">:</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">titles</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;t / s&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">axes</span>
+
+
+<div class="viewcode-block" id="plot_jacobian"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_jacobian">[docs]</a><span class="k">def</span> <span class="nf">plot_jacobian</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots time evolution of Jacobian values (useful when investigating</span>
+<span class="sd">    numerical instabilities).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rd: ReactionDiffusion</span>
+<span class="sd">        system at hand</span>
+<span class="sd">    tout: array_like</span>
+<span class="sd">        output time from integration</span>
+<span class="sd">    yout: array_like</span>
+<span class="sd">        output data from integration (differs from Cout for logy=True)</span>
+<span class="sd">    substances: iterable of int or string</span>
+<span class="sd">        indices or names of substances to plot jacobian values for</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">si</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">si</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">si</span><span class="p">)</span> <span class="k">for</span>
+               <span class="n">si</span> <span class="ow">in</span> <span class="n">substances</span><span class="p">]</span>
+    <span class="n">print_names</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span> <span class="ow">or</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span>
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">_plot_analysis</span><span class="p">(</span><span class="n">_get_jac_row_over_t</span><span class="p">,</span> <span class="n">print_names</span><span class="p">,</span> <span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span>
+                          <span class="n">indices</span><span class="p">,</span> <span class="n">titles</span><span class="o">=</span><span class="p">[</span>
+                              <span class="n">print_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span>
+            <span class="s2">&quot;$</span><span class="se">\\</span><span class="s2">frac{</span><span class="se">\\</span><span class="s2">partial r_</span><span class="si">{tot}</span><span class="s2">}{\partial C_i}~/~s^{-1}$&quot;</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">axes</span>
+
+
+<span class="k">def</span> <span class="nf">plot_jacobian_from_integration</span><span class="p">(</span><span class="n">integr</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">pass</span>
+    <span class="c1"># a = integr.rd.unit_registry</span>
+    <span class="c1"># return plot_jacobian(integr.rd, )  # TODO: finish this</span>
+
+
+<div class="viewcode-block" id="plot_per_reaction_contribution"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_per_reaction_contribution">[docs]</a><span class="k">def</span> <span class="nf">plot_per_reaction_contribution</span><span class="p">(</span><span class="n">integr</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">equilibria</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                   <span class="n">field_yields</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots contributions to concentration derivatives of selected</span>
+<span class="sd">    substances from individual reactions.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    integr: Integration instance</span>
+<span class="sd">    substances: sequence of Substance instances</span>
+<span class="sd">    equilibria: set of tuples of reaction indices (optional)</span>
+<span class="sd">        When passed only net effect of equilibria reaction will be plotted</span>
+<span class="sd">    field_yields: bool (default: False)</span>
+<span class="sd">        If ``True`` contributions from g_values times field will be shown</span>
+<span class="sd">    **kwargs: kwargs passed on to _plot_analysis</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    list of matplotlib.axes.Axes instances</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">rd</span> <span class="o">=</span> <span class="n">integr</span><span class="o">.</span><span class="n">rd</span>
+    <span class="k">if</span> <span class="n">rd</span><span class="o">.</span><span class="n">N</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="c1"># should be quite straight forward to implement</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="n">indices</span> <span class="o">=</span> <span class="p">[</span><span class="n">ri</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ri</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+               <span class="k">for</span> <span class="n">ri</span> <span class="ow">in</span> <span class="n">substances</span><span class="p">]</span>
+    <span class="k">if</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">print_names</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span>
+        <span class="n">use_tex</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">print_names</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span>
+        <span class="n">use_tex</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">substances</span> <span class="o">=</span> <span class="n">mk_sn_dict_from_names</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="p">,</span>
+                                       <span class="n">latex_name</span><span class="o">=</span><span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">field_yields</span><span class="p">:</span>
+        <span class="c1"># Let&#39;s use negative reaction indices for each field -1: 0, -2: 1</span>
+        <span class="n">rxn_indices</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">fields</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rxn_indices</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">if</span> <span class="n">equilibria</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">equilibria_participants</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">rxnidxs</span> <span class="ow">in</span> <span class="n">equilibria</span><span class="p">:</span>
+            <span class="n">equilibria_participants</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">rxnidxs</span><span class="p">)</span>
+            <span class="n">rxn_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rxnidxs</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ri</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">nr</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">ri</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">equilibria_participants</span><span class="p">:</span>
+                <span class="n">rxn_indices</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">rxn_indices</span> <span class="o">+=</span> <span class="nb">range</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">nr</span><span class="p">)</span>
+
+    <span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">rxni</span> <span class="ow">in</span> <span class="n">rxn_indices</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rxni</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">rxni</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rxn</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">to_Reaction</span><span class="p">(</span><span class="n">rxni</span><span class="p">)</span>
+                <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;R&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">rxni</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span>
+                              <span class="p">(</span><span class="s1">&#39;$&#39;</span> <span class="o">+</span> <span class="n">rxn</span><span class="o">.</span><span class="n">latex</span><span class="p">(</span><span class="n">substances</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;$&#39;</span><span class="p">)</span> <span class="k">if</span>
+                              <span class="n">use_tex</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">rxn</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Field production!</span>
+                <span class="n">fi</span> <span class="o">=</span> <span class="o">-</span><span class="n">rxni</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">rd</span><span class="o">.</span><span class="n">g_value_parents</span><span class="p">[</span><span class="n">fi</span><span class="p">]</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                    <span class="c1"># No parents</span>
+                    <span class="n">parent</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">parent</span> <span class="o">=</span> <span class="p">(</span><span class="n">print_names</span><span class="p">[</span><span class="n">rd</span><span class="o">.</span><span class="n">g_value_parents</span><span class="p">[</span><span class="n">fi</span><span class="p">]]</span> <span class="o">+</span>
+                              <span class="s1">&#39;$</span><span class="se">\\</span><span class="s1">rightsquigarrow$&#39;</span> <span class="k">if</span> <span class="n">use_tex</span> <span class="k">else</span> <span class="s1">&#39; ~~~&gt; &#39;</span><span class="p">)</span>
+                <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s1">&#39;G_&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">fi</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;: &#39;</span> <span class="o">+</span> <span class="n">parent</span> <span class="o">+</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span>
+                    <span class="p">[</span><span class="n">print_names</span><span class="p">[</span><span class="n">si</span><span class="p">]</span> <span class="k">for</span> <span class="n">si</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">)</span> <span class="k">if</span>
+                     <span class="n">rd</span><span class="o">.</span><span class="n">g_values</span><span class="p">[</span><span class="n">fi</span><span class="p">][</span><span class="n">si</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">rxn</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">to_Reaction</span><span class="p">(</span><span class="n">rxni</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="s1">&#39;R(&#39;</span> <span class="o">+</span> <span class="s1">&#39;, &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">rxni</span><span class="p">))</span> <span class="o">+</span> <span class="s1">&#39;): &#39;</span> <span class="o">+</span>
+                <span class="p">(</span><span class="s1">&#39;$&#39;</span> <span class="o">+</span> <span class="n">rxn</span><span class="o">.</span><span class="n">latex</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span>
+                    <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="p">,</span> <span class="n">print_names</span><span class="p">)))</span> <span class="o">+</span> <span class="s1">&#39;$&#39;</span><span class="p">)</span> <span class="k">if</span> <span class="n">use_tex</span>
+                <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">rxn</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">cb</span><span class="p">(</span><span class="n">rd_</span><span class="p">,</span> <span class="n">tout_</span><span class="p">,</span> <span class="n">yout_</span><span class="p">,</span> <span class="n">specie_indices_</span><span class="p">):</span>
+        <span class="n">bi</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># bin index, N=1 only implemented for now</span>
+        <span class="n">per_rxn</span> <span class="o">=</span> <span class="n">_get_per_rxn_out</span><span class="p">(</span><span class="n">rd_</span><span class="p">,</span> <span class="n">tout_</span><span class="p">,</span> <span class="n">yout_</span><span class="p">,</span> <span class="n">specie_indices_</span><span class="p">)</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">yout_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">specie_indices_</span><span class="p">),</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="n">rxn_indices</span><span class="p">)))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">rxns</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">rxn_indices</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">rxns</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">rxns</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">out</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">per_rxn</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">rxns</span><span class="p">]</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">fi</span> <span class="o">=</span> <span class="o">-</span><span class="n">rxns</span> <span class="o">-</span> <span class="mi">1</span>
+                    <span class="k">for</span> <span class="n">sii</span><span class="p">,</span> <span class="n">si</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">specie_indices_</span><span class="p">):</span>
+                        <span class="n">out</span><span class="p">[:,</span> <span class="n">sii</span><span class="p">,</span> <span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">g_values</span><span class="p">[</span><span class="n">fi</span><span class="p">][</span><span class="n">si</span><span class="p">]</span><span class="o">*</span><span class="n">rd</span><span class="o">.</span><span class="n">fields</span><span class="p">[</span><span class="n">fi</span><span class="p">][</span><span class="n">bi</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">rxn_idx</span> <span class="ow">in</span> <span class="n">rxns</span><span class="p">:</span>
+                    <span class="n">out</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">+=</span> <span class="n">per_rxn</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">rxn_idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="n">axes</span> <span class="o">=</span> <span class="n">_plot_analysis</span><span class="p">(</span><span class="n">cb</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">rd</span><span class="p">,</span> <span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">,</span> <span class="n">integr</span><span class="o">.</span><span class="n">yout</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span>
+                          <span class="n">titles</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;$&#39;</span><span class="o">+</span><span class="n">print_names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">+</span><span class="s1">&#39;$&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">],</span>
+                          <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;Reaction rate / $M\cdot s^{-1}$&quot;</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">axes</span>
+
+
+<span class="k">def</span> <span class="nf">_init_ax_substances_labels</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">xscale</span><span class="p">,</span> <span class="n">yscale</span><span class="p">):</span>
+    <span class="c1"># helper func..</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span> <span class="ow">or</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xscale</span><span class="p">(</span><span class="n">xscale</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="n">yscale</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">substances</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">substance_idxs</span> <span class="o">=</span> <span class="nb">range</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">substance_idxs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">s</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span>
+            <span class="n">s</span> <span class="ow">in</span> <span class="n">substances</span><span class="p">]</span>
+    <span class="n">latex_names_None</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">labels</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">latex_names_None</span><span class="p">:</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;$&#39;</span><span class="o">+</span><span class="n">n</span><span class="o">+</span><span class="s1">&#39;$&#39;</span> <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">names</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span>
+        <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+            <span class="n">names</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">substance_idxs</span><span class="p">))</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="n">names</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">substance_idxs</span><span class="p">]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">labels</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">substance_idxs</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">ax</span><span class="p">,</span> <span class="n">substance_idxs</span><span class="p">,</span> <span class="n">labels</span>
+
+
+<span class="k">def</span> <span class="nf">plot_C_vs_t</span><span class="p">(</span><span class="n">integr</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">plot_C_vs_t_in_bin</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">rd</span><span class="p">,</span> <span class="n">integr</span><span class="o">.</span><span class="n">with_units</span><span class="p">(</span><span class="s1">&#39;tout&#39;</span><span class="p">),</span> <span class="n">integr</span><span class="o">.</span><span class="n">with_units</span><span class="p">(</span><span class="s1">&#39;Cout&#39;</span><span class="p">),</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="plot_C_vs_t_in_bin"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_C_vs_t_in_bin">[docs]</a><span class="k">def</span> <span class="nf">plot_C_vs_t_in_bin</span><span class="p">(</span>
+        <span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">Cout</span><span class="p">,</span> <span class="n">bi</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">xscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">substances</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ttlfmt</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">legend_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">ls</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">xlabel</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots bin local concentration as function of time for selected</span>
+<span class="sd">    substances.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rd: ReactionDiffusion</span>
+<span class="sd">    tout: 1D array of floats</span>
+<span class="sd">    Cout: concentration trajectories from solver</span>
+<span class="sd">    bi: bin index</span>
+<span class="sd">    ax: Axes instance</span>
+<span class="sd">    labels: sequence of strings</span>
+<span class="sd">    xscale: matplotlib scale choice (e.g. &#39;log&#39;, &#39;symlog&#39;)</span>
+<span class="sd">    yscale: matplotlib scale choice (e.g. &#39;log&#39;, &#39;symlog&#39;)</span>
+<span class="sd">    substances: sequence of indies or names of substances</span>
+<span class="sd">    ttlfmt: string formatted with bin boundaries (set to empty to suppress)</span>
+<span class="sd">    legend_kwargs: dict</span>
+<span class="sd">        kwargs passed to matplotlib legend function,</span>
+<span class="sd">        (default: {&#39;loc&#39;: None, &#39;prop&#39;: {&#39;size&#39;: 12}}), set</span>
+<span class="sd">        to False to suppress legend.</span>
+<span class="sd">    ls: sequence of strings</span>
+<span class="sd">        linestyles</span>
+<span class="sd">    c: sequence of strings</span>
+<span class="sd">        colors</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    =======</span>
+<span class="sd">    Axes instance</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">ttlfmt</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">rd</span><span class="o">.</span><span class="n">N</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">ttlfmt</span> <span class="o">=</span> <span class="s2">&quot;C(t)&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ttlfmt</span> <span class="o">=</span> <span class="p">(</span><span class="sa">r</span><span class="s2">&quot;C(t) in bin: </span><span class="si">{0:.2g}</span><span class="s2"> m $\langle$&quot;</span> <span class="o">+</span>
+                      <span class="sa">r</span><span class="s2">&quot; x $\langle$ </span><span class="si">{1:.2g}</span><span class="s2"> m&quot;</span><span class="p">)</span>
+    <span class="n">legend_kwargs</span> <span class="o">=</span> <span class="n">legend_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">set_dict_defaults_inplace</span><span class="p">(</span><span class="n">legend_kwargs</span><span class="p">,</span>
+                              <span class="nb">dict</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;upper left&#39;</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">}))</span>
+    <span class="n">ls</span> <span class="o">=</span> <span class="n">ls</span> <span class="ow">or</span> <span class="n">DEFAULT</span><span class="p">[</span><span class="s1">&#39;ls&#39;</span><span class="p">]</span>
+    <span class="n">c</span> <span class="o">=</span> <span class="n">c</span> <span class="ow">or</span> <span class="n">DEFAULT</span><span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">]</span>
+    <span class="n">ax</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">_init_ax_substances_labels</span><span class="p">(</span>
+        <span class="n">rd</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">xscale</span><span class="p">,</span> <span class="n">yscale</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">substances</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">tout</span><span class="p">,</span> <span class="n">Cout</span><span class="p">[:,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="n">lbl</span><span class="p">,</span>
+                <span class="n">ls</span><span class="o">=</span><span class="n">ls</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">ls</span><span class="p">)],</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="n">c</span><span class="p">)])</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">xlabel</span> <span class="ow">or</span> <span class="s2">&quot;t / &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">tout</span><span class="o">.</span><span class="n">dimensionality</span><span class="o">.</span><span class="n">latex</span><span class="p">),</span>
+                      <span class="p">{</span><span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">})</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">ylabel</span> <span class="ow">or</span> <span class="s2">&quot;C / &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">Cout</span><span class="o">.</span><span class="n">dimensionality</span><span class="o">.</span><span class="n">latex</span><span class="p">),</span>
+                      <span class="p">{</span><span class="s1">&#39;fontsize&#39;</span><span class="p">:</span> <span class="mi">16</span><span class="p">})</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span><span class="p">:</span>
+        <span class="k">pass</span>
+    <span class="k">if</span> <span class="n">ttlfmt</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">ttlfmt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">bi</span><span class="p">],</span> <span class="n">rd</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">bi</span><span class="o">+</span><span class="mi">1</span><span class="p">]))</span>
+    <span class="k">if</span> <span class="n">legend_kwargs</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">False</span><span class="p">:</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="o">**</span><span class="n">legend_kwargs</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<div class="viewcode-block" id="plot_C_vs_x"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_C_vs_x">[docs]</a><span class="k">def</span> <span class="nf">plot_C_vs_x</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">Cout</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">ti</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                <span class="n">xscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">yscale</span><span class="o">=</span><span class="s1">&#39;log&#39;</span><span class="p">,</span> <span class="n">basetitle</span><span class="o">=</span><span class="s2">&quot;C(x)&quot;</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots concentration as function of x for selected</span>
+<span class="sd">    substances at time index &#39;ti&#39;.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rd: ReactionDiffusion</span>
+<span class="sd">    tout: 1D array of floats</span>
+<span class="sd">    Cout: concentration trajectories from solver</span>
+<span class="sd">    substances: sequence of indies or names of substances</span>
+<span class="sd">    ti: int</span>
+<span class="sd">        time index</span>
+<span class="sd">    ax: Axes instance</span>
+<span class="sd">    labels: sequence of strings</span>
+<span class="sd">    xscale: matplotlib scale choice (e.g. &#39;linear&#39;, &#39;log&#39;, &#39;symlog&#39;)</span>
+<span class="sd">    yscale: matplotlib scale choice (e.g. &#39;linear&#39;, &#39;log&#39;, &#39;symlog&#39;)</span>
+<span class="sd">    basetitle: string</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    =======</span>
+<span class="sd">    Axes instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ax</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">labels</span> <span class="o">=</span> <span class="n">_init_ax_substances_labels</span><span class="p">(</span>
+        <span class="n">rd</span><span class="p">,</span> <span class="n">ax</span><span class="p">,</span> <span class="n">substances</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">xscale</span><span class="p">,</span> <span class="n">yscale</span><span class="p">)</span>
+    <span class="n">x_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">lbl</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">substances</span><span class="p">,</span> <span class="n">labels</span><span class="p">):</span>
+        <span class="n">y_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">Cout</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">],</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_edges</span><span class="p">,</span> <span class="n">y_edges</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">lbl</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="s2">&quot;x / m&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="s2">&quot;C / M&quot;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="n">basetitle</span><span class="o">+</span><span class="s2">&quot; at t = </span><span class="si">{0:.3g}</span><span class="s2"> s&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">tout</span><span class="p">[</span><span class="n">ti</span><span class="p">]))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">loc</span><span class="o">=</span><span class="s1">&#39;best&#39;</span><span class="p">,</span> <span class="n">prop</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;size&#39;</span><span class="p">:</span> <span class="mi">12</span><span class="p">})</span></div>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<span class="k">def</span> <span class="nf">plot_faded_time</span><span class="p">(</span><span class="n">integr</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">rgb</span><span class="o">=</span><span class="p">(</span><span class="mf">1.</span><span class="p">,</span> <span class="o">.</span><span class="mi">5</span><span class="p">,</span> <span class="o">.</span><span class="mi">5</span><span class="p">),</span> <span class="n">log_color</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                    <span class="n">yscale</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">si</span> <span class="o">=</span> <span class="p">(</span><span class="n">substance</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span>
+          <span class="n">integr</span><span class="o">.</span><span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">substance</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">ti</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="o">.</span><span class="n">size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">log_color</span><span class="p">:</span>
+            <span class="n">span</span> <span class="o">=</span> <span class="n">log</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">-</span> <span class="n">log</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="p">(</span><span class="n">log</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="n">ti</span><span class="p">])</span> <span class="o">-</span> <span class="n">log</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span><span class="o">/</span><span class="n">span</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span><span class="o">/</span><span class="n">integr</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="n">c</span><span class="o">*</span><span class="n">rgb</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">c</span><span class="o">*</span><span class="n">rgb</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">c</span><span class="o">*</span><span class="n">rgb</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">integr</span><span class="o">.</span><span class="n">rd</span><span class="o">.</span><span class="n">xcenters</span><span class="p">,</span> <span class="n">integr</span><span class="o">.</span><span class="n">Cout</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="p">:,</span> <span class="n">si</span><span class="p">],</span> <span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">yscale</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_yscale</span><span class="p">(</span><span class="n">yscale</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="plot_C_vs_t_and_x"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_C_vs_t_and_x">[docs]</a><span class="k">def</span> <span class="nf">plot_C_vs_t_and_x</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">Cout</span><span class="p">,</span> <span class="n">substance</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log10</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                      <span class="o">**</span><span class="n">plot_kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots 3D surface of concentration as function of time and x for a</span>
+<span class="sd">    selected substance.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rd: ReactionDiffusion</span>
+<span class="sd">    tout: 1D array of floats</span>
+<span class="sd">    Cout: concentration trajectories from solver</span>
+<span class="sd">    substance: int or string</span>
+<span class="sd">        index or name of substance</span>
+<span class="sd">    ax: Axes instance</span>
+<span class="sd">    log10: bool</span>
+<span class="sd">        Use log logarithmic (base 10) axis</span>
+<span class="sd">    **plot_kwargs:</span>
+<span class="sd">        passed onto plot_surface</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    =======</span>
+<span class="sd">    Axes3D instance</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># it would be nice to accpet kwargs</span>
+    <span class="c1">#    xscale=&#39;log&#39;, yscale=&#39;log&#39;, zscale=&#39;log&#39;</span>
+    <span class="c1"># but it&#39;s currently not supported by matplotlib:</span>
+    <span class="c1"># http://matplotlib.1069221.n5.nabble.com/</span>
+    <span class="c1">#     plot-surface-fails-with-log-axes-td10206.html</span>
+    <span class="n">substance</span> <span class="o">=</span> <span class="p">(</span><span class="n">substance</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">substance</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="k">else</span>
+                 <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">substance</span><span class="p">))</span>
+    <span class="kn">from</span> <span class="nn">mpl_toolkits.mplot3d</span> <span class="k">import</span> <span class="n">Axes3D</span>
+    <span class="kn">from</span> <span class="nn">matplotlib</span> <span class="k">import</span> <span class="n">cm</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">ax</span> <span class="ow">or</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">projection</span><span class="o">=</span><span class="s1">&#39;3d&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">Axes3D</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Need Axes3D instance as axes object.&quot;</span><span class="p">)</span>
+
+    <span class="n">xtC</span> <span class="o">=</span> <span class="p">[</span><span class="n">rd</span><span class="o">.</span><span class="n">xcenters</span><span class="p">,</span> <span class="n">tout</span><span class="p">,</span> <span class="n">Cout</span><span class="p">]</span>
+    <span class="n">x_</span><span class="p">,</span> <span class="n">t_</span><span class="p">,</span> <span class="n">C_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">,</span> <span class="n">xtC</span><span class="p">))</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="n">xtC</span>
+    <span class="n">X</span><span class="p">,</span> <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">meshgrid</span><span class="p">(</span><span class="n">x_</span><span class="p">,</span> <span class="n">t_</span><span class="p">)</span>
+    <span class="k">if</span> <span class="s1">&#39;cmap&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">plot_kwargs</span><span class="p">:</span>
+        <span class="n">plot_kwargs</span><span class="p">[</span><span class="s1">&#39;cmap&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cm</span><span class="o">.</span><span class="n">copper</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot_surface</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">C_</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">substance</span><span class="p">],</span>
+                    <span class="o">**</span><span class="n">plot_kwargs</span><span class="p">)</span>
+
+    <span class="n">fmtstr</span> <span class="o">=</span> <span class="s2">&quot;$log_{{10}}$(</span><span class="si">{}</span><span class="s2">)&quot;</span> <span class="k">if</span> <span class="n">log10</span> <span class="k">else</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_xlabel</span><span class="p">(</span><span class="n">fmtstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;x / m&#39;</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_ylabel</span><span class="p">(</span><span class="n">fmtstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;time / s&#39;</span><span class="p">))</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_zlabel</span><span class="p">(</span><span class="n">fmtstr</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="s1">&#39;C / M&#39;</span><span class="p">))</span>
+    <span class="n">latex_names_None</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span> <span class="ow">in</span> <span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span><span class="o">*</span><span class="n">rd</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">latex_names_None</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;$&#39;</span> <span class="o">+</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_latex_names</span><span class="p">[</span><span class="n">substance</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39;$&#39;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">rd</span><span class="o">.</span><span class="n">substance_names</span><span class="p">[</span><span class="n">substance</span><span class="p">]</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;[&#39;</span><span class="o">+</span><span class="n">name</span><span class="o">+</span><span class="s1">&#39;] vs. t and x&#39;</span><span class="p">)</span>
+</div>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<div class="viewcode-block" id="plot_fields"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_fields">[docs]</a><span class="k">def</span> <span class="nf">plot_fields</span><span class="p">(</span><span class="n">rd</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">indices</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rho</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Convenience function to inspect fields in of</span>
+<span class="sd">    ReactionDiffusion instance</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rd: ReactionDiffusion</span>
+<span class="sd">    ax: Axes instance or dict</span>
+<span class="sd">        if ax is a dict it is used as keyword arguments passed to</span>
+<span class="sd">        matplotlib.pyplot.axes (default: None)</span>
+<span class="sd">    indices: sequence of integers</span>
+<span class="sd">        what field strengths sequences to plot</span>
+<span class="sd">    rho: float (optional)</span>
+<span class="sd">        density, with consistent unit. If passed doserate</span>
+<span class="sd">        will be plotted instead.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">_init_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">indices</span> <span class="ow">or</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">fields</span><span class="p">))</span>
+    <span class="n">factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">fields</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">rho</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">factors</span> <span class="o">=</span> <span class="n">factors</span><span class="o">/</span><span class="n">rho</span>
+    <span class="n">x_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">rd</span><span class="o">.</span><span class="n">x</span><span class="p">,</span> <span class="mi">2</span><span class="p">)[</span><span class="mi">1</span><span class="p">:]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">indices</span><span class="p">:</span>
+        <span class="n">y_edges</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">factors</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:],</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s1">&#39;constant&#39;</span><span class="p">)</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_edges</span><span class="p">,</span> <span class="n">y_edges</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">i</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<div class="viewcode-block" id="plot_solver_linear_error"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_solver_linear_error">[docs]</a><span class="k">def</span> <span class="nf">plot_solver_linear_error</span><span class="p">(</span>
+        <span class="n">integration</span><span class="p">,</span> <span class="n">Cref</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ti</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">bi</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">si</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+        <span class="n">plot_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">fill_between_kwargs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">scale_err</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">fill</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    integration: chemreac.integrate.Integration</span>
+<span class="sd">        result from integration.</span>
+<span class="sd">    Cref: array or float</span>
+<span class="sd">        analytic solution to compare with</span>
+<span class="sd">    ax: Axes instance or dict</span>
+<span class="sd">        if ax is a dict it is used as key word arguments passed to</span>
+<span class="sd">        matplotlib.pyplot.axes (default: None)</span>
+<span class="sd">    x: array</span>
+<span class="sd">        (optional) x-values, when None it is deduced to be</span>
+<span class="sd">        either t or x (when ti or bi are slices repecitvely)</span>
+<span class="sd">        (default: None)</span>
+<span class="sd">    ti: slice</span>
+<span class="sd">        time indices</span>
+<span class="sd">    bi: slice</span>
+<span class="sd">        bin indices</span>
+<span class="sd">    si: integer</span>
+<span class="sd">        specie index</span>
+<span class="sd">    plot_kwargs: dict</span>
+<span class="sd">        keyword arguments passed to matplotlib.pyplot.plot (default: None)</span>
+<span class="sd">    fill_between_kwargs: dict</span>
+<span class="sd">        keyword arguments passed to matplotlib.pyplot.fill_between</span>
+<span class="sd">        (default: None)</span>
+<span class="sd">    scale_err: float</span>
+<span class="sd">        value with which errors are scaled. (default: 1.0)</span>
+<span class="sd">    fill: bool</span>
+<span class="sd">        whether or not to fill error span</span>
+<span class="sd">    \*\*kwargs</span>
+<span class="sd">        common keyword arguments of plot_kwargs and fill_between_kwargs,</span>
+<span class="sd">        e.g. &#39;color&#39;, (default: None).</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    plot_solver_linear_excess_error</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">_init_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">Cerr</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">Cout</span> <span class="o">-</span> <span class="n">to_unitless</span><span class="p">(</span><span class="n">Cref</span><span class="p">,</span> <span class="n">get_derived_unit</span><span class="p">(</span>
+        <span class="n">integration</span><span class="o">.</span><span class="n">rd</span><span class="o">.</span><span class="n">unit_registry</span><span class="p">,</span> <span class="s1">&#39;concentration&#39;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bi</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">rd</span><span class="o">.</span><span class="n">xcenters</span><span class="p">[</span><span class="n">bi</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Failed to deduce x-axis.&quot;</span><span class="p">)</span>
+
+    <span class="n">plot_kwargs</span> <span class="o">=</span> <span class="n">plot_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+    <span class="n">set_dict_defaults_inplace</span><span class="p">(</span><span class="n">plot_kwargs</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scale_err</span><span class="o">*</span><span class="n">Cerr</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="p">]),</span>
+             <span class="o">**</span><span class="n">plot_kwargs</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">fill</span><span class="p">:</span>
+        <span class="n">le_l</span><span class="p">,</span> <span class="n">le_u</span> <span class="o">=</span> <span class="n">solver_linear_error_from_integration</span><span class="p">(</span>
+            <span class="n">integration</span><span class="p">,</span> <span class="n">ti</span><span class="o">=</span><span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="o">=</span><span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="o">=</span><span class="n">si</span><span class="p">)</span>
+        <span class="n">Cerr_u</span> <span class="o">=</span> <span class="n">le_u</span> <span class="o">-</span> <span class="n">Cref</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="p">]</span>
+        <span class="n">Cerr_l</span> <span class="o">=</span> <span class="n">le_l</span> <span class="o">-</span> <span class="n">Cref</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="p">]</span>
+        <span class="n">fill_between_kwargs</span> <span class="o">=</span> <span class="n">fill_between_kwargs</span> <span class="ow">or</span> <span class="p">{}</span>
+        <span class="n">set_dict_defaults_inplace</span><span class="p">(</span><span class="n">fill_between_kwargs</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;alpha&#39;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">x</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scale_err</span><span class="o">*</span><span class="n">Cerr_l</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">scale_err</span><span class="o">*</span><span class="n">Cerr_u</span><span class="p">),</span> <span class="o">**</span><span class="n">fill_between_kwargs</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">ax</span>
+
+
+<div class="viewcode-block" id="plot_solver_linear_excess_error"><a class="viewcode-back" href="../../../util/plotting.html#chemreac.util.plotting.plot_solver_linear_excess_error">[docs]</a><span class="k">def</span> <span class="nf">plot_solver_linear_excess_error</span><span class="p">(</span><span class="n">integration</span><span class="p">,</span> <span class="n">Cref</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                    <span class="n">ti</span><span class="o">=</span><span class="nb">slice</span><span class="p">(</span><span class="kc">None</span><span class="p">),</span> <span class="n">bi</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">si</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Plots the excess error commited by the intergrator, divided by the span</span>
+<span class="sd">    of the tolerances (atol + rtol*|y_i|).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    integration: chemreac.integrate.Integration</span>
+<span class="sd">        result from integration.</span>
+<span class="sd">    Cref: array or float</span>
+<span class="sd">        analytic solution to compare with</span>
+<span class="sd">    ax: Axes instance or dict</span>
+<span class="sd">        if ax is a dict it is used as \*\*kwargs passed to</span>
+<span class="sd">        matplotlib.pyplot.axes (default: None)</span>
+<span class="sd">    x: array</span>
+<span class="sd">        (optional) x-values, when None it is deduced to be</span>
+<span class="sd">        either t or x (when ti or bi are slices repecitvely)</span>
+<span class="sd">        (default: None)</span>
+<span class="sd">    ti: slice</span>
+<span class="sd">        time indices</span>
+<span class="sd">    bi: slice</span>
+<span class="sd">        bin indices</span>
+<span class="sd">    si: integer</span>
+<span class="sd">        specie index</span>
+<span class="sd">    plot_kwargs: dict</span>
+<span class="sd">        keyword arguments passed to matplotlib.pyplot.plot (default: None)</span>
+<span class="sd">    fill_between_kwargs: dict</span>
+<span class="sd">        keyword arguments passed to matplotlib.pyplot.fill_between</span>
+<span class="sd">        (default: None)</span>
+<span class="sd">    scale_err: float</span>
+<span class="sd">        value with which errors are scaled. (default: 1.0)</span>
+<span class="sd">    fill: bool</span>
+<span class="sd">        whether or not to fill error span</span>
+<span class="sd">    \*\*kwargs:</span>
+<span class="sd">        common keyword arguments of plot_kwargs and fill_between_kwargs,</span>
+<span class="sd">        e.g. &#39;color&#39;, (default: None).</span>
+
+<span class="sd">    See Also</span>
+<span class="sd">    --------</span>
+<span class="sd">    plot_solver_linear_error</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">x</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ti</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">tout</span><span class="p">[</span><span class="n">ti</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bi</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">rd</span><span class="o">.</span><span class="n">xcenters</span><span class="p">[</span><span class="n">bi</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Failed to deduce x-axis.&quot;</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">_init_axes</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
+    <span class="n">le_l</span><span class="p">,</span> <span class="n">le_u</span> <span class="o">=</span> <span class="n">solver_linear_error_from_integration</span><span class="p">(</span><span class="n">integration</span><span class="p">,</span> <span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="p">)</span>
+    <span class="n">Eexcess_l</span> <span class="o">=</span> <span class="n">Cref</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="p">]</span> <span class="o">-</span> <span class="n">le_l</span>  <span class="c1"># Excessive if negative</span>
+    <span class="n">Eexcess_u</span> <span class="o">=</span> <span class="n">Cref</span><span class="p">[</span><span class="n">ti</span><span class="p">,</span> <span class="n">bi</span><span class="p">,</span> <span class="n">si</span><span class="p">]</span> <span class="o">-</span> <span class="n">le_u</span>  <span class="c1"># Excessive if positive</span>
+    <span class="n">u_conc</span> <span class="o">=</span> <span class="n">get_derived_unit</span><span class="p">(</span><span class="n">integration</span><span class="o">.</span><span class="n">rd</span><span class="o">.</span><span class="n">unit_registry</span><span class="p">,</span> <span class="s1">&#39;concentration&#39;</span><span class="p">)</span>
+    <span class="n">Eexcess_l</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">Eexcess_l</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">u_conc</span>
+    <span class="n">Eexcess_u</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">argwhere</span><span class="p">(</span><span class="n">Eexcess_u</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)]</span> <span class="o">=</span> <span class="mi">0</span> <span class="o">*</span> <span class="n">u_conc</span>
+    <span class="n">fused</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">Eexcess_l</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
+                            <span class="n">Eexcess_u</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">fused</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">Eexcess</span> <span class="o">=</span> <span class="n">fused</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">indices</span><span class="p">(</span><span class="n">indices</span><span class="o">.</span><span class="n">shape</span><span class="p">),</span> <span class="n">indices</span><span class="p">][</span><span class="mi">0</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">le_span</span> <span class="o">=</span> <span class="n">le_u</span> <span class="o">-</span> <span class="n">le_l</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">integration</span><span class="o">.</span><span class="n">tout</span><span class="p">),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">Eexcess</span><span class="o">/</span><span class="n">le_span</span><span class="p">),</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+    <span class="k">return</span> <span class="n">ax</span>
+</pre></div>
+
+           </div>
+           <div class="articleComments">
+            
+           </div>
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2016, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../../../',
+            VERSION:'0.8.0.dev0+git',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../../../_static/jquery.js"></script>
+      <script type="text/javascript" src="../../../_static/underscore.js"></script>
+      <script type="text/javascript" src="../../../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
