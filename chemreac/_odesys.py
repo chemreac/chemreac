@@ -45,6 +45,8 @@ class ODESys(_ODESys):
         if 'doserate' in (params or {}):
             self.rd.set_with_units(
                 'fields', [[self.variables_from_params['density'](self, params)*params['doserate']]])
+        if 'atol' in kwargs and isinstance(kwargs['atol'], dict):
+            kwargs['atol'] = [kwargs['atol'][k] for k in self.names]
         integr = run(self.rd, [y0[k] for k in self.names] if isinstance(y0, dict) else y0,
                      x, integrator=integrator, **kwargs)
         pout = [params[k] for k in self.param_names] if self.param_names else None
@@ -69,6 +71,8 @@ class ODESys(_ODESys):
         atol = integrate_kwargs.pop('atol', 1e-8)
         if isinstance(atol, float):
             atol = [atol]
+        elif isinstance(atol, dict):
+            atol = [atol[k] for k in self.names]
         rtol = integrate_kwargs.pop('rtol', 1e-8)
         method = integrate_kwargs.pop('method', 'bdf')
         integrator = integrate_kwargs.pop('integrator', 'cvode')

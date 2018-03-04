@@ -38,7 +38,7 @@ def test_decay():
     t0, tend, nt = 5.0, 17.0, 42
     tout = np.linspace(t0, tend, nt+1)
     params = dict(kA=kA, kB=0.0)
-    result = odesys.integrate(tout, y0, params)
+    result = odesys.integrate(tout, y0, params, atol=1e-8)
     yref = np.array([y0['A']*np.exp(-kA*(tout-t0)),
                      y0['B']+y0['A']*(1-np.exp(-kA*(tout-t0)))]).transpose()
     assert np.allclose(result.yout[:, :2], yref)
@@ -51,7 +51,7 @@ def test_decay_params():
     k = .7, .3
     ic = dict(zip(odesys.names, y0))
     p = dict(zip('kA kB'.split(), k))
-    tout, yout, info = odesys.integrate([0, 5], ic, p)
+    tout, yout, info = odesys.integrate([0, 5], ic, p, atol={k: 1e-8 for k in odesys.names})
     yref = np.array([a(y0, k, tout) for a in analytic]).transpose()
     assert np.allclose(yout, yref)
 
@@ -71,7 +71,8 @@ def test_chained_parameter_variation():
         density=lambda self, params: 1.0
     ))
     res = odesys.chained_parameter_variation(
-        durations, ic, {'doserate': doserates}, npoints=npoints)
+        durations, ic, {'doserate': doserates}, npoints=npoints,
+        integrate_kwargs=dict(atol={k: 1e-8 for k in odesys.names}))
     assert res.xout.size == npoints*len(durations) + 1
     assert res.xout[0] == 0
     assert np.all(res.yout[0, :] == y0)
