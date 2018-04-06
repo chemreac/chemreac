@@ -101,12 +101,9 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import finitediff as fd
     import pycvodes as pc
     import block_diag_ilu as bdi
-    try:
+    if USE_TEMPLATE:
         from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
-    except ImportError:
-        if USE_TEMPLATE:
-            sys.stderr.write("This is not source distribution. pycodeexport is needed.")
-            raise
+    else:
         # If building from sdist no need for more than pycompilation
         from pycompilation.dist import PCExtension as PCEExtension
         from pycompilation.dist import pc_build_ext as pce_build_ext
