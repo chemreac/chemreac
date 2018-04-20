@@ -22,6 +22,7 @@ requirements:
     - libcxx >=6.0
     - python
     - setuptools
+    - pip
     - cython
     - numpy
     - sundials
