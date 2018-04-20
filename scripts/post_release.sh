@@ -25,13 +25,10 @@ sed -i -E \
     -e "/cython/d" \
     dist/conda-recipe-$VERSION/meta.yaml
 
-./scripts/update-gh-pages.sh v$VERSION $REMOTE
-
-# Specific for this project:
+for CONDA_PY in 27 35 36; do
+    ./scripts/build-conda-recipe-using-docker.sh dist/conda-recipe-$VERSION --python ${CONDA_PY}
+    scp dist/linux-64/${PKG}-${VERSION}-py${CONDA_PY}*.bz2 $PKG@$SERVER:~/public_html/conda-packages/
+done
 scp -r dist/conda-recipe-$VERSION/ $PKG@$SERVER:~/public_html/conda-recipes/
 scp "$SDIST_FILE" "$PKG@$SERVER:~/public_html/releases/"
-for CONDA_PY in 2.7 3.5 3.6; do
-    for CONDA_NPY in 1.13; do
-        ssh $PKG@$SERVER "source /etc/profile; conda-build --python $CONDA_PY --numpy $CONDA_NPY ~/public_html/conda-recipes/conda-recipe-$VERSION/"
-    done
-done
+./scripts/update-gh-pages.sh v$VERSION $REMOTE
