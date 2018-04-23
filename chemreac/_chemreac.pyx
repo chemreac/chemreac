@@ -15,9 +15,6 @@ from libcpp cimport bool
 from libcpp.vector cimport vector
 from libcpp.utility cimport pair
 
-cdef extern from *:
-    ctypedef unsigned int uint
-
 cdef extern from "numpy/arrayobject.h":
     void PyArray_ENABLEFLAGS(cnp.ndarray arr, int flags)
 
@@ -52,16 +49,16 @@ cdef class PyReactionDiffusion:
     cdef public list names, tex_names
 
     def __cinit__(self,
-                  uint n,
-                  vector[vector[uint]] stoich_active,
-                  vector[vector[uint]] stoich_prod,
+                  int n,
+                  vector[vector[int]] stoich_active,
+                  vector[vector[int]] stoich_prod,
                   vector[double] k,
-                  uint N,
+                  int N,
                   vector[double] D,
                   vector[int] z_chg,
                   vector[double] mobility,
                   vector[double] x,
-                  vector[vector[uint]] stoich_inact,
+                  vector[vector[int]] stoich_inact,
                   int geom,
                   bint logy,
                   bint logt,
@@ -71,7 +68,7 @@ cdef class PyReactionDiffusion:
                   vector[vector[double]] fields,
                   vector[int] modulated_rxns,
                   vector[vector[double]] modulation,
-                  uint nstencil=3,
+                  int nstencil=3,
                   bint lrefl=True,
                   bint rrefl=True,
                   bint auto_efield=False,
@@ -423,10 +420,10 @@ cdef class PyReactionDiffusion:
             return fromaddress(<long>self.thisptr.D_weight,
                                (self.thisptr.N*self.thisptr.nstencil,))
 
-    def _stencil_bi_lbound(self, uint bi):
+    def _stencil_bi_lbound(self, int bi):
         return self.thisptr.stencil_bi_lbound_(bi)
 
-    def _xc_bi_map(self, uint xci):
+    def _xc_bi_map(self, int xci):
         return self.thisptr.xc_bi_map_(xci)
 
     property efield:

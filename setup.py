@@ -10,7 +10,7 @@ import subprocess
 import sys
 import warnings
 
-from setuptools import setup
+from setuptools import setup, Extension
 
 pkg_name = 'chemreac'
 url = 'https://github.com/chemreac/' + pkg_name
@@ -59,40 +59,20 @@ else:
                 warnings.warn("Using git to derive version: dev-branches may compete.")
                 __version__ = re.sub('v([0-9.]+)-(\d+)-(\w+)', r'\1.post\2+\3', _git_version)  # .dev < '' < .post
 
-ON_DRONE = os.environ.get('DRONE', 'false') == 'true'
-ON_TRAVIS = os.environ.get('TRAVIS', 'flse') == 'true'
-
-# See pycompilation for details on "options"
-options = ['pic', 'warn']
 _WITH_DEBUG = env['WITH_DEBUG'] == '1'
 _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
-if _WITH_DEBUG:
-    warnings.warn("Building chemreac with debugging enabled.")
-    options += ['debug']
-    flags = []
-else:
-    flags = ['-O3']
-    if not (ON_DRONE or ON_TRAVIS):
-        if CONDA_BUILD:
-            # -ffast-math buggy in anaconda
-            flags += ['-funroll-loops']
-
-if _WITH_OPENMP or os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '0') == '1':
-    options += ['openmp']
-
-cmdclass_ = {}
-
 # Source distributions contain rendered sources
-template_path = 'src/chemreac_template.cpp'
-rendered_path = 'src/chemreac.cpp'
-USE_TEMPLATE = os.path.exists(template_path)
-setup_requires=['numpy', 'pycompilation', 'pycodeexport', 'mako', 'block_diag_ilu>=0.3.3',
-                'pycvodes>=0.8.3', 'finitediff>=0.3.5'],
-install_requires = ['numpy', 'chempy>=0.5.2', 'quantities>=0.12.1', 'block_diag_ilu', 'pycvodes>=0.8.3', 'finitediff>=0.3.5']
+_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.3.3', 'pycvodes>=0.10.4', 'finitediff>=0.4.0']
+setup_requires = _common_requires + ['mako>=1.0']
+install_requires = _common_requires + ['chempy>=0.6.7', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
+USE_CYTHON = None
+
+# Cythonize .pyx file if it exists (not in source distribution)
+ext_modules = []
 
 if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         '--help-commands', 'egg_info', 'clean', '--version'):
@@ -101,83 +81,48 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import finitediff as fd
     import pycvodes as pc
     import block_diag_ilu as bdi
-    if USE_TEMPLATE:
-        from pycodeexport.dist import PCEExtension, pce_build_ext, pce_sdist
-    else:
-        # If building from sdist no need for more than pycompilation
-        from pycompilation.dist import PCExtension as PCEExtension
-        from pycompilation.dist import pc_build_ext as pce_build_ext
-        from pycompilation.dist import pc_sdist as pce_sdist
 
-    cmdclass_['build_ext'] = pce_build_ext
-    cmdclass_['sdist'] = pce_sdist
-    subsd = {'WITH_OPENMP': _WITH_OPENMP}
-    pyx_path = 'chemreac/_chemreac.pyx'
-    using_pyx = os.path.exists(pyx_path)  # No pyx in source dist
-    pyx_or_cpp = pyx_path if using_pyx else pyx_path[:-3]+'cpp'
-    sources = [
-        template_path if USE_TEMPLATE else rendered_path,
-        pyx_or_cpp,
-    ]
-    _inc_dirs = [
+    rendered_path = 'src/chemreac.cpp'
+    template_path = rendered_path + '.mako'
+
+    if os.path.exists(template_path):
+        from mako.template import Template
+        from mako.exceptions import text_error_template
+        subsd = {'WITH_OPENMP': _WITH_OPENMP}
+        try:
+            rendered = Template(open(template_path, 'rt').read()).render(**subsd)
+        except:
+            sys.stderr.write(text_error_template().render_unicode())
+            raise
+        else:
+            open(rendered_path, 'wt').write(rendered)
+
+    try:
+        from Cython.Build import cythonize
+    except ImportError:
+        USE_CYTHON = False
+    else:
+        pyx_path = 'chemreac/_chemreac.pyx'
+        USE_CYTHON = os.path.exists(pyx_path)
+
+    ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
+
+    if USE_CYTHON:
+        ext_modules = cythonize(ext_modules, include_path=['chemreac/include', pc.get_include()])
+    ext_modules[0].include_dirs += [
         np.get_include(), fd.get_include(), bdi.get_include(),
         pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
     ]
-    ext_modules_ = [
-        PCEExtension(
-            "chemreac._chemreac",
-            sources=sources,
-            template_regexps=[
-                (r'^(\w+)_template.(\w+)$', r'\1.\2', subsd),
-            ] if USE_TEMPLATE else (),
-            pycompilation_compile_kwargs={
-                'per_file_kwargs': {
-                    'src/chemreac.cpp': {
-                        'std': 'c++14',
-                        # 'fast' doesn't work on drone.io
-                        'flags': flags,
-                        'options': options,
-                        'define': (['CHEMREAC_WITH_DEBUG'] if _WITH_DEBUG else []) +
-                        (['CHEMREAC_WITH_DATA_DUMPING'] if _WITH_DATA_DUMPING else []) +
-                        (['BLOCK_DIAG_ILU_WITH_OPENMP'] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else []) +
-                        (['BLOCK_DIAG_ILU_WITH_DGETRF'] if os.environ.get('BLOCK_DIAG_ILU_WITH_DGETRF', '') == '1' else []),
-                    },
-                    'src/chemreac_sundials.cpp': {
-                        'std': 'c++14',
-                        'flags': flags,
-                        'options': options
-                    },
-                    pyx_or_cpp: {
-                        'cy_kwargs': {
-                            'annotate': True,
-                            'include_path': _inc_dirs
-                        },
-                        'std': 'c++14',
-                        'define': ['CYTHON_TRACE=1'],
-                        'gdb_debug': _WITH_DEBUG,
-                    } if using_pyx else {
-                        'std': 'c++14',
-                        'define': ['CYTHON_TRACE=1'],
-                        'inc_py': True,
-                    }
-                },
-                'flags': flags,
-                'options': options,
-            },
-            pycompilation_link_kwargs={
-                'options': options,
-                'std': 'c++14',
-            },
-            include_dirs=_inc_dirs,
-            libraries=pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m'],
-            logger=True,
-        )
-    ]
-else:
-    # Enbale pip to probe setup.py before all requirements are installed
-    ext_modules_ = []
-    if USE_TEMPLATE:
-        install_requires += setup_requires
+    ext_modules[0].sources = [rendered_path] + ext_modules[0].sources
+    ext_modules[0].language = 'c++'
+    ext_modules[0].extra_compile_args = ['-std=c++14'] + (['-fopenmp'] if _WITH_OPENMP else [])
+    ext_modules[0].define_macros +=  (
+        ([('CHEMREAC_WITH_DEBUG', None)] if _WITH_DEBUG else []) +
+        ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
+        ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else []) +
+        ([('BLOCK_DIAG_ILU_WITH_DGETRF', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_DGETRF', '') == '1' else [])
+    )
+    ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
 
 modules = [
     pkg_name+'.util',
@@ -223,8 +168,7 @@ setup_kwargs = dict(
     package_data={
         'chemreac.tests': ['*.json', '*.txt']
     },
-    cmdclass=cmdclass_,
-    ext_modules=ext_modules_,
+    ext_modules=ext_modules,
     classifiers=classifiers,
     setup_requires=setup_requires,
     install_requires=install_requires,
