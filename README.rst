@@ -136,6 +136,8 @@ The following environment variables are also supported by
 +-----------------------------------------+-------+--------------------------------------------------+
 |``WITH_DATA_DUMPING``                    |0      |For debugging purposes only                       |
 +-----------------------------------------+-------+--------------------------------------------------+
+|``WITH_DEBUG``                           |0      |For debugging purposes only                       |
++-----------------------------------------+-------+--------------------------------------------------+
 
 Enabling the first three is known to provide significant speed up for some scenarios (performance is
 system dependent, hence recommendations are not possible to give without benchmarking).
