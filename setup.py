@@ -167,8 +167,7 @@ setup_kwargs = dict(
     package_data={
         'chemreac.tests': ['*.json', '*.txt']
     },
-    cmdclass=cmdclass_,
-    ext_modules=ext_modules_,
+    ext_modules=ext_modules,
     classifiers=classifiers,
     setup_requires=setup_requires,
     install_requires=install_requires,
