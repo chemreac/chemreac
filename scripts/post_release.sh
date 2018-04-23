@@ -1,7 +1,7 @@
 #!/bin/bash
 # Usage:
 #
-#    $ ./scripts/post_release.sh v1.2.3 myserver githubuser upstream
+#    $ ANFILTE_CHANNELS="defaults conda-forge" ./scripts/post_release.sh v1.2.3 myserver githubuser upstream
 #
 VERSION=${1#v}
 SERVER=$2
