@@ -1,9 +1,6 @@
-## -*- coding: utf-8; compile-command: "cd ~/vc/chemreac; rm -r build/; PYTHONPATH=~/vc/pycompilation:~/vc/pycodeexport python setup.py build_ext -i; cd build/temp.linux-x86_64-2.7; /usr/bin/g++ -O2 -c -std=c++0x -fPIC -Wall -Wextra -o src/chemreac.o -I/home/bjorn/vc/chemreac/src -I/home/bjorn/vc/chemreac/src/finitediff/include -I/home/bjorn/vc/chemreac/src/finitediff/external/newton_interval/include -I/home/bjorn/.local/lib/python2.7/site-packages/numpy/core/include src/chemreac.cpp" -*-
-// ${_warning_in_the_generated_file_not_to_edit}
-<%doc>
-// This is a templated source file.
-// Render template using Mako (Python templating engine)
-</%doc>
+// ${'-{0}- eval: (read-only-mode) -{0}-'.format('*')}
+// ${__import__('codecs').encode('Guvf svyr jnf trarengrq, qb abg rqvg', 'rot_13')}
+<%doc> This is a source file template for use with the Python rendering engine "mako" </%doc>
 #include <algorithm> // std::count
 //#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
