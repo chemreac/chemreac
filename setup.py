@@ -104,7 +104,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         pyx_path = 'chemreac/_chemreac.pyx'
         USE_CYTHON = os.path.exists(pyx_path)
 
-    ext_modules = [Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')])]
+    ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
 
     if USE_CYTHON:
         ext_modules = cythonize(ext_modules, include_path=['./include'])
@@ -122,11 +122,6 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('BLOCK_DIAG_ILU_WITH_DGETRF', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_DGETRF', '') == '1' else [])
     )
     ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
-else:
-    # Enbale pip to probe setup.py before all requirements are installed
-    ext_modules_ = []
-    if USE_TEMPLATE:
-        install_requires += setup_requires
 
 modules = [
     pkg_name+'.util',
