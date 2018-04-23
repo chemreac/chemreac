@@ -7,26 +7,23 @@ from libcpp.utility cimport pair
 from libcpp.unordered_map cimport unordered_map
 from libcpp.string cimport string
 
-cdef extern from *:
-    ctypedef unsigned int uint
-
 cdef extern from "chemreac.hpp" namespace "chemreac":
     cdef cppclass ReactionDiffusion[T]:
         # (Private)
         T * D_weight
 
-        const uint n, N, nr, nstencil, nsidep
+        const int n, N, nr, nstencil, nsidep
         const bool logy, logt, logx, lrefl, rrefl, auto_efield
-        const vector[vector[uint]] stoich_active
-        vector[vector[uint]] stoich_inact
-        const vector[vector[uint]] stoich_prod
+        const vector[vector[int]] stoich_active
+        vector[vector[int]] stoich_inact
+        const vector[vector[int]] stoich_prod
         vector[T] k
         vector[T] D
         vector[T] mobility
         vector[int] z_chg
         const vector[T] x
         vector[vector[T]] bin_k_factor
-        vector[uint] bin_k_factor_span
+        vector[int] bin_k_factor_span
         const pair[T, T] surf_chg
         const T eps_rel
         const T faraday_const
@@ -37,7 +34,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[int] modulated_rxns
         vector[vector[T]] modulation
         T ilu_limit
-        uint n_jac_diags
+        int n_jac_diags
         bool use_log2
         T * const efield
         T * xc
@@ -55,21 +52,21 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         unordered_map[string, vector[double]] last_integration_info_vecdbl
         unordered_map[string, vector[int]] last_integration_info_vecint
 
-        ReactionDiffusion(uint,
-                          const vector[vector[uint]],
-                          const vector[vector[uint]],
+        ReactionDiffusion(int,
+                          const vector[vector[int]],
+                          const vector[vector[int]],
                           vector[T],
-                          uint,
+                          int,
                           vector[T],
                           const vector[int],
                           vector[T],
                           const vector[T],
-                          vector[vector[uint]],
+                          vector[vector[int]],
                           int,
                           bool,
                           bool,
                           bool,
-                          uint,
+                          int,
                           bool,
                           bool,
                           bool,
@@ -83,7 +80,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           vector[int],
                           vector[vector[T]],
                           T,
-                          uint,
+                          int,
                           bool
                           ) except +
         void zero_counters() except +
@@ -93,9 +90,9 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         void banded_jac_cmaj(T, const T * const, const T * const, T * const, long int) except +
         void compressed_jac_cmaj(T, const T * const, const T * const, T * const, long int) except +
 
-        void per_rxn_contrib_to_fi(T, const T * const, uint, T * const) except +
+        void per_rxn_contrib_to_fi(T, const T * const, int, T * const) except +
         int get_geom_as_int() except +
         void calc_efield(const T * const) except +
 
-        uint stencil_bi_lbound_(uint) except +
-        uint xc_bi_map_(uint) except +
+        int stencil_bi_lbound_(int) except +
+        int xc_bi_map_(int) except +

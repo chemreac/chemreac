@@ -29,28 +29,28 @@ public:
     int * coeff_inact;
     Real_t * D_weight; // diffusion weights
     Real_t * A_weight; // Advection weights
-    uint n_factor_affected_k;
+    int n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
     void * integrator {nullptr};
 
     void fill_local_r_(int, const Real_t * const __restrict__, Real_t * const __restrict__) const;
-    void apply_fd_(uint);
+    void apply_fd_(int);
     const Real_t * alloc_and_populate_linC(const Real_t * const __restrict__, bool=false, bool=false) const;
-    uint stencil_bi_lbound_(uint bi) const;
-    uint xc_bi_map_(uint xci) const;
+    int stencil_bi_lbound_(int bi) const;
+    int xc_bi_map_(int xci) const;
 
 public:
-    const uint n; // number of species
-    const uint N; // number of compartments
-    const uint nstencil; // number of points used in finite difference stencil
-    const uint nsidep; // (nstencil-1)/2
-    const uint nr; // number of reactions
+    const int n; // number of species
+    const int N; // number of compartments
+    const int nstencil; // number of points used in finite difference stencil
+    const int nsidep; // (nstencil-1)/2
+    const int nr; // number of reactions
     const bool logy; // use logarithmic concenctraction
     const bool logt; // use logarithmic time
     const bool logx; // use logarithmic x (space coordinate)
-    const vector<vector<uint> > stoich_active; // Reactants per reaction
-    const vector<vector<uint> > stoich_inact; // Active reactants per reaction
-    const vector<vector<uint> > stoich_prod; // Products per reaction
+    const vector<vector<int> > stoich_active; // Reactants per reaction
+    const vector<vector<int> > stoich_inact; // Active reactants per reaction
+    const vector<vector<int> > stoich_prod; // Products per reaction
     vector<Real_t> k; // Rate coefficients (law of mass action)
     vector<Real_t> D; // Diffusion coefficients
     vector<int> z_chg; // ion charge
@@ -68,7 +68,7 @@ public:
     vector<int> modulated_rxns;
     vector<vector<Real_t> > modulation;
     const Real_t ilu_limit;
-    const uint n_jac_diags;
+    const int n_jac_diags;
     const bool use_log2;
 
     Real_t * const efield; // v_d = mu_el*E
@@ -93,21 +93,21 @@ public:
     long nprec_solve_ilu {0};
     long nprec_solve_lu {0};
 
-    ReactionDiffusion(uint,
-		      const vector<vector<uint> >,
-		      const vector<vector<uint> >,
+    ReactionDiffusion(int,
+		      const vector<vector<int> >,
+		      const vector<vector<int> >,
 		      vector<Real_t>,
-		      uint,
+		      int,
 		      vector<Real_t>,
                       const vector<int>,
                       vector<Real_t>,
 		      const vector<Real_t>,
-		      vector<vector<uint> >,
+		      vector<vector<int> >,
 		      int geom_=0,
 		      bool logy=false,
 		      bool logt=false,
                       bool logx=false,
-                      uint nstencil=3,
+                      int nstencil=3,
                       bool lrefl=false,
                       bool rrefl=false,
                       bool auto_efield=false,
@@ -121,7 +121,7 @@ public:
                       vector<int> modulated_rxns={},
                       vector<vector<Real_t> > modulation={},
                       Real_t ilu_limit=1000.0,
-                      uint n_jac_diags=0,
+                      int n_jac_diags=0,
                       bool use_log2=false
                       );
     ~ReactionDiffusion();
@@ -143,7 +143,7 @@ public:
     Real_t get_mod_k(int bi, int ri) const;
 
     // For iterative linear solver
-    // void local_reaction_jac(const uint, const Real_t * const, Real_t * const __restrict__, Real_t) const;
+    // void local_reaction_jac(const int, const Real_t * const, Real_t * const __restrict__, Real_t) const;
     AnyODE::Status jac_times_vec(const Real_t * const __restrict__ vec,
                                  Real_t * const __restrict__ out,
                                  Real_t t, const Real_t * const __restrict__ y,
@@ -162,7 +162,7 @@ public:
                                    const Real_t * const __restrict__ ewt
                                    ) override;
 
-    void per_rxn_contrib_to_fi(Real_t, const Real_t * const __restrict__, uint, Real_t * const __restrict__) const;
+    void per_rxn_contrib_to_fi(Real_t, const Real_t * const __restrict__, int, Real_t * const __restrict__) const;
     int get_geom_as_int() const;
     void calc_efield(const Real_t * const);
 
