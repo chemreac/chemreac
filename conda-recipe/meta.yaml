@@ -10,19 +10,22 @@ source:
   git_url: ../
 
 build:
-  number: 0
+  number: 200
   features:
     - blas_{{ variant }}  # [not win]
 
 requirements:
   build:
     - blas 1.1 {{ variant }}  # [not win]
-    - openblas 0.2.19*  # [not win]
+    - openblas 0.2.20*  # [not win]
+    - clangdev >=6.0
+    - libcxx >=6.0
     - python
     - setuptools
+    - pip
     - cython
     - numpy
-    - sundials <3.0.0
+    - sundials
     - mako
     - quantities >=0.12.1
     - pycompilation
@@ -30,15 +33,15 @@ requirements:
     - block_diag_ilu
     - finitediff
     - pycvodes
-    - libgcc
   run:
     - blas 1.1 {{ variant }}  # [not win]
-    - openblas 0.2.19*  # [not win]
+    - openblas 0.2.20*  # [not win]
+    - libcxx >=6.0
     - python
     - cython
     - numpy
     - scipy
-    - sundials <3.0.0
+    - sundials
     - mako
     - quantities >=0.12.1
     - pycompilation
@@ -47,7 +50,6 @@ requirements:
     - finitediff
     - pycvodes
     - chempy
-    - libgcc
 
 test:
   requires:
