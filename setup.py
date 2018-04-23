@@ -107,7 +107,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
 
     if USE_CYTHON:
-        ext_modules = cythonize(ext_modules, include_path=['./include'])
+        ext_modules = cythonize(ext_modules, include_path=['chemreac/include', pc.get_include()])
     ext_modules[0].include_dirs += [
         np.get_include(), fd.get_include(), bdi.get_include(),
         pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
