@@ -59,6 +59,7 @@ else:
                 warnings.warn("Using git to derive version: dev-branches may compete.")
                 __version__ = re.sub('v([0-9.]+)-(\d+)-(\w+)', r'\1.post\2+\3', _git_version)  # .dev < '' < .post
 
+_WITH_DEBUG = env['WITH_DEBUG'] == '1'
 _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
