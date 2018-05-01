@@ -1,0 +1,130 @@
+python3 examples/examples/analytic_N_scaling.py --nNs 6 --plot --savefig _generated/analytic_N_scaling.png
+sphinx-build -b html -d _build/doctrees   . _build/html
+Running Sphinx v1.7.4
+making output directory...
+loading pickled environment... not yet created
+building [mo]: targets for 0 po files that are out of date
+building [html]: targets for 27 source files that are out of date
+updating environment: 27 added, 0 changed, 0 removed
+reading sources... [  3%] chemistry
+reading sources... [  7%] core
+reading sources... [ 11%] derivations
+reading sources... [ 14%] dev
+reading sources... [ 18%] examples/analytic_N_scaling
+reading sources... [ 22%] examples/analytic_diffusion
+reading sources... [ 25%] examples/aqueous_radiolysis
+reading sources... [ 29%] examples/auto_efield
+reading sources... [ 33%] examples/const_surf_conc
+reading sources... [ 37%] examples/decay
+reading sources... [ 40%] examples/equilibrium
+reading sources... [ 44%] examples/four_species
+reading sources... [ 48%] examples/index
+reading sources... [ 51%] examples/steady_state_approx
+reading sources... [ 55%] index
+reading sources... [ 59%] install
+reading sources... [ 62%] integrate
+reading sources... [ 66%] modules
+reading sources... [ 70%] util/analysis
+reading sources... [ 74%] util/banded
+reading sources... [ 77%] util/grid
+reading sources... [ 81%] util/index
+reading sources... [ 85%] util/plotting
+reading sources... [ 88%] util/pyutil
+reading sources... [ 92%] util/stoich
+reading sources... [ 96%] util/table
+reading sources... [100%] util/testing
+
+looking for now-outdated files... none found
+pickling environment... done
+checking consistency... done
+preparing documents... done
+writing output... [  3%] chemistry
+writing output... [  7%] core
+writing output... [ 11%] derivations
+writing output... [ 14%] dev
+writing output... [ 18%] examples/analytic_N_scaling
+writing output... [ 22%] examples/analytic_diffusion
+writing output... [ 25%] examples/aqueous_radiolysis
+writing output... [ 29%] examples/auto_efield
+writing output... [ 33%] examples/const_surf_conc
+writing output... [ 37%] examples/decay
+writing output... [ 40%] examples/equilibrium
+writing output... [ 44%] examples/four_species
+writing output... [ 48%] examples/index
+writing output... [ 51%] examples/steady_state_approx
+writing output... [ 55%] index
+writing output... [ 59%] install
+writing output... [ 62%] integrate
+writing output... [ 66%] modules
+writing output... [ 70%] util/analysis
+writing output... [ 74%] util/banded
+writing output... [ 77%] util/grid
+writing output... [ 81%] util/index
+writing output... [ 85%] util/plotting
+writing output... [ 88%] util/pyutil
+writing output... [ 92%] util/stoich
+writing output... [ 96%] util/table
+writing output... [100%] util/testing
+
+generating indices... genindex py-modindex
+highlighting module code... [  5%] analytic_N_scaling
+highlighting module code... [ 10%] analytic_diffusion
+highlighting module code... [ 15%] aqueous_radiolysis
+highlighting module code... [ 20%] auto_efield
+highlighting module code... [ 25%] chemreac.chemistry
+highlighting module code... [ 30%] chemreac.core
+highlighting module code... [ 35%] chemreac.integrate
+highlighting module code... [ 40%] chemreac.util.analysis
+highlighting module code... [ 45%] chemreac.util.banded
+highlighting module code... [ 50%] chemreac.util.grid
+highlighting module code... [ 55%] chemreac.util.plotting
+highlighting module code... [ 60%] chemreac.util.pyutil
+highlighting module code... [ 65%] chemreac.util.stoich
+highlighting module code... [ 70%] chemreac.util.table
+highlighting module code... [ 75%] chemreac.util.testing
+highlighting module code... [ 80%] const_surf_conc
+highlighting module code... [ 85%] decay
+highlighting module code... [ 90%] equilibrium
+highlighting module code... [ 95%] four_species
+highlighting module code... [100%] steady_state_approx
+
+writing additional pages... search
+copying images... [  6%] examples/../_generated/decay.png
+copying images... [ 13%] examples/../_generated/analytic_diffusion.png
+copying images... [ 20%] examples/../_generated/equilibrium_scaled.png
+copying images... [ 26%] examples/../_generated/auto_efield.png
+copying images... [ 33%] examples/../_generated/const_surf_conc_logy_logx.png
+copying images... [ 40%] examples/../_generated/equilibrium.png
+copying images... [ 46%] examples/../_generated/aqueous_radiolysis.png
+copying images... [ 53%] examples/../_generated/equilibrium_unscaled.png
+copying images... [ 60%] examples/../_generated/four_species.png
+copying images... [ 66%] examples/../_generated/steady_state_approx.png
+copying images... [ 73%] examples/../_generated/four_species_per_reaction.png
+copying images... [ 80%] examples/../_generated/decay_long.png
+copying images... [ 86%] examples/../_generated/decay_long_damp.png
+copying images... [ 93%] examples/../_generated/const_surf_conc.png
+copying images... [100%] examples/../_generated/four_species_jacobian.png
+
+copying downloadable files... [  7%] examples/examples/analytic_diffusion.py
+copying downloadable files... [ 15%] examples/examples/analytic_N_scaling.py
+copying downloadable files... [ 23%] examples/examples/equilibrium.py
+copying downloadable files... [ 30%] _generated/steady_state_approx.html
+copying downloadable files... [ 38%] examples/examples/aqueous_radiolysis.json
+copying downloadable files... [ 46%] examples/examples/steady_state_approx.py
+copying downloadable files... [ 53%] examples/examples/auto_efield.py
+copying downloadable files... [ 61%] examples/examples/aqueous_radiolysis.py
+copying downloadable files... [ 69%] examples/examples/decay.py
+copying downloadable files... [ 76%] examples/examples/plot_analytic_N_scaling.py
+copying downloadable files... [ 84%] examples/examples/four_species.py
+copying downloadable files... [ 92%] examples/examples/const_surf_conc.py
+copying downloadable files... [100%] examples/examples/four_species.json
+
+copying static files... done
+copying extra files... done
+dumping search index in English (code: en) ... done
+dumping object inventory... done
+build succeeded, 9 warnings.
+
+The HTML pages are in _build/html.
+
+Build finished. The HTML pages are in _build/html.
