@@ -6,21 +6,16 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
 fi
 
 set -e
-for PY in python2 python3; do
-    $PY -m pip install --user -e .[all]
-    if [[ $PY == *2 ]]; then
-        PYTHON=$PY ./scripts/run_tests.sh
-    else
-        PYTHON=$PY ./scripts/run_tests.sh ${@:2}
-    fi
-done
+python3 -m pip install --user -e .[all]
+./scripts/run_tests.sh ${@:2}
+python3 -m pip uninstall $PKG_NAME
 
-[[ $(python setup.py --version) =~ ^[0-9]+.[0-9]+* ]]  # make sure ./setup.py --version returns X.X*
-
-python2 setup.py sdist
+python3 setup.py sdist
 cp dist/${PKG_NAME}-*.tar.gz /tmp
-(cd /; python2 -m pip install --force-reinstall /tmp/${PKG_NAME}-*.tar.gz; python2 -c "import $PKG_NAME")
+(cd /; python3 -m pip install --force-reinstall /tmp/${PKG_NAME}-*.tar.gz; python3 -c "import $PKG_NAME")
+python3 -m pip uninstall $PKG_NAME
 
 # Make sure repo is pip installable from git-archive zip
 git archive -o /tmp/$PKG_NAME.zip HEAD
 (cd /; python3 -m pip install --force-reinstall /tmp/$PKG_NAME.zip; python3 -c "import ${PKG_NAME}")
+python3 -m pip uninstall $PKG_NAME
