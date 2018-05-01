@@ -1,3 +1,7 @@
+v0.7.7
+======
+- AnyODE v14
+
 v0.7.6
 ======
 - More robust build (conda-recipe)
