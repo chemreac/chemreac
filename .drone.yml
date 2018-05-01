@@ -13,7 +13,6 @@ build:
     - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband
   commands:
     - if [ ! -d /drone/sundials-3.1 ]; then .ci/download_and_install_sundials-3.1.sh /drone/sundials-3.1; fi
-    - python3 -m pip install --ignore-installed --no-deps quantities==0.12.1
     - PYCVODES_LAPACK=lapack,blas ./scripts/ci.sh chemreac
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
