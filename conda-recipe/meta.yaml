@@ -32,7 +32,7 @@ requirements:
     - pycodeexport
     - block_diag_ilu
     - finitediff
-    - pycvodes
+    - pycvodes >=0.10.5
   run:
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.20*  # [not win]

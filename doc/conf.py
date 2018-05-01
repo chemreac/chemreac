@@ -59,7 +59,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'chemreac'
-copyright = u'2014-2016, Björn I. Dahlgren'
+copyright = u'2014-2018, Björn I. Dahlgren'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

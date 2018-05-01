@@ -360,22 +360,22 @@ cdef class PyReactionDiffusion:
     property last_integration_info:
         def __get__(self):
             return {str(k.decode('utf-8')): v for k, v
-                    in dict(self.thisptr.last_integration_info).items()}
+                    in dict(self.thisptr.current_info.nfo_int).items()}
 
     property last_integration_info_dbl:
         def __get__(self):
             return {str(k.decode('utf-8')): v for k, v
-                    in dict(self.thisptr.last_integration_info_dbl).items()}
+                    in dict(self.thisptr.current_info.nfo_dbl).items()}
 
     property last_integration_info_vecdbl:
         def __get__(self):
             return {str(k.decode('utf-8')): np.array(v, dtype=np.float64) for k, v
-                    in dict(self.thisptr.last_integration_info_vecdbl).items()}
+                    in dict(self.thisptr.current_info.nfo_vecdbl).items()}
 
     property last_integration_info_vecint:
         def __get__(self):
             return {str(k.decode('utf-8')): np.array(v, dtype=np.int) for k, v
-                    in dict(self.thisptr.last_integration_info_vecint).items()}
+                    in dict(self.thisptr.current_info.nfo_vecint).items()}
 
     def zero_counters(self):
         self.thisptr.zero_counters()

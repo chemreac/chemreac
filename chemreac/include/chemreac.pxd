@@ -7,6 +7,8 @@ from libcpp.utility cimport pair
 from libcpp.unordered_map cimport unordered_map
 from libcpp.string cimport string
 
+from anyode cimport Info
+
 cdef extern from "chemreac.hpp" namespace "chemreac":
     cdef cppclass ReactionDiffusion[T]:
         # (Private)
@@ -47,10 +49,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         long nprec_solve_ilu
         long nprec_solve_lu
 
-        unordered_map[string, int] last_integration_info
-        unordered_map[string, double] last_integration_info_dbl
-        unordered_map[string, vector[double]] last_integration_info_vecdbl
-        unordered_map[string, vector[int]] last_integration_info_vecint
+        Info current_info
 
         ReactionDiffusion(int,
                           const vector[vector[int]],

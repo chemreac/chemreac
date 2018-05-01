@@ -51,7 +51,7 @@ doc/_build.log
 
 # Various
 __conda_version__.txt
-.cache/
+.*cache/
 .metadata_CompilerRunner
 .coverage
 htmlcov/
