@@ -441,7 +441,8 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
 
 
 def plot_C_vs_t(integr, **kwargs):
-    return plot_C_vs_t_in_bin(integr.rd, integr.with_units('tout'), integr.with_units('Cout'), **kwargs)
+    return plot_C_vs_t_in_bin(
+        integr.rd, integr.with_units('tout'), integr.with_units('Cout'), **kwargs)
 
 
 def plot_C_vs_t_in_bin(
@@ -487,7 +488,7 @@ def plot_C_vs_t_in_bin(
                       r" x $\langle$ {1:.2g} m")
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
-                              dict(loc='upper left', prop={'size': 12}))
+                              dict(loc='upper left'))
     ls = ls or DEFAULT['ls']
     c = c or DEFAULT['c']
     ax, substances, labels = _init_ax_substances_labels(
