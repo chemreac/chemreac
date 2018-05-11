@@ -451,6 +451,7 @@ def cvode_predefined(
         vector[double] roots_output
         int nderiv = 0
     assert y0.size == rd.n*rd.N
+    assert atol.size() in (1, rd.n*rd.N)
     simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
@@ -480,6 +481,7 @@ def cvode_predefined_durations_fields(
     assert npoints > 0
     assert durations.size == fields.size
     assert y0.size == rd.n*rd.N
+    assert atol.size() in (1, rd.n*rd.N)
     assert len(rd.g_values) == 1, 'only field type assumed for now'
     for i in range(rd.n*rd.N):
         yout[i] = y0[i]
@@ -520,6 +522,7 @@ def cvode_adaptive(
         double * xyout = <double *>malloc(td*(y0.size*(nderiv+1) + 1)*sizeof(double))
         cnp.npy_intp xyout_dims[2]
     assert y0.size == rd.n*rd.N
+    assert atol.size() in (1, rd.n*rd.N)
     xyout[0] = t0
     for i in range(y0.size):
         xyout[i+1] = y0[i]

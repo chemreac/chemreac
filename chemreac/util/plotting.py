@@ -429,7 +429,7 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
     if labels is None:
         try:
             if not latex_names_None:
-                names = ['$'+n+'$' for n in rd.substance_latex_names]
+                names = ['$\\mathrm{'+n+'}$' for n in rd.substance_latex_names]
             else:
                 names = rd.substance_names
         except AttributeError:
