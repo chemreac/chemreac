@@ -315,6 +315,10 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.use_log2
 
+    property clip_to_pos:
+        def __get__(self):
+            return self.thisptr.clip_to_pos
+
     def logb(self, x):
         """ log_2 if self.use_log2 else log_e """
         result = np.log(x)
