@@ -71,7 +71,8 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     vector<vector<Real_t> > modulation,
     Real_t ilu_limit,
     int n_jac_diags,
-    bool use_log2):
+    bool use_log2,
+    bool clip_to_pos):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
@@ -81,7 +82,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
     ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags), use_log2(use_log2),
-    efield(new Real_t[N]), netchg(new Real_t[N])
+    clip_to_pos(clip_to_pos), efield(new Real_t[N]), netchg(new Real_t[N])
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -368,7 +369,7 @@ ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict
         Real_t tmp = 1;
 
         // Kinetically active reactants (law of massaction)
-        for (int rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
+        for (unsigned rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
             // reactant index rnti
             int si = stoich_active[rxni][rnti];
             tmp *= C[bi*n+si];
@@ -398,7 +399,7 @@ ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restri
             if (recip)
                 linC[bi*n + si] = (apply_exp) ? expb(-Y(bi, si)) : 1.0/Y(bi, si);
             else
-                linC[bi*n + si] = (apply_exp) ? expb(Y(bi, si)) : Y(bi, si);
+                linC[bi*n + si] = (apply_exp) ? expb(Y(bi, si)) : ( clip_to_pos ? std::abs(Y(bi, si)) : Y(bi, si) );
         }
     }
     return linC;
@@ -441,7 +442,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
             }
         }
         // Contribution from particle/electromagnetic fields
-        for (int fi=0; fi<this->fields.size(); ++fi){
+        for (unsigned fi=0; fi<this->fields.size(); ++fi){
             if (fields[fi][bi] == 0)
                 continue; // exit early
             const Real_t gfact = (g_value_parents[fi] == -1) ? \
@@ -575,7 +576,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                     if (Akj == 0 || Ski == 0)
                         continue;
                     Real_t qkj = get_mod_k(bi, rxni)*Akj*pow(LINC(bi, dsi), Akj-1);
-                    for (int rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
+                    for (unsigned rnti=0; rnti < stoich_active[rxni].size(); ++rnti){
                         const int rnti_si = stoich_active[rxni][rnti];
                         if (rnti_si == dsi)
                             continue;
@@ -585,7 +586,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                     // std::cout << jac.block(bi, si, dsi) << "\n";
                 }
                 // Contribution from particle/electromagnetic fields
-                for (int fi=0; fi<(this->fields.size()); ++fi){
+                for (unsigned fi=0; fi<(this->fields.size()); ++fi){
                     const int Ski = (g_values[fi][si] != 0.0) ? 1 : 0;
                     const int Akj = ((int)dsi == g_value_parents[fi]) ? 1 : 0;
                     const Real_t rk = fields[fi][bi]*g_values[fi][si];

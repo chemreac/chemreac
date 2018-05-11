@@ -79,6 +79,7 @@ cdef class PyReactionDiffusion:
                   double ilu_limit=1000.0,
                   int n_jac_diags=1,
                   bint use_log2=False,
+                  bint clip_to_pos=False
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion[double](
@@ -87,7 +88,7 @@ cdef class PyReactionDiffusion:
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
-            modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2)
+            modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2, clip_to_pos)
 
     def __dealloc__(self):
         del self.thisptr

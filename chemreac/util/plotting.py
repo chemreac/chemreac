@@ -511,7 +511,7 @@ def plot_C_vs_t_in_bin(
 
 
 def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
-                xscale='log', yscale='log', basetitle="C(x)"):
+                xscale='log', yscale='log', basetitle="C(x)", ls=None, c=None):
     """
     Plots concentration as function of x for selected
     substances at time index 'ti'.
@@ -536,10 +536,12 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
     """
     ax, substances, labels = _init_ax_substances_labels(
         rd, ax, substances, labels, xscale, yscale)
+    ls = ls or DEFAULT['ls']
+    c = c or DEFAULT['c']
     x_edges = np.repeat(rd.x, 2)[1:-1]
     for i, lbl in zip(substances, labels):
         y_edges = np.repeat(Cout[ti, :, i], 2)
-        ax.plot(x_edges, y_edges, label=lbl)
+        ax.plot(x_edges, y_edges, label=lbl, ls=ls[i % len(ls)], c=c[i % len(c)])
     ax.set_xlabel("x / m")
     ax.set_ylabel("C / M")
     ax.set_title(basetitle+" at t = {0:.3g} s".format(tout[ti]))
