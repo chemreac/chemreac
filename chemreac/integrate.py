@@ -528,7 +528,7 @@ class Integration(object):
             raise ValueError("Unknown attr: %s" % attr)
 
     def unitless_as(self, attr, unit):
-        if unit == None:
+        if unit is None:
             if attr == 'tout':
                 return self.tout
             elif attr == 'Cout':
