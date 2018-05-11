@@ -8,6 +8,7 @@ DEFAULT = dict(
     ls=('--', ':', '-.', '-')
 )
 
+
 def animate_C_vs_x(integr, ax, xunit=None, yunit=None, auto_ylim=False, title_fmt='t = {}',
                    ls=None, c=None):
     rd = integr.rd
