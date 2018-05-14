@@ -1,6 +1,4 @@
 import numpy as np
-from matplotlib import animation as manim
-from chempy.units import to_unitless, get_derived_unit
 
 DEFAULT = dict(
     c=('tab:cyan', 'tab:red', 'tab:olive', 'tab:gray', 'tab:purple',
@@ -16,7 +14,6 @@ def animate_C_vs_x(integr, ax, xunit=None, yunit=None, auto_ylim=False, title_fm
     y_edges = np.repeat(integr.unitless_as('Cout', yunit), 2, axis=1)
 
     if auto_ylim:
-        ylim = ax.get_ylim()
         ax.set_ylim([np.min(y_edges), np.max(y_edges)*1.05])
 
     ls = ls or DEFAULT['ls']
