@@ -1,14 +1,9 @@
 import numpy as np
-
-DEFAULT = dict(
-    c=('tab:cyan', 'tab:red', 'tab:olive', 'tab:gray', 'tab:purple',
-       'tab:brown', 'tab:pink', 'green', 'blue', 'red', 'black'),
-    ls=('--', ':', '-.', '-')
-)
+from .plotting import DEFAULT
 
 
 def animate_C_vs_x(integr, ax, xunit=None, yunit=None, auto_ylim=False, title_fmt='t = {}',
-                   ls=None, c=None):
+                   ls=None, c=None, substances=None):
     rd = integr.rd
     x_edges = np.repeat(integr.unitless_as('x', xunit), 2)[1:-1]
     y_edges = np.repeat(integr.unitless_as('Cout', yunit), 2, axis=1)
@@ -24,7 +19,8 @@ def animate_C_vs_x(integr, ax, xunit=None, yunit=None, auto_ylim=False, title_fm
     else:
         labels = ['$\\mathrm{'+n+'}$' for n in rd.substance_latex_names]
 
-    for si, k in enumerate(rd.substance_names):
+    for k in substances or rd.substance_names:
+        si = rd.substance_names.index(k)
         lines.extend(ax.plot(x_edges, y_edges[0, :, si],
                              label=labels[si], ls=ls[si % len(ls)], c=c[si % len(c)]))
     tout_wu = integr.with_units('tout')

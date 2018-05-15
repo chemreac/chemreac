@@ -206,10 +206,10 @@ def _get_per_rxn_out(rd, tout, yout, specie_indices):
     return out
 
 
-# It is bad practice to have global state in module, refactor this:
 DEFAULT = dict(
-    ls=['-', ':', '--', '-.'],
-    c='krgbycm'
+    c=('tab:cyan', 'tab:red', 'tab:olive', 'tab:gray', 'tab:purple',
+       'tab:brown', 'tab:pink', 'green', 'blue', 'red', 'black'),
+    ls=('--', ':', '-.', '-')
 )
 
 
