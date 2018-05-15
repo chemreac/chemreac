@@ -96,16 +96,16 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
         throw std::length_error(
             "k and stoich_prod of different sizes.");
     if (N>1){
-        if (D.size() != n)
+        if (D.size() != (unsigned)n)
             throw std::length_error(
                 "Length of D does not match number of species.");
-        if (mobility.size() != n)
+        if (mobility.size() != (unsigned)n)
             throw std::length_error(
                 "Length of mobility does not match number of species.");
-        if (z_chg.size() != n)
+        if (z_chg.size() != (unsigned)n)
             throw std::length_error(
                 "Length of z_chg does not match number of species.");
-        if (x.size() != N + 1)
+        if (x.size() != (unsigned)(N + 1))
             throw std::length_error(
                 "Number bin edges != number of compartments + 1.");
     }
@@ -184,11 +184,11 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
         throw std::logic_error("g_value_parents and g_values need to be of equal length");
 
     for (const auto& gs : g_values)
-        if (gs.size() != n)
+        if (gs.size() != (unsigned)n)
             throw std::logic_error("vectors in g_values need to be of length n");
 
     for (const auto& fs : fields)
-        if (fs.size() != N)
+        if (fs.size() != (unsigned)N)
             throw std::logic_error("vectors in fields need to be of length N");
 
     this->g_values = g_values;
@@ -201,7 +201,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     if (this->modulation.size() != this->modulated_rxns.size())
         throw std::logic_error("modulation size differs from modulated_rxns");
     for (const auto& mdltn : this->modulation)
-        if (mdltn.size() != N)
+        if (mdltn.size() != (unsigned)N)
             throw std::logic_error("illegally sized vector in modulation");
 }
 
