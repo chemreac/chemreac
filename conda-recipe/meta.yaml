@@ -23,7 +23,6 @@ requirements:
     - setuptools
     - pip
     - cython
-    - numpy
     - sundials
     - mako
     - quantities >=0.12.1
@@ -32,12 +31,13 @@ requirements:
     - block_diag_ilu >=0.3.6
     - finitediff
     - pycvodes >=0.10.5
+    - numpy 1.11.*
   run:
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.20*  # [not win]
     - python
     - cython
-    - numpy
+    - numpy >=1.11
     - scipy
     - sundials
     - mako
