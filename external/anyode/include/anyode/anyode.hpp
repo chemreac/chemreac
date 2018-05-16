@@ -1,11 +1,11 @@
 #ifdef ANYODE_HPP_D47BAD58870311E6B95F2F58DEFE6E37
 
-#if ANYODE_HPP_D47BAD58870311E6B95F2F58DEFE6E37 != 14
+#if ANYODE_HPP_D47BAD58870311E6B95F2F58DEFE6E37 != 15
 #error "Multiple anyode.hpp files included with version mismatch"
 #endif
 
 #else
-#define ANYODE_HPP_D47BAD58870311E6B95F2F58DEFE6E37 14
+#define ANYODE_HPP_D47BAD58870311E6B95F2F58DEFE6E37 15
 
 #include <memory>
 #include <cstdlib>
@@ -66,7 +66,7 @@ struct Info {
         for (const auto &kv : DICT_OF_VECTORS){     \
             const auto &k = kv.first;               \
             const auto &v = kv.second;              \
-            out << k << ": [";                      \
+            out << k << joiner << "[";              \
             for (auto it=v.begin();it != v.end();){ \
                 out << *it;                         \
                 ++it;                               \
@@ -76,7 +76,7 @@ struct Info {
                     out << delimiter;               \
                 }                                   \
             }                                       \
-            out << "]" << joiner;                   \
+            out << "]" << delimiter;                \
         }
         ANYODE_PRINT(nfo_vecdbl);
         ANYODE_PRINT(nfo_vecint);

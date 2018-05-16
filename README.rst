@@ -28,7 +28,8 @@ chemreac
 
 chremreac is an open source library which aims to collect tools and utilities for
 modeling of chemical kinetics problems. It is primarily designed to
-be useful in the context of aqueous phase with external radiation fields.
+be useful in the context of aqueous phase with external radiation fields (including
+advection/diffusion processes).
 
 The (heavy) numerical processing is done in rountines written in C++ which have
 been wrapped in a `Python <https://www.python.org>`_ interface using

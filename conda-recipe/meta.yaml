@@ -16,10 +16,9 @@ build:
 
 requirements:
   build:
+    - toolchain
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.20*  # [not win]
-    - clangdev >=6.0
-    - libcxx >=6.0
     - python
     - setuptools
     - pip
@@ -30,13 +29,12 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu
+    - block_diag_ilu >=0.3.6
     - finitediff
     - pycvodes >=0.10.5
   run:
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.20*  # [not win]
-    - libcxx >=6.0
     - python
     - cython
     - numpy
@@ -46,7 +44,7 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu
+    - block_diag_ilu >=0.3.6
     - finitediff
     - pycvodes
     - chempy
