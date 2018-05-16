@@ -70,6 +70,7 @@ public:
     const Real_t ilu_limit;
     const int n_jac_diags;
     const bool use_log2;
+    const bool clip_to_pos;
 
     Real_t * const efield; // v_d = mu_el*E
     Real_t * const netchg;
@@ -122,7 +123,8 @@ public:
                       vector<vector<Real_t> > modulation={},
                       Real_t ilu_limit=1000.0,
                       int n_jac_diags=0,
-                      bool use_log2=false
+                      bool use_log2=false,
+                      bool clip_to_pos=false
                       );
     ~ReactionDiffusion();
 

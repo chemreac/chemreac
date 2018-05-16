@@ -206,10 +206,10 @@ def _get_per_rxn_out(rd, tout, yout, specie_indices):
     return out
 
 
-# It is bad practice to have global state in module, refactor this:
 DEFAULT = dict(
-    ls=['-', ':', '--', '-.'],
-    c='krgbycm'
+    c=('tab:cyan', 'tab:red', 'tab:olive', 'tab:gray', 'tab:purple',
+       'tab:brown', 'tab:pink', 'green', 'blue', 'red', 'black'),
+    ls=('--', ':', '-.', '-')
 )
 
 
@@ -429,7 +429,7 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
     if labels is None:
         try:
             if not latex_names_None:
-                names = ['$'+n+'$' for n in rd.substance_latex_names]
+                names = ['$\\mathrm{'+n+'}$' for n in rd.substance_latex_names]
             else:
                 names = rd.substance_names
         except AttributeError:
@@ -441,7 +441,8 @@ def _init_ax_substances_labels(rd, ax, substances, labels, xscale, yscale):
 
 
 def plot_C_vs_t(integr, **kwargs):
-    return plot_C_vs_t_in_bin(integr.rd, integr.with_units('tout'), integr.with_units('Cout'), **kwargs)
+    return plot_C_vs_t_in_bin(
+        integr.rd, integr.with_units('tout'), integr.with_units('Cout'), **kwargs)
 
 
 def plot_C_vs_t_in_bin(
@@ -487,7 +488,7 @@ def plot_C_vs_t_in_bin(
                       r" x $\langle$ {1:.2g} m")
     legend_kwargs = legend_kwargs or {}
     set_dict_defaults_inplace(legend_kwargs,
-                              dict(loc='upper left', prop={'size': 12}))
+                              dict(loc='upper left'))
     ls = ls or DEFAULT['ls']
     c = c or DEFAULT['c']
     ax, substances, labels = _init_ax_substances_labels(
@@ -510,7 +511,7 @@ def plot_C_vs_t_in_bin(
 
 
 def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
-                xscale='log', yscale='log', basetitle="C(x)"):
+                xscale='log', yscale='log', basetitle="C(x)", ls=None, c=None):
     """
     Plots concentration as function of x for selected
     substances at time index 'ti'.
@@ -535,10 +536,12 @@ def plot_C_vs_x(rd, tout, Cout, substances, ti, ax=None, labels=None,
     """
     ax, substances, labels = _init_ax_substances_labels(
         rd, ax, substances, labels, xscale, yscale)
+    ls = ls or DEFAULT['ls']
+    c = c or DEFAULT['c']
     x_edges = np.repeat(rd.x, 2)[1:-1]
     for i, lbl in zip(substances, labels):
         y_edges = np.repeat(Cout[ti, :, i], 2)
-        ax.plot(x_edges, y_edges, label=lbl)
+        ax.plot(x_edges, y_edges, label=lbl, ls=ls[i % len(ls)], c=c[i % len(c)])
     ax.set_xlabel("x / m")
     ax.set_ylabel("C / M")
     ax.set_title(basetitle+" at t = {0:.3g} s".format(tout[ti]))

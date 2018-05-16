@@ -371,6 +371,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 ilu_limit=None,
                 n_jac_diags=-1,
                 use_log2=False,
+                clip_to_pos=False,
                 faraday_const=None,
                 vacuum_permittivity=None,
                 **kwargs):
@@ -476,7 +477,8 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                        ilu_limit is None else ilu_limit),
             n_jac_diags=(int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
                          n_jac_diags is -1 else n_jac_diags),
-            use_log2=use_log2
+            use_log2=use_log2,
+            clip_to_pos=clip_to_pos
         )
 
         rd.unit_registry = unit_registry

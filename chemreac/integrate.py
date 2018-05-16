@@ -519,11 +519,24 @@ class Integration(object):
     def with_units(self, attr):
         if attr == 'tout':
             return self.tout * get_derived_unit(self.rd.unit_registry, 'time')
-        if attr == 'Cout':
+        elif attr == 'Cout':
             return self.Cout * get_derived_unit(self.rd.unit_registry,
                                                 'concentration')
+        elif attr == 'x':
+            return self.rd.x * get_derived_unit(self.rd.unit_registry, 'length')
         else:
             raise ValueError("Unknown attr: %s" % attr)
+
+    def unitless_as(self, attr, unit):
+        if unit is None:
+            if attr == 'tout':
+                return self.tout
+            elif attr == 'Cout':
+                return self.Cout
+            elif attr == 'x':
+                return self.rd.x
+        else:
+            return to_unitless(self.with_units(attr), unit)
 
     def internal_iter(self):
         """ Returns an iterator over (t, y)-pairs

@@ -38,6 +38,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         T ilu_limit
         int n_jac_diags
         bool use_log2
+        bool clip_to_pos
         T * const efield
         T * xc
 
@@ -80,6 +81,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
                           vector[vector[T]],
                           T,
                           int,
+                          bool,
                           bool
                           ) except +
         void zero_counters() except +

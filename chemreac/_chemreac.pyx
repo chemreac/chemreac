@@ -79,6 +79,7 @@ cdef class PyReactionDiffusion:
                   double ilu_limit=1000.0,
                   int n_jac_diags=1,
                   bint use_log2=False,
+                  bint clip_to_pos=False
               ):
         cdef size_t i
         self.thisptr = new ReactionDiffusion[double](
@@ -87,7 +88,7 @@ cdef class PyReactionDiffusion:
             logy, logt, logx, nstencil,
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
-            modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2)
+            modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2, clip_to_pos)
 
     def __dealloc__(self):
         del self.thisptr
@@ -314,6 +315,10 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.use_log2
 
+    property clip_to_pos:
+        def __get__(self):
+            return self.thisptr.clip_to_pos
+
     def logb(self, x):
         """ log_2 if self.use_log2 else log_e """
         result = np.log(x)
@@ -450,6 +455,7 @@ def cvode_predefined(
         vector[double] roots_output
         int nderiv = 0
     assert y0.size == rd.n*rd.N
+    assert atol.size() in (1, rd.n*rd.N)
     simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
@@ -479,6 +485,7 @@ def cvode_predefined_durations_fields(
     assert npoints > 0
     assert durations.size == fields.size
     assert y0.size == rd.n*rd.N
+    assert atol.size() in (1, rd.n*rd.N)
     assert len(rd.g_values) == 1, 'only field type assumed for now'
     for i in range(rd.n*rd.N):
         yout[i] = y0[i]
@@ -519,6 +526,7 @@ def cvode_adaptive(
         double * xyout = <double *>malloc(td*(y0.size*(nderiv+1) + 1)*sizeof(double))
         cnp.npy_intp xyout_dims[2]
     assert y0.size == rd.n*rd.N
+    assert atol.size() in (1, rd.n*rd.N)
     xyout[0] = t0
     for i in range(y0.size):
         xyout[i+1] = y0[i]
