@@ -12,6 +12,7 @@ build:
     - PYCVODES_LAPACK=lapack,blas
     - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband
   commands:
+    - git fetch -tq  # used by ``git describe``
     - if [ ! -d /drone/sundials-3.1.1 ]; then .ci/get_sundials-3.1.1.sh /drone/sundials-3.1.1; fi
     - PYCVODES_LAPACK=lapack,blas ./scripts/ci.sh chemreac
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
