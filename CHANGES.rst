@@ -1,3 +1,8 @@
+v0.7.9
+======
+- Updated to AnyODE 15 & block_diag_ilu-0.3.6
+- Only require C++11
+
 v0.7.8
 ======
 - Added chemreac.util.anim
