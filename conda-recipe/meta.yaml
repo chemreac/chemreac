@@ -29,7 +29,7 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu
+    - block_diag_ilu >=0.3.6
     - finitediff
     - pycvodes >=0.10.5
   run:
@@ -44,7 +44,7 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu
+    - block_diag_ilu >=0.3.6
     - finitediff
     - pycvodes
     - chempy
