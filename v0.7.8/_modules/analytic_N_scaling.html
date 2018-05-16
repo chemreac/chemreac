@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>analytic_N_scaling &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>analytic_N_scaling</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for analytic_N_scaling</h1><div class="highlight"><pre>
+<span></span><span class="ch">#!/usr/bin/env python</span>
+<span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Analytic error scaling vs. number of bins</span>
+<span class="sd">-----------------------------------------</span>
+
+<span class="sd">:download:`examples/analytic_N_scaling.py` runs a series of integrations</span>
+<span class="sd">with vaired parameters, :download:`examples/plot_analytic_N_scaling.py`</span>
+<span class="sd">plots the error in the solutions vs. number of bins for each set of other</span>
+<span class="sd">parameters. For example, one may expect different error scaling for the</span>
+<span class="sd">different number of stencil points used.</span>
+<span class="sd">(:math:`N^{-2}`, :math:`N^{-4}` and :math:`N^{-6}` for 3, 5 and 7 stencil</span>
+<span class="sd">points respectively)</span>
+
+<span class="sd">::</span>
+
+<span class="sd"> $ python analytic_N_scaling.py --help</span>
+
+<span class="sd">.. exec::</span>
+<span class="sd">   echo &quot;::\\n\\n&quot;</span>
+<span class="sd">   python examples/examples/analytic_N_scaling.py --help | sed &quot;s/^/   /&quot;</span>
+
+<span class="sd">::</span>
+
+<span class="sd"> $ python plot_analytic_N_scaling.py --help</span>
+
+<span class="sd">.. exec::</span>
+<span class="sd">   echo &quot;::\\n\\n&quot;</span>
+<span class="sd">   python examples/examples/plot_analytic_N_scaling.py --help | sed &quot;s/^/   /&quot;</span>
+
+
+<span class="sd">Here is an example generated by:</span>
+
+<span class="sd">::</span>
+
+<span class="sd"> $ python analytic_N_scaling.py --nNs 6</span>
+<span class="sd"> $ python plot_analytic_N_scaling.py --savefig analytic_N_scaling.png</span>
+
+
+<span class="sd">.. image:: ../_generated/analytic_N_scaling.png</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="k">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
+
+<span class="kn">from</span> <span class="nn">collections</span> <span class="k">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="k">import</span> <span class="n">product</span>
+<span class="kn">import</span> <span class="nn">gzip</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+
+<span class="kn">from</span> <span class="nn">chemreac.util.pyutil</span> <span class="k">import</span> <span class="n">progress</span>
+
+<span class="kn">from</span> <span class="nn">analytic_diffusion</span> <span class="k">import</span> <span class="n">integrate_rd</span>
+
+
+<div class="viewcode-block" id="integrate"><a class="viewcode-back" href="../examples/analytic_N_scaling.html#analytic_N_scaling.integrate">[docs]</a><span class="k">def</span> <span class="nf">integrate</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">tout</span><span class="p">,</span> <span class="n">yout</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">rmsd_over_atol</span><span class="p">,</span> <span class="n">rd</span><span class="p">,</span> <span class="n">rmsd</span> <span class="o">=</span> <span class="n">integrate_rd</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rmsd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmsd</span>
+    <span class="n">info</span><span class="p">[</span><span class="s1">&#39;rmsd_over_atol&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rmsd_over_atol</span>
+    <span class="k">return</span> <span class="n">info</span></div>
+
+<span class="n">default_constant</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+    <span class="n">D</span><span class="o">=</span><span class="mf">2e-3</span><span class="p">,</span> <span class="n">t0</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">tend</span><span class="o">=</span><span class="mf">7.</span><span class="p">,</span> <span class="n">x0</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">xend</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">nt</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span> <span class="n">logt</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">logy</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">logx</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">random</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">a</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">linterpol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">rinterpol</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">num_jacobian</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;bdf&#39;</span><span class="p">,</span> <span class="n">integrator</span><span class="o">=</span><span class="s1">&#39;cvode&#39;</span><span class="p">,</span>
+    <span class="n">linear_solver</span><span class="o">=</span><span class="s1">&#39;gmres&#39;</span><span class="p">,</span> <span class="n">atol</span><span class="o">=</span><span class="mf">1e-8</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-10</span><span class="p">,</span> <span class="n">efield</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">random_seed</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+    <span class="n">mobility</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span> <span class="n">n_jac_diags</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">use_log2</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../examples/analytic_N_scaling.html#analytic_N_scaling.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">(</span><span class="n">plot</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">savefig</span><span class="o">=</span><span class="s1">&#39;None&#39;</span><span class="p">,</span> <span class="n">geoms</span><span class="o">=</span><span class="s1">&#39;fcs&#39;</span><span class="p">,</span> <span class="n">nNs</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">Ns</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+         <span class="n">nspecies</span><span class="o">=</span><span class="s1">&#39;1,2,3&#39;</span><span class="p">,</span> <span class="n">nstencils</span><span class="o">=</span><span class="s1">&#39;3,5,7&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">nstencils</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">_</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">nstencils</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)]</span>
+    <span class="k">if</span> <span class="n">Ns</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">Ns</span> <span class="o">=</span> <span class="p">[</span><span class="mi">8</span><span class="o">*</span><span class="p">(</span><span class="mi">2</span><span class="o">**</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nNs</span><span class="p">)]</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">Ns</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">Ns</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)))</span>
+        <span class="n">nNs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">Ns</span><span class="p">)</span>
+    <span class="n">nspecies</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">nspecies</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)))</span>
+    <span class="n">varied</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">([(</span><span class="s1">&#39;nspecies&#39;</span><span class="p">,</span> <span class="n">nspecies</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="n">Ns</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;geom&#39;</span><span class="p">,</span> <span class="n">geoms</span><span class="p">),</span>
+                          <span class="p">(</span><span class="s1">&#39;nstencil&#39;</span><span class="p">,</span> <span class="n">nstencils</span><span class="p">)])</span>
+
+    <span class="n">kw1</span> <span class="o">=</span> <span class="n">default_constant</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">kw1</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">results</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;varied_keys&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">varied</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+        <span class="s1">&#39;varied_values&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">varied</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span>
+    <span class="p">}</span>
+
+    <span class="n">all_params</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">varied</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="k">for</span> <span class="n">params</span> <span class="ow">in</span> <span class="n">progress</span><span class="p">(</span><span class="n">all_params</span><span class="p">)</span> <span class="k">if</span> <span class="n">verbose</span> <span class="k">else</span> <span class="n">all_params</span><span class="p">:</span>
+        <span class="n">kw2</span> <span class="o">=</span> <span class="n">kw1</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">kw2</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">varied</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">params</span><span class="p">)))</span>
+        <span class="n">results</span><span class="p">[</span><span class="n">params</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="p">(</span><span class="o">**</span><span class="n">kw2</span><span class="p">)</span>
+    <span class="n">basename</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="vm">__file__</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">gzip</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">basename</span> <span class="o">+</span> <span class="s1">&#39;.pkl&#39;</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">))</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">argh</span>
+    <span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+        <span class="kn">import</span> <span class="nn">sys</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">argv</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unable to process parameters, argh missing. &quot;</span>
+                  <span class="s2">&quot;Run &#39;pip install --user argh&#39; to fix.&quot;</span><span class="p">,</span> <span class="n">file</span><span class="o">=</span><span class="n">sys</span><span class="o">.</span><span class="n">stderr</span><span class="p">)</span>
+            <span class="n">sys</span><span class="o">.</span><span class="n">exit</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">EX_USAGE</span><span class="p">)</span>  <span class="c1"># non-ok exit</span>
+        <span class="n">main</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">argh</span><span class="o">.</span><span class="n">dispatch_command</span><span class="p">(</span><span class="n">main</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

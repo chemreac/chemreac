@@ -1,0 +1,402 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Analytic diffusion &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Analytic error scaling vs. number of bins" href="analytic_N_scaling.html" />
+    <link rel="prev" title="Examples" href="index.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Examples</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Analytic diffusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analytic_N_scaling.html">Analytic error scaling vs. number of bins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aqueous_radiolysis.html">Aqueous radiolysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="auto_efield.html">Automatic electric field computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="const_surf_conc.html">Diffusion from constant concentration surface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="decay.html">Two coupled decays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="equilibrium.html">Equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="four_species.html">Four species two reactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steady_state_approx.html">Steady state approximation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Examples</a> &raquo;</li>
+        
+      <li>Analytic diffusion</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac//master/docs/examples/analytic_diffusion.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-analytic_diffusion"></span><div class="section" id="analytic-diffusion">
+<h1>Analytic diffusion<a class="headerlink" href="#analytic-diffusion" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference download internal" href="../_downloads/analytic_diffusion.py" download=""><code class="xref download docutils literal notranslate"><span class="pre">examples/analytic_diffusion.py</span></code></a> models a diffusion process
+and reports the error from the model integration by comparison to the
+analytic solution (intial concentrations are taken from Green’s
+function expressions for respective geometry).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --help
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">usage</span><span class="p">:</span> <span class="n">analytic_diffusion</span><span class="o">.</span><span class="n">py</span> <span class="p">[</span><span class="o">-</span><span class="n">h</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">N</span> <span class="n">N</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">g</span> <span class="n">GEOM</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">nspecies</span> <span class="n">NSPECIES</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">nstencil</span> <span class="n">NSTENCIL</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">D</span> <span class="n">D</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">t0</span> <span class="n">T0</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">tend</span> <span class="n">TEND</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">x0</span> <span class="n">X0</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">xend</span> <span class="n">XEND</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">c</span> <span class="n">CENTER</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">nt</span> <span class="n">NT</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">logt</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">logy</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">logx</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">random</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">p</span> <span class="n">P</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">a</span> <span class="n">A</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">linterpol</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">rinterpol</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">ilu</span><span class="o">-</span><span class="n">limit</span> <span class="n">ILU_LIMIT</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">n</span><span class="o">-</span><span class="n">jac</span><span class="o">-</span><span class="n">diags</span> <span class="n">N_JAC_DIAGS</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">jacobian</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">method</span> <span class="n">METHOD</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">integrator</span> <span class="n">INTEGRATOR</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="nb">iter</span><span class="o">-</span><span class="nb">type</span> <span class="n">ITER_TYPE</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">linear</span><span class="o">-</span><span class="n">solver</span> <span class="n">LINEAR_SOLVER</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">atol</span> <span class="n">ATOL</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">rtol</span> <span class="n">RTOL</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">e</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">random</span><span class="o">-</span><span class="n">seed</span> <span class="n">RANDOM_SEED</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">mobility</span> <span class="n">MOBILITY</span><span class="p">]</span> <span class="p">[</span><span class="o">--</span><span class="n">plot</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">s</span> <span class="n">SAVEFIG</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">verbose</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">y</span> <span class="n">YSCALE</span><span class="p">]</span>
+                             <span class="p">[</span><span class="o">--</span><span class="n">vline</span><span class="o">-</span><span class="n">limit</span> <span class="n">VLINE_LIMIT</span><span class="p">]</span> <span class="p">[</span><span class="o">-</span><span class="n">u</span><span class="p">]</span>
+
+<span class="n">optional</span> <span class="n">arguments</span><span class="p">:</span>
+  <span class="o">-</span><span class="n">h</span><span class="p">,</span> <span class="o">--</span><span class="n">help</span>            <span class="n">show</span> <span class="n">this</span> <span class="n">help</span> <span class="n">message</span> <span class="ow">and</span> <span class="n">exit</span>
+  <span class="o">-</span><span class="n">N</span> <span class="n">N</span><span class="p">,</span> <span class="o">--</span><span class="n">N</span> <span class="n">N</span>           <span class="mi">64</span>
+  <span class="o">-</span><span class="n">g</span> <span class="n">GEOM</span><span class="p">,</span> <span class="o">--</span><span class="n">geom</span> <span class="n">GEOM</span>  <span class="s1">&#39;f&#39;</span>
+  <span class="o">--</span><span class="n">nspecies</span> <span class="n">NSPECIES</span>   <span class="mi">1</span>
+  <span class="o">--</span><span class="n">nstencil</span> <span class="n">NSTENCIL</span>   <span class="mi">3</span>
+  <span class="o">-</span><span class="n">D</span> <span class="n">D</span><span class="p">,</span> <span class="o">--</span><span class="n">D</span> <span class="n">D</span>           <span class="mf">0.002</span>
+  <span class="o">--</span><span class="n">t0</span> <span class="n">T0</span>               <span class="mf">3.0</span>
+  <span class="o">--</span><span class="n">tend</span> <span class="n">TEND</span>           <span class="mf">7.0</span>
+  <span class="o">--</span><span class="n">x0</span> <span class="n">X0</span>               <span class="mf">0.0</span>
+  <span class="o">--</span><span class="n">xend</span> <span class="n">XEND</span>           <span class="mf">1.0</span>
+  <span class="o">-</span><span class="n">c</span> <span class="n">CENTER</span><span class="p">,</span> <span class="o">--</span><span class="n">center</span> <span class="n">CENTER</span>
+                        <span class="o">-</span>
+  <span class="o">--</span><span class="n">nt</span> <span class="n">NT</span>               <span class="mi">42</span>
+  <span class="o">--</span><span class="n">logt</span>                <span class="kc">False</span>
+  <span class="o">--</span><span class="n">logy</span>                <span class="kc">False</span>
+  <span class="o">--</span><span class="n">logx</span>                <span class="kc">False</span>
+  <span class="o">--</span><span class="n">random</span>              <span class="kc">False</span>
+  <span class="o">--</span><span class="n">p</span> <span class="n">P</span>                 <span class="mi">0</span>
+  <span class="o">--</span><span class="n">a</span> <span class="n">A</span>                 <span class="mf">0.2</span>
+  <span class="o">--</span><span class="n">linterpol</span>           <span class="kc">False</span>
+  <span class="o">--</span><span class="n">rinterpol</span>           <span class="kc">False</span>
+  <span class="o">--</span><span class="n">ilu</span><span class="o">-</span><span class="n">limit</span> <span class="n">ILU_LIMIT</span>
+                        <span class="mf">5.0</span>
+  <span class="o">--</span><span class="n">n</span><span class="o">-</span><span class="n">jac</span><span class="o">-</span><span class="n">diags</span> <span class="n">N_JAC_DIAGS</span>
+                        <span class="o">-</span><span class="mi">1</span>
+  <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">jacobian</span>        <span class="kc">False</span>
+  <span class="o">--</span><span class="n">method</span> <span class="n">METHOD</span>       <span class="s1">&#39;bdf&#39;</span>
+  <span class="o">--</span><span class="n">integrator</span> <span class="n">INTEGRATOR</span>
+                        <span class="s1">&#39;cvode&#39;</span>
+  <span class="o">--</span><span class="nb">iter</span><span class="o">-</span><span class="nb">type</span> <span class="n">ITER_TYPE</span>
+                        <span class="s1">&#39;undecided&#39;</span>
+  <span class="o">--</span><span class="n">linear</span><span class="o">-</span><span class="n">solver</span> <span class="n">LINEAR_SOLVER</span>
+                        <span class="s1">&#39;default&#39;</span>
+  <span class="o">--</span><span class="n">atol</span> <span class="n">ATOL</span>           <span class="mf">1e-08</span>
+  <span class="o">--</span><span class="n">rtol</span> <span class="n">RTOL</span>           <span class="mf">1e-10</span>
+  <span class="o">-</span><span class="n">e</span><span class="p">,</span> <span class="o">--</span><span class="n">efield</span>          <span class="kc">False</span>
+  <span class="o">--</span><span class="n">random</span><span class="o">-</span><span class="n">seed</span> <span class="n">RANDOM_SEED</span>
+                        <span class="mi">42</span>
+  <span class="o">--</span><span class="n">mobility</span> <span class="n">MOBILITY</span>   <span class="mf">0.01</span>
+  <span class="o">--</span><span class="n">plot</span>                <span class="kc">False</span>
+  <span class="o">-</span><span class="n">s</span> <span class="n">SAVEFIG</span><span class="p">,</span> <span class="o">--</span><span class="n">savefig</span> <span class="n">SAVEFIG</span>
+                        <span class="s1">&#39;None&#39;</span>
+  <span class="o">--</span><span class="n">verbose</span>             <span class="kc">False</span>
+  <span class="o">-</span><span class="n">y</span> <span class="n">YSCALE</span><span class="p">,</span> <span class="o">--</span><span class="n">yscale</span> <span class="n">YSCALE</span>
+                        <span class="s1">&#39;linear&#39;</span>
+  <span class="o">--</span><span class="n">vline</span><span class="o">-</span><span class="n">limit</span> <span class="n">VLINE_LIMIT</span>
+                        <span class="mi">100</span>
+  <span class="o">-</span><span class="n">u</span><span class="p">,</span> <span class="o">--</span><span class="n">use</span><span class="o">-</span><span class="n">log2</span>        <span class="kc">False</span>
+</pre></div>
+</div>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --plot --efield --center 0.5 --nstencil 5 --nspecies 3 --geom f
+
+$ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --center 500 -D 400 --nstencil 3
+</pre></div>
+</div>
+<p>Note -D 475</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --x0 0 --xend 1000 --N 1000 --center 500 -D 475 --nstencil 7
+</pre></div>
+</div>
+<p>Still problematic (should not need to be):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --plot --nstencil 5 --logy --D 0.0005
+</pre></div>
+</div>
+<p>Here is an example generated by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python analytic_diffusion.py --plot --nstencil 3 --nspecies 2 --geom f --savefig analytic_diffusion.png
+</pre></div>
+</div>
+<img alt="../_images/analytic_diffusion.png" src="../_images/analytic_diffusion.png" />
+<dl class="function">
+<dt id="analytic_diffusion.cylindrical_analytic">
+<code class="descclassname">analytic_diffusion.</code><code class="descname">cylindrical_analytic</code><span class="sig-paren">(</span><em>x</em>, <em>t</em>, <em>D</em>, <em>mu</em>, <em>x0</em>, <em>xend</em>, <em>v</em>, <em>logy=False</em>, <em>logx=False</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/analytic_diffusion.html#cylindrical_analytic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#analytic_diffusion.cylindrical_analytic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates the Green’s function:</p>
+<div class="math notranslate">
+\[c(x, t) = \frac{x_{end}-x_{0}}{4 \pi D t} \
+    e^{-\frac{(x - \mu - vt)^2}{4Dt}}\]</div>
+<p>which satisfies:</p>
+<div class="math notranslate">
+\[\frac{\partial c(x, t)}{\partial t} = D\nabla^2 \
+    c(x, t) - \vec{v} \cdot c(x, t)\]</div>
+<p>where <span class="math notranslate">\(\nabla\)</span> in cylindrical coordinates with axial symmetry is:</p>
+<div class="math notranslate">
+\[\nabla \cdot c = \frac{1}{x}\frac{\partial \left( x c \right)}{\partial x}\]</div>
+<p>and where <span class="math notranslate">\(\nabla^2\)</span> is:</p>
+<div class="math notranslate">
+\[\nabla^2 = \frac{1}{x} \frac{\partial}{\partial x}
+    \left( x \frac{\partial}{\partial x} \right)\]</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="analytic_diffusion.flat_analytic">
+<code class="descclassname">analytic_diffusion.</code><code class="descname">flat_analytic</code><span class="sig-paren">(</span><em>x</em>, <em>t</em>, <em>D</em>, <em>mu</em>, <em>x0</em>, <em>xend</em>, <em>v</em>, <em>logy=False</em>, <em>logx=False</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/analytic_diffusion.html#flat_analytic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#analytic_diffusion.flat_analytic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates the Green’s function:</p>
+<div class="math notranslate">
+\[c(x, t) = \frac{x_{end}-x_{0}}{\sqrt{4 \pi D t}} \
+    e^{-\frac{(x - \mu - vt)^2}{4Dt}}\]</div>
+<p>which satisfies:</p>
+<div class="math notranslate">
+\[\frac{\partial c(x, t)}{\partial t} = D\nabla^2 \
+    c(x, t)  - \vec{v} \cdot c(x, t)\]</div>
+<p>where <span class="math notranslate">\(\nabla\)</span> in cartesian coordinates with planar (yz-plane)
+symmetry is:</p>
+<div class="math notranslate">
+\[\nabla = \frac{\partial}{\partial x}\]</div>
+<p>and where <span class="math notranslate">\(\nabla^2\)</span> :</p>
+<div class="math notranslate">
+\[\nabla^2 = \frac{\partial^2}{\partial x^2}\]</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="analytic_diffusion.integrate_rd">
+<code class="descclassname">analytic_diffusion.</code><code class="descname">integrate_rd</code><span class="sig-paren">(</span><em>N=64</em>, <em>geom='f'</em>, <em>nspecies=1</em>, <em>nstencil=3</em>, <em>D=0.002</em>, <em>t0=3.0</em>, <em>tend=7.0</em>, <em>x0=0.0</em>, <em>xend=1.0</em>, <em>center=None</em>, <em>nt=42</em>, <em>logt=False</em>, <em>logy=False</em>, <em>logx=False</em>, <em>random=False</em>, <em>p=0</em>, <em>a=0.2</em>, <em>linterpol=False</em>, <em>rinterpol=False</em>, <em>ilu_limit=5.0</em>, <em>n_jac_diags=-1</em>, <em>num_jacobian=False</em>, <em>method='bdf'</em>, <em>integrator='cvode'</em>, <em>iter_type='undecided'</em>, <em>linear_solver='default'</em>, <em>atol=1e-08</em>, <em>rtol=1e-10</em>, <em>efield=False</em>, <em>random_seed=42</em>, <em>mobility=0.01</em>, <em>plot=False</em>, <em>savefig='None'</em>, <em>verbose=False</em>, <em>yscale='linear'</em>, <em>vline_limit=100</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/analytic_diffusion.html#integrate_rd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#analytic_diffusion.integrate_rd" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="analytic_diffusion.spherical_analytic">
+<code class="descclassname">analytic_diffusion.</code><code class="descname">spherical_analytic</code><span class="sig-paren">(</span><em>x</em>, <em>t</em>, <em>D</em>, <em>mu</em>, <em>x0</em>, <em>xend</em>, <em>v</em>, <em>logy=False</em>, <em>logx=False</em>, <em>use_log2=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/analytic_diffusion.html#spherical_analytic"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#analytic_diffusion.spherical_analytic" title="Permalink to this definition">¶</a></dt>
+<dd><p>Evaluates the Green’s function:</p>
+<div class="math notranslate">
+\[c(x, t) = \frac{x_{end}-x_{0}}{\sqrt{4 \pi D t^3}} \
+    e^{-\frac{(x - \mu - vt)^2}{4Dt}}\]</div>
+<p>which satisfies:</p>
+<div class="math notranslate">
+\[\frac{\partial c(x, t)}{\partial t} = D\nabla^2
+    c(x, t) - \vec{v} \cdot c(x, t)\]</div>
+<p>where <span class="math notranslate">\(\nabla\)</span> in spherical coordinates for an isotropic system is:</p>
+<div class="math notranslate">
+\[\nabla \cdot c = \frac{1}{x^2}\frac{\partial \left( x^2 c \right)}{\partial x}\]</div>
+<p>and where <span class="math notranslate">\(\nabla^2\)</span> is:</p>
+<div class="math notranslate">
+\[\nabla^2 = \frac{1}{x^2} \frac{\partial}{\partial x}
+    \left( x^2 \frac{\partial}{\partial x} \right)\]</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="analytic_N_scaling.html" class="btn btn-neutral float-right" title="Analytic error scaling vs. number of bins" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Examples" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.8.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>

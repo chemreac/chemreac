@@ -1,0 +1,328 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Development &mdash; chemreac 0.8.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Steady state approximation" href="examples/steady_state_approx.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#coding-standards">Coding standards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation-standard">Documentation standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unit-tests">Unit tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#continuous-integration">Continuous integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-coverage">Test coverage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#environment">Environment</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-of-setting-up-a-development-environment">Example of setting up a development environment</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Development</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac//master/docs/dev.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="development">
+<h1>Development<a class="headerlink" href="#development" title="Permalink to this headline">¶</a></h1>
+<p>As an open-source project, other researchers/students are encouraged to improve upon
+the code/documentation. The code is released under the permissive <a class="reference external" href="http://opensource.org/licenses/BSD-2-Clause">BSD 2-Clause
+License</a>. The source
+code repository is found at <a class="reference external" href="https://github.com/chemreac/chemreac">https://github.com/chemreac/chemreac</a> which is also
+where issues and patches (“pull requests”) are accepted.</p>
+<div class="section" id="coding-standards">
+<h2>Coding standards<a class="headerlink" href="#coding-standards" title="Permalink to this headline">¶</a></h2>
+<p>The Python code should comply with <a class="reference external" href="http://legacy.python.org/dev/peps/pep-0008/">PEP8</a>.  Before submitting a
+Pull Request you also want to pass <code class="docutils literal notranslate"><span class="pre">--pep8</span></code> to <code class="docutils literal notranslate"><span class="pre">py.test</span></code> (it is
+done automatically by the <code class="docutils literal notranslate"><span class="pre">./scripts/run_tests.sh</span></code> script but you
+need <code class="docutils literal notranslate"><span class="pre">pytest-pep8</span></code> for it to work).</p>
+<p>PEP8 complience is
+also checked by the CI servers. For the C++ code, <a class="reference external" href="http://pyne.io/devsguide/style_guide.html#c-c-style-guide">PyNE’s C/C++ style
+guide</a> is
+recommended.</p>
+</div>
+<div class="section" id="documentation-standard">
+<h2>Documentation standard<a class="headerlink" href="#documentation-standard" title="Permalink to this headline">¶</a></h2>
+<p>The API docs are generated automatically and <a class="reference external" href="https://pypi.python.org/pypi/numpydoc">numpydoc</a> is used to
+automatically parse docstrings of functions and classes.
+See the <a class="reference external" href="https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt">NumPy/SciPy documentation guide</a> for more info.</p>
+</div>
+<div class="section" id="unit-tests">
+<h2>Unit tests<a class="headerlink" href="#unit-tests" title="Permalink to this headline">¶</a></h2>
+<p>The correctness of the implementation is verified through the use of
+(hundreds of) unit tests. Ideally all code should be covered with tests.</p>
+<div class="section" id="continuous-integration">
+<h3>Continuous integration<a class="headerlink" href="#continuous-integration" title="Permalink to this headline">¶</a></h3>
+<p>In order to minimize the risk of (re)introducing bugs into the code
+base, it is continuously built on a CI server:</p>
+<a class="reference external image-reference" href="http://hera.physchem.kth.se:9090/chemreac/chemreac"><img alt="Build status" src="http://hera.physchem.kth.se:9090/api/badges/chemreac/chemreac/status.svg" /></a>
+</div>
+<div class="section" id="test-coverage">
+<h3>Test coverage<a class="headerlink" href="#test-coverage" title="Permalink to this headline">¶</a></h3>
+<p>Unit testing is a great tool, provided the tests actually cover the majority
+of the code base. In order to keep track of the test coverage a
+<a class="reference external" href="http://hera.physchem.kth.se/~chemreac/branches/master/htmlcov">report</a> is
+generated for each change of the code.</p>
+</div>
+</div>
+<div class="section" id="environment">
+<h2>Environment<a class="headerlink" href="#environment" title="Permalink to this headline">¶</a></h2>
+<p>In theory <code class="docutils literal notranslate"><span class="pre">chemreac</span></code> should be cross-platform. However, all development (and
+testing) is done on Linux, and the documentation assumes a posix compliant
+environment, or at least familiarity with this environment. Feedback from users
+and developers on other platforms is most welcome.</p>
+<p>If you are new to <a class="reference external" href="https://github.com/">github</a> and the like, a good start
+is SymPy’s wiki entry on <a class="reference external" href="https://github.com/sympy/sympy/wiki/Development-workflow">development workflow</a> (minus the SymPy
+specific parts obviously).</p>
+<div class="section" id="example-of-setting-up-a-development-environment">
+<h3>Example of setting up a development environment<a class="headerlink" href="#example-of-setting-up-a-development-environment" title="Permalink to this headline">¶</a></h3>
+<p>Here is an example to get you started developing chemreac and contributing
+to the code:</p>
+<ol class="arabic simple">
+<li><a class="reference external" href="https://help.github.com/articles/fork-a-repo/">Fork</a> the repository on github</li>
+<li>Install the dependencies specified in the README.rst file</li>
+<li>Clone your own repo to get a local copy:</li>
+</ol>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/YOUR_GITHUB_USERNAME/chemreac.git
+</pre></div>
+</div>
+<p>4. Optionally set-up the pre-commit hook (prevents commiting untested code).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ cd .git/hooks
+$ ln -s ../../scripts/pre-commit.sh pre-commit
+$ cd -
+</pre></div>
+</div>
+<p>5. Create a new branch</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git checkout -b fix_silly_bug
+</pre></div>
+</div>
+<p>6. Edit files, add test(s), make sure all tests pass by running:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ ./scripts/run_tests.sh
+</pre></div>
+</div>
+<p>7. make a commit, and push your changes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git commit -am &quot;Fixed a silly bug in the complex-thingy.&quot;
+$ git push origin --set-upstream fix_silly_bug
+</pre></div>
+</div>
+<ol class="arabic simple" start="8">
+<li>Go to your forked repo on github and create a <a class="reference external" href="https://help.github.com/articles/using-pull-requests/">pull-request</a> from there.</li>
+</ol>
+</div>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="examples/steady_state_approx.html" class="btn btn-neutral" title="Steady state approximation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.8.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          
+          SphinxRtdTheme.Navigation.enableSticky();
+          
+      });
+  </script> 
+
+</body>
+</html>
