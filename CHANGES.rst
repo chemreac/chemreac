@@ -1,3 +1,7 @@
+v0.7.8
+======
+- Added chemreac.util.anim
+
 v0.7.7
 ======
 - AnyODE v14
