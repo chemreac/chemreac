@@ -120,8 +120,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     ext_modules[0].define_macros +=  (
         ([('CHEMREAC_WITH_DEBUG', None)] if _WITH_DEBUG else []) +
         ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
-        ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else []) +
-        ([('BLOCK_DIAG_ILU_WITH_DGETRF', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_DGETRF', '') == '1' else [])
+        ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
     ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
 
