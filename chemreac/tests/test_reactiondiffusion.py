@@ -991,3 +991,11 @@ def test_from_ReactionSystem__g_values__units():
     assert len(rd.fields) == 1
     assert len(rd.fields[0]) == 1
     assert np.allclose(rd.fields[0][0], 998*0.15)
+
+
+def test_per_bin_diffusion():
+    rd = ReactionDiffusion(1, [], [], [], N=5, D=[0, 0, 1, 0, 0])
+    fout = rd.alloc_fout()
+    y = [0, 1, 2, 1, 0]
+    rd.f(0.0, np.asarray(y, dtype=np.float64), fout)
+    assert np.all(fout[:2] == 0) and np.all(fout[-2:] == 0) and fout[2] < 0

@@ -389,7 +389,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         if mobility is None:
             mobility = np.zeros(n)
         if N > 1:
-            assert n == len(D)
+            assert len(D) in (n, n*N)
             assert n == len(z_chg)
             assert n == len(mobility)
         else:
