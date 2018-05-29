@@ -114,7 +114,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     )
     assert rd.n == n
     assert rd.N == N
-    assert np.allclose(rd.D, D)
+    assert np.allclose(rd.D[:n], D)
     assert np.allclose(rd.k, k[3:])
     assert np.allclose(rd.xcenters, xc)
     assert np.allclose(rd.fields, fields)
