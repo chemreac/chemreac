@@ -96,9 +96,9 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
         throw std::length_error(
             "k and stoich_prod of different sizes.");
     if (N>1){
-        if (D.size() != (unsigned)n)
+        if (D.size() != (unsigned)(n*N))
             throw std::length_error(
-                "Length of D does not match number of species.");
+                "Length of D does not match number of species * number of bins.");
         if (mobility.size() != (unsigned)n)
             throw std::length_error(
                 "Length of mobility does not match number of species.");
@@ -464,7 +464,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                 starti = bi - nsidep;
             }
             for (int si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue;
+                if ((D[bi*n + si] == 0.0) && (mobility[si] == 0.0)) continue;
                 Real_t unscaled_diffusion = 0;
                 Real_t unscaled_advection = 0;
                 for (int xi=0; xi<nstencil; ++xi){
@@ -479,7 +479,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                     unscaled_advection += A_WEIGHT(bi, xi) * \
                         (LINC(biw, si)*efield[bi] + LINC(bi, si)*efield[biw]);
                 }
-                DYDT(bi, si) += unscaled_diffusion*D[si];
+                DYDT(bi, si) += unscaled_diffusion*D[bi*n + si];
                 DYDT(bi, si) += unscaled_advection*-mobility[si];
             }
         }
@@ -603,21 +603,21 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
         if (N > 1) {
             int lbound = stencil_bi_lbound_(bi);
             for (int si=0; si<n; ++si){ // species index si
-                if ((D[si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
+                if ((D[bi*n + si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
                 for (int k=0; k<nstencil; ++k){
                     const int sbi = xc_bi_map_(lbound+k);
                     jac.block(bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
                     if (sbi == bi) {
-                        jac.block(bi, si, si) += D[si]*D_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += D[bi*n + si]*D_WEIGHT(bi, k);
                         jac.block(bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
                     } else {
                         for (int di=0; di<n_jac_diags; ++di){
                             if ((bi >= di+1) and (sbi == bi-di-1)){
-                                jac.sub(di, bi-di-1, si) += D[si]*D_WEIGHT(bi, k);
+                                jac.sub(di, bi-di-1, si) += D[bi*n + si]*D_WEIGHT(bi, k);
                                 jac.sub(di, bi-di-1, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
                             }
                             if ((bi < N-di-1) and (sbi == bi+di+1)){
-                                jac.sup(di, bi, si) += D[si]*D_WEIGHT(bi, k);
+                                jac.sup(di, bi, si) += D[bi*n + si]*D_WEIGHT(bi, k);
                                 jac.sup(di, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
                             }
                         }

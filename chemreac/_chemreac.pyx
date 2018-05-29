@@ -82,6 +82,9 @@ cdef class PyReactionDiffusion:
                   bint clip_to_pos=False
               ):
         cdef size_t i
+        if D.size() == n:
+            D = list(D)*N
+
         self.thisptr = new ReactionDiffusion[double](
             n, stoich_active, stoich_prod, k, N,
             D, z_chg, mobility, x, stoich_inact, geom,

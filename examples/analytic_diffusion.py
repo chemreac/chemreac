@@ -210,8 +210,10 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
                  atol=1e-8, rtol=1e-10,
                  efield=False, random_seed=42, mobility=0.01,
                  plot=False, savefig='None', verbose=False, yscale='linear',
-                 vline_limit=100, use_log2=False,
+                 vline_limit=100, use_log2=False, Dexpr='[D]*nspecies'
                  ):  # remember: anayltic_N_scaling.main kwargs
+    # Example:
+    # python3 analytic_diffusion.py --plot --Dexpr "D*np.exp(10*(x[:-1]+np.diff(x)/2))"
     if t0 == 0.0:
         raise ValueError("t0==0 => Dirac delta function C0 profile.")
     if random_seed:
@@ -249,7 +251,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
         [[i+1] for i in range(nspecies-1)],
         k,
         N,
-        D=[D]*nspecies,
+        D=eval(Dexpr),
         z_chg=[1]*nspecies,
         mobility=[mobility]*nspecies,
         x=x,
