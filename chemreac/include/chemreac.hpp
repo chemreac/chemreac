@@ -27,8 +27,9 @@ public:
     int * coeff_prod;
     int * coeff_total;
     int * coeff_inact;
-    Real_t * D_weight; // diffusion weights
-    Real_t * A_weight; // Advection weights
+    Real_t * lap_weight;
+    Real_t * div_weight;
+    Real_t * grad_weight;
     int n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
     void * integrator {nullptr};
@@ -81,6 +82,8 @@ private:
     block_diag_ilu::BlockDiagMatrix<Real_t> *prec_cache {nullptr};
     bool update_prec_cache = false;
     Real_t old_gamma;
+    vector<Real_t> gradD; // Gradient of the Spatial 1st order derivative of diffusion coefficients
+    int start_idx_(int bi) const;
 
 public:
     Real_t * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]

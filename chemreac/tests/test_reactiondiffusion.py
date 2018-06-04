@@ -775,8 +775,7 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
                 D_weight[bi][wi] += w[-2][-1][wi]*2/local_x_around
         else:
             raise RuntimeError
-    assert np.allclose(rd.D_weight, np.array(
-        D_weight, dtype=np.float64).flatten())
+    assert np.allclose(rd.D_weight, np.array(D_weight, dtype=np.float64).flatten())
 
     def cflux(si, bi):
         f = 0.0
