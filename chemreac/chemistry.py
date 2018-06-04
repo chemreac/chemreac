@@ -13,7 +13,7 @@ the model. The classes are from the
 from __future__ import print_function, division, absolute_import
 
 from collections import OrderedDict
-from chempy.chemistry import Substance, Reaction, ReactionSystem
+from chempy import Substance, Reaction, ReactionSystem
 
 
 def mk_sn_dict_from_names(names, **kwargs):

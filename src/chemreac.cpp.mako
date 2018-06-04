@@ -319,7 +319,7 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
     if (!lrefl) // shifted finite diff
         start = max(nsidep, start);
     if (!rrefl) // shifted finite diff
-        start = min(N - nstencil, start);
+        start = min(N - nstencil + nsidep, start);
 
     for (int li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
@@ -331,7 +331,7 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
     for (int li=0; li<nstencil; ++li){ // li: local index
         LAP_WEIGHT(bi, li) = FDWEIGHT(2, li);
         DIV_WEIGHT(bi, li) = FDWEIGHT(1, li);
-        GRAD_WEIGHT(bi, li) = FDWEIGHT(1, li);
+        GRAD_WEIGHT(bi, li) = FDWEIGHT(1, li); // == DIV_WEIGHT if geom == 'f'
         if (logx){
             LAP_WEIGHT(bi, li) *= logbdenom*logbdenom;
             DIV_WEIGHT(bi, li) *= logbdenom;
