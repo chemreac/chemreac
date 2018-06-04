@@ -38,8 +38,8 @@ def _test_f(rd, t, y, fref=None):
 def _test_dense_jac_rmaj(rd, t, y, jref=None):
     jout = rd.alloc_jout(banded=False)
     rd.dense_jac_rmaj(t, np.asarray(y, dtype=np.float64), jout)
-    atol = 1e-13
-    rtol = 1e-13
+    atol = 2e-13
+    rtol = 2e-13
     if jref is None:
         jref = jout
     else:
