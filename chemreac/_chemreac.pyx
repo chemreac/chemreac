@@ -427,6 +427,10 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return fromaddress(<long>self.thisptr.lap_weight, (self.thisptr.N*self.thisptr.nstencil,))
 
+    property _gradD:
+        def __get__(self):
+            return self.thisptr.gradD
+
     def _stencil_bi_lbound(self, int bi):
         return self.thisptr.stencil_bi_lbound_(bi)
 

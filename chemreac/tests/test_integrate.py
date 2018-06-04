@@ -175,7 +175,9 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom_vary
 
     ybis = np.sum(yprim, axis=1)
 
-    assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)
+    assert np.allclose(np.average(ybis), ybis,
+                       atol=atol*(1e2 if varying else 1),
+                       rtol=rtol*(1e2 if varying else 1))
 
 
 @pytest.mark.parametrize("log", LOG_COMOBS)

@@ -150,9 +150,11 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
 
     gradD = std::vector<Real_t>(N*n, 0.0);
     for (int bi=0; bi<N; ++bi){
-        for (int li=0; li<nstencil; ++li){
-            for (int si=0; si<n; ++si){
-                gradD[bi*n + si] += GRAD_WEIGHT(bi, li)*D[bi*n + si];
+        int starti = start_idx_(bi);
+        for (int si=0; si<n; ++si){
+            for (int li=0; li<nstencil; ++li){
+                int biw = biw_(starti, li);
+                gradD[bi*n + si] += GRAD_WEIGHT(bi, li)*D[biw*n + si];
             }
         }
     }
@@ -245,7 +247,17 @@ int ReactionDiffusion<Real_t>::start_idx_(int bi) const {
     return starti;
 }
 
-
+template<typename Real_t>
+int ReactionDiffusion<Real_t>::biw_(int starti, int li) const {
+    int biw = starti + li;
+    // reflective logic:
+    if (starti < 0){
+        biw = (biw < 0) ? (-1 - biw) : biw; // lrefl==true
+    } else if (starti >= (int)N - (int)nstencil + 1){
+        biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
+    }
+    return biw;
+}
 
 template<typename Real_t>
 void
@@ -487,13 +499,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                 Real_t diffusion_correction = 0;
                 Real_t advection_unscaled = 0;
                 for (int xi=0; xi<nstencil; ++xi){
-                    int biw = starti + xi;
-                    // reflective logic:
-                    if (starti < 0){
-                        biw = (biw < 0) ? (-1 - biw) : biw; // lrefl==true
-                    } else if (starti >= (int)N - (int)nstencil + 1){
-                        biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
-                    }
+                    int biw = biw_(starti, xi);
                     diffusion_unscaled += LAP_WEIGHT(bi, xi) * LINC(biw, si);
                     diffusion_correction += GRAD_WEIGHT(bi, xi) * LINC(biw, si);
                     advection_unscaled += DIV_WEIGHT(bi, xi) * \

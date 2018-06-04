@@ -75,6 +75,7 @@ public:
 
     Real_t * const efield; // v_d = mu_el*E
     Real_t * const netchg;
+    vector<Real_t> gradD; // Gradient of the Spatial 1st order derivative of diffusion coefficients
 
     const int nroots = 0;
 private:
@@ -83,8 +84,8 @@ private:
     block_diag_ilu::BlockDiagMatrix<Real_t> *prec_cache {nullptr};
     bool update_prec_cache = false;
     Real_t old_gamma;
-    vector<Real_t> gradD; // Gradient of the Spatial 1st order derivative of diffusion coefficients
     int start_idx_(int bi) const;
+    int biw_(int bi, int li) const;
 
 public:
     Real_t * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
