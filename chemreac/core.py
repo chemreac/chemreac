@@ -35,7 +35,10 @@ class ReactionDiffusionBase(object):
         for ri in range(self.nr):
             rxn = self.to_Reaction(ri, substance_names)
             rxns.append(rxn)
-        return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
+        kw = {}
+        if self.substance_latex_names:
+            kw['latex_name'] = self.substance_latex_names
+        return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names, **kw))
 
     @classmethod
     def from_ReactionSystem(cls, rsys, variables=None, fields=None, **kwargs):
