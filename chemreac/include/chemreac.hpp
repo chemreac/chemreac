@@ -79,6 +79,7 @@ public:
     const int nroots = 0;
 private:
     block_diag_ilu::BlockDiagMatrix<Real_t> *jac_cache {nullptr};
+    block_diag_ilu::BlockDiagMatrix<Real_t> *jac_times_cache {nullptr};
     block_diag_ilu::BlockDiagMatrix<Real_t> *prec_cache {nullptr};
     bool update_prec_cache = false;
     Real_t old_gamma;

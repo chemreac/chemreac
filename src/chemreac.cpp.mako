@@ -243,12 +243,6 @@ int ReactionDiffusion<Real_t>::start_idx_(int bi) const {
         starti = bi - this->nsidep;
     }
     return starti;
-
-    // if (!lrefl) // shifted finite diff
-    //     start = max(nsidep, start);
-    // if (!rrefl) // shifted finite diff
-    //     start = min(N - nstencil + nsidep, start);
-
 }
 
 
@@ -321,7 +315,12 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
     Real_t * const c = new Real_t[3*nstencil];
     Real_t * const lxc = new Real_t[nstencil]; // local shifted x-centers
     int around = bi + nsidep;
-    int start  = start_idx_(bi);
+    int start = bi;
+    if (!lrefl) // shifted finite diff
+        start = max(nsidep, start);
+    if (!rrefl) // shifted finite diff
+        start = min(N - nstencil, start);
+
     for (int li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
     finitediff::populate_weights<Real_t>(0, lxc, nstencil-1, 2, c);
@@ -707,15 +706,15 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
-    if (jac_cache == nullptr){
+    if (jac_times_cache == nullptr){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
-        jac_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
+        jac_times_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
+        jac_times_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
-        compressed_jac_cmaj(t, y, fy, jac_cache->m_data, ld_dummy);
+        compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
     }
-    jac_cache->dot_vec(vec, out);
+    jac_times_cache->dot_vec(vec, out);
     njacvec_dot++;
     return AnyODE::Status::success;
 }

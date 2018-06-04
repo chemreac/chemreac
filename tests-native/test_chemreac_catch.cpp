@@ -1,6 +1,6 @@
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main()
 #include "catch.hpp"
-#include "../chemreac.hpp"
+#include "chemreac.hpp"
 #include <array>
 
 #include "test_utils.h"
