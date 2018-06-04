@@ -13,7 +13,7 @@ ReactionDiffusion<double> get_four_species_system(int N){
     vector<vector<int> > stoich_actv;
     vector<vector<int> > stoich_prod {{1}, {1, 3}};
     vector<double> k {0.05, 3.0};
-    vector<double> D {.1, .2, .3, .4};
+    vector<double> D(N*n);
     vector<int> z_chg {0, 0, 0, 0};
     vector<double> mobility {0, 0, 0, 0};
     vector<double> x;
@@ -24,6 +24,12 @@ ReactionDiffusion<double> get_four_species_system(int N){
     int geom = 0;
     bool logy = false, logt = false, logx = false;
     int nstencil = (N == 1) ? 1 : 3;
+    for (int bi=0; bi<N; ++bi){
+        D[bi*n + 0] = .1;
+        D[bi*n + 1] = .2;
+        D[bi*n + 2] = .3;
+        D[bi*n + 3] = .4;
+    }
     for (int ri=0; ri<nr; ++ri)
 	stoich_actv.push_back(v);
     for (int i=0; i<=N; ++i)

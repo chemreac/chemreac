@@ -5,6 +5,8 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 
+(cd tests-native; make)
+
 set -e
 python3 -m pip install --user -e .[all]
 ./scripts/run_tests.sh ${@:2}

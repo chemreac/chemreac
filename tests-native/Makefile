@@ -27,7 +27,7 @@ else
   OPENMPLIBS=-lgomp
   OPENMPFLAG=-fopenmp
   CXXFLAGS=-std=c++11
-  LIBS=-lrt -llapack
+  LIBS=-lrt -llapack -lblas
   C99=-std=c99
 endif
 
@@ -71,7 +71,7 @@ LIBDIRS=-L${LOCALLIB}
 #note if missing libraries do, e.g.:
 #env LD_LIBRARY_PATH=/usr/lib/gcc/x86_64-linux-gnu/4.6/:$LD_LIBRARY_PATH make
 
-INCLUDE ?= -I../include -I$(shell python3 -c "import finitediff as fd; print(fd.get_include())") -I$(shell python3 -c "import block_diag_ilu as bdi; print(bdi.get_include())") -I$(shell python3 -c "import pycvodes as pc; print(pc.get_include())")
+INCLUDE ?= -I../chemreac/include -I../external/anyode/include -I$(shell python3 -c "import finitediff as fd; print(fd.get_include())") -I$(shell python3 -c "import block_diag_ilu as bdi; print(bdi.get_include())") -I$(shell python3 -c "import pycvodes as pc; print(pc.get_include())")
 
 %.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
@@ -83,7 +83,7 @@ all: $(TARGETS)
 clean:
 	rm $(GENERATED)
 
-chemreac.cpp: ../src/chemreac_template.cpp
+chemreac.cpp: ../src/chemreac.cpp.mako
 	python enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
 
 
@@ -93,7 +93,7 @@ test_chemreac: chemreac.cpp test_chemreac.cpp test_utils.o
 
 
 test_chemreac_sundials: chemreac.o test_utils.o test_chemreac_sundials.cpp
-	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm -lsundials_cvodes -llapack -lsundials_nvecserial
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $^ -lm -lsundials_cvodes -llapack -lblas -lsundials_nvecserial
 
 gmon.out: test_chemreac
 	./$<
@@ -108,11 +108,11 @@ test_chemreac.out: test_chemreac
 test_chemreac_sundials.out: test_chemreac_sundials
 	$(CONTEXT) ./$< >$@
 
-test_chemreac_catch.out: test_chemreac_sundials
+test_chemreac_catch.out: test_chemreac_catch
 	$(CONTEXT) ./$< >$@
 
 catch.hpp: catch.hpp.bz2
-	bunzip2 -k -f $<
+	bzcat $< >$@
 
-test_chemreac_catch: test_chemreac_catch.cpp catch.hpp
+test_chemreac_catch: test_chemreac_catch.cpp catch.hpp test_utils.o
 	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) $(LIBDIRS) -o $@ $< chemreac.o test_utils.o $(LIBS)

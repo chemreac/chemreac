@@ -144,15 +144,18 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     assert np.allclose(integr.Cout.flatten(), yref.flatten())
 
 
-@pytest.mark.parametrize("N_wjac_geom", product(
-    [64, 128], [False, True], 'fcs'))
-def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
-    N, wjac, geom = N_wjac_geom
+@pytest.mark.parametrize("N_wjac_geom_varying", product(
+    [64, 128], [False, True], 'fcs', [False, True]))
+def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom_varying):
+    N, wjac, geom, varying = N_wjac_geom_varying
     # Test that mass convervation is fulfilled wrt diffusion.
     x = np.linspace(0.01*N, N, N+1)
     y0 = (x[0]/2/N+x[1:]/N)**2
-
-    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom,
+    if varying:
+        D = np.linspace(0, 0.02*N, N)
+    else:
+        D = [0.02*N]
+    sys = ReactionDiffusion(1, [], [], [], N=N, D=D, x=x, geom=geom,
                             nstencil=3, lrefl=True, rrefl=True)
 
     tout = np.linspace(0, 10.0, 50)
@@ -172,7 +175,9 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     ybis = np.sum(yprim, axis=1)
 
-    assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)
+    assert np.allclose(np.average(ybis), ybis,
+                       atol=atol*(1e2 if varying else 1),
+                       rtol=rtol*(1e2 if varying else 1))
 
 
 @pytest.mark.parametrize("log", LOG_COMOBS)

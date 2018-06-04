@@ -39,6 +39,8 @@ using std::max;
 #define expb(arg) (use_log2 ? std::exp2(arg) : std::exp(arg))
 #define logb(arg) (use_log2 ? std::log2(arg) : std::pow(2, arg))
 
+#define GRAD_WEIGHT(bi, li) grad_weight[nstencil*(bi) + li]
+
 // 1D discretized reaction diffusion
 template<typename Real_t>
 ReactionDiffusion<Real_t>::ReactionDiffusion(
@@ -127,8 +129,9 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     }
 
     // Finite difference scheme
-    D_weight = new Real_t[nstencil*N];
-    A_weight = new Real_t[nstencil*N];
+    lap_weight = new Real_t[nstencil*N];
+    div_weight = new Real_t[nstencil*N];
+    grad_weight = new Real_t[nstencil*N];
     for (int i=0; i<N; ++i) efield[i] = 0.0;
     xc = new Real_t[nsidep + N + nsidep]; // xc padded with virtual bins
     for (int i=0; i<N; ++i)
@@ -144,6 +147,17 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     // not centered diffs close to boundaries
     for (int bi=0; bi<N; bi++)
         apply_fd_(bi);
+
+    gradD = std::vector<Real_t>(N*n, 0.0);
+    for (int bi=0; bi<N; ++bi){
+        int starti = start_idx_(bi);
+        for (int si=0; si<n; ++si){
+            for (int li=0; li<nstencil; ++li){
+                int biw = biw_(starti, li);
+                gradD[bi*n + si] += GRAD_WEIGHT(bi, li)*D[biw*n + si];
+            }
+        }
+    }
 
     // Stoichiometry
     for (int ri=0; ri<nr; ++ri){
@@ -166,14 +180,10 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     stoich_inact.reserve(nr);
     for (int rxni=0; rxni<nr; ++rxni){ // reaction index
         for (int si=0; si<n; ++si){ // species index
-            coeff_active[rxni*n+si] = count(stoich_active[rxni].begin(),
-                                          stoich_active[rxni].end(), si);
-            coeff_inact[rxni*n+si] = count(stoich_inact[rxni].begin(),
-                                            stoich_inact[rxni].end(), si);
-            coeff_prod[rxni*n+si] = count(stoich_prod[rxni].begin(),
-                                        stoich_prod[rxni].end(), si);
-            coeff_total[rxni*n+si] = coeff_prod[rxni*n+si] -\
-                coeff_active[rxni*n+si] - coeff_inact[rxni*n+si];
+            coeff_active[rxni*n+si] = count(stoich_active[rxni].begin(), stoich_active[rxni].end(), si);
+            coeff_inact[rxni*n+si] = count(stoich_inact[rxni].begin(), stoich_inact[rxni].end(), si);
+            coeff_prod[rxni*n+si] = count(stoich_prod[rxni].begin(), stoich_prod[rxni].end(), si);
+            coeff_total[rxni*n+si] = coeff_prod[rxni*n+si] - coeff_active[rxni*n+si] - coeff_inact[rxni*n+si];
         }
     }
 
@@ -211,8 +221,9 @@ ReactionDiffusion<Real_t>::~ReactionDiffusion()
     delete []xc;
     delete []efield;
     delete []netchg;
-    delete []A_weight;
-    delete []D_weight;
+    delete []div_weight;
+    delete []lap_weight;
+    delete []grad_weight;
     delete []coeff_active;
     delete []coeff_prod;
     delete []coeff_total;
@@ -221,6 +232,31 @@ ReactionDiffusion<Real_t>::~ReactionDiffusion()
         delete prec_cache;
     if (jac_cache != nullptr)
         delete jac_cache;
+}
+
+template<typename Real_t>
+int ReactionDiffusion<Real_t>::start_idx_(int bi) const {
+    int starti;
+    if ((bi < this->nsidep) && (!this->lrefl)){
+        starti = 0;
+    } else if ((bi >= this->N - this->nsidep) && (!this->rrefl)){
+        starti = this->N - this->nstencil;
+    } else{
+        starti = bi - this->nsidep;
+    }
+    return starti;
+}
+
+template<typename Real_t>
+int ReactionDiffusion<Real_t>::biw_(int starti, int li) const {
+    int biw = starti + li;
+    // reflective logic:
+    if (starti < 0){
+        biw = (biw < 0) ? (-1 - biw) : biw; // lrefl==true
+    } else if (starti >= (int)N - (int)nstencil + 1){
+        biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
+    }
+    return biw;
 }
 
 template<typename Real_t>
@@ -282,8 +318,8 @@ ReactionDiffusion<Real_t>::xc_bi_map_(int xci) const
 }
 
 
-#define D_WEIGHT(bi, li) D_weight[nstencil*(bi) + li]
-#define A_WEIGHT(bi, li) A_weight[nstencil*(bi) + li]
+#define LAP_WEIGHT(bi, li) lap_weight[nstencil*(bi) + li]
+#define DIV_WEIGHT(bi, li) div_weight[nstencil*(bi) + li]
 #define FDWEIGHT(order, local_index) c[nstencil*(order) + local_index]
 template<typename Real_t>
 void
@@ -291,11 +327,12 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
     Real_t * const c = new Real_t[3*nstencil];
     Real_t * const lxc = new Real_t[nstencil]; // local shifted x-centers
     int around = bi + nsidep;
-    int start  = bi;
+    int start = bi;
     if (!lrefl) // shifted finite diff
         start = max(nsidep, start);
     if (!rrefl) // shifted finite diff
         start = min(N - nstencil + nsidep, start);
+
     for (int li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
     finitediff::populate_weights<Real_t>(0, lxc, nstencil-1, 2, c);
@@ -304,35 +341,38 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
     const Real_t logbdenom = use_log2 ? 1/log(2) : 1;
 
     for (int li=0; li<nstencil; ++li){ // li: local index
-        D_WEIGHT(bi, li) = FDWEIGHT(2, li);
-        A_WEIGHT(bi, li) = FDWEIGHT(1, li);
+        LAP_WEIGHT(bi, li) = FDWEIGHT(2, li);
+        DIV_WEIGHT(bi, li) = FDWEIGHT(1, li);
+        GRAD_WEIGHT(bi, li) = FDWEIGHT(1, li); // == DIV_WEIGHT if geom == 'f'
         if (logx){
-            D_WEIGHT(bi, li) *= logbdenom*logbdenom;
-            A_WEIGHT(bi, li) *= logbdenom;
+            LAP_WEIGHT(bi, li) *= logbdenom*logbdenom;
+            DIV_WEIGHT(bi, li) *= logbdenom;
+            GRAD_WEIGHT(bi, li) *= logbdenom;
             switch(geom){
             case Geom::FLAT:
             case Geom::PERIODIC:
-                D_WEIGHT(bi, li) -= FDWEIGHT(1, li)*logbdenom;
+                LAP_WEIGHT(bi, li) -= FDWEIGHT(1, li)*logbdenom;
                 break;
             case Geom::CYLINDRICAL:
-                A_WEIGHT(bi, li) += FDWEIGHT(0, li);
+                DIV_WEIGHT(bi, li) += FDWEIGHT(0, li);
                 break;
             case Geom::SPHERICAL:
-                D_WEIGHT(bi, li) += FDWEIGHT(1, li)*logbdenom;
-                A_WEIGHT(bi, li) += 2*FDWEIGHT(0, li);
+                LAP_WEIGHT(bi, li) += FDWEIGHT(1, li)*logbdenom;
+                DIV_WEIGHT(bi, li) += 2*FDWEIGHT(0, li);
                 break;
             }
-            D_WEIGHT(bi, li) *= expb(-2*xc[around]);
-            A_WEIGHT(bi, li) *= expb(-xc[around]);
+            LAP_WEIGHT(bi, li) *= expb(-2*xc[around]);
+            DIV_WEIGHT(bi, li) *= expb(-xc[around]);
+            GRAD_WEIGHT(bi, li) *= expb(-xc[around]);
         } else {
             switch(geom){
             case Geom::CYLINDRICAL: // Laplace operator in cyl coords.
-                D_WEIGHT(bi, li) += FDWEIGHT(1, li)*1/xc[around];
-                A_WEIGHT(bi, li) += FDWEIGHT(0, li)*1/xc[around];
+                LAP_WEIGHT(bi, li) += FDWEIGHT(1, li)*1/xc[around];
+                DIV_WEIGHT(bi, li) += FDWEIGHT(0, li)*1/xc[around];
                 break;
             case Geom::SPHERICAL: // Laplace operator in sph coords.
-                D_WEIGHT(bi, li) += FDWEIGHT(1, li)*2/xc[around];
-                A_WEIGHT(bi, li) += FDWEIGHT(0, li)*2/xc[around];
+                LAP_WEIGHT(bi, li) += FDWEIGHT(1, li)*2/xc[around];
+                DIV_WEIGHT(bi, li) += FDWEIGHT(0, li)*2/xc[around];
                 break;
             default:
                 break;
@@ -342,7 +382,6 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
     delete []c;
 }
 #undef FDWEIGHT
-// D_WEIGHT still defined
 
 template<typename Real_t>
 Real_t
@@ -378,7 +417,6 @@ ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict
         local_r[rxni] = get_mod_k(bi, rxni)*tmp;
     }
 }
-// D_WEIGHT still defined
 
 // The indices of x, fluxes and bins
 // <indices.png>
@@ -404,7 +442,6 @@ ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restri
     }
     return linC;
 }
-// Y, D_WEIGHT(bi, li) still defined
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
@@ -455,32 +492,22 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         if (N>1){
             // Contributions from diffusion and advection
             // ------------------------------------------
-            int starti;
-            if ((bi < nsidep) && (!lrefl)){
-                starti = 0;
-            } else if ((bi >= N-nsidep) && (!rrefl)){
-                starti = N - nstencil;
-            } else{
-                starti = bi - nsidep;
-            }
+            int starti = start_idx_(bi);
             for (int si=0; si<n; ++si){ // species index si
                 if ((D[bi*n + si] == 0.0) && (mobility[si] == 0.0)) continue;
-                Real_t unscaled_diffusion = 0;
-                Real_t unscaled_advection = 0;
+                Real_t diffusion_unscaled = 0;
+                Real_t diffusion_correction = 0;
+                Real_t advection_unscaled = 0;
                 for (int xi=0; xi<nstencil; ++xi){
-                    int biw = starti + xi;
-                    // reflective logic:
-                    if (starti < 0){
-                        biw = (biw < 0) ? (-1 - biw) : biw; // lrefl==true
-                    } else if (starti >= (int)N - (int)nstencil + 1){
-                        biw = (biw >= (int)N) ? (2*N - biw - 1) : biw; // rrefl==true
-                    }
-                    unscaled_diffusion += D_WEIGHT(bi, xi) * LINC(biw, si);
-                    unscaled_advection += A_WEIGHT(bi, xi) * \
+                    int biw = biw_(starti, xi);
+                    diffusion_unscaled += LAP_WEIGHT(bi, xi) * LINC(biw, si);
+                    diffusion_correction += GRAD_WEIGHT(bi, xi) * LINC(biw, si);
+                    advection_unscaled += DIV_WEIGHT(bi, xi) * \
                         (LINC(biw, si)*efield[bi] + LINC(bi, si)*efield[biw]);
                 }
-                DYDT(bi, si) += unscaled_diffusion*D[bi*n + si];
-                DYDT(bi, si) += unscaled_advection*-mobility[si];
+                DYDT(bi, si) += diffusion_unscaled*D[bi*n + si];
+                DYDT(bi, si) += diffusion_correction*gradD[bi*n + si];
+                DYDT(bi, si) += advection_unscaled*-mobility[si];
             }
         }
         for (int si=0; si<n; ++si){
@@ -506,12 +533,10 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
     return AnyODE::Status::success;
 }
 #undef DYDT
-// D_WEIGHT(bi, li), Y(bi, si) and LINC(bi, si) still defined.
-
 
 #define FOUT(bi, si) fout[(bi)*n+si]
 #define SUP(di, bi, li) jac.sup(di, bi, li)
-%for token in ['dense_jac_rmaj', 'dense_jac_cmaj', 'banded_jac_cmaj', 'compressed_jac_cmaj']:
+%for token in ["dense_jac_rmaj", "dense_jac_cmaj", "banded_jac_cmaj", "compressed_jac_cmaj"]:
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::${token}(Real_t t,
@@ -606,19 +631,22 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                 if ((D[bi*n + si] == 0.0) && (mobility[si] == 0.0)) continue; // exit early if possible
                 for (int k=0; k<nstencil; ++k){
                     const int sbi = xc_bi_map_(lbound+k);
-                    jac.block(bi, si, si) += -mobility[si]*efield[sbi]*A_WEIGHT(bi, k);
+                    jac.block(bi, si, si) += -mobility[si]*efield[sbi]*DIV_WEIGHT(bi, k);
                     if (sbi == bi) {
-                        jac.block(bi, si, si) += D[bi*n + si]*D_WEIGHT(bi, k);
-                        jac.block(bi, si, si) += -mobility[si]*efield[bi]*A_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += D[bi*n + si]*LAP_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += gradD[bi*n + si]*GRAD_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += -mobility[si]*efield[bi]*DIV_WEIGHT(bi, k);
                     } else {
                         for (int di=0; di<n_jac_diags; ++di){
                             if ((bi >= di+1) and (sbi == bi-di-1)){
-                                jac.sub(di, bi-di-1, si) += D[bi*n + si]*D_WEIGHT(bi, k);
-                                jac.sub(di, bi-di-1, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
+                                jac.sub(di, bi-di-1, si) += D[bi*n + si]*LAP_WEIGHT(bi, k);
+                                jac.sub(di, bi-di-1, si) += gradD[bi*n+si]*GRAD_WEIGHT(bi, k);
+                                jac.sub(di, bi-di-1, si) += efield[bi]*-mobility[si]*DIV_WEIGHT(bi, k);
                             }
                             if ((bi < N-di-1) and (sbi == bi+di+1)){
-                                jac.sup(di, bi, si) += D[bi*n + si]*D_WEIGHT(bi, k);
-                                jac.sup(di, bi, si) += efield[bi]*-mobility[si]*A_WEIGHT(bi, k);
+                                jac.sup(di, bi, si) += D[bi*n + si]*LAP_WEIGHT(bi, k);
+                                jac.sup(di, bi, si) += gradD[bi*n + si]*GRAD_WEIGHT(bi, k);
+                                jac.sup(di, bi, si) += efield[bi]*-mobility[si]*DIV_WEIGHT(bi, k);
                             }
                         }
                     }
@@ -684,15 +712,15 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
-    if (jac_cache == nullptr){
+    if (jac_times_cache == nullptr){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
-        jac_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
+        jac_times_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
+        jac_times_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
-        compressed_jac_cmaj(t, y, fy, jac_cache->m_data, ld_dummy);
+        compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
     }
-    jac_cache->dot_vec(vec, out);
+    jac_times_cache->dot_vec(vec, out);
     njacvec_dot++;
     return AnyODE::Status::success;
 }
@@ -725,8 +753,9 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
 }
 #undef LINC
 #undef Y
-#undef D_WEIGHT
-#undef A_WEIGHT
+#undef LAP_WEIGHT
+#undef DIV_WEIGHT
+#undef GRAD_WEIGHT
 
 template<typename Real_t>
 AnyODE::Status

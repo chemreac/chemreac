@@ -210,7 +210,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
                  atol=1e-8, rtol=1e-10,
                  efield=False, random_seed=42, mobility=0.01,
                  plot=False, savefig='None', verbose=False, yscale='linear',
-                 vline_limit=100, use_log2=False, Dexpr='[D]*nspecies'
+                 vline_limit=100, use_log2=False, Dexpr='[D]*nspecies', check_conserv=False
                  ):  # remember: anayltic_N_scaling.main kwargs
     # Example:
     # python3 analytic_diffusion.py --plot --Dexpr "D*np.exp(10*(x[:-1]+np.diff(x)/2))"
@@ -381,6 +381,16 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
         plt.ylabel(r'$\sqrt{\langle E^2 \rangle} / atol$')
         plt.tight_layout()
         save_and_or_show_plot(savefig=savefig)
+
+    if check_conserv:
+        tot_amount = np.zeros(tout.size)
+        for ti in range(tout.size):
+            for si in range(nspecies):
+                tot_amount[ti] += rd.integrated_conc(integr.yout[ti, :, si])
+        if plot:
+            plt.plot(tout, tot_amount)
+            plt.show()
+        assert np.allclose(tot_amount[0], tot_amount[1:])
 
     return tout, integr.yout, info, ave_rmsd_over_atol, rd, rmsd
 

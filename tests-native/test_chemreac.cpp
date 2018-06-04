@@ -255,7 +255,7 @@ ReactionDiffusion<double> _get_single_specie_system(int N, int z){
     vector<vector<int> > stoich_actv {};
     vector<vector<int> > stoich_prod {};
     vector<double> k {};
-    vector<double> D {1.0};
+    vector<double> D(N, 1.0);
     vector<int> z_chg {z};
     vector<double> mobility {1.0};
     vector<double> x;
