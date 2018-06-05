@@ -152,7 +152,7 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom_vary
     x = np.linspace(0.01*N, N, N+1)
     y0 = (x[0]/2/N+x[1:]/N)**2
     if varying:
-        D = np.linspace(0, 0.02*N, N)
+        D = np.linspace(0, (0.02*N)**0.5, N)**2
     else:
         D = [0.02*N]
     sys = ReactionDiffusion(1, [], [], [], N=N, D=D, x=x, geom=geom,
