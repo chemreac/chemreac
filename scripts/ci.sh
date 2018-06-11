@@ -5,10 +5,18 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 
-(cd tests-native; make)
+(cd tests-native; make CONTEXT=valgrind)
+(cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 EXTRA_COMPILE_ARGS='-fsanitize=address')
 
 set -e
 python3 -m pip install --user -e .[all]
+python3 -m pip uninstall -y $PKG_NAME
+git clean -xfd
+CC=clang-6.0 \
+  CXX=clang++-6.0 \
+  CFLAGS="-fsanitize=address" \
+  python3 -m pip install --user -e .[all]
+
 ./scripts/run_tests.sh ${@:2}
 python3 -m pip uninstall -y $PKG_NAME
 
