@@ -47,7 +47,7 @@ clean:
 	rm $(GENERATED)
 
 chemreac.cpp: ../src/chemreac.cpp.mako
-	python enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
+	python3 enmako.py -g "{\"WITH_OPENMP\": $(WITH_OPENMP_TRFL)}" -o $@ $<
 
 
 test_chemreac: chemreac.cpp test_chemreac.cpp test_utils.o
