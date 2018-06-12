@@ -15,12 +15,10 @@ else
   FLAGS +=-g -DDEBUG 
 endif
 
-TARGETS=test_chemreac.out test_chemreac_sundials.out test_chemreac_catch.out
-GENERATED=chemreac.cpp test_chemreac test_chemreac.out test_chemreac_sundials test_chemreac_sundials.out test_utils.o chemreac.o
+GENERATED=chemreac.cpp test_chemreac test_utils.o chemreac.o
 
 ifeq ($(PROFILING),1)
   FLAGS += $(PROFFLAGS) -DPROFILING 
-  TARGETS += profile_test_chemreac.out
   GENERATED += profile_test_chemreac.out gmon.out
 endif
 ifeq ($(WITH_OPENMP),1)
@@ -39,9 +37,15 @@ INCLUDE ?= -I../chemreac/include -I../external/anyode/include -I$(shell python3 
 %.o: %.cpp
 	$(CXX) -fPIC $(CXXFLAGS) $(FLAGS) $(INCLUDE) -c -o $@ $<
 
-all: $(TARGETS)
 
-.PHONY: clean all
+.PHONY: all test clean
+
+all: test $(GENERATED)
+
+test: test_chemreac test_chemreac_sundials test_chemreac_catch
+	$(CONTEXT) ./test_chemreac
+	$(CONTEXT) ./test_chemreac_sundials
+	./test_chemreac_catch
 
 clean:
 	rm $(GENERATED)
@@ -64,15 +68,6 @@ gmon.out: test_chemreac
 profile_test_chemreac.out: test_chemreac gmon.out
 	./$<
 	gprof ./$< > $@
-
-test_chemreac.out: test_chemreac
-	$(CONTEXT) ./$< >$@
-
-test_chemreac_sundials.out: test_chemreac_sundials
-	$(CONTEXT) ./$< >$@
-
-test_chemreac_catch.out: test_chemreac_catch
-	./$< >$@
 
 catch.hpp: catch.hpp.bz2
 	bzcat $< >$@

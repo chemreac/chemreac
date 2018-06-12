@@ -9,8 +9,8 @@ python3 -m pip install --user argh finitediff block_diag_ilu pycvodes
 
 set -e
 
-(cd tests-native; make CONTEXT=valgrind)
-(cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 EXTRA_COMPILE_ARGS='-fsanitize=address')
+(cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG' test)
+(cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 OPTIMIZE=1 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
 
 python3 -m pip install --user -e .[all]
 python3 -m pip uninstall -y $PKG_NAME
