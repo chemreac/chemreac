@@ -277,7 +277,7 @@ int test_calc_efield(){
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
     rd.calc_efield(&y[0]);
     int fail = 0;
-    for (int i=0; i<ref_efield.size(); ++i)
+    for (unsigned i=0; i<ref_efield.size(); ++i)
 	if (dabs((rd.efield[i]-ref_efield[i])/ref_efield[i]) > 1e-10){
             std::cout << i << " " << rd.efield[i] << " " << ref_efield[i] << std::endl;
             fail = 1;
