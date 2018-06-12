@@ -72,7 +72,7 @@ test_chemreac_sundials.out: test_chemreac_sundials
 	$(CONTEXT) ./$< >$@
 
 test_chemreac_catch.out: test_chemreac_catch
-	$(CONTEXT) ./$< >$@
+	./$< >$@
 
 catch.hpp: catch.hpp.bz2
 	bzcat $< >$@
