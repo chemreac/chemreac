@@ -39,6 +39,7 @@ TEST_CASE( "jac_times_vec", "[ReactionDiffusion]" ) {
     // J*x = b
 
     std::array<double, 3*4*3*4> J_data;
+    std::memset(J_data.data(), 0, J_data.size()*sizeof(double));
     auto J = [&](int ri, int ci) -> double& {
         return J_data[ri*3*4+ci];
     };

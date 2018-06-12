@@ -232,6 +232,8 @@ ReactionDiffusion<Real_t>::~ReactionDiffusion()
         delete prec_cache;
     if (jac_cache != nullptr)
         delete jac_cache;
+    if (jac_times_cache != nullptr)
+        delete jac_times_cache;
 }
 
 template<typename Real_t>
@@ -545,7 +547,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                                     Real_t * const __restrict__ ja, long int ldj
                                     ${', double * const __restrict__ /* dfdt */' if token.startswith('dense') else ''})
 {
-    // Note: blocks are zeroed out, diagnoals only incremented
+    // Note: blocks are zeroed out, diagonals only incremented
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
@@ -716,10 +718,11 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
         jac_times_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
-        jac_times_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
+        jac_times_cache->set_to(0.0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
         compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
     }
+    std::memset(out, 0, sizeof(Real_t)*get_ny());
     jac_times_cache->dot_vec(vec, out);
     njacvec_dot++;
     return AnyODE::Status::success;
