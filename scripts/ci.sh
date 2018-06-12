@@ -5,7 +5,7 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 
-python3 -m pip install --user argh
+python3 -m pip install --user argh finitediff block_diag_ilu pycvodes
 
 set -e
 
