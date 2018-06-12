@@ -232,6 +232,8 @@ ReactionDiffusion<Real_t>::~ReactionDiffusion()
         delete prec_cache;
     if (jac_cache != nullptr)
         delete jac_cache;
+    if (jac_times_cache != nullptr)
+        delete jac_times_cache;
 }
 
 template<typename Real_t>
@@ -545,25 +547,25 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                                     Real_t * const __restrict__ ja, long int ldj
                                     ${', double * const __restrict__ /* dfdt */' if token.startswith('dense') else ''})
 {
-    // Note: blocks are zeroed out, diagnoals only incremented
+    // Note: blocks are zeroed out, diagonals only incremented
     // `t`: time (log(t) if logt=1)
     // `y`: concentrations (log(conc) if logy=True)
     // `ja`: jacobian (allocated 1D array to hold dense or banded)
     // `ldj`: leading dimension of ja (useful for padding, ignored by compressed_*)
- %if token.startswith('compressed'):
+ %if token.startswith("compressed"):
     ignore(ldj);
     const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0 ;
     const int ld = n;
     block_diag_ilu::BlockDiagMatrix<Real_t> jac {ja, N, n, n_jac_diags, nsat, ld};
- %elif token.startswith('banded_jac_cmaj'):
+ %elif token.startswith("banded_jac_cmaj"):
     block_diag_ilu::BlockBandedMatrix<Real_t> jac {ja-get_mlower(), N, n, n_jac_diags, static_cast<int>(ldj)};
- %elif token.startswith('dense_jac_cmaj'):
+ %elif token.startswith("dense_jac_cmaj"):
     block_diag_ilu::BlockDenseMatrix<Real_t> jac {ja, N, n, n_jac_diags, static_cast<int>(ldj), true};
- %elif token.startswith('dense_jac_rmaj'):
+ %elif token.startswith("dense_jac_rmaj"):
     block_diag_ilu::BlockDenseMatrix<Real_t> jac {ja, N, n, n_jac_diags, static_cast<int>(ldj), false};
-    %else:
-#error "Unhandled token."
-    %endif
+ %else:
+    #error "Unhandled token."
+ %endif
     const Real_t exp_t = (logt) ? expb(t) : 0.0;
     const Real_t logbfactor = use_log2 ? log(2) : 1;
 
@@ -579,12 +581,12 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
 
     // note conditional call to free at end of this function
     const Real_t * const linC = (logy) ? alloc_and_populate_linC(y, true, false) : y;
-    const Real_t * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) :
-        alloc_and_populate_linC(y, false, true);
-    if (auto_efield)
+    const Real_t * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) : alloc_and_populate_linC(y, false, true);
+    if (auto_efield) {
         calc_efield(linC);
+    }
 
-    ${'#pragma omp parallel for schedule(static) if (N*n*n > 65536)' if WITH_OPENMP else ''}
+    ${"#pragma omp parallel for schedule(static) if (N*n*n > 65536)" if WITH_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
         // Conc. in `bi:th` compartment
         // Contributions from reactions and fields
@@ -608,7 +610,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                         qkj *= LINC(bi, rnti_si);
                     }
                     jac.block(bi, si, dsi) += Ski*qkj;
-                    // std::cout << jac.block(bi, si, dsi) << "\n";
+                    //std::cout << "jac.block(" << bi << ", " << si << ", " << dsi <<") = " << jac.block(bi, si, dsi) << "\n";
                 }
                 // Contribution from particle/electromagnetic fields
                 for (unsigned fi=0; fi<(this->fields.size()); ++fi){
@@ -635,7 +637,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                     if (sbi == bi) {
                         jac.block(bi, si, si) += D[bi*n + si]*LAP_WEIGHT(bi, k);
                         jac.block(bi, si, si) += gradD[bi*n + si]*GRAD_WEIGHT(bi, k);
-                        jac.block(bi, si, si) += -mobility[si]*efield[bi]*DIV_WEIGHT(bi, k);
+                        jac.block(bi, si, si) += efield[bi]*-mobility[si]*DIV_WEIGHT(bi, k);
                     } else {
                         for (int di=0; di<n_jac_diags; ++di){
                             if ((bi >= di+1) and (sbi == bi-di-1)){
@@ -716,10 +718,11 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
         jac_times_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
-        jac_times_cache->set_to(0); // compressed_jac_cmaj only increments diagonals
+        jac_times_cache->set_to(0.0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
         compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
     }
+    std::memset(out, 0, sizeof(Real_t)*get_ny());
     jac_times_cache->dot_vec(vec, out);
     njacvec_dot++;
     return AnyODE::Status::success;

@@ -5,10 +5,21 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 
-(cd tests-native; make)
+python3 -m pip install --user argh finitediff block_diag_ilu pycvodes
 
 set -e
+
+(cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG' test)
+(cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
+
 python3 -m pip install --user -e .[all]
+python3 -m pip uninstall -y $PKG_NAME
+git clean -xfd
+CC=clang-6.0 \
+  CXX=clang++-6.0 \
+  CFLAGS="-fsanitize=address" \
+  python3 -m pip install --user -e .[all]
+
 ./scripts/run_tests.sh ${@:2}
 python3 -m pip uninstall -y $PKG_NAME
 
