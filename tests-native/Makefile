@@ -77,5 +77,5 @@ test_chemreac_catch.out: test_chemreac_catch
 catch.hpp: catch.hpp.bz2
 	bzcat $< >$@
 
-test_chemreac_catch: test_chemreac_catch.cpp catch.hpp test_utils.o
+test_chemreac_catch: test_chemreac_catch.cpp catch.hpp test_utils.o chemreac.o
 	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) -o $@ $< chemreac.o test_utils.o $(LIBS)
