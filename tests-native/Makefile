@@ -9,7 +9,7 @@ CXXFLAGS=-std=c++11
 LIBS=-lrt -llapack -lblas
 
 ifeq ($(OPTIMIZE),1)
-  CONTEXT ?= time
+  CONTEXT ?= # /usr/bin/time
   FLAGS += $(PERFFLAGS) -DBENCHMARK
 else
   FLAGS +=-g -DDEBUG 
