@@ -56,7 +56,7 @@ test_chemreac: chemreac.cpp test_chemreac.cpp test_utils.o
 
 
 test_chemreac_sundials: chemreac.o test_utils.o test_chemreac_sundials.cpp
-	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) -o $@ $^ -lm -lsundials_cvodes -llapack -lblas -lsundials_nvecserial -lsundials_linsollapackdense -lsundials_linsollapackband
+	$(CXX) $(CXXFLAGS) $(FLAGS) $(INCLUDE) -o $@ $^ $(shell python3 -c 'import pycvodes as p; print(" -l".join([" "] + p.config["SUNDIALS_LIBS"].split(",") + p.config["LAPACK"].split(",")), end="")') -lm
 
 gmon.out: test_chemreac
 	./$<
