@@ -80,6 +80,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
                                           **kwargs)
     except RuntimeError:
         yout = np.empty((len(tout), rd.N, rd.n), order='C')/0  # NaN
+        info = {}
         success = False
     else:
         success = True
