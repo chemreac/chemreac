@@ -76,8 +76,8 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
                 **kwargs)
         else:
             yout, info = cvode_predefined(rd, np.asarray(y0).flatten(),
-                                    np.asarray(tout).flatten(),
-                                    **kwargs)
+                                          np.asarray(tout).flatten(),
+                                          **kwargs)
     except RuntimeError:
         yout = np.empty((len(tout), rd.N, rd.n), order='C')/0  # NaN
         success = False

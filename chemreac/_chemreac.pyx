@@ -385,11 +385,11 @@ cdef class PyReactionDiffusion:
             return {str(k.decode('utf-8')): np.array(v, dtype=np.int) for k, v
                     in dict(self.thisptr.current_info.nfo_vecint).items()}
 
-    def get_last_info(self, success):
+    def get_last_info(self, *, success):
         info = self.last_integration_info
-        info.update(self.last_integration_info_dbl)
-        info.update(self.last_integration_info_vecdbl)
-        info.update(self.last_integration_info_vecint)
+        # info.update(self.last_integration_info_dbl)
+        # info.update(self.last_integration_info_vecdbl)
+        # info.update(self.last_integration_info_vecint)
         info['nfev'] = self.nfev
         info['njev'] = self.njev
         info['success'] = success
@@ -466,7 +466,8 @@ def cvode_predefined(
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
         bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False):
     cdef:
-        cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
+        int ny = rd.n*rd.N
+        cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*ny)
         cnp.ndarray[cnp.float64_t, ndim=3] ew_ele_arr = np.empty((tout.size, 2, ny))
         vector[int] root_indices
         vector[double] roots_output
@@ -547,7 +548,8 @@ def cvode_adaptive(
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
-        int autorestart=0, bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False):
+        bool return_on_root=False, int autorestart=0, bool return_on_error=False,
+        bool with_jtimes=False, bool ew_ele=False):
     cdef:
         int nout, nderiv = 0, td = 1
         vector[int] root_indices
@@ -574,8 +576,8 @@ def cvode_adaptive(
         &xyout, &td, rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         tend, root_indices, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
-        linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, 0,
-        &ew_ele_out if ew_ele else NULL)
+        linear_solver, maxl, eps_lin, nderiv, return_on_root, autorestart, return_on_error,
+        with_jtimes, 0, &ew_ele_out if ew_ele else NULL)
     xyout_dims[0] = nout + 1
     xyout_dims[1] = y0.size*(nderiv+1) + 1
     xyout_arr = cnp.PyArray_SimpleNewFromData(2, xyout_dims, cnp.NPY_DOUBLE, <void *>xyout)
@@ -583,10 +585,10 @@ def cvode_adaptive(
     tout = xyout_arr[:, 0]
     yout = xyout_arr[:, 1:]
     if return_on_error:
-        if return_on_root and root_indices[root_indices.size() - 1] == len(xout) - 1:
+        if return_on_root and root_indices[root_indices.size() - 1] == len(tout) - 1:
             success = True
         else:
-            success = xout[-1] == xend
+            success = tout[-1] == tend
     else:
         success = True
     info = rd.get_last_info(success=success)

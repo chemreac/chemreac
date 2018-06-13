@@ -241,8 +241,8 @@ def test_integrators(log):
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)
         ew_ele = integr.info.get('ew_ele', None)
-        if ew_ele:
-            assert np.all(np.abs(np.prod(ew_ele, axis=1)) < 1)
+        if ew_ele is not None:
+            assert np.all(np.abs(np.prod(ew_ele, axis=1)) < 2)
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])
