@@ -17,7 +17,7 @@ python3 -m pip uninstall -y $PKG_NAME
 git clean -xfd
 CC=clang-6.0 \
   CXX=clang++-6.0 \
-  CFLAGS="-fsanitize=address" \
+  CFLAGS="-fsanitize=address -UNDEBUG" \
   python3 -m pip install --user -e .[all]
 
 ./scripts/run_tests.sh ${@:2}
