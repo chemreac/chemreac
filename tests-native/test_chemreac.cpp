@@ -130,7 +130,7 @@ int test_jac(){
     // Compressed jacobian
     vector<double> cmprs_jac(rd.n*rd.n*rd.N + 2*rd.n*(rd.N-1), 0);
     rd.compressed_jac_cmaj(0.0, &y[0], nullptr, &cmprs_jac[0], rd.n);
-    std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
+    // std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
 #define CMPRS(bi, ri, ci) cmprs_jac[bi*rd.n*rd.n + ci*rd.n + ri]
 #define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi + ci]
 #define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi + ci]

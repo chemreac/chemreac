@@ -27,13 +27,13 @@ int test_integration(int N){
     cvodes_anyode::simple_predefined<ReactionDiffusion<double> >
         (&rd, atol, rtol, cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
          root_indices, roots_output);
-    for (unsigned int tidx=0; tidx<tout.size(); tidx++){
-        std::cout << tout[tidx];
-        for (int sidx=0; sidx<ny; sidx++){
-            std::cout << " " << yout[tidx*ny + sidx];
-        }
-        std::cout << std::endl;
-    }
+    // for (unsigned int tidx=0; tidx<tout.size(); tidx++){
+    //     std::cout << tout[tidx];
+    //     for (int sidx=0; sidx<ny; sidx++){
+    //         std::cout << " " << yout[tidx*ny + sidx];
+    //     }
+    //     std::cout << std::endl;
+    // }
     free(yout);
     return 0;
 }
