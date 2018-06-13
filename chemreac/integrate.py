@@ -70,12 +70,12 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         if dense_output:
             if not len(tout) == 2:
                 raise ValueError("dense_output implies tout == (t0, tend)")
-            tout, yout = cvode_adaptive(
+            tout, yout, info = cvode_adaptive(
                 rd, np.asarray(y0).flatten(), tout[0], tout[-1],
                 kwargs.pop('atol'), kwargs.pop('rtol'), kwargs.pop('method'),
                 **kwargs)
         else:
-            yout = cvode_predefined(rd, np.asarray(y0).flatten(),
+            yout, info = cvode_predefined(rd, np.asarray(y0).flatten(),
                                     np.asarray(tout).flatten(),
                                     **kwargs)
     except RuntimeError:
@@ -101,10 +101,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['njacvec_dot'] = rd.njacvec_dot
         kwargs['nprec_solve_ilu'] = rd.nprec_solve_ilu
         kwargs['nprec_solve_lu'] = rd.nprec_solve_lu
-    kwargs.update(rd.last_integration_info)
-    # kwargs.update(rd.last_integration_info_dbl)
-    # kwargs.update(rd.last_integration_info_vecdbl)
-    # kwargs.update(rd.last_integration_info_vecint)
+    kwargs.update(info)
     return yout, tout, kwargs
 
 

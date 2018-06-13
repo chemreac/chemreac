@@ -210,13 +210,15 @@ def test_integrators(log):
             'rtol': 1e-8,
             'method': 'adams',
             'tout': tout,
-            'C0_is_log': True
+            'C0_is_log': True,
+            'ew_ele': True
         },
         'cvode3': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
             'method': 'bdf',
             'tout': (t0, tend),
+            'ew_ele': True
         },
         'cvode4': {
             'atol': [1e-8, 1e-8],
@@ -238,6 +240,9 @@ def test_integrators(log):
         integr = Integration(rd, _y0, integrator=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)
+        ew_ele = integr.info.get('ew_ele', None)
+        if ew_ele:
+            assert np.all(np.abs(np.prod(ew_ele, axis=1)) < 1)
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])
