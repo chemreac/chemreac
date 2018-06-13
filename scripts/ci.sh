@@ -13,7 +13,7 @@ set -e
 (cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
 
 python3 -m pip install --user -e .[all]
-./scripts/run_tests.sh
+(ulimit -v 2048000; ./scripts/run_tests.sh)
 git clean -xfd
 CC=clang-6.0 \
   CXX=clang++-6.0 \
