@@ -120,11 +120,12 @@ cdef class PyReactionDiffusion:
 
     def banded_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
+        cdef int offset = self.n*self.n_jac_diags
         assert y.size >= self.n*self.N
-        assert Jout.shape[0] >= self.n*2+1
+        assert Jout.shape[0] >= 3*self.n*self.n_jac_diags+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_jac_cmaj(
-            t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
+            t, &y[0], NULL, <double *>Jout.data + offset, Jout.shape[0])
 
     def compressed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                             cnp.ndarray[cnp.float64_t, ndim=1] Jout):

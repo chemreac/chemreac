@@ -24,7 +24,7 @@ def test_dc():
     fref = [pos[i]*y_[i] - neg[i]*y_[i+1] for i in range(n)]
     assert np.allclose(fref, fout)
 
-    jout = rd.alloc_jout()
+    jout = rd.alloc_jout(order='C')
     rd.dense_jac_rmaj(0, y0, jout)
     jref = np.zeros_like(jout)
     for i in range(n):

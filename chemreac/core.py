@@ -169,13 +169,17 @@ class ReactionDiffusionBase(object):
     def alloc_fout(self):
         return np.zeros(self.n*self.N)
 
-    def alloc_jout(self, banded=None, order='C', pad=0):
-        if pad is True:
-            pad = self.n*self.n_jac_diags
-        if pad is False:
-            pad = 0
+    def alloc_jout(self, banded=None, order='F', pad=None):
         if banded is None:
             banded = self.N > 1
+        if pad is None:
+            pad = banded
+
+        if pad is True:
+            pad = self.n*self.n_jac_diags
+        elif pad is False:
+            pad = 0
+
         if order == 'C':
             rpad, cpad = 0, pad
         elif order == 'F':
@@ -188,8 +192,7 @@ class ReactionDiffusionBase(object):
             nc = self.n*self.N + cpad
             return np.zeros((nr, nc), order=order)
         else:
-            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
-                            order=order)
+            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad), order=order)
 
     def alloc_jout_compressed(self, nsat=0):
         from block_diag_ilu import alloc_compressed

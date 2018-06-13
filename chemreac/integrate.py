@@ -268,15 +268,16 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         return fout
     f.neval = 0
 
+    from_row = 0
     if linear_solver == 'dense':
         jout = rd.alloc_jout(banded=False, order='F')
     elif linear_solver == 'banded':
+        jout = rd.alloc_jout(banded=True, order='F', pad=True)
         if scipy_version[0] <= 0 and scipy_version[1] <= 14:
-            # Currently SciPy <= v0.14 needs extra padding
-            jout = rd.alloc_jout(banded=True, order='F', pad=True)
+            pass
         else:
             # SciPy >= v0.15 need no extra padding
-            jout = rd.alloc_jout(banded=True, order='F')
+            from_row = rd.n*rd.n_jac_diags
 
     def jac(t, y, *j_args):
         jac.neval += 1
@@ -287,7 +288,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
             if scipy_version[0] <= 0 and scipy_version[1] <= 14:
                 raise NotImplementedError("SciPy v0.15 or greater required.")
             rd.banded_jac_cmaj(t, y, jout)
-        return jout
+        return jout[from_row:, :]
     jac.neval = 0
 
     runner = ode(f, jac=jac if new_kwargs['with_jacobian'] else None)
@@ -499,8 +500,7 @@ class Integration(object):
 
         # Run the integration
         # -------------------
-        self.yout, self.internal_t, self.info = self._callbacks[self.integrator](
-            self.rd, y0, t, **self.kwargs)
+        self.yout, self.internal_t, self.info = self._callbacks[self.integrator](self.rd, y0, t, **self.kwargs)
         self.info['t0_set'] = t0 if t0_set else False
 
         # Post processing

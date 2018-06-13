@@ -13,8 +13,6 @@ from chemreac.util.plotting import (
 )
 from chemreac.util.testing import slow
 
-matplotlib.use('Agg')  # travis-ci has no DISPLAY env var.
-
 
 def _get_decay_rd(N):
     return ReactionDiffusion(2, [[0]], [[1]], [3.14], N, D=[0.0, 0.0])

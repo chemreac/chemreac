@@ -558,7 +558,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     const int ld = n;
     block_diag_ilu::BlockDiagMatrix<Real_t> jac {ja, N, n, n_jac_diags, nsat, ld};
  %elif token.startswith("banded_jac_cmaj"):
-    block_diag_ilu::BlockBandedMatrix<Real_t> jac {ja-get_mlower(), N, n, n_jac_diags, static_cast<int>(ldj)};
+    block_diag_ilu::BlockBandedMatrix<Real_t> jac {ja-n*n_jac_diags, N, n, n_jac_diags, static_cast<int>(ldj)};
  %elif token.startswith("dense_jac_cmaj"):
     block_diag_ilu::BlockDenseMatrix<Real_t> jac {ja, N, n, n_jac_diags, static_cast<int>(ldj), true};
  %elif token.startswith("dense_jac_rmaj"):
