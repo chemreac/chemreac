@@ -20,7 +20,7 @@ CC=clang-6.0 \
   CFLAGS="-fsanitize=address -UNDEBUG" \
   python3 -m pip install --user -e .[all]
 
-./scripts/run_tests.sh ${@:2}
+LD_PRELOAD=/usr/lib/llvm-6.0/lib/clang/6.0.1/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh ${@:2}
 python3 -m pip uninstall -y $PKG_NAME
 
 python3 setup.py sdist
