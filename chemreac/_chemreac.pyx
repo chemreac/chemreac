@@ -481,6 +481,7 @@ def cvode_predefined(
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')), linear_solver,
         maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL)
     info = rd.get_last_info(success=False if return_on_error and nreached < tout.size else True)
+    info['nreached'] = nreached
     if ew_ele:
         info['ew_ele'] = ew_ele_arr.squeeze()
 
