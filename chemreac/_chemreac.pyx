@@ -120,11 +120,12 @@ cdef class PyReactionDiffusion:
 
     def banded_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                        cnp.ndarray[cnp.float64_t, ndim=2, mode="fortran"] Jout):
+        cdef int offset = self.n*self.n_jac_diags
         assert y.size >= self.n*self.N
-        assert Jout.shape[0] >= self.n*2+1
+        assert Jout.shape[0] >= 3*self.n*self.n_jac_diags+1
         assert Jout.shape[1] >= self.n*self.N
         self.thisptr.banded_jac_cmaj(
-            t, &y[0], NULL, &Jout[0, 0], Jout.shape[0])
+            t, &y[0], NULL, <double *>Jout.data + offset, Jout.shape[0])
 
     def compressed_jac_cmaj(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
                             cnp.ndarray[cnp.float64_t, ndim=1] Jout):
@@ -385,6 +386,16 @@ cdef class PyReactionDiffusion:
             return {str(k.decode('utf-8')): np.array(v, dtype=np.int) for k, v
                     in dict(self.thisptr.current_info.nfo_vecint).items()}
 
+    def get_last_info(self, *, success):
+        info = self.last_integration_info
+        # info.update(self.last_integration_info_dbl)
+        # info.update(self.last_integration_info_vecdbl)
+        # info.update(self.last_integration_info_vecint)
+        info['nfev'] = self.nfev
+        info['njev'] = self.njev
+        info['success'] = success
+        return info
+
     def zero_counters(self):
         self.thisptr.zero_counters()
 
@@ -454,20 +465,27 @@ def cvode_predefined(
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
-        bool return_on_error=False, bool with_jtimes=False):
+        bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False):
     cdef:
-        cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*rd.n*rd.N)
+        int ny = rd.n*rd.N
+        cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*ny)
+        cnp.ndarray[cnp.float64_t, ndim=4] ew_ele_arr = np.empty((tout.size, 2, rd.N, rd.n))
         vector[int] root_indices
         vector[double] roots_output
         int nderiv = 0
     assert y0.size == rd.n*rd.N
     assert atol.size() in (1, rd.n*rd.N)
-    simple_predefined[ReactionDiffusion[double]](
+    nreached = simple_predefined[ReactionDiffusion[double]](
         rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')), linear_solver,
-        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
-    return yout.reshape((tout.size, rd.N, rd.n))
+        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL)
+    info = rd.get_last_info(success=False if return_on_error and nreached < tout.size else True)
+    info['nreached'] = nreached
+    if ew_ele:
+        info['ew_ele'] = ew_ele_arr.squeeze()
+
+    return yout.reshape((tout.size, rd.N, rd.n)), info
 
 
 def cvode_predefined_durations_fields(
@@ -479,11 +497,13 @@ def cvode_predefined_durations_fields(
         bool with_jacobian=True,
         basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
-        bool return_on_error=False, bool with_jtimes=False):
+        bool return_on_error=False, bool with_jtimes=False, ew_ele=False):
     cdef:
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout = np.empty(durations.size*npoints + 1)
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] yout = np.empty(tout.size*rd.n*rd.N)
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tbuf = np.zeros(npoints+1)
+        cnp.ndarray[cnp.float64_t, ndim=4, mode='c'] ew_ele_arr
+        double * ew_ele_out = NULL
         vector[int] root_indices
         vector[double] roots_output
         int nderiv = 0
@@ -495,6 +515,8 @@ def cvode_predefined_durations_fields(
     assert len(rd.g_values) == 1, 'only field type assumed for now'
     for i in range(rd.n*rd.N):
         yout[i] = y0[i]
+    if ew_ele:
+        ew_ele_arr = np.empty((tout.size, 2, rd.N, rd.n))
 
     tout[0] = 0.0
     tout[npoints::npoints] = np.cumsum(durations)
@@ -507,12 +529,15 @@ def cvode_predefined_durations_fields(
         rd.fields = [[fields[i]]]
         for j in range(1, npoints+1):
             tbuf[j] = j*durations[i]/npoints
+        if ew_ele:
+            ew_ele_out = <double *>ew_ele_arr.data + offset
+
         nreached = simple_predefined[ReactionDiffusion[double]](
             rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
             &yout[offset], npoints+1, &tbuf[0], &yout[offset],
             root_indices, roots_output, nsteps, first_step, dx_min,
             dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
-            linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
+            linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, ew_ele_out)
 
         if nreached != npoints+1:
             raise ValueError("Did not reach all points for index %d" % i)
@@ -525,29 +550,60 @@ def cvode_adaptive(
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', int linear_solver=0, int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
-        int autorestart=0, bool return_on_error=False, bool with_jtimes=False):
+        bool return_on_root=False, int autorestart=0, bool return_on_error=False,
+        bool with_jtimes=False, bool ew_ele=False):
     cdef:
         int nout, nderiv = 0, td = 1
         vector[int] root_indices
         double * xyout = <double *>malloc(td*(y0.size*(nderiv+1) + 1)*sizeof(double))
+        double * ew_ele_out
+        cnp.ndarray[cnp.float64_t, ndim=2] xyout_arr
+        cnp.ndarray[cnp.float64_t, ndim=4] ew_ele_arr
         cnp.npy_intp xyout_dims[2]
-    assert y0.size == rd.n*rd.N
+        cnp.npy_intp ew_ele_dims[4]
+        int ny = rd.n*rd.N
+    if y0.size != ny:
+        raise ValueError("y0 of incorrect size")
+
     assert atol.size() in (1, rd.n*rd.N)
     xyout[0] = t0
     for i in range(y0.size):
         xyout[i+1] = y0[i]
+    if ew_ele:
+        ew_ele_out = <double*>malloc(2*td*ny*sizeof(double))
+        for i in range(ny):
+            ew_ele_out[i] = 0.0
+
     nout = simple_adaptive[ReactionDiffusion[double]](
         &xyout, &td, rd.thisptr, atol, rtol, lmm_from_name(method.lower().encode('utf-8')),
         tend, root_indices, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
-        linear_solver, maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes)
+        linear_solver, maxl, eps_lin, nderiv, return_on_root, autorestart, return_on_error,
+        with_jtimes, 0, &ew_ele_out if ew_ele else NULL)
     xyout_dims[0] = nout + 1
     xyout_dims[1] = y0.size*(nderiv+1) + 1
     xyout_arr = cnp.PyArray_SimpleNewFromData(2, xyout_dims, cnp.NPY_DOUBLE, <void *>xyout)
     PyArray_ENABLEFLAGS(xyout_arr, cnp.NPY_OWNDATA)
     tout = xyout_arr[:, 0]
     yout = xyout_arr[:, 1:]
-    return tout, yout.reshape((tout.size, rd.N, rd.n))
+    if return_on_error:
+        if return_on_root and root_indices[root_indices.size() - 1] == len(tout) - 1:
+            success = True
+        else:
+            success = tout[-1] == tend
+    else:
+        success = True
+    info = rd.get_last_info(success=success)
+    if ew_ele:
+        ew_ele_dims[0] = nout + 1
+        ew_ele_dims[1] = 2
+        ew_ele_dims[2] = rd.N
+        ew_ele_dims[3] = rd.n
+        ew_ele_arr = cnp.PyArray_SimpleNewFromData(4, ew_ele_dims, cnp.NPY_DOUBLE, <void *>ew_ele_out)
+        PyArray_ENABLEFLAGS(ew_ele_arr, cnp.NPY_OWNDATA)
+        info['ew_ele'] = ew_ele_arr
+
+    return tout, yout.reshape((tout.size, rd.N, rd.n)), info
 
 
 

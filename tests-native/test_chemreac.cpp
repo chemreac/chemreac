@@ -113,10 +113,12 @@ int test_jac(){
         }
 
     // Banded jacobian
-    double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
-    for (int i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
-    rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac, (2*rd.n+1));
-#define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
+    const int ld = (3*rd.n_jac_diags*rd.n + 1);
+    const int ny = rd.N*rd.n;
+    double * bnd_jac = new double[ld*(rd.N*rd.n)];
+    for (int i=0; i<ld*ny; ++i) bnd_jac[i] = 0.0;
+    rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac + rd.n*rd.n_jac_diags, ld);
+#define BND(i, j) bnd_jac[i-j+2*rd.n+j*ld]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)
 	for (int ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
@@ -130,7 +132,7 @@ int test_jac(){
     // Compressed jacobian
     vector<double> cmprs_jac(rd.n*rd.n*rd.N + 2*rd.n*(rd.N-1), 0);
     rd.compressed_jac_cmaj(0.0, &y[0], nullptr, &cmprs_jac[0], rd.n);
-    std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
+    // std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
 #define CMPRS(bi, ri, ci) cmprs_jac[bi*rd.n*rd.n + ci*rd.n + ri]
 #define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi + ci]
 #define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi + ci]

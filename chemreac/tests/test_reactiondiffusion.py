@@ -36,7 +36,7 @@ def _test_f(rd, t, y, fref=None):
 
 
 def _test_dense_jac_rmaj(rd, t, y, jref=None):
-    jout = rd.alloc_jout(banded=False)
+    jout = rd.alloc_jout(banded=False, order='C')
     rd.dense_jac_rmaj(t, np.asarray(y, dtype=np.float64), jout)
     atol = 2e-13
     rtol = 2e-13
@@ -516,10 +516,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_3bins(log):
     t = rd.logb(t0) if logt else t0
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
-    jout_bnd = np.zeros((3, 3), order='F')
+    jout_bnd = np.zeros((4, 3), order='F')
     rd.banded_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, 3)
-    assert np.allclose(jout_bnd, jref_bnd)
+    assert np.allclose(jout_bnd[1:, :], jref_bnd)
 
 
 def test_ReactionDiffusion__D_weight():
@@ -610,10 +610,10 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     y = rd.logb(y0) if logy else y0
     _test_f_and_dense_jac_rmaj(rd, t, y, fref, jref)
 
-    jout_bnd = np.zeros((3, N), order='F')
+    jout_bnd = np.zeros((4, N), order='F')
     rd.banded_jac_cmaj(t, y, jout_bnd)
     jref_bnd = get_banded(jref, 1, N)
-    assert np.allclose(jout_bnd, jref_bnd)
+    assert np.allclose(jout_bnd[1:, :], jref_bnd)
 
     # compressed_jac_cmaj actually use all diagonals
     rd = ReactionDiffusion(1, [], [], [], D=[D], x=x,
@@ -850,12 +850,12 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
 
     ref_banded_j = get_banded(jref, n, N)
 
-    ref_banded_j_symbolic = rd.alloc_jout(order='F')
+    ref_banded_j_symbolic = rd.alloc_jout(order='F', pad=0)
     symrd = SymRD.from_rd(rd)
     symrd.banded_jac(0.0, y0.flatten(), ref_banded_j_symbolic)
     assert np.allclose(ref_banded_j_symbolic, ref_banded_j)
 
-    jout_bnd_packed_cmaj = np.zeros((2*n+1, n*N), order='F')
+    jout_bnd_packed_cmaj = np.zeros((3*n+1, n*N), order='F')
     rd.banded_jac_cmaj(0.0, y0.flatten(), jout_bnd_packed_cmaj)
 
     if os.environ.get('plot_tests', False):
@@ -868,18 +868,14 @@ def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         coloured_spy(ref_banded_j, ax=ax)
         plt.title('ref_banded_j')
         ax = fig.add_subplot(3, 1, 2)
-        coloured_spy(jout_bnd_packed_cmaj, ax=ax)
+        coloured_spy(jout_bnd_packed_cmaj[n:, :], ax=ax)
         plt.title('jout_bnd_packed_cmaj')
         ax = fig.add_subplot(3, 1, 3)
-        coloured_spy(ref_banded_j-jout_bnd_packed_cmaj, ax=ax)
+        coloured_spy(ref_banded_j-jout_bnd_packed_cmaj[n:, :], ax=ax)
         plt.title('diff')
         plt.savefig(__file__+'.png')
 
-    assert np.allclose(jout_bnd_packed_cmaj, ref_banded_j)
-
-    # jout_bnd_padded_cmaj = rd.alloc_jout(order='F', pad=True)
-    # rd.banded_padded_jac_cmaj(0.0, y0.flatten(), jout_bnd_padded_cmaj)
-    # assert np.allclose(jout_bnd_padded_cmaj[n:, :], ref_banded_j)
+    assert np.allclose(jout_bnd_packed_cmaj[n:, :], ref_banded_j)
 
 
 @pytest.mark.parametrize("n_jac_diags", [-1, 1, 2, 3, 0])
@@ -900,11 +896,11 @@ def test_n_jac_diags(n_jac_diags):
     assert np.allclose(jout_cdns, jref_cdns)
 
     # Banded
-    jref_cbnd = rd.alloc_jout(order='F')
+    jref_cbnd = rd.alloc_jout(order='F', pad=0)
     jout_cbnd = rd.alloc_jout(order='F')
     sm.banded_jac(0.0, y0.flatten(), jref_cbnd)
     rd.banded_jac_cmaj(0.0, y0.flatten(), jout_cbnd)
-    assert np.allclose(jout_cbnd, jref_cbnd)
+    assert np.allclose(jout_cbnd[rd.n*rd.n_jac_diags:, :], jref_cbnd)
 
     # Compressed
     jref_cmprs = rd.alloc_jout_compressed()
