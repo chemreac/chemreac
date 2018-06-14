@@ -113,11 +113,12 @@ int test_jac(){
         }
 
     // Banded jacobian
-    const int ld = (3*rd.n_jac_diags*rd.n+1);
+    const int ld = (3*rd.n_jac_diags*rd.n + 1);
+    const int ny = rd.N*rd.n;
     double * bnd_jac = new double[ld*(rd.N*rd.n)];
-    for (int i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
+    for (int i=0; i<ld*ny; ++i) bnd_jac[i] = 0.0;
     rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac + rd.n*rd.n_jac_diags, ld);
-#define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
+#define BND(i, j) bnd_jac[i-j+2*rd.n+j*ld]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)
 	for (int ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
