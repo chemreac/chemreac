@@ -16,8 +16,9 @@ build:
   commands:
     - git fetch -tq  # used by ``git describe``
     - if [ ! -d /drone/sundials-3.1.1 ]; then .ci/get_sundials-3.1.1.sh /drone/sundials-3.1.1; fi
-    - PYCVODES_LAPACK=lapack,blas ./scripts/ci.sh chemreac
-    - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
+    - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac
+    - python3 setup.py build_ext -i
+    - ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
     - ./scripts/generate_docs.sh
     - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
