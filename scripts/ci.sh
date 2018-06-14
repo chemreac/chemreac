@@ -20,7 +20,7 @@ CC=clang-6.0 \
   CXX=clang++-6.0 \
   CFLAGS="-fsanitize=address -UNDEBUG" \
   python3 setup.py build_ext -i
-LD_PRELOAD=/usr/lib/llvm-6.0/lib/clang/6.0.0/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh ${@:2}
+ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-6.0/lib/clang/6.0.0/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh ${@:2}
 python3 -m pip uninstall -y $PKG_NAME
 
 python3 setup.py sdist
