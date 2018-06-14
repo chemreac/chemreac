@@ -469,7 +469,7 @@ def cvode_predefined(
     cdef:
         int ny = rd.n*rd.N
         cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*ny)
-        cnp.ndarray[cnp.float64_t, ndim=3] ew_ele_arr = np.empty((tout.size, 2, ny))
+        cnp.ndarray[cnp.float64_t, ndim=4] ew_ele_arr = np.empty((tout.size, 2, rd.N, rd.n))
         vector[int] root_indices
         vector[double] roots_output
         int nderiv = 0
