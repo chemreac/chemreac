@@ -13,7 +13,7 @@ set -e
 (cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
 
 python3 -m pip install -e .[all]
-python3 -m pip uninstall .
+git clean -xfd
 CFLAGS="-D_GLIBCXX_DEBUG" python3 setup.py develop
 bash -c "ulimit -v 2048000; ./scripts/run_tests.sh"
 git clean -xfd
@@ -27,7 +27,6 @@ git clean -xfd
 python3 setup.py sdist
 cp dist/${PKG_NAME}-*.tar.gz /tmp
 (cd /; python3 -m pip install --force-reinstall /tmp/${PKG_NAME}-*.tar.gz; python3 -c "import $PKG_NAME")
-python3 -m pip uninstall -y $PKG_NAME
 
 # Make sure repo is pip installable from git-archive zip
 git archive -o /tmp/$PKG_NAME.zip HEAD
