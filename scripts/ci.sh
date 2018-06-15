@@ -5,16 +5,17 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
     echo ${CI_BRANCH} | tail -c +2 > __conda_version__.txt
 fi
 
-python3 -m pip install --user argh finitediff block_diag_ilu pycvodes
+python3 -m pip install argh finitediff block_diag_ilu pycvodes
 
 set -e
 
 (cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG' test)
 (cd tests-native; make -B CXX=clang++-6.0 CC=clang-6.0 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
 
-python3 -m pip install --user -e .[all]
-#ulimit -v 2048000
-./scripts/run_tests.sh
+python3 -m pip install -e .[all]
+python3 -m pip uninstall .
+CFLAGS="-D_GLIBCXX_DEBUG" python3 setup.py develop
+bash -c "ulimit -v 2048000; ./scripts/run_tests.sh"
 git clean -xfd
 CC=clang-6.0 \
   CXX=clang++-6.0 \
