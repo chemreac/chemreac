@@ -172,7 +172,7 @@ setup_kwargs = dict(
     classifiers=classifiers,
     setup_requires=setup_requires,
     install_requires=install_requires,
-    extras_require={'all': [
+    extras_require={'all': install_requires + [
         'argh', 'pytest', 'scipy>=0.15', 'matplotlib', 'mpld3',
         'sym', 'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7'
