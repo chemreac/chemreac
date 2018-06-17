@@ -12,13 +12,13 @@
 #include <iostream> //DEBUG
 
 
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
 #include <cstdio>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
-#include "chemreac_util.h" // save_array, load_array
+#include "chemreac_util.hpp" // save_array, load_array
 #endif
 
 %if WITH_OPENMP:
@@ -694,10 +694,14 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     if (logy)
         free((void*)linC);
     njev++;
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
     std::ostringstream fname;
     fname << "jac_" << std::setfill('0') << std::setw(5) << njev << ".dat";
+  %if token.startswith("banded_jac_cmaj"):
+    save_array(jac.m_data, ldj*n*N, fname.str());
+  %else:
     save_array(ja, ldj*n*N, fname.str());
+  %endif
 #endif
     return AnyODE::Status::success;
 }
@@ -795,16 +799,16 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
     if (recompute){
         old_gamma = gamma;
         prec_cache->set_to_eye_plus_scaled_mtx(-gamma, *jac_cache);
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
         {
             std::ostringstream fname;
             fname << "prec_M_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
-            save_array(prec_cache->m_data, prec_cahe->m_ndata, fname.str());
+            save_array(prec_cache->m_data, prec_cache->m_ndata, fname.str());
         }
 #endif
     }
 
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
     {
         std::ostringstream fname;
         fname << "prec_r_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
