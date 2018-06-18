@@ -248,6 +248,9 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
 }
 
 template<typename Real_t>
+ReactionDiffusion<Real_t>::~ReactionDiffusion(){}
+
+template<typename Real_t>
 int ReactionDiffusion<Real_t>::start_idx_(int bi) const {
     int starti;
     if ((bi < this->nsidep) && (!this->lrefl)){

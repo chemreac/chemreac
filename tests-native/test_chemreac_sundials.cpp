@@ -8,7 +8,8 @@ using std::vector;
 using chemreac::ReactionDiffusion;
 
 int test_integration(int N){
-    ReactionDiffusion<double> rd = get_four_species_system(N);
+    auto rdp = get_four_species_system(N);
+    auto &rd = *rdp;
     vector<double> y;
     for (int i=0; i<N; ++i){
         y.push_back(1.3);

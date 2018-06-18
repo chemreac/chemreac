@@ -16,7 +16,7 @@ using std::vector;
 //  0    k1*C*C     2*C*B*k1   0
 
 
-ReactionDiffusion<double> get_four_species_system(int N){
+std::unique_ptr<ReactionDiffusion<double>> get_four_species_system(int N){
     int n = 4;
     int nr = 2;
     vector<vector<int> > stoich_actv {{0}, {1, 2, 2}};
@@ -44,6 +44,7 @@ ReactionDiffusion<double> get_four_species_system(int N){
 	stoich_inact.push_back(v);
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
-    return ReactionDiffusion<double>(n, stoich_actv, stoich_prod, k, N, D, z_chg,
-                                     mobility, x, stoich_inact, geom, logy, logt, logx, nstencil, true, true);
+    return AnyODE::make_unique<ReactionDiffusion<double>>(
+        n, stoich_actv, stoich_prod, k, N, D, z_chg,
+        mobility, x, stoich_inact, geom, logy, logt, logx, nstencil, true, true);
 }
