@@ -39,7 +39,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         int n_jac_diags
         bool use_log2
         bool clip_to_pos
-        T * const efield
+        T * efield
         vector[T] gradD
         T * xc
 

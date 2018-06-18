@@ -431,16 +431,16 @@ cdef class PyReactionDiffusion:
     # For debugging
     property xc:
         def __get__(self):
-            return fromaddress(<long>self.thisptr.xc,
+            return fromaddress(<long>&self.thisptr.xc[0],
                                (self.N + self.thisptr.nstencil - 1,))
 
     property D_weight:  # (Private)
         def __get__(self):
-            return fromaddress(<long>self.thisptr.lap_weight, (self.thisptr.N*self.thisptr.nstencil,))
+            return fromaddress(<long>&self.thisptr.lap_weight[0], (self.thisptr.N*self.thisptr.nstencil,))
 
     property _gradD:
         def __get__(self):
-            return self.thisptr.gradD
+            return fromaddress(<long>&self.thisptr.gradD[0], (self.thisptr.N*self.thisptr.n))
 
     def _stencil_bi_lbound(self, int bi):
         return self.thisptr.stencil_bi_lbound_(bi)
@@ -450,7 +450,7 @@ cdef class PyReactionDiffusion:
 
     property efield:
         def __get__(self):
-            return fromaddress(<long>self.thisptr.efield, (self.thisptr.N,))
+            return fromaddress(<long>&self.thisptr.efield[0], (self.thisptr.N,))
         def __set__(self, double[:] efield):
             cdef int i
             assert efield.size == self.thisptr.N

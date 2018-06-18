@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include "block_diag_ilu.hpp"
 #include "anyode/anyode.hpp"
+#include "anyode/anyode_buffer.hpp"
 
 
 namespace chemreac {
@@ -16,6 +17,9 @@ enum class Geom {FLAT, CYLINDRICAL, SPHERICAL, PERIODIC};
 
 using std::vector;
 using std::pair;
+using AnyODE::buffer_t;
+using AnyODE::buffer_factory;
+
 
 template<class T> void ignore( const T& ) { } // ignore compiler warnings about unused parameter
 
@@ -23,13 +27,13 @@ template <typename Real_t = double>
 class ReactionDiffusion : public AnyODE::OdeSysBase<Real_t>
 {
 public:
-    int * coeff_active;
-    int * coeff_prod;
-    int * coeff_total;
-    int * coeff_inact;
-    Real_t * lap_weight;
-    Real_t * div_weight;
-    Real_t * grad_weight;
+    const int n; // number of species
+    const int N; // number of compartments
+    const int nstencil; // number of points used in finite difference stencil
+    const int nsidep; // (nstencil-1)/2
+    const int nr; // number of reactions
+    buffer_t<int> coeff_active, coeff_prod, coeff_total, coeff_inact;
+    buffer_t<Real_t> lap_weight, div_weight, grad_weight, efield, netchg, gradD, xc;
     int n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
     void * integrator {nullptr};
@@ -39,13 +43,6 @@ public:
     const Real_t * alloc_and_populate_linC(const Real_t * const __restrict__, bool=false, bool=false) const;
     int stencil_bi_lbound_(int bi) const;
     int xc_bi_map_(int xci) const;
-
-public:
-    const int n; // number of species
-    const int N; // number of compartments
-    const int nstencil; // number of points used in finite difference stencil
-    const int nsidep; // (nstencil-1)/2
-    const int nr; // number of reactions
     const bool logy; // use logarithmic concenctraction
     const bool logt; // use logarithmic time
     const bool logx; // use logarithmic x (space coordinate)
@@ -72,24 +69,17 @@ public:
     const int n_jac_diags;
     const bool use_log2;
     const bool clip_to_pos;
-
-    Real_t * const efield; // v_d = mu_el*E
-    Real_t * const netchg;
-    vector<Real_t> gradD; // Gradient of the Spatial 1st order derivative of diffusion coefficients
-
     const int nroots = 0;
 private:
-    block_diag_ilu::BlockDiagMatrix<Real_t> *jac_cache {nullptr};
-    block_diag_ilu::BlockDiagMatrix<Real_t> *jac_times_cache {nullptr};
-    block_diag_ilu::BlockDiagMatrix<Real_t> *prec_cache {nullptr};
+    std::unique_ptr<block_diag_ilu::BlockDiagMatrix<Real_t>> jac_cache;
+    std::unique_ptr<block_diag_ilu::BlockDiagMatrix<Real_t>> jac_times_cache;
+    std::unique_ptr<block_diag_ilu::BlockDiagMatrix<Real_t>> prec_cache;
     bool update_prec_cache = false;
     Real_t old_gamma;
     int start_idx_(int bi) const;
     int biw_(int bi, int li) const;
 
 public:
-    Real_t * xc; // bin centers (length = N+nstencil-1), first bin center: xc[(nstencil-1)/2]
-
     // counters
     long nfev {0};
     long njev {0};
