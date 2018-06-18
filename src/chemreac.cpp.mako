@@ -5,6 +5,8 @@
 //#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
+#include <memory>
+#include "anyode/anyode_buffer.hpp"
 #include "anyode/anyode_decomposition.hpp"
 #include "finitediff_templated.hpp" // fintie differences
 #include "chemreac.hpp"
@@ -12,13 +14,13 @@
 #include <iostream> //DEBUG
 
 
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
 #include <cstdio>
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
-#include "chemreac_util.h" // save_array, load_array
+#include "chemreac_util.hpp" // save_array, load_array
 #endif
 
 %if WITH_OPENMP:
@@ -40,6 +42,34 @@ using std::max;
 #define logb(arg) (use_log2 ? std::log2(arg) : std::pow(2, arg))
 
 #define GRAD_WEIGHT(bi, li) grad_weight[nstencil*(bi) + li]
+
+#if __cplusplus >= 201402L
+    using std::make_unique;
+#else
+    template <class T, class ...Args>
+    typename std::enable_if
+    <
+        !std::is_array<T>::value,
+        std::unique_ptr<T>
+        >::type
+    make_unique(Args&& ...args)
+    {
+        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
+    }
+
+    template <class T>
+    typename std::enable_if
+    <
+        std::is_array<T>::value,
+        std::unique_ptr<T>
+        >::type
+    make_unique(std::size_t n)
+    {
+        typedef typename std::remove_extent<T>::type RT;
+        return std::unique_ptr<T>(new RT[n]);
+    }
+#endif
+
 
 // 1D discretized reaction diffusion
 template<typename Real_t>
@@ -76,6 +106,16 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     bool use_log2,
     bool clip_to_pos):
     n(n), N(N), nstencil(nstencil), nsidep((nstencil-1)/2), nr(stoich_active.size()),
+    coeff_active(buffer_factory<int>(nr*n)),
+    coeff_prod(buffer_factory<int>(nr*n)),
+    coeff_total(buffer_factory<int>(nr*n)),
+    coeff_inact(buffer_factory<int>(nr*n)),
+    lap_weight(buffer_factory<double>(nstencil*N)),
+    div_weight(buffer_factory<double>(nstencil*N)),
+    grad_weight(buffer_factory<double>(nstencil*N)),
+    efield(buffer_factory<double>(N)),
+    netchg(buffer_factory<double>(N)),
+    xc(buffer_factory<double>(nsidep + N + nsidep)),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl),
@@ -84,7 +124,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     vacuum_permittivity(vacuum_permittivity),
     g_value_parents(g_value_parents), modulated_rxns(modulated_rxns), modulation(modulation),
     ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags), use_log2(use_log2),
-    clip_to_pos(clip_to_pos), efield(new Real_t[N]), netchg(new Real_t[N])
+    clip_to_pos(clip_to_pos)
 {
     if (N == 0) throw std::logic_error("Zero bins sounds boring.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
@@ -129,11 +169,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     }
 
     // Finite difference scheme
-    lap_weight = new Real_t[nstencil*N];
-    div_weight = new Real_t[nstencil*N];
-    grad_weight = new Real_t[nstencil*N];
     for (int i=0; i<N; ++i) efield[i] = 0.0;
-    xc = new Real_t[nsidep + N + nsidep]; // xc padded with virtual bins
     for (int i=0; i<N; ++i)
         xc[nsidep + i] = (x[i] + x[i + 1])/2;
 
@@ -148,10 +184,11 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     for (int bi=0; bi<N; bi++)
         apply_fd_(bi);
 
-    gradD = std::vector<Real_t>(N*n, 0.0);
+    gradD = buffer_factory<Real_t>(N*n);
     for (int bi=0; bi<N; ++bi){
         int starti = start_idx_(bi);
         for (int si=0; si<n; ++si){
+            gradD[bi*n + si] = 0;
             for (int li=0; li<nstencil; ++li){
                 int biw = biw_(starti, li);
                 gradD[bi*n + si] += GRAD_WEIGHT(bi, li)*D[biw*n + si];
@@ -171,11 +208,6 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
             if (*si > n-1)
                 throw std::logic_error("At least one species index in stoich_inact > (n-1)");
     }
-
-    coeff_active = new int[nr*n];
-    coeff_prod = new int[nr*n];
-    coeff_total = new int[nr*n];
-    coeff_inact = new int[nr*n];
 
     stoich_inact.reserve(nr);
     for (int rxni=0; rxni<nr; ++rxni){ // reaction index
@@ -216,25 +248,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
 }
 
 template<typename Real_t>
-ReactionDiffusion<Real_t>::~ReactionDiffusion()
-{
-    delete []xc;
-    delete []efield;
-    delete []netchg;
-    delete []div_weight;
-    delete []lap_weight;
-    delete []grad_weight;
-    delete []coeff_active;
-    delete []coeff_prod;
-    delete []coeff_total;
-    delete []coeff_inact;
-    if (prec_cache != nullptr)
-        delete prec_cache;
-    if (jac_cache != nullptr)
-        delete jac_cache;
-    if (jac_times_cache != nullptr)
-        delete jac_times_cache;
-}
+ReactionDiffusion<Real_t>::~ReactionDiffusion(){}
 
 template<typename Real_t>
 int ReactionDiffusion<Real_t>::start_idx_(int bi) const {
@@ -559,8 +573,9 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     block_diag_ilu::BlockDiagMatrix<Real_t> jac {ja, N, n, n_jac_diags, nsat, ld};
  %elif token.startswith("banded_jac_cmaj"):
     block_diag_ilu::BlockBandedMatrix<Real_t> jac {ja-n*n_jac_diags, N, n, n_jac_diags, static_cast<int>(ldj)};
+    // no need to zero out jac (see documentation for CVDlsJacFn)
     //std::memset(jac - n*n_jac_diags, 0, sizeof(Real_t)*ldj*N*n);
-    jac.set_to(0.0);
+    //jac.set_to(0.0);
  %elif token.startswith("dense_jac_cmaj"):
     block_diag_ilu::BlockDenseMatrix<Real_t> jac {ja, N, n, n_jac_diags, static_cast<int>(ldj), true};
  %elif token.startswith("dense_jac_rmaj"):
@@ -694,10 +709,14 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     if (logy)
         free((void*)linC);
     njev++;
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
     std::ostringstream fname;
     fname << "jac_" << std::setfill('0') << std::setw(5) << njev << ".dat";
+  %if token.startswith("banded_jac_cmaj"):
+    save_array(jac.m_data, ldj*n*N, fname.str());
+  %else:
     save_array(ja, ldj*n*N, fname.str());
+  %endif
 #endif
     return AnyODE::Status::success;
 }
@@ -716,10 +735,10 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
-    if (jac_times_cache == nullptr){
+    if (!jac_times_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        jac_times_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
+        jac_times_cache = make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
         jac_times_cache->set_to(0.0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
         compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
@@ -741,10 +760,10 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
     auto status = AnyODE::Status::success;
     ignore(gamma);
     // See 4.6.9 on page 68 (78) in cvs_guide.pdf (Sundials 2.5)
-    if (jac_cache == nullptr){
+    if (!jac_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        jac_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
+        jac_cache = make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
     }
     if (!jok){
         const int dummy = 0;
@@ -783,10 +802,10 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
 
     ignore(t); ignore(fy); ignore(y);
     bool recompute = false;
-    if (prec_cache == nullptr){
+    if (!prec_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        prec_cache = new block_diag_ilu::BlockDiagMatrix<Real_t>(nullptr, N, n, nsidep, nsat, ld);
+        prec_cache = make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
         recompute = true;
     } else {
         if (update_prec_cache or (old_gamma != gamma))
@@ -795,16 +814,16 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
     if (recompute){
         old_gamma = gamma;
         prec_cache->set_to_eye_plus_scaled_mtx(-gamma, *jac_cache);
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
         {
             std::ostringstream fname;
             fname << "prec_M_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";
-            save_array(prec_cache->m_data, prec_cahe->m_ndata, fname.str());
+            save_array(prec_cache->m_data, prec_cache->m_ndata, fname.str());
         }
 #endif
     }
 
-#if defined(WITH_DATA_DUMPING)
+#if defined(CHEMREAC_WITH_DATA_DUMPING)
     {
         std::ostringstream fname;
         fname << "prec_r_" << std::setfill('0') << std::setw(5) << nprec_solve << ".dat";

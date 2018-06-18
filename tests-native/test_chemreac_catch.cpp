@@ -10,7 +10,8 @@
 TEST_CASE( "jac_times_vec", "[ReactionDiffusion]" ) {
 
     // this is _get_test_m2 in test_fakelu.py
-    auto rd = get_four_species_system(3);
+    auto rdp = get_four_species_system(3);
+    auto &rd = *rdp;
 
     std::array<double, 3*4> y;
     for (int i=0; i<3; ++i){

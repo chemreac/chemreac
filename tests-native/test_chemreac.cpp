@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 #include <numeric> // std::accumulate
 #include <algorithm> // min, max
 #include <cassert>
@@ -32,7 +33,7 @@ int test_rhs(){
 	    -0.05*y[4], 0.05*y[4], -2*3.0*y[6]*y[6]*y[5], 3.0*y[6]*y[6]*y[5],\
             -0.05*y[8], 0.05*y[8], -2*3.0*y[10]*y[10]*y[9], 3.0*y[10]*y[10]*y[9]};
     double f[12];
-    rd.rhs(0.0, &y[0], f);
+    rd->rhs(0.0, &y[0], f);
     int exit1 = 0;
     for (int i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-14){
@@ -49,7 +50,8 @@ int test_rhs(){
 // N = 3 compartments
 #define RJ(i, j) ref_jac[(i)*12+j]
 int test_jac(){
-    auto rd = get_four_species_system(3);
+    auto rdp = get_four_species_system(3);
+    auto &rd = *rdp;
 
     const double dx = 1.0 / 3;
     vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
@@ -199,7 +201,8 @@ void bench_rhs(){
     double t = 0.0;
     int ntimings = 40;
     int N = 500000; // A ridiculous number of bins for 1D but used for benchmarking
-    auto rd = get_four_species_system(N);
+    auto rdp = get_four_species_system(N);
+    auto &rd = *rdp;
     vector<double> y;
     vector<double> b;
     vector<double> timings;
@@ -251,7 +254,7 @@ void bench_rhs(){
     std::cout << "Average timing: " << std::accumulate(timings.begin(), timings.end(), 0.0)/ntimings << std::endl;
 }
 
-ReactionDiffusion<double> _get_single_specie_system(int N, int z){
+std::unique_ptr<ReactionDiffusion<double>> _get_single_specie_system(int N, int z){
     int n = 1;
     vector<vector<int> > stoich_reac {};
     vector<vector<int> > stoich_actv {};
@@ -267,13 +270,16 @@ ReactionDiffusion<double> _get_single_specie_system(int N, int z){
     int nstencil = (N == 1) ? 1 : 3;
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
-    return ReactionDiffusion<double>(n, stoich_reac, stoich_prod, k, N, D, z_chg,
-                             mobility, x, stoich_actv, geom, logy, logt, logx,
-                             nstencil, true, true, true, {0, 0}, 1.0);
+    std::pair<double, double> surf_chg(0, 0);
+    return AnyODE::make_unique<ReactionDiffusion<double>>(
+        n, stoich_reac, stoich_prod, k, N, D, z_chg,
+        mobility, x, stoich_actv, geom, logy, logt, logx,
+        nstencil, true, true, true, surf_chg, 1.0);
 }
 
 int test_calc_efield(){
-    auto rd = _get_single_specie_system(5, 1);
+    auto rdp = _get_single_specie_system(5, 1);
+    auto &rd = *rdp;
     vector<double> y {1.0, 2.0, 3.0, 2.0, 1.0};
     const double factor = 0.2*96485.3399/8.854187817e-12;
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
