@@ -11,16 +11,16 @@ class Player(FuncAnimation):
     def __init__(self, fig, func, frames=None, init_func=None, fargs=None,
                  save_count=None, mini=0, maxi=100, pos=(0.2, 0.98), **kwargs):
         self.i = 0
-        self.min=mini
-        self.max=maxi
+        self.min = mini
+        self.max = maxi
         self.runs = True
         self.forwards = True
         self.fig = fig
         self.func = func
         self.setup(pos)
-        FuncAnimation.__init__(self,self.fig, self.update, frames=self.play(),
-                                           init_func=init_func, fargs=fargs,
-                                           save_count=save_count, **kwargs )
+        super(FuncAnimation, self).__init__(self.fig, self.update, frames=self.play(),
+                                            init_func=init_func, fargs=fargs,
+                                            save_count=save_count, **kwargs)
 
     def play(self):
         while self.runs:
@@ -32,7 +32,7 @@ class Player(FuncAnimation):
                 yield self.i
 
     def start(self):
-        self.runs=True
+        self.runs = True
         self.event_source.start()
 
     def stop(self, event=None):
@@ -42,12 +42,15 @@ class Player(FuncAnimation):
     def forward(self, event=None):
         self.forwards = True
         self.start()
+
     def backward(self, event=None):
         self.forwards = False
         self.start()
+
     def oneforward(self, event=None):
         self.forwards = True
         self.onestep()
+
     def onebackward(self, event=None):
         self.forwards = False
         self.onestep()
@@ -56,15 +59,15 @@ class Player(FuncAnimation):
         if self.i > self.min and self.i < self.max:
             self.i = self.i+self.forwards-(not self.forwards)
         elif self.i == self.min and self.forwards:
-            self.i+=1
+            self.i += 1
         elif self.i == self.max and not self.forwards:
-            self.i-=1
+            self.i -= 1
         self.func(self.i)
         self.slider.set_val(self.i)
         self.fig.canvas.draw_idle()
 
     def setup(self, pos):
-        playerax = self.fig.add_axes([pos[0],pos[1], 0.4, 0.015])
+        playerax = self.fig.add_axes([pos[0], pos[1], 0.4, 0.015])
         divider = mpl_toolkits.axes_grid1.make_axes_locatable(playerax)
         bax = divider.append_axes("right", size="80%", pad=0.05)
         sax = divider.append_axes("right", size="80%", pad=0.05)
@@ -85,9 +88,9 @@ class Player(FuncAnimation):
                                                 self.min, self.max, valinit=self.i)
         self.slider.on_changed(self.set_pos)
 
-    def set_pos(self,i):
+    def set_pos(self, i):
         self.i = int(self.slider.val)
         self.func(self.i)
 
-    def update(self,i):
+    def update(self, i):
         self.slider.set_val(i)
