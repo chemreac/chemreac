@@ -33,14 +33,14 @@ public:
     const int nsidep; // (nstencil-1)/2
     const int nr; // number of reactions
     buffer_t<int> coeff_active, coeff_prod, coeff_total, coeff_inact;
-    buffer_t<Real_t> lap_weight, div_weight, grad_weight, efield, netchg, gradD, xc;
+    buffer_t<Real_t> lap_weight, div_weight, grad_weight, efield, netchg, gradD, xc, work1, work2, work3;
     int n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
     void * integrator {nullptr};
 
     void fill_local_r_(int, const Real_t * const __restrict__, Real_t * const __restrict__) const;
     void apply_fd_(int);
-    const Real_t * alloc_and_populate_linC(const Real_t * const __restrict__, bool=false, bool=false) const;
+    void populate_linC(Real_t * const __restrict__, const Real_t * const __restrict__, bool=false, bool=false) const;
     int stencil_bi_lbound_(int bi) const;
     int xc_bi_map_(int xci) const;
     const bool logy; // use logarithmic concenctraction
