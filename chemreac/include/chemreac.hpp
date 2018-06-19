@@ -33,7 +33,7 @@ public:
     const int nsidep; // (nstencil-1)/2
     const int nr; // number of reactions
     buffer_t<int> coeff_active, coeff_prod, coeff_total, coeff_inact;
-    buffer_t<Real_t> lap_weight, div_weight, grad_weight, efield, netchg, gradD, xc, work1, work2;
+    buffer_t<Real_t> lap_weight, div_weight, grad_weight, efield, netchg, gradD, xc, work1, work2, work3;
     int n_factor_affected_k;
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
     void * integrator {nullptr};

@@ -43,33 +43,6 @@ using std::max;
 
 #define GRAD_WEIGHT(bi, li) grad_weight[nstencil*(bi) + li]
 
-#if __cplusplus >= 201402L
-    using std::make_unique;
-#else
-    template <class T, class ...Args>
-    typename std::enable_if
-    <
-        !std::is_array<T>::value,
-        std::unique_ptr<T>
-        >::type
-    make_unique(Args&& ...args)
-    {
-        return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
-    }
-
-    template <class T>
-    typename std::enable_if
-    <
-        std::is_array<T>::value,
-        std::unique_ptr<T>
-        >::type
-    make_unique(std::size_t n)
-    {
-        typedef typename std::remove_extent<T>::type RT;
-        return std::unique_ptr<T>(new RT[n]);
-    }
-#endif
-
 
 // 1D discretized reaction diffusion
 template<typename Real_t>
@@ -118,6 +91,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     xc(buffer_factory<double>(nsidep + N + nsidep)),
     work1(buffer_factory<double>(n*N)),
     work2(buffer_factory<double>(n*N)),
+    work3(buffer_factory<double>(${"((nr/8)+1)*8*omp_get_num_threads()" if WITH_OPENMP else "nr"})),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl),
@@ -128,7 +102,7 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     ilu_limit(ilu_limit), n_jac_diags((n_jac_diags == 0) ? nsidep : n_jac_diags), use_log2(use_log2),
     clip_to_pos(clip_to_pos)
 {
-    if (N == 0) throw std::logic_error("Zero bins sounds boring.");
+    if (N < 1) throw std::logic_error("One is the smallest number of bins.");
     if (N == 2) throw std::logic_error("2nd order PDE requires at least 3 stencil points.");
     if (nstencil % 2 == 0) throw std::logic_error("Only odd number of stencil points supported");
     if ((N == 1) && (nstencil != 1)) throw std::logic_error("You must set nstencil=1 for N=1");
@@ -342,8 +316,8 @@ ReactionDiffusion<Real_t>::xc_bi_map_(int xci) const
 template<typename Real_t>
 void
 ReactionDiffusion<Real_t>::apply_fd_(int bi){
-    Real_t * const c = new Real_t[3*nstencil];
-    Real_t * const lxc = new Real_t[nstencil]; // local shifted x-centers
+    auto c = AnyODE::buffer_factory<Real_t>(3*nstencil);
+    auto lxc = AnyODE::buffer_factory<Real_t>(nstencil); // local shifted x-centers
     int around = bi + nsidep;
     int start = bi;
     if (!lrefl) // shifted finite diff
@@ -353,8 +327,7 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
 
     for (int li=0; li<nstencil; ++li) // li: local index
         lxc[li] = xc[start + li] - xc[around];
-    finitediff::populate_weights<Real_t>(0, lxc, nstencil-1, 2, c);
-    delete []lxc;
+    finitediff::populate_weights<Real_t>(0, AnyODE::buffer_get_raw_ptr(lxc), nstencil-1, 2, AnyODE::buffer_get_raw_ptr(c));
 
     const Real_t logbdenom = use_log2 ? 1/log(2) : 1;
 
@@ -397,7 +370,6 @@ ReactionDiffusion<Real_t>::apply_fd_(int bi){
             }
         }
     }
-    delete []c;
 }
 #undef FDWEIGHT
 
@@ -418,7 +390,7 @@ ReactionDiffusion<Real_t>::get_mod_k(int bi, int ri) const{
 template<typename Real_t>
 void
 ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict__ C,
-                                 Real_t * const __restrict__ local_r) const
+                                         Real_t * const __restrict__ local_r) const
 {
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
@@ -497,11 +469,11 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         calc_efield(linC);
     }
     const Real_t expb_t = (logt) ? expb(t) : 0.0;
-    ${"Real_t * const local_r = new Real_t[nr];" if not WITH_OPENMP else ""}
+    ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3);" if not WITH_OPENMP else ""}
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
         // compartment bi
-        ${"Real_t * const local_r = new Real_t[nr];" if WITH_OPENMP else ""}
+        ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3) + ((nr/8)+1)*8*omp_get_thread_num();" if WITH_OPENMP else ""}
 
         for (int si=0; si<n; ++si)
             DYDT(bi, si) = 0.0; // zero out
@@ -562,9 +534,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                     DYDT(bi, si) *= log(2);
             }
         }
-        ${"delete []local_r;" if WITH_OPENMP else ""}
     }
-    ${"delete []local_r;" if not WITH_OPENMP else ""}
     nfev++;
     return AnyODE::Status::success;
 }
@@ -653,7 +623,7 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
                     jac.block(bi, si, dsi) += Ski*qkj;
                     //std::cout << "jac.block(" << bi << ", " << si << ", " << dsi <<") = " << jac.block(bi, si, dsi) << "\n";
                 }
-                // Contribution from particle/electromagnetic fields
+                // Contribution from particle/electric fields
                 for (unsigned fi=0; fi<(this->fields.size()); ++fi){
                     const int Ski = (g_values[fi][si] != 0.0) ? 1 : 0;
                     const int Akj = ((int)dsi == g_value_parents[fi]) ? 1 : 0;
@@ -759,7 +729,7 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
     if (!jac_times_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        jac_times_cache = make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
+        jac_times_cache = AnyODE::make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
         jac_times_cache->set_to(0.0); // compressed_jac_cmaj only increments diagonals
         const int ld_dummy = 0;
         compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
@@ -784,7 +754,7 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
     if (!jac_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        jac_cache = make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
+        jac_cache = AnyODE::make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
     }
     if (!jok){
         const int dummy = 0;
@@ -826,7 +796,7 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
     if (!prec_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
-        prec_cache = make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
+        prec_cache = AnyODE::make_unique<block_diag_ilu::BlockDiagMatrix<Real_t>>(nullptr, N, n, nsidep, nsat, ld);
         recompute = true;
     } else {
         if (update_prec_cache or (old_gamma != gamma))
@@ -881,12 +851,11 @@ ReactionDiffusion<Real_t>::per_rxn_contrib_to_fi(Real_t t, const Real_t * const 
                                               int si, Real_t * const __restrict__ out) const
 {
     ignore(t);
-    Real_t * const local_r = new Real_t[nr];
-    fill_local_r_(0, y, local_r);
+    auto local_r = AnyODE::buffer_factory<double>(nr);
+    fill_local_r_(0, y, AnyODE::buffer_get_raw_ptr(local_r));
     for (int ri=0; ri<nr; ++ri){
 	out[ri] = coeff_total[ri*n+si]*local_r[ri];
     }
-    delete []local_r;
 }
 
 template<typename Real_t>
