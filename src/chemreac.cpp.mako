@@ -116,6 +116,8 @@ ReactionDiffusion<Real_t>::ReactionDiffusion(
     efield(buffer_factory<double>(N)),
     netchg(buffer_factory<double>(N)),
     xc(buffer_factory<double>(nsidep + N + nsidep)),
+    work1(buffer_factory<double>(n*N)),
+    work2(buffer_factory<double>(n*N)),
     logy(logy), logt(logt), logx(logx), stoich_active(stoich_active),
     stoich_inact(stoich_inact), stoich_prod(stoich_prod),
     k(k),  D(D), z_chg(z_chg), mobility(mobility), x(x), lrefl(lrefl), rrefl(rrefl),
@@ -440,23 +442,41 @@ ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict
 
 #define Y(bi, si) y[(bi)*n+(si)]
 template<typename Real_t>
-const Real_t *
-ReactionDiffusion<Real_t>::alloc_and_populate_linC(const Real_t * const __restrict__ y,
-                                                   bool apply_exp, bool recip) const
+void
+ReactionDiffusion<Real_t>::populate_linC(Real_t * const __restrict__ linC,
+                                         const Real_t * const __restrict__ y,
+                                         bool apply_exp, bool recip) const
 {
-    int nlinC = n*N;
-    Real_t * const linC = (Real_t * const)malloc(nlinC*sizeof(Real_t));
-    // Possible optimization: tune 42...
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
-        for (int si=0; si<n; ++si){
-            if (recip)
-                linC[bi*n + si] = (apply_exp) ? expb(-Y(bi, si)) : 1.0/Y(bi, si);
-            else
-                linC[bi*n + si] = (apply_exp) ? expb(Y(bi, si)) : ( clip_to_pos ? std::abs(Y(bi, si)) : Y(bi, si) );
+        if (recip) {
+            if (apply_exp) {
+                for (int si=0; si<n; ++si){
+                    linC[bi*n + si] = expb(-Y(bi, si));
+                }
+            } else {
+                for (int si=0; si<n; ++si){
+                    linC[bi*n + si] = 1.0/Y(bi, si);
+                }
+            }
+        } else {
+            if (apply_exp) {
+                for (int si=0; si<n; ++si){
+                    linC[bi*n + si] = expb(Y(bi, si));
+                }
+            } else {
+                if (clip_to_pos) {
+                    for (int si=0; si<n; ++si){
+                        linC[bi*n + si] = std::abs(Y(bi, si));
+                    }
+                } else {
+                    for (int si=0; si<n; ++si){
+                        linC[bi*n + si] = Y(bi, si);
+                    }
+                }
+            }
         }
     }
-    return linC;
 }
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
@@ -467,8 +487,12 @@ AnyODE::Status
 ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const __restrict__ dydt)
 {
     // note condifiontal call to free at end of this function
-    const Real_t * const linC = (logy) ? alloc_and_populate_linC(y, true) : y;
-    const Real_t * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) : nullptr;
+    if (logy) {
+        populate_linC(AnyODE::buffer_get_raw_ptr(work1), y, true);
+        populate_linC(AnyODE::buffer_get_raw_ptr(work2), y, true, true);
+    }
+    const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
+    const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
     if (auto_efield){
         calc_efield(linC);
     }
@@ -541,10 +565,6 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         ${"delete []local_r;" if WITH_OPENMP else ""}
     }
     ${"delete []local_r;" if not WITH_OPENMP else ""}
-    if (logy){
-        free((void*)linC);
-        free((void*)rlinC);
-    }
     nfev++;
     return AnyODE::Status::success;
 }
@@ -597,8 +617,12 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     }
 
     // note conditional call to free at end of this function
-    const Real_t * const linC = (logy) ? alloc_and_populate_linC(y, true, false) : y;
-    const Real_t * const rlinC = (logy) ? alloc_and_populate_linC(y, true, true) : alloc_and_populate_linC(y, false, true);
+    if (logy) {
+        populate_linC(AnyODE::buffer_get_raw_ptr(work1), y, true, false);
+        populate_linC(AnyODE::buffer_get_raw_ptr(work2), y, true, true);
+    }
+    const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
+    const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
     if (auto_efield) {
         calc_efield(linC);
     }
@@ -705,9 +729,6 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
     }
     if (logy && !fy)
         delete []fout;
-    free((void*)rlinC);
-    if (logy)
-        free((void*)linC);
     njev++;
 #if defined(CHEMREAC_WITH_DATA_DUMPING)
     std::ostringstream fname;
