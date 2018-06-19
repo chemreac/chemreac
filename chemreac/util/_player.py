@@ -18,9 +18,11 @@ class Player(FuncAnimation):
         self.fig = fig
         self.func = func
         self.setup(pos)
-        super(FuncAnimation, self).__init__(self.fig, self.update, frames=self.play(),
-                                            init_func=init_func, fargs=fargs,
-                                            save_count=save_count, **kwargs)
+        FuncAnimation.__init__(
+            self, self.fig, self.update, frames=self.play(),
+            init_func=init_func, fargs=fargs,
+            save_count=save_count, **kwargs
+        )
 
     def play(self):
         while self.runs:
