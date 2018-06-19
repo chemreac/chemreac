@@ -2,11 +2,13 @@ import numpy as np
 from .plotting import DEFAULT
 
 
-def animate_C_vs_x(integr, ax, xunit=None, yunit=None, auto_ylim=False, title_fmt='t = {}',
-                   ls=None, c=None, substances=None):
+def animate_C_vs_x(integr, ax, *, xunit=None, yunit=None, auto_ylim=False, title_fmt='t = {}',
+                   ls=None, c=None, substances=None, yout=None):
     rd = integr.rd
+    if yout is None:
+        yout = integr.unitless_as('Cout', yunit)
     x_edges = np.repeat(integr.unitless_as('x', xunit), 2)[1:-1]
-    y_edges = np.repeat(integr.unitless_as('Cout', yunit), 2, axis=1)
+    y_edges = np.repeat(yout, 2, axis=1)
 
     if auto_ylim:
         ax.set_ylim([np.min(y_edges), np.max(y_edges)*1.05])
