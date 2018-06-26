@@ -38,9 +38,9 @@ public:
     Geom geom; // Geometry: 0: 1D flat, 1: 1D Cylind, 2: 1D Spherical.
     void * integrator {nullptr};
 
-    void fill_local_r_(int, const Real_t * const __restrict__, Real_t * const __restrict__) const;
+    void fill_local_r_(int, const Real_t * const ANYODE_RESTRICT, Real_t * const ANYODE_RESTRICT) const;
     void apply_fd_(int);
-    void populate_linC(Real_t * const __restrict__, const Real_t * const __restrict__, bool=false, bool=false) const;
+    void populate_linC(Real_t * const ANYODE_RESTRICT, const Real_t * const ANYODE_RESTRICT, bool=false, bool=false) const;
     int stencil_bi_lbound_(int bi) const;
     int xc_bi_map_(int xci) const;
     const bool logy; // use logarithmic concenctraction
@@ -129,37 +129,37 @@ public:
     int get_mlower() const override;
     int get_mupper() const override;
 
-    AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const __restrict__) override;
+    AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const ANYODE_RESTRICT) override;
     // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;
 
-    AnyODE::Status dense_jac_rmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int, double * const __restrict__ dfdt=nullptr) override;
-    AnyODE::Status dense_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int, double * const __restrict__ dfdt=nullptr) override;
-    AnyODE::Status banded_jac_cmaj(Real_t, const Real_t * const __restrict__,  const Real_t * const __restrict__, Real_t * const __restrict__, long int) override;
-    AnyODE::Status compressed_jac_cmaj(Real_t, const Real_t * const __restrict__, const Real_t * const __restrict__, Real_t * const __restrict__, long int);
+    AnyODE::Status dense_jac_rmaj(Real_t, const Real_t * const ANYODE_RESTRICT, const Real_t * const ANYODE_RESTRICT, Real_t * const ANYODE_RESTRICT, long int, double * const ANYODE_RESTRICT dfdt=nullptr) override;
+    AnyODE::Status dense_jac_cmaj(Real_t, const Real_t * const ANYODE_RESTRICT, const Real_t * const ANYODE_RESTRICT, Real_t * const ANYODE_RESTRICT, long int, double * const ANYODE_RESTRICT dfdt=nullptr) override;
+    AnyODE::Status banded_jac_cmaj(Real_t, const Real_t * const ANYODE_RESTRICT,  const Real_t * const ANYODE_RESTRICT, Real_t * const ANYODE_RESTRICT, long int) override;
+    AnyODE::Status compressed_jac_cmaj(Real_t, const Real_t * const ANYODE_RESTRICT, const Real_t * const ANYODE_RESTRICT, Real_t * const ANYODE_RESTRICT, long int);
 
     Real_t get_mod_k(int bi, int ri) const;
 
     // For iterative linear solver
-    // void local_reaction_jac(const int, const Real_t * const, Real_t * const __restrict__, Real_t) const;
-    AnyODE::Status jac_times_vec(const Real_t * const __restrict__ vec,
-                                 Real_t * const __restrict__ out,
-                                 Real_t t, const Real_t * const __restrict__ y,
-                                 const Real_t * const __restrict__ fy
+    // void local_reaction_jac(const int, const Real_t * const, Real_t * const ANYODE_RESTRICT, Real_t) const;
+    AnyODE::Status jac_times_vec(const Real_t * const ANYODE_RESTRICT vec,
+                                 Real_t * const ANYODE_RESTRICT out,
+                                 Real_t t, const Real_t * const ANYODE_RESTRICT y,
+                                 const Real_t * const ANYODE_RESTRICT fy
                                  ) override;
-    AnyODE::Status prec_setup(Real_t t, const Real_t * const __restrict__ y,
-                              const Real_t * const __restrict__ fy,
+    AnyODE::Status prec_setup(Real_t t, const Real_t * const ANYODE_RESTRICT y,
+                              const Real_t * const ANYODE_RESTRICT fy,
                               bool jok, bool& jac_recomputed, Real_t gamma
                               ) override;
-    AnyODE::Status prec_solve_left(const Real_t t, const Real_t * const __restrict__ y,
-                                   const Real_t * const __restrict__ fy,
-                                   const Real_t * const __restrict__ r,
-                                   Real_t * const __restrict__ z,
+    AnyODE::Status prec_solve_left(const Real_t t, const Real_t * const ANYODE_RESTRICT y,
+                                   const Real_t * const ANYODE_RESTRICT fy,
+                                   const Real_t * const ANYODE_RESTRICT r,
+                                   Real_t * const ANYODE_RESTRICT z,
                                    Real_t gamma,
                                    Real_t delta,
-                                   const Real_t * const __restrict__ ewt
+                                   const Real_t * const ANYODE_RESTRICT ewt
                                    ) override;
 
-    void per_rxn_contrib_to_fi(Real_t, const Real_t * const __restrict__, int, Real_t * const __restrict__) const;
+    void per_rxn_contrib_to_fi(Real_t, const Real_t * const ANYODE_RESTRICT, int, Real_t * const ANYODE_RESTRICT) const;
     int get_geom_as_int() const;
     void calc_efield(const Real_t * const);
 
