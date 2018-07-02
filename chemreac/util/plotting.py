@@ -207,9 +207,9 @@ def _get_per_rxn_out(rd, tout, yout, specie_indices):
 
 
 DEFAULT = dict(
-    c=('tab:cyan', 'tab:red', 'tab:olive', 'tab:gray', 'tab:purple',
-       'tab:brown', 'tab:pink', 'green', 'blue', 'red', 'black'),
-    ls=('--', ':', '-.', '-')
+    c=('tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
+       'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'black'),
+    ls=('-', '--', ':', '-.')
 )
 
 

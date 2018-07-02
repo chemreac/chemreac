@@ -389,8 +389,8 @@ ReactionDiffusion<Real_t>::get_mod_k(int bi, int ri) const{
 
 template<typename Real_t>
 void
-ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict__ C,
-                                         Real_t * const __restrict__ local_r) const
+ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const ANYODE_RESTRICT C,
+                                         Real_t * const ANYODE_RESTRICT local_r) const
 {
     // intent(out) :: local_r
     for (int rxni=0; rxni<nr; ++rxni){
@@ -415,8 +415,8 @@ ReactionDiffusion<Real_t>::fill_local_r_(int bi, const Real_t * const __restrict
 #define Y(bi, si) y[(bi)*n+(si)]
 template<typename Real_t>
 void
-ReactionDiffusion<Real_t>::populate_linC(Real_t * const __restrict__ linC,
-                                         const Real_t * const __restrict__ y,
+ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
+                                         const Real_t * const ANYODE_RESTRICT y,
                                          bool apply_exp, bool recip) const
 {
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
@@ -456,7 +456,7 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const __restrict__ linC,
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 template<typename Real_t>
 AnyODE::Status
-ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const __restrict__ dydt)
+ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
 {
     // note condifiontal call to free at end of this function
     if (logy) {
@@ -546,10 +546,10 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::${token}(Real_t t,
-                                    const Real_t * const __restrict__ y,
-                                    const Real_t * const __restrict__ fy,
-                                    Real_t * const __restrict__ ja, long int ldj
-                                    ${', double * const __restrict__ /* dfdt */' if token.startswith('dense') else ''})
+                                    const Real_t * const ANYODE_RESTRICT y,
+                                    const Real_t * const ANYODE_RESTRICT fy,
+                                    Real_t * const ANYODE_RESTRICT ja, long int ldj
+                                    ${', double * const ANYODE_RESTRICT /* dfdt */' if token.startswith('dense') else ''})
 {
     // Note: blocks are zeroed out, diagonals only incremented
     // `t`: time (log(t) if logt=1)
@@ -717,11 +717,11 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
 
 template<typename Real_t>
 AnyODE::Status
-ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
-                                         Real_t * const __restrict__ out,
+ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const ANYODE_RESTRICT vec,
+                                         Real_t * const ANYODE_RESTRICT out,
                                          Real_t t,
-                                         const Real_t * const __restrict__ y,
-                                         const Real_t * const __restrict__ fy
+                                         const Real_t * const ANYODE_RESTRICT y,
+                                         const Real_t * const ANYODE_RESTRICT fy
                                          )
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
@@ -743,8 +743,8 @@ ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const __restrict__ vec,
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::prec_setup(Real_t t,
-                                      const Real_t * const __restrict__ y,
-                                      const Real_t * const __restrict__ fy,
+                                      const Real_t * const ANYODE_RESTRICT y,
+                                      const Real_t * const ANYODE_RESTRICT fy,
                                       bool jok, bool& jac_recomputed, Real_t gamma
                                       )
 {
@@ -775,13 +775,13 @@ ReactionDiffusion<Real_t>::prec_setup(Real_t t,
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
-                                           const Real_t * const __restrict__ y,
-                                           const Real_t * const __restrict__ fy,
-                                           const Real_t * const __restrict__ r,
-                                           Real_t * const __restrict__ z,
+                                           const Real_t * const ANYODE_RESTRICT y,
+                                           const Real_t * const ANYODE_RESTRICT fy,
+                                           const Real_t * const ANYODE_RESTRICT r,
+                                           Real_t * const ANYODE_RESTRICT z,
                                            Real_t gamma,
                                            Real_t delta,
-                                           const Real_t * const __restrict__ ewt
+                                           const Real_t * const ANYODE_RESTRICT ewt
                                            )
 {
     // See 4.6.9 on page 75 in cvs_guide.pdf (Sundials 2.6.2)
@@ -847,8 +847,8 @@ ReactionDiffusion<Real_t>::prec_solve_left(const Real_t t,
 
 template<typename Real_t>
 void
-ReactionDiffusion<Real_t>::per_rxn_contrib_to_fi(Real_t t, const Real_t * const __restrict__ y,
-                                              int si, Real_t * const __restrict__ out) const
+ReactionDiffusion<Real_t>::per_rxn_contrib_to_fi(Real_t t, const Real_t * const ANYODE_RESTRICT y,
+                                              int si, Real_t * const ANYODE_RESTRICT out) const
 {
     ignore(t);
     auto local_r = AnyODE::buffer_factory<double>(nr);
