@@ -7,7 +7,7 @@
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include <memory>
 #include "anyode/anyode_buffer.hpp"
-#include "anyode/anyode_decomposition.hpp"
+#include "anyode/anyode_decomposition_lapack.hpp"
 #include "finitediff_templated.hpp" // fintie differences
 #include "chemreac.hpp"
 
