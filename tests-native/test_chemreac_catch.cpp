@@ -7,7 +7,7 @@
 
 #include <iostream>
 
-TEST_CASE( "jac_times_vec", "[ReactionDiffusion]" ) {
+TEST_CASE( "jtimes", "[ReactionDiffusion]" ) {
 
     // this is _get_test_m2 in test_fakelu.py
     auto rdp = get_four_species_system(3);
@@ -87,9 +87,9 @@ TEST_CASE( "jac_times_vec", "[ReactionDiffusion]" ) {
         }
         // REQUIRE(std::abs(bref[ri] - bref2[ri] < 1e-14));
     }
-    rd.jac_times_vec(&x[0], &b[0], 0.0, &y[0], nullptr);
+    rd.jtimes(&x[0], &b[0], 0.0, &y[0], nullptr);
     for (int i=0; i<3*4; ++i){
-        std::cout << "jac_times_vec out[i="<< i<<"]=" << b[i] << std::endl;
+        std::cout << "jtimes out[i="<< i<<"]=" << b[i] << std::endl;
         REQUIRE( std::abs(bref[i] - b[i]) < 1e-14 );
     }
 }
