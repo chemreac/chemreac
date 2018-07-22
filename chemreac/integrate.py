@@ -92,7 +92,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         'nsteps': -1,
         'integrator': ['cvode'],
     })
-    if kwargs['linear_solver'] in 'gmres gmres_classic bicgstab tfqmr'.split():
+    if kwargs.get('linear_solver', 'default') in 'gmres gmres_classic bicgstab tfqmr'.split():
         kwargs['nprec_setup'] = rd.nprec_setup
         kwargs['nprec_solve'] = rd.nprec_solve
         kwargs['njacvec_dot'] = rd.njacvec_dot
