@@ -463,7 +463,7 @@ def cvode_predefined(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
-        basestring iter_type='undecided', str linear_solver="undecided", int maxl=5, double eps_lin=0.05,
+        basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
         bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False):
     cdef:
@@ -496,7 +496,7 @@ def cvode_predefined_durations_fields(
         vector[double] atol, double rtol, basestring method,
         int npoints=2,
         bool with_jacobian=True,
-        basestring iter_type='undecided', str linear_solver='undecided', int maxl=5, double eps_lin=0.05,
+        basestring iter_type='undecided', str linear_solver='default', int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
         bool return_on_error=False, bool with_jtimes=False, ew_ele=False):
     cdef:
@@ -550,7 +550,7 @@ def cvode_adaptive(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         double t0, double tend,
         vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
-        basestring iter_type='undecided', str linear_solver="undecided", int maxl=5, double eps_lin=0.05,
+        basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
         bool return_on_root=False, int autorestart=0, bool return_on_error=False,
         bool with_jtimes=False, bool ew_ele=False):

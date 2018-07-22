@@ -55,10 +55,6 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['atol'] = kwargs['atol'].reshape((1,))
     kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     kwargs['method'] = kwargs.pop('method', 'bdf')
-    kwargs['linear_solver'] = {
-        'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
-        'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[
-            kwargs.pop('linear_solver', 'default').lower()]
     if dense_output is None:
         dense_output = (len(tout) == 2)
 
@@ -96,7 +92,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         'nsteps': -1,
         'integrator': ['cvode'],
     })
-    if kwargs['linear_solver'] >= 10:
+    if kwargs['linear_solver'] in 'gmres gmres_classic bicgstab tfqmr'.split():
         kwargs['nprec_setup'] = rd.nprec_setup
         kwargs['nprec_solve'] = rd.nprec_solve
         kwargs['njacvec_dot'] = rd.njacvec_dot
