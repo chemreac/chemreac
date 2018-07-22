@@ -21,10 +21,7 @@ build:
     - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband
   commands:
     - git fetch -tq  # used by ``git describe``
-    - apt-get update --quiet && apt-get install --quiet -y libsuitesparse-dev
-#    - if [ ! -d /drone/sundials-3.1.1 ]; then
-    - .ci/get_sundials-3.1.1.sh /drone/sundials-3.1.1
-# ; fi
+    - if [ ! -d /drone/sundials-3.1.1 ]; then .ci/get_sundials-3.1.1.sh /drone/sundials-3.1.1; fi
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac
     - python3 setup.py build_ext -i
     - ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html

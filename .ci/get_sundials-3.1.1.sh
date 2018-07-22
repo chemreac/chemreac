@@ -27,9 +27,6 @@ for URL in "${SUNDIALS_URLS[@]}"; do
               -DOPENMP_ENABLE:BOOL=OFF \
               -DLAPACK_ENABLE:BOOL=ON \
               -DSUNDIALS_INDEX_TYPE:STRING="int32_t" \
-              -DKLU_ENABLE:BOOL=ON \
-              -DKLU_INCLUDE_DIR=/usr/include/suitesparse \
-              -DKLU_LIBRARY_DIR=/usr/lib/x86_64-linux-gnu \
               ../sundials-*/
         make -j 2 >/dev/null 2>&1
         make install
