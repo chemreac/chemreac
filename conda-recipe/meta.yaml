@@ -28,7 +28,7 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu >=0.3.6
+    - block_diag_ilu >=0.3.8
     - finitediff
     - pycvodes >=0.11.1
     - numpy 1.11.*
@@ -44,7 +44,7 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu >=0.3.6
+    - block_diag_ilu >=0.3.8
     - finitediff
     - pycvodes >=0.11.1
     - chempy
