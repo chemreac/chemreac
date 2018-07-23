@@ -22,7 +22,6 @@ CC=clang-6.0 \
   CFLAGS="-fsanitize=address -UNDEBUG" \
   python3 setup.py build_ext -i
 ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-6.0/lib/clang/6.0.0/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh ${@:2}
-python3 -m pip uninstall chemreac
 git clean -xfd
 
 python3 setup.py sdist
