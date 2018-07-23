@@ -1,3 +1,8 @@
+v0.8.0
+======
+- New AnyODE version (19)
+- New upstream pycvodes version (0.11.1)
+
 v0.7.9
 ======
 - Updated to AnyODE 15 & block_diag_ilu-0.3.6
