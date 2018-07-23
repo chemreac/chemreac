@@ -168,7 +168,7 @@ int test_jac(){
     for (int i=0; i<12; ++i) vec[i] = i+2.0;
     vector<double> out(12);
     for (int i=0; i<12; ++i) out[i] = 0.0;
-    rd.jac_times_vec(&vec[0], &out[0], 0.0, &y[0], nullptr);
+    rd.jtimes(&vec[0], &out[0], 0.0, &y[0], nullptr);
     for (int ri=0; ri<12; ++ri){
         double val = 0.0;
         for (int ci=0; ci<12; ++ci){
@@ -177,11 +177,11 @@ int test_jac(){
             val += DNS(ri, ci)*vec[ci];
         }
         if (dabs(out[ri]-val) > 1e-13){
-            std::cout << "jac_times_vec failed for ri=" << ri << " ref[ri]=" << val <<
+            std::cout << "jtimes failed for ri=" << ri << " ref[ri]=" << val <<
                 " out[ri]=" << out[ri] << " (difference = " << out[ri]-val << ")" << std::endl;
             exit2 = exit2 | 8;
         } else {
-            std::cout << "jac_times_vec   ok   for ri=" << ri << " ref[ri]=" << val <<
+            std::cout << "jtimes   ok   for ri=" << ri << " ref[ri]=" << val <<
                 " out[ri]=" << out[ri] << " (difference = " << out[ri]-val << ")" << std::endl;
         }
 

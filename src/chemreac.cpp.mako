@@ -7,7 +7,7 @@
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include <memory>
 #include "anyode/anyode_buffer.hpp"
-#include "anyode/anyode_decomposition.hpp"
+#include "anyode/anyode_decomposition_lapack.hpp"
 #include "finitediff_templated.hpp" // fintie differences
 #include "chemreac.hpp"
 
@@ -717,12 +717,12 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
 
 template<typename Real_t>
 AnyODE::Status
-ReactionDiffusion<Real_t>::jac_times_vec(const Real_t * const ANYODE_RESTRICT vec,
-                                         Real_t * const ANYODE_RESTRICT out,
-                                         Real_t t,
-                                         const Real_t * const ANYODE_RESTRICT y,
-                                         const Real_t * const ANYODE_RESTRICT fy
-                                         )
+ReactionDiffusion<Real_t>::jtimes(const Real_t * const ANYODE_RESTRICT vec,
+                                  Real_t * const ANYODE_RESTRICT out,
+                                  Real_t t,
+                                  const Real_t * const ANYODE_RESTRICT y,
+                                  const Real_t * const ANYODE_RESTRICT fy
+    )
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);

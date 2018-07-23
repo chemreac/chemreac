@@ -141,11 +141,11 @@ public:
 
     // For iterative linear solver
     // void local_reaction_jac(const int, const Real_t * const, Real_t * const ANYODE_RESTRICT, Real_t) const;
-    AnyODE::Status jac_times_vec(const Real_t * const ANYODE_RESTRICT vec,
-                                 Real_t * const ANYODE_RESTRICT out,
-                                 Real_t t, const Real_t * const ANYODE_RESTRICT y,
-                                 const Real_t * const ANYODE_RESTRICT fy
-                                 ) override;
+    AnyODE::Status jtimes(const Real_t * const ANYODE_RESTRICT vec,
+                          Real_t * const ANYODE_RESTRICT out,
+                          Real_t t, const Real_t * const ANYODE_RESTRICT y,
+                          const Real_t * const ANYODE_RESTRICT fy
+        ) override;
     AnyODE::Status prec_setup(Real_t t, const Real_t * const ANYODE_RESTRICT y,
                               const Real_t * const ANYODE_RESTRICT fy,
                               bool jok, bool& jac_recomputed, Real_t gamma

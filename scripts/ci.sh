@@ -26,8 +26,4 @@ git clean -xfd
 
 python3 setup.py sdist
 cp dist/${PKG_NAME}-*.tar.gz /tmp
-(cd /; python3 -m pip install --force-reinstall /tmp/${PKG_NAME}-*.tar.gz; python3 -c "import $PKG_NAME")
-
-# Make sure repo is pip installable from git-archive zip
-git archive -o /tmp/$PKG_NAME.zip HEAD
-(cd /; python3 -m pip install --force-reinstall /tmp/$PKG_NAME.zip; python3 -c "import ${PKG_NAME}")
+(cd /; python3 -m pip install --ignore-installed /tmp/${PKG_NAME}-*.tar.gz; python3 -c "import $PKG_NAME")

@@ -28,9 +28,9 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu >=0.3.6
+    - block_diag_ilu >=0.3.8
     - finitediff
-    - pycvodes >=0.10.5
+    - pycvodes >=0.11.1
     - numpy 1.11.*
   run:
     - blas 1.1 {{ variant }}  # [not win]
@@ -44,9 +44,9 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu >=0.3.6
+    - block_diag_ilu >=0.3.8
     - finitediff
-    - pycvodes
+    - pycvodes >=0.11.1
     - chempy
 
 test:
