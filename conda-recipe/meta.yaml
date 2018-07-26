@@ -1,5 +1,5 @@
 {% set name = "chemreac" %}
-{% set version = "0.8.0dev0+git" %}
+{% set version = "0.7.10dev0+git" %}
 {% set variant = "openblas" %}
 
 package:
@@ -29,9 +29,9 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu >=0.3.6
+    - block_diag_ilu ==0.3.7
     - finitediff
-    - pycvodes >=0.10.5
+    - pycvodes <0.11.0
   run:
     - blas 1.1 {{ variant }}  # [not win]
     - openblas 0.2.20*  # [not win]
@@ -44,9 +44,10 @@ requirements:
     - quantities >=0.12.1
     - pycompilation
     - pycodeexport
-    - block_diag_ilu >=0.3.6
+    - block_diag_ilu ==0.3.7
     - finitediff
-    - pycvodes
+    - pycvodes <0.11.0
+    - pyodesys <0.12.0
     - chempy
 
 test:
