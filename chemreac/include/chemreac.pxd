@@ -12,7 +12,7 @@ from anyode cimport Info
 cdef extern from "chemreac.hpp" namespace "chemreac":
     cdef cppclass ReactionDiffusion[T]:
         # (Private)
-        T * D_weight
+        T * lap_weight
 
         const int n, N, nr, nstencil, nsidep
         const bool logy, logt, logx, lrefl, rrefl, auto_efield
@@ -39,7 +39,8 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         int n_jac_diags
         bool use_log2
         bool clip_to_pos
-        T * const efield
+        T * efield
+        vector[T] gradD
         T * xc
 
         long nfev

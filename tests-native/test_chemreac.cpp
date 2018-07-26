@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <memory>
 #include <numeric> // std::accumulate
 #include <algorithm> // min, max
 #include <cassert>
@@ -32,7 +33,7 @@ int test_rhs(){
 	    -0.05*y[4], 0.05*y[4], -2*3.0*y[6]*y[6]*y[5], 3.0*y[6]*y[6]*y[5],\
             -0.05*y[8], 0.05*y[8], -2*3.0*y[10]*y[10]*y[9], 3.0*y[10]*y[10]*y[9]};
     double f[12];
-    rd.rhs(0.0, &y[0], f);
+    rd->rhs(0.0, &y[0], f);
     int exit1 = 0;
     for (int i=0; i<12; ++i)
 	if (dabs(f[i]-ref_f[i]) > 1e-14){
@@ -49,7 +50,8 @@ int test_rhs(){
 // N = 3 compartments
 #define RJ(i, j) ref_jac[(i)*12+j]
 int test_jac(){
-    auto rd = get_four_species_system(3);
+    auto rdp = get_four_species_system(3);
+    auto &rd = *rdp;
 
     const double dx = 1.0 / 3;
     vector<double> y {1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4, 1.3, 1e-4, 0.7, 1e-4};
@@ -113,10 +115,12 @@ int test_jac(){
         }
 
     // Banded jacobian
-    double * bnd_jac = new double[(2*rd.n+1)*(rd.N*rd.n)];
-    for (int i=0; i<(2*rd.n+1)*(rd.N*rd.n); ++i) bnd_jac[i] = 0.0; //make valgrind quiet..
-    rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac, (2*rd.n+1));
-#define BND(i, j) bnd_jac[i-j+rd.n+j*(2*rd.n+1)]
+    const int ld = (3*rd.n_jac_diags*rd.n + 1);
+    const int ny = rd.N*rd.n;
+    double * bnd_jac = new double[ld*(rd.N*rd.n)];
+    for (int i=0; i<ld*ny; ++i) bnd_jac[i] = 0.0;
+    rd.banded_jac_cmaj(0.0, &y[0], nullptr, bnd_jac + rd.n*rd.n_jac_diags, ld);
+#define BND(i, j) bnd_jac[i-j+2*rd.n+j*ld]
 #define DNS(i, j) ref_jac[(i)*rd.n*rd.N+j]
     for (int ri=0; ri<12; ++ri)
 	for (int ci=std::max(0, ri-(int)rd.n); ci<std::min(rd.n*rd.N, ri+rd.n); ++ci)
@@ -130,7 +134,7 @@ int test_jac(){
     // Compressed jacobian
     vector<double> cmprs_jac(rd.n*rd.n*rd.N + 2*rd.n*(rd.N-1), 0);
     rd.compressed_jac_cmaj(0.0, &y[0], nullptr, &cmprs_jac[0], rd.n);
-    std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
+    // std::cout << "n_jac_diags = " << rd.n_jac_diags << std::endl;
 #define CMPRS(bi, ri, ci) cmprs_jac[bi*rd.n*rd.n + ci*rd.n + ri]
 #define SUB(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + rd.n*bi + ci]
 #define SUP(bi, ci) cmprs_jac[rd.N*rd.n*rd.n + (rd.N-1)*rd.n + rd.n*bi + ci]
@@ -197,7 +201,8 @@ void bench_rhs(){
     double t = 0.0;
     int ntimings = 40;
     int N = 500000; // A ridiculous number of bins for 1D but used for benchmarking
-    auto rd = get_four_species_system(N);
+    auto rdp = get_four_species_system(N);
+    auto &rd = *rdp;
     vector<double> y;
     vector<double> b;
     vector<double> timings;
@@ -249,13 +254,13 @@ void bench_rhs(){
     std::cout << "Average timing: " << std::accumulate(timings.begin(), timings.end(), 0.0)/ntimings << std::endl;
 }
 
-ReactionDiffusion<double> _get_single_specie_system(int N, int z){
+std::unique_ptr<ReactionDiffusion<double>> _get_single_specie_system(int N, int z){
     int n = 1;
     vector<vector<int> > stoich_reac {};
     vector<vector<int> > stoich_actv {};
     vector<vector<int> > stoich_prod {};
     vector<double> k {};
-    vector<double> D {1.0};
+    vector<double> D(N, 1.0);
     vector<int> z_chg {z};
     vector<double> mobility {1.0};
     vector<double> x;
@@ -265,19 +270,22 @@ ReactionDiffusion<double> _get_single_specie_system(int N, int z){
     int nstencil = (N == 1) ? 1 : 3;
     for (int i=0; i<=N; ++i)
 	x.push_back(1.0 + (double)i*1.0/N);
-    return ReactionDiffusion<double>(n, stoich_reac, stoich_prod, k, N, D, z_chg,
-                             mobility, x, stoich_actv, geom, logy, logt, logx,
-                             nstencil, true, true, true, {0, 0}, 1.0);
+    std::pair<double, double> surf_chg(0, 0);
+    return AnyODE::make_unique<ReactionDiffusion<double>>(
+        n, stoich_reac, stoich_prod, k, N, D, z_chg,
+        mobility, x, stoich_actv, geom, logy, logt, logx,
+        nstencil, true, true, true, surf_chg, 1.0);
 }
 
 int test_calc_efield(){
-    auto rd = _get_single_specie_system(5, 1);
+    auto rdp = _get_single_specie_system(5, 1);
+    auto &rd = *rdp;
     vector<double> y {1.0, 2.0, 3.0, 2.0, 1.0};
     const double factor = 0.2*96485.3399/8.854187817e-12;
     vector<double> ref_efield {-8*factor, -5*factor, 0, 5*factor, 8*factor};
     rd.calc_efield(&y[0]);
     int fail = 0;
-    for (int i=0; i<ref_efield.size(); ++i)
+    for (unsigned i=0; i<ref_efield.size(); ++i)
 	if (dabs((rd.efield[i]-ref_efield[i])/ref_efield[i]) > 1e-10){
             std::cout << i << " " << rd.efield[i] << " " << ref_efield[i] << std::endl;
             fail = 1;

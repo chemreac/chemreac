@@ -114,7 +114,7 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     )
     assert rd.n == n
     assert rd.N == N
-    assert np.allclose(rd.D, D)
+    assert np.allclose(rd.D[:n], D)
     assert np.allclose(rd.k, k[3:])
     assert np.allclose(rd.xcenters, xc)
     assert np.allclose(rd.fields, fields)
@@ -144,15 +144,18 @@ def test_ReactionDiffusion_fields_and_g_values(log_geom):
     assert np.allclose(integr.Cout.flatten(), yref.flatten())
 
 
-@pytest.mark.parametrize("N_wjac_geom", product(
-    [64, 128], [False, True], 'fcs'))
-def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
-    N, wjac, geom = N_wjac_geom
+@pytest.mark.parametrize("N_wjac_geom_varying", product(
+    [64, 128], [False, True], 'fcs', [False, True]))
+def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom_varying):
+    N, wjac, geom, varying = N_wjac_geom_varying
     # Test that mass convervation is fulfilled wrt diffusion.
     x = np.linspace(0.01*N, N, N+1)
     y0 = (x[0]/2/N+x[1:]/N)**2
-
-    sys = ReactionDiffusion(1, [], [], [], N=N, D=[0.02*N], x=x, geom=geom,
+    if varying:
+        D = np.linspace(0, (0.02*N)**0.5, N)**2
+    else:
+        D = [0.02*N]
+    sys = ReactionDiffusion(1, [], [], [], N=N, D=D, x=x, geom=geom,
                             nstencil=3, lrefl=True, rrefl=True)
 
     tout = np.linspace(0, 10.0, 50)
@@ -172,7 +175,9 @@ def test_integrate__only_1_species_diffusion__mass_conservation(N_wjac_geom):
 
     ybis = np.sum(yprim, axis=1)
 
-    assert np.allclose(np.average(ybis), ybis, atol=atol, rtol=rtol)
+    assert np.allclose(np.average(ybis), ybis,
+                       atol=atol*(1e2 if varying else 1),
+                       rtol=rtol*(1e2 if varying else 1))
 
 
 @pytest.mark.parametrize("log", LOG_COMOBS)
@@ -205,13 +210,15 @@ def test_integrators(log):
             'rtol': 1e-8,
             'method': 'adams',
             'tout': tout,
-            'C0_is_log': True
+            'C0_is_log': True,
+            'ew_ele': True
         },
         'cvode3': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
             'method': 'bdf',
             'tout': (t0, tend),
+            'ew_ele': True
         },
         'cvode4': {
             'atol': [1e-8, 1e-8],
@@ -233,6 +240,9 @@ def test_integrators(log):
         integr = Integration(rd, _y0, integrator=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)
+        ew_ele = integr.info.get('ew_ele', None)
+        if ew_ele is not None:
+            assert np.all(np.abs(np.prod(ew_ele, axis=1)) < 2)
 
     for result in results[1:]:
         assert np.allclose(results[0][0], result[0])

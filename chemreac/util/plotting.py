@@ -187,11 +187,11 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
 
 def _get_jac_row_over_t(rd, tout, yout, indices, bi=0):
     # Note that you really need yout - not Cout
-    Jout = np.zeros((rd.n*2+1, rd.n*rd.N), order='F')
+    Jout = rd.alloc_jout(banded=True)
     row_out = np.zeros((yout.shape[0], len(indices), rd.n))
     for i, y in enumerate(yout):
         rd.banded_jac_cmaj(tout[i], y.flatten(), Jout)
-        Jtmp = Jout[:, bi*rd.n:(bi + 1)*rd.n]
+        Jtmp = Jout[rd.n*rd.n_jac_diags:, bi*rd.n:(bi + 1)*rd.n]
         row_out[i, :, :] = get_jac_row_from_banded(Jtmp, indices, rd.n)
     return row_out
 
@@ -207,9 +207,9 @@ def _get_per_rxn_out(rd, tout, yout, specie_indices):
 
 
 DEFAULT = dict(
-    c=('tab:cyan', 'tab:red', 'tab:olive', 'tab:gray', 'tab:purple',
-       'tab:brown', 'tab:pink', 'green', 'blue', 'red', 'black'),
-    ls=('--', ':', '-.', '-')
+    c=('tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple',
+       'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan', 'black'),
+    ls=('-', '--', ':', '-.')
 )
 
 

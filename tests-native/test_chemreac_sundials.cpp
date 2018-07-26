@@ -1,14 +1,15 @@
 #include <iostream>
 #include <vector>
 #include "chemreac.hpp"
-#include "cvodes_cxx.hpp"
+#include "cvodes_anyode.hpp"
 #include "test_utils.h"
 
 using std::vector;
 using chemreac::ReactionDiffusion;
 
 int test_integration(int N){
-    ReactionDiffusion<double> rd = get_four_species_system(N);
+    auto rdp = get_four_species_system(N);
+    auto &rd = *rdp;
     vector<double> y;
     for (int i=0; i<N; ++i){
         y.push_back(1.3);
@@ -23,17 +24,17 @@ int test_integration(int N){
     double * yout = (double*)malloc(sizeof(double)*tout.size()*ny);
     vector<int> root_indices;
     vector<double> roots_output;
-    for (int i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
-    cvodes_cxx::simple_predefined<ReactionDiffusion<double> >
-        (&rd, atol, rtol, (int)cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
+    for (unsigned i=0; i<tout.size()*ny; ++i) {yout[i]=0.0;}
+    cvodes_anyode::simple_predefined<ReactionDiffusion<double> >
+        (&rd, atol, rtol, cvodes_cxx::LMM::BDF, &y[0], tout.size(), &tout[0], yout,
          root_indices, roots_output);
-    for (unsigned int tidx=0; tidx<tout.size(); tidx++){
-        std::cout << tout[tidx];
-        for (int sidx=0; sidx<ny; sidx++){
-            std::cout << " " << yout[tidx*ny + sidx];
-        }
-        std::cout << std::endl;
-    }
+    // for (unsigned int tidx=0; tidx<tout.size(); tidx++){
+    //     std::cout << tout[tidx];
+    //     for (int sidx=0; sidx<ny; sidx++){
+    //         std::cout << " " << yout[tidx*ny + sidx];
+    //     }
+    //     std::cout << std::endl;
+    // }
     free(yout);
     return 0;
 }

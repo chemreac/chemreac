@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 from __future__ import absolute_import, division, print_function
@@ -6,7 +6,6 @@ from __future__ import absolute_import, division, print_function
 import argh
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from decay import get_Cref
@@ -32,12 +31,14 @@ def main(tend=2.0, A0=1.0, nt=67, t0=0.0,
     ax.yaxis.set_tick_params(width=1)
     ax.set_xticks([0, 1, 2])
     ax.set_yticks([0, 0.5, 1])
+    ax.set_facecolor((0.9, 0.9, 0.9))
+    fig.patch.set_facecolor((1.0, 1.0, 1.0, 0.0))
     #ax.text(.35, 0.5, r'A $\rightarrow$ B $\rightarrow$ C', fontsize=9)
     plt.title('chemreac', fontsize=21)
     plt.legend(loc='best', prop={'size': 10})
     plt.tight_layout()
-    plt.savefig('chemreac_logo.svg')
-    plt.savefig('chemreac_logo.png')
+    plt.savefig('chemreac_logo.svg', transparent=True)
+    plt.savefig('chemreac_logo.png', transparent=True)
 
 
 if __name__ == '__main__':

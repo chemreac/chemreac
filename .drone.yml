@@ -3,8 +3,10 @@ cache:
     - /drone/sundials-3.1.1
 
 build:
-  image: bjodah/bjodahimg18dev:v1.0
+  image: bjodah/bjodahimg18dev:v1.2
   environment:
+    - ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer
+    - ASAN_OPTIONS=symbolize=1
     - WITH_OPENMP=1
     - CPATH=/drone/sundials-3.1.1/include
     - LIBRARY_PATH=/drone/sundials-3.1.1/lib
@@ -12,9 +14,11 @@ build:
     - PYCVODES_LAPACK=lapack,blas
     - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband
   commands:
+    - git fetch -tq  # used by ``git describe``
     - if [ ! -d /drone/sundials-3.1.1 ]; then .ci/get_sundials-3.1.1.sh /drone/sundials-3.1.1; fi
-    - PYCVODES_LAPACK=lapack,blas ./scripts/ci.sh chemreac
-    - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
+    - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac
+    - python3 setup.py build_ext -i
+    - ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
     - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
     - ./scripts/generate_docs.sh
     - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'

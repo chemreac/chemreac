@@ -70,16 +70,17 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         if dense_output:
             if not len(tout) == 2:
                 raise ValueError("dense_output implies tout == (t0, tend)")
-            tout, yout = cvode_adaptive(
+            tout, yout, info = cvode_adaptive(
                 rd, np.asarray(y0).flatten(), tout[0], tout[-1],
                 kwargs.pop('atol'), kwargs.pop('rtol'), kwargs.pop('method'),
                 **kwargs)
         else:
-            yout = cvode_predefined(rd, np.asarray(y0).flatten(),
-                                    np.asarray(tout).flatten(),
-                                    **kwargs)
+            yout, info = cvode_predefined(rd, np.asarray(y0).flatten(),
+                                          np.asarray(tout).flatten(),
+                                          **kwargs)
     except RuntimeError:
         yout = np.empty((len(tout), rd.N, rd.n), order='C')/0  # NaN
+        info = {}
         success = False
     else:
         success = True
@@ -101,10 +102,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['njacvec_dot'] = rd.njacvec_dot
         kwargs['nprec_solve_ilu'] = rd.nprec_solve_ilu
         kwargs['nprec_solve_lu'] = rd.nprec_solve_lu
-    kwargs.update(rd.last_integration_info)
-    # kwargs.update(rd.last_integration_info_dbl)
-    # kwargs.update(rd.last_integration_info_vecdbl)
-    # kwargs.update(rd.last_integration_info_vecint)
+    kwargs.update(info)
     return yout, tout, kwargs
 
 
@@ -270,15 +268,16 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         return fout
     f.neval = 0
 
+    from_row = 0
     if linear_solver == 'dense':
         jout = rd.alloc_jout(banded=False, order='F')
     elif linear_solver == 'banded':
+        jout = rd.alloc_jout(banded=True, order='F', pad=True)
         if scipy_version[0] <= 0 and scipy_version[1] <= 14:
-            # Currently SciPy <= v0.14 needs extra padding
-            jout = rd.alloc_jout(banded=True, order='F', pad=True)
+            pass
         else:
             # SciPy >= v0.15 need no extra padding
-            jout = rd.alloc_jout(banded=True, order='F')
+            from_row = rd.n*rd.n_jac_diags
 
     def jac(t, y, *j_args):
         jac.neval += 1
@@ -289,7 +288,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
             if scipy_version[0] <= 0 and scipy_version[1] <= 14:
                 raise NotImplementedError("SciPy v0.15 or greater required.")
             rd.banded_jac_cmaj(t, y, jout)
-        return jout
+        return jout[from_row:, :]
     jac.neval = 0
 
     runner = ode(f, jac=jac if new_kwargs['with_jacobian'] else None)
@@ -501,8 +500,7 @@ class Integration(object):
 
         # Run the integration
         # -------------------
-        self.yout, self.internal_t, self.info = self._callbacks[self.integrator](
-            self.rd, y0, t, **self.kwargs)
+        self.yout, self.internal_t, self.info = self._callbacks[self.integrator](self.rd, y0, t, **self.kwargs)
         self.info['t0_set'] = t0 if t0_set else False
 
         # Post processing

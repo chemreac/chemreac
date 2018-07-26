@@ -39,7 +39,7 @@ Documentation
 =============
 
 - Documentation for the latest stable release is found here:
-  `<https://pythonhosted.org/chemreac>`_
+  `<http://chemreac.github.io/chemreac/latest/>`_
 - and development documentation for the current master branch is found here:
   `<http://hera.physchem.kth.se/~chemreac/branches/master/html>`_).
 

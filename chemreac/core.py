@@ -35,7 +35,10 @@ class ReactionDiffusionBase(object):
         for ri in range(self.nr):
             rxn = self.to_Reaction(ri, substance_names)
             rxns.append(rxn)
-        return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names))
+        kw = {}
+        if self.substance_latex_names:
+            kw['latex_name'] = self.substance_latex_names
+        return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names, **kw))
 
     @classmethod
     def from_ReactionSystem(cls, rsys, variables=None, fields=None, **kwargs):
@@ -166,13 +169,17 @@ class ReactionDiffusionBase(object):
     def alloc_fout(self):
         return np.zeros(self.n*self.N)
 
-    def alloc_jout(self, banded=None, order='C', pad=0):
-        if pad is True:
-            pad = self.n*self.n_jac_diags
-        if pad is False:
-            pad = 0
+    def alloc_jout(self, banded=None, order='F', pad=None):
         if banded is None:
             banded = self.N > 1
+        if pad is None:
+            pad = banded
+
+        if pad is True:
+            pad = self.n*self.n_jac_diags
+        elif pad is False:
+            pad = 0
+
         if order == 'C':
             rpad, cpad = 0, pad
         elif order == 'F':
@@ -185,8 +192,7 @@ class ReactionDiffusionBase(object):
             nc = self.n*self.N + cpad
             return np.zeros((nr, nc), order=order)
         else:
-            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad),
-                            order=order)
+            return np.zeros((self.n*self.N + rpad, self.n*self.N + cpad), order=order)
 
     def alloc_jout_compressed(self, nsat=0):
         from block_diag_ilu import alloc_compressed
@@ -389,7 +395,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         if mobility is None:
             mobility = np.zeros(n)
         if N > 1:
-            assert n == len(D)
+            assert len(D) in (n, n*N)
             assert n == len(z_chg)
             assert n == len(mobility)
         else:
