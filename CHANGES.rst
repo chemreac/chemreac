@@ -1,3 +1,7 @@
+v0.7.10
+=======
+- Specify (upper) version requirements
+
 v0.7.9
 ======
 - Updated to AnyODE 15 & block_diag_ilu-0.3.6
