@@ -59,7 +59,7 @@ if [[ -d $tmpdir/.gh-pages-skeleton ]]; then
 fi
 touch .nojekyll
 if [[ "$tag" == v* ]]; then
-    ln -s $tag latest
+    #ln -s $tag latest
     commit_msg="Release docs for $tag"
 else
     if [[ $preexisting == 1 ]]; then
