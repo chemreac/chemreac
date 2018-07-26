@@ -1,3 +1,7 @@
+v0.7.11
+=======
+- Back-ported features from v0.8.0
+
 v0.7.10
 =======
 - Specify (upper) version requirements
