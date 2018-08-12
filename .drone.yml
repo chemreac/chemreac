@@ -31,7 +31,7 @@ build:
     - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
     - ./scripts/prepare_deploy.sh
     - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
-    - PATH=/opt/miniconda3/bin:$PATH conda build conda-recipe
+    - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
     - if grep "DO-NOT-MERGE!" -R . --exclude ".drone.yml"; then exit 1; fi
 
 deploy:
