@@ -1,4 +1,7 @@
-graft external
+graft external/anyode/include
+graft external/anyode/cython_def
+include external/anyode/LICENSE
+include chemreac/*.pyx
 recursive-include docs *
 prune docs/_build
 prune docs/_build.log
