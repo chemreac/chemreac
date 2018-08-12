@@ -82,7 +82,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import pycvodes as pc
     import block_diag_ilu as bdi
 
-    rendered_path = _path_under_setup('src', 'chemreac.cpp')
+    rendered_path = os.path.join('src', 'chemreac.cpp')
     template_path = rendered_path + '.mako'
 
     if os.path.exists(template_path):
