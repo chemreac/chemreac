@@ -30,7 +30,7 @@ requirements:
     - pycodeexport >=0.1.2
     - block_diag_ilu >=0.3.9,<0.4.0
     - finitediff >=0.6.2
-    - pycvodes >=0.10.8,<0.11.0
+    - pycvodes >=0.10.10,<0.11.0
     - numpy 1.11.*
   run:
     - blas 1.1 {{ variant }}  # [not win]
