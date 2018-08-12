@@ -63,10 +63,6 @@ _WITH_DEBUG = env['WITH_DEBUG'] == '1'
 _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
-# Source distributions contain rendered sources
-_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.3.8', 'pycvodes>=0.11.1', 'finitediff>=0.5.3']
-setup_requires = _common_requires + ['mako>=1.0']
-install_requires = _common_requires + ['chempy>=0.6.7', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
 USE_CYTHON = None
@@ -103,7 +99,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         USE_CYTHON = False
     else:
         pyx_path = 'chemreac/_chemreac.pyx'
-        USE_CYTHON = os.path.exists(pyx_path)
+        USE_CYTHON = not os.path.exists(_path_under_setup(pkg_name, '_chemreac.cpp'))
 
     ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
 
@@ -152,6 +148,11 @@ if not len(long_description) > 100:
     warnings.warn("Long description from README.rst probably not read correctly.")
 _author, _author_email = io.open(_path_under_setup('AUTHORS'), 'rt', encoding='utf-8').readline().split('<')
 
+# Source distributions contain rendered sources
+_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.11.4', 'finitediff>=0.6.2']
+setup_requires = _common_requires + ['mako>=1.0'] + (['cython'] if USE_CYTHON else []),
+install_requires = _common_requires + ['chempy>=0.6.7', 'quantities>=0.12.1']
+
 setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
@@ -173,8 +174,8 @@ setup_kwargs = dict(
     setup_requires=setup_requires,
     install_requires=install_requires,
     extras_require={'all': [
-        'argh', 'pytest', 'scipy>=0.15', 'matplotlib', 'mpld3',
-        'sym', 'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
+        'argh', 'pytest', 'scipy>=0.19.1', 'matplotlib', 'mpld3',
+        'sym>=0.3.3', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7'
     ]}
 )

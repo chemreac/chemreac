@@ -18,6 +18,10 @@ from libcpp.utility cimport pair
 cdef extern from "numpy/arrayobject.h":
     void PyArray_ENABLEFLAGS(cnp.ndarray arr, int flags)
 
+cdef extern from "cvodes_cxx.hpp":
+     ctypedef double realtype
+     ctypedef int indextype
+
 cnp.import_array()  # Numpy C-API initialization
 
 
@@ -462,7 +466,7 @@ cdef class PyReactionDiffusion:
 def cvode_predefined(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] tout,
-        vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
+        vector[realtype] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
         bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False):
@@ -471,7 +475,7 @@ def cvode_predefined(
         cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*ny)
         cnp.ndarray[cnp.float64_t, ndim=4] ew_ele_arr = np.empty((tout.size, 2, rd.N, rd.n))
         vector[int] root_indices
-        vector[double] roots_output
+        vector[realtype] roots_output
         int nderiv = 0
     assert y0.size == rd.n*rd.N
     assert atol.size() in (1, rd.n*rd.N)
@@ -493,7 +497,7 @@ def cvode_predefined_durations_fields(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         cnp.ndarray[cnp.float64_t, ndim=1] durations,
         cnp.ndarray[cnp.float64_t, ndim=1] fields,
-        vector[double] atol, double rtol, basestring method,
+        vector[realtype] atol, double rtol, basestring method,
         int npoints=2,
         bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver='default', int maxl=5, double eps_lin=0.05,
@@ -506,7 +510,7 @@ def cvode_predefined_durations_fields(
         cnp.ndarray[cnp.float64_t, ndim=4, mode='c'] ew_ele_arr
         double * ew_ele_out = NULL
         vector[int] root_indices
-        vector[double] roots_output
+        vector[realtype] roots_output
         int nderiv = 0
         int i, offset, j
     assert npoints > 0
@@ -549,7 +553,7 @@ def cvode_predefined_durations_fields(
 def cvode_adaptive(
         PyReactionDiffusion rd, cnp.ndarray[cnp.float64_t, ndim=1] y0,
         double t0, double tend,
-        vector[double] atol, double rtol, basestring method, bool with_jacobian=True,
+        vector[realtype] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
         bool return_on_root=False, int autorestart=0, bool return_on_error=False,
