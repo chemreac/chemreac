@@ -33,4 +33,10 @@ done
 ssh $PKG@$SERVER 'mkdir -p ~/public_html/conda-recipes'
 scp -r dist/conda-recipe-$VERSION/ $PKG@$SERVER:~/public_html/conda-recipes/
 scp "$SDIST_FILE" "$PKG@$SERVER:~/public_html/releases/"
+
+if [[ -e ./scripts/generate_docs.sh ]]; then
+    export PYTHONPATH=$(pwd)
+    env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION ./scripts/generate_docs.sh
+fi
+
 ./scripts/update-gh-pages.sh v$VERSION $REMOTE

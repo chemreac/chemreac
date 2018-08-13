@@ -1,7 +1,7 @@
 #!/bin/bash -xeu
 # Usage:
 #
-#    $ ./scripts/release.sh v1.2.3 ~/anaconda2/bin myserver.example.com GITHUB_USER GITHUB_REPO upstream
+#    $ ./scripts/release.sh v1.2.3 myserver.example.com GITHUB_USER GITHUB_REPO upstream
 #
 
 if [[ $1 != v* ]]; then
@@ -9,11 +9,10 @@ if [[ $1 != v* ]]; then
     exit 1
 fi
 VERSION=${1#v}
-CONDA_PATH=$2
-SERVER=$3
-GITHUB_USER=$4
-GITHUB_REPO=$5
-REMOTE=$6
+SERVER=$2
+GITHUB_USER=$3
+GITHUB_REPO=$4
+REMOTE=$5
 find . -type f -iname "*.pyc" -exec rm {} +
 find . -type f -iname "*.o" -exec rm {} +
 find . -type f -iname "*.so" -exec rm {} +
@@ -30,12 +29,9 @@ cd $(dirname $0)/..
 # PKG will be name of the directory one level up containing "__init__.py" 
 PKG=$(find . -maxdepth 2 -name __init__.py -print0 | xargs -0 -n1 dirname | xargs basename)
 PKG_UPPER=$(echo $PKG | tr '[:lower:]' '[:upper:]')
-python3 setup.py build_ext -i
+${PYTHON:-python3} setup.py build_ext -i
 ./scripts/run_tests.sh
-env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION python3 setup.py sdist
-if [[ -e ./scripts/generate_docs.sh ]]; then
-    env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION ./scripts/generate_docs.sh
-fi
+env ${PKG_UPPER}_RELEASE_VERSION=v$VERSION ${PYTHON:-python3} setup.py sdist
 # All went well, add a tag and push it.
 git tag -a $1 -m $1
 git push $REMOTE

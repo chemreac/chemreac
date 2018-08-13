@@ -1,3 +1,7 @@
+v0.7.12
+=======
+- Updated requirements
+
 v0.7.11
 =======
 - Back-ported features from v0.8.0
