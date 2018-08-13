@@ -64,9 +64,9 @@ _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
 # Source distributions contain rendered sources
-_common_requires = ['numpy>=1.11', 'block_diag_ilu==0.3.7', 'pycvodes>=0.10.6,<0.11.0', 'finitediff>=0.5.3']
+_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.3.9,<0.4.0', 'pycvodes>=0.10.11,<0.11.0', 'finitediff>=0.6.2']
 setup_requires = _common_requires + ['mako>=1.0']
-install_requires = _common_requires + ['chempy>=0.6.7', 'quantities>=0.12.1']
+install_requires = _common_requires + ['chempy>=0.6.8,<0.7.0', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
 USE_CYTHON = None
@@ -82,7 +82,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import pycvodes as pc
     import block_diag_ilu as bdi
 
-    rendered_path = 'src/chemreac.cpp'
+    rendered_path = os.path.join('src', 'chemreac.cpp')
     template_path = rendered_path + '.mako'
 
     if os.path.exists(template_path):
@@ -173,8 +173,9 @@ setup_kwargs = dict(
     setup_requires=setup_requires,
     install_requires=install_requires,
     extras_require={'all': [
-        'argh', 'pytest', 'scipy>=0.15', 'matplotlib', 'mpld3',
-        'sym', 'sympy', 'pyodeint', 'pygslodeiv2', 'batemaneq',
+        'argh', 'pytest', 'scipy>=0.19.1', 'matplotlib', 'mpld3',
+        'sym>=0.3.3', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.9.8,<0.10.0',
+        'pygslodeiv2>=0.8.4,<0.9.0', 'batemaneq',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7,<0.12.0'
     ]}
 )
