@@ -8,7 +8,10 @@ try:
 except ImportError:
     import pickle
 
+from collections import OrderedDict
+from functools import reduce
 from itertools import product
+from operator import add
 import os
 
 import numpy as np
@@ -325,3 +328,28 @@ def test_integrate_nondimensionalisation__g_values(from_rsys):
     assert allclose(integr.with_units('tout'), t_sec*u.s)
     assert allclose(integr.with_units('Cout').squeeze(),
                     Cref_mol_p_m3*u.mole/u.metre**3)
+
+
+def test_from_ReactionSystem__fields():
+    from chempy import Reaction as R, ReactionSystem as RS
+    from chempy.kinetics.rates import mk_Radiolytic
+    gvals = [2, 3, 5]
+    rs = RS([R({}, {'H', 'OH'}, Rad(v)) for v, Rad in zip(
+        gvals, map(mk_Radiolytic, 'alpha beta gamma'.split()))])
+    for s in rs.substances.values():
+        s.data['D'] = 0.0  # no diffusion
+    nbins = 73
+    fields = OrderedDict([('alpha', np.linspace(7, 11, nbins)),
+                          ('beta', np.linspace(13, 17, nbins)),
+                          ('gamma', np.linspace(19, 23, nbins))])
+    rd = ReactionDiffusion.from_ReactionSystem(rs, variables={'density': 998}, fields=fields, N=nbins)
+
+    C0 = {'H': np.linspace(29, 31, nbins), 'OH': np.linspace(37, 41, nbins)}
+    integr = Integration(rd, np.array([C0[k]*np.ones(nbins) for k in rd.substance_names]).T,
+                         [0, 43], integrator='cvode')
+    assert integr.tout[-1] == 43
+    assert integr.tout.size > 2
+    Cref = np.array([C0[sk] + integr.tout.reshape((-1, 1))*reduce(add, [
+        fields[fk]*g for fk, g in zip(fields, gvals)
+    ]).reshape((1, -1)) for sk in rd.substance_names]).transpose(1, 2, 0)
+    assert np.allclose(integr.Cout, Cref)
