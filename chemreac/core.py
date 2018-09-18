@@ -73,8 +73,19 @@ class ReactionDiffusionBase(object):
         else:
             yield_unit = 1
         yields = OrderedDict()
+        if isinstance(fields, dict):
+            for k in fields.keys():
+                yields[k] = defaultdict(lambda: 0*yield_unit)
+            fields = list(fields.values())
+
         for rxn in radiolytic_rxns:
             for doserate_name, g_val in rxn.param.g_values(variables).items():
+                if doserate_name.startswith('doserate'):
+                    if doserate_name.startswith('doserate_'):
+                        doserate_name = doserate_name[9:]
+                else:
+                    raise NotImplementedError("Expected doserate_name to start with 'doserate'")
+
                 if doserate_name not in yields:
                     yields[doserate_name] = defaultdict(lambda: 0*yield_unit)
                 for k in rxn.keys():
@@ -97,7 +108,7 @@ class ReactionDiffusionBase(object):
             if parent == {}:
                 g_value_parents.append(-1)
             else:
-                raise NotImplementedError("Concentraion dependent radiolysis not supported.")
+                raise NotImplementedError("Concentration dependent radiolysis not supported.")
 
         if fields is None:
             # Each doserate_name gets its own field:
