@@ -149,7 +149,7 @@ if not len(long_description) > 100:
 _author, _author_email = io.open(_path_under_setup('AUTHORS'), 'rt', encoding='utf-8').readline().split('<')
 
 # Source distributions contain rendered sources
-_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.11.4', 'finitediff>=0.6.2']
+_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.11.7', 'finitediff>=0.6.2']
 setup_requires = _common_requires + ['mako>=1.0'] + (['cython'] if USE_CYTHON else []),
 install_requires = _common_requires + ['chempy>=0.6.7', 'quantities>=0.12.1']
 
