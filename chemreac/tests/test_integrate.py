@@ -239,7 +239,7 @@ def test_integrators(log):
     }
     import pycvodes
     if logy or pycvodes.sundials_version < (3, 2, 0):
-        solver_kwargs.pop('cvode5')  # sundials >=3.2.0 required for constraints        
+        solver_kwargs.pop('cvode5')  # sundials >=3.2.0 required for constraints
 
     # A -> B
     n = 2
