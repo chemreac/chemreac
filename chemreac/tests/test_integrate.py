@@ -226,7 +226,17 @@ def test_integrators(log):
             'method': 'bdf',
             'tout': tend-t0,
         },
+        'cvode5': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8,
+            'method': 'bdf',
+            'tout': (t0, tend),
+            'constraints': [1.0, 1.0]
+        }
     }
+    import pycvodes
+    if logy or pycvodes.sundials_version < (3, 2, 0):
+        solver_kwargs.pop('cvode5')  # sundials >=3.2.0 required for constraints
 
     # A -> B
     n = 2
@@ -240,6 +250,7 @@ def test_integrators(log):
         integr = Integration(rd, _y0, integrator=solver[:-1], **kwargs)
         if not kwargs.get('dense_output', False):
             results.append(integr.Cout)
+        assert integr.info['success']
         ew_ele = integr.info.get('ew_ele', None)
         if ew_ele is not None:
             assert np.all(np.abs(np.prod(ew_ele, axis=1)) < 2)
