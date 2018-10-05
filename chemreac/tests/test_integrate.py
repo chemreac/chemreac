@@ -228,8 +228,18 @@ def test_integrators(log):
             'rtol': 1e-8,
             'method': 'bdf',
             'tout': tend-t0,
-        },
+        }
+        'cvode5': {
+            'atol': [1e-8, 1e-8],
+            'rtol': 1e-8,
+            'method': 'bdf',
+            'tout': (t0, tend),
+            'constraints': [1.0, 1.0]
+        }
     }
+    import pycvodes
+    if logy or pycvodes.sundials_version < (3, 2, 0):
+        solver_kwargs.pop('cvode5')  # sundials >=3.2.0 required for constraints        
 
     # A -> B
     n = 2
