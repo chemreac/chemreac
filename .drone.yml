@@ -21,6 +21,7 @@ build:
     - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband
     - PYCVODES_NO_KLU=1
   commands:
+    - python3 -m pip install --upgrade "matplotlib>=2.2.3,<3.0.0"
     - git fetch -tq  # used by ``git describe``
     - if [ ! -d /drone/sundials-3.2.0 ]; then .ci/get_sundials.sh 3.2.0 /drone/sundials-3.2.0 -DLAPACK_ENABLE:BOOL=ON -DSUNDIALS_INDEX_TYPE:STRING="int32_t"; fi
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac
