@@ -95,11 +95,21 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
 
     try:
         from Cython.Build import cythonize
-    except ImportError:
+    except Exception:
         USE_CYTHON = False
     else:
-        pyx_path = 'chemreac/_chemreac.pyx'
-        USE_CYTHON = not os.path.exists(_path_under_setup(pkg_name, '_chemreac.cpp'))
+        _cpp = _path_under_setup(pkg_name, '_%s.cpp' % pkg_name)
+        _pyx = _path_under_setup(pkg_name, '_%s.pyx' % pkg_name)
+        if os.path.exists(_cpp):
+            if os.path.exists(_pyx) and os.path.getmtime(_pyx) - 1e-6 >= os.path.getmtime(_cpp):
+                USE_CYTHON = True
+            else:
+                USE_CYTHON = False
+        else:
+            if os.path.exists(_pyx):
+                USE_CYTHON = True
+            else:
+                raise ValueError("Neither pyx nor cpp file found")
 
     ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
 
@@ -177,7 +187,8 @@ setup_kwargs = dict(
         'argh', 'pytest', 'scipy>=0.19.1', 'matplotlib', 'mpld3',
         'sym>=0.3.3', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7'
-    ]}
+    ]},
+    python_requires='>=3.5',
 )
 
 if __name__ == '__main__':

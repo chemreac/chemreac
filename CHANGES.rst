@@ -1,7 +1,27 @@
+v0.8.1
+======
+- Support for constraints (sundials>=0.3.2)
+
 v0.8.0
 ======
 - New AnyODE version (19)
 - New upstream pycvodes version (0.11.1)
+
+v0.7.13
+=======
+- Added support for constraints (sundials>=3.2.0)
+
+v0.7.12
+=======
+- Updated requirements
+
+v0.7.11
+=======
+- Back-ported features from v0.8.0
+
+v0.7.10
+=======
+- Specify (upper) version requirements
 
 v0.7.9
 ======
