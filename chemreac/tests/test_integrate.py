@@ -228,7 +228,7 @@ def test_integrators(log):
             'rtol': 1e-8,
             'method': 'bdf',
             'tout': tend-t0,
-        }
+        },
         'cvode5': {
             'atol': [1e-8, 1e-8],
             'rtol': 1e-8,
