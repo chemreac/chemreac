@@ -1,6 +1,6 @@
 cache:
   mount:
-    - /drone/sundials-3.1.2
+    - /drone/sundials-3.2.0
 
 build:
   image: bjodah/bjodahimg18dev:v1.3
@@ -8,14 +8,14 @@ build:
     - ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-6.0/bin/llvm-symbolizer
     - ASAN_OPTIONS=symbolize=1
     - WITH_OPENMP=1
-    - CPATH=/drone/sundials-3.1.2/include
-    - LIBRARY_PATH=/drone/sundials-3.1.2/lib
-    - LD_LIBRARY_PATH=/drone/sundials-3.1.2/lib
+    - CPATH=/drone/sundials-3.2.0/include
+    - LIBRARY_PATH=/drone/sundials-3.2.0/lib
+    - LD_LIBRARY_PATH=/drone/sundials-3.2.0/lib
     - PYCVODES_LAPACK=lapack,blas
     - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband
   commands:
     - git fetch -tq  # used by ``git describe``
-    - if [ ! -d /drone/sundials-3.1.2 ]; then .ci/get_sundials.sh 3.1.2 /drone/sundials-3.1.2 -DLAPACK_ENABLE:BOOL=ON -DSUNDIALS_INDEX_TYPE:STRING="int32_t"; fi
+    - if [ ! -d /drone/sundials-3.2.0 ]; then .ci/get_sundials.sh 3.2.0 /drone/sundials-3.2.0 -DLAPACK_ENABLE:BOOL=ON -DSUNDIALS_INDEX_SIZE=32; fi
     - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" ./scripts/ci.sh chemreac
     - python3 setup.py build_ext -i
     - ./scripts/run_tests.sh chemreac --cov chemreac --cov-report html
