@@ -1,3 +1,7 @@
+v0.7.13
+=======
+- Added support for constraints (sundials>=3.2.0)
+
 v0.7.12
 =======
 - Updated requirements
