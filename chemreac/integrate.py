@@ -55,6 +55,9 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
         kwargs['atol'] = kwargs['atol'].reshape((1,))
     kwargs['rtol'] = kwargs.pop('rtol', DEFAULTS['rtol'])
     kwargs['method'] = kwargs.pop('method', 'bdf')
+    if 'return_on_error' not in kwargs:
+        kwargs['return_on_error'] = True
+
     kwargs['linear_solver'] = {
         'default': 0, 'dense': 1, 'banded': 2, 'gmres': 10,
         'gmres_classic': 11, 'bicgstab': 20, 'tfqmr': 30}[

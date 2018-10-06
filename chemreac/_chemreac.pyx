@@ -204,8 +204,12 @@ cdef class PyReactionDiffusion:
 
         def __set__(self, vector[double] D):
             cdef size_t i
-            assert len(D) == self.n
-            self.thisptr.D = D
+            if len(D) == self.n:
+                self.thisptr.D = list(D)*self.N
+            elif len(D) == self.n*self.N:
+                self.thisptr.D = D
+            else:
+                raise ValueError("Incorrect length")
 
     property z_chg:
         def __get__(self):
@@ -388,9 +392,9 @@ cdef class PyReactionDiffusion:
 
     def get_last_info(self, *, success):
         info = self.last_integration_info
-        # info.update(self.last_integration_info_dbl)
-        # info.update(self.last_integration_info_vecdbl)
-        # info.update(self.last_integration_info_vecint)
+        info.update(self.last_integration_info_dbl)
+        info.update(self.last_integration_info_vecdbl)
+        info.update(self.last_integration_info_vecint)
         info['nfev'] = self.nfev
         info['njev'] = self.njev
         info['success'] = success
