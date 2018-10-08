@@ -1,0 +1,350 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Welcome to chemreac’s documentation! &mdash; chemreac 0.9.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="install.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="#" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="#">Docs</a> &raquo;</li>
+        
+      <li>Welcome to chemreac’s documentation!</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/index.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="welcome-to-chemreac-s-documentation">
+<h1>Welcome to chemreac’s documentation!<a class="headerlink" href="#welcome-to-chemreac-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p><code class="docutils literal notranslate"><span class="pre">chemreac</span></code> is an open-source Python library for modelling chemical kinetcs in either:</p>
+<ul class="simple">
+<li><dl class="first docutils">
+<dt>Homogeneous bulk solution (no concentration gradients)</dt>
+<dd><ul class="first last">
+<li>Kinetics governed by law of mass action</li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="first docutils">
+<dt>Non-homogeneous solution where concentration profile has either:</dt>
+<dd><ul class="first last">
+<li>planar symmetry</li>
+<li>cylindrical symmetry</li>
+<li>spherical symmetry</li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>For the non-homogeneous case the user may choose:</p>
+<ul class="simple">
+<li>reflective or interpolating boundary conditions</li>
+<li>number of stencil points (3, 5 or 7)</li>
+<li>an arbitrarily spaced grid</li>
+<li>to calculate the electric field from concentrations for advection (drift).</li>
+</ul>
+<p>Futhermore the user may choose to solve the problem for the logarithm of concentraion,
+time and/or space (variable transformations). The library also intends to provide first
+class support for photo-/radiation chemical contributions.</p>
+<p>The numerical evaluation is performed natively (the model is implemented in C++) and
+the integration can be performed using <a class="reference external" href="http://computation.llnl.gov/casc/sundials/main.html">Sundials</a> (CVode) at the C++ level or <a class="reference external" href="http://docs.scipy.org/doc/scipy/reference/generated/scipy.integrate.ode.html#scipy.integrate.ode">SciPy</a> at
+the python level.</p>
+<p>Currently the code is written with the following assumptions:</p>
+<ul class="simple">
+<li>isothermal conditions</li>
+<li>law of mass action kinetics</li>
+<li>low concentrations of charged species</li>
+</ul>
+<div class="section" id="the-advection-diffusion-reaction-model">
+<h2>The Advection/Diffusion/Reaction model<a class="headerlink" href="#the-advection-diffusion-reaction-model" title="Permalink to this headline">¶</a></h2>
+<p>The model is formulated as the Smoluchovski equation:</p>
+<div class="math notranslate nohighlight">
+\[\frac{\partial c_i}{\partial t} &amp;= D_i \nabla^2c_i - \mu_i\vec{E}(\vec{c}) \cdot \nabla c_i + \sum_l r_l S_{il}\]</div>
+<p>where <span class="math notranslate nohighlight">\(t\)</span> is time, <span class="math notranslate nohighlight">\(c_i\)</span> is the concentration of species <span class="math notranslate nohighlight">\(i\)</span>, <span class="math notranslate nohighlight">\(D_i\)</span> is the diffusion coefficient of the same species, <span class="math notranslate nohighlight">\(\mu_i\)</span> is the electric mobility, <span class="math notranslate nohighlight">\(\vec{E}\)</span> is the electric field, <span class="math notranslate nohighlight">\(S_{il}\)</span> is the net stoichiometric coefficient of species <span class="math notranslate nohighlight">\(i\)</span> in reaction <span class="math notranslate nohighlight">\(l\)</span> and <span class="math notranslate nohighlight">\(r_l\)</span> is the rate of reaction <span class="math notranslate nohighlight">\(l\)</span>, which for a mass-action type of rate law is given by:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}r_l = \begin{cases} \kappa_l\prod_k c_k^{R_{kl}} &amp;\mbox{if } \sum_k R_{kl} &gt; 0 \\
+0 &amp;\mbox{otherwise} \end{cases}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(\kappa_l\)</span> is the rate constant, <span class="math notranslate nohighlight">\(R_{kl}\)</span> is the stoichiometric coefficient of species <span class="math notranslate nohighlight">\(k\)</span> on the reactant side.</p>
+<p>The equation is discretized in one dimension (flat, cylindrical or spherical shells).</p>
+<p>Contents:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="install.html#building-from-source">Building from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="install.html#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="install.html#building-and-installing">Building and installing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="install.html#tests">Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="derivations.html">Derivations</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="derivations.html#law-of-mass-action">Law of mass action</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivations.html#diffusion-equation">Diffusion equation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivations.html#laplace-operator">Laplace operator</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivations.html#jacobian-elements">Jacobian elements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivations.html#boundary-conditions">Boundary conditions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="derivations.html#finite-difference-scheme">Finite difference scheme</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules Reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="core.html">chemreac.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrate.html">chemreac.integrate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">chemreac.chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="util/index.html">chemreac.util</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="util/analysis.html">chemreac.util.analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/banded.html">chemreac.util.banded</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/grid.html">chemreac.util.grid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/plotting.html">chemreac.util.plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/pyutil.html">chemreac.util.pyutil</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/stoich.html">chemreac.util.stoich</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/table.html">chemreac.util.table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="util/testing.html">chemreac.util.testing</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="examples/analytic_diffusion.html">Analytic diffusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/analytic_N_scaling.html">Analytic error scaling vs. number of bins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/aqueous_radiolysis.html">Aqueous radiolysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/auto_efield.html">Automatic electric field computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/const_surf_conc.html">Diffusion from constant concentration surface</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/decay.html">Two coupled decays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/equilibrium.html">Equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/four_species.html">Four species two reactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="examples/steady_state_approx.html">Steady state approximation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">Development</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dev.html#coding-standards">Coding standards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dev.html#documentation-standard">Documentation standard</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dev.html#unit-tests">Unit tests</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dev.html#continuous-integration">Continuous integration</a></li>
+<li class="toctree-l3"><a class="reference internal" href="dev.html#test-coverage">Test coverage</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="dev.html#environment">Environment</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="dev.html#example-of-setting-up-a-development-environment">Example of setting up a development environment</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></li>
+<li><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></li>
+<li><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></li>
+</ul>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="install.html" class="btn btn-neutral float-right" title="Installation" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.9.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

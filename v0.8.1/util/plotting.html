@@ -1,0 +1,672 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>chemreac.util.plotting &mdash; chemreac 0.9.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="chemreac.util.pyutil" href="pyutil.html" />
+    <link rel="prev" title="chemreac.util.grid" href="grid.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../derivations.html">Derivations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../modules.html">Modules Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="../core.html">chemreac.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../integrate.html">chemreac.integrate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../chemistry.html">chemreac.chemistry</a></li>
+<li class="toctree-l2 current"><a class="reference internal" href="index.html">chemreac.util</a><ul class="current">
+<li class="toctree-l3"><a class="reference internal" href="analysis.html">chemreac.util.analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="banded.html">chemreac.util.banded</a></li>
+<li class="toctree-l3"><a class="reference internal" href="grid.html">chemreac.util.grid</a></li>
+<li class="toctree-l3 current"><a class="current reference internal" href="#">chemreac.util.plotting</a></li>
+<li class="toctree-l3"><a class="reference internal" href="pyutil.html">chemreac.util.pyutil</a></li>
+<li class="toctree-l3"><a class="reference internal" href="stoich.html">chemreac.util.stoich</a></li>
+<li class="toctree-l3"><a class="reference internal" href="table.html">chemreac.util.table</a></li>
+<li class="toctree-l3"><a class="reference internal" href="testing.html">chemreac.util.testing</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="../modules.html">Modules Reference</a> &raquo;</li>
+        
+          <li><a href="index.html">chemreac.util</a> &raquo;</li>
+        
+      <li>chemreac.util.plotting</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/util/plotting.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-chemreac.util.plotting"></span><div class="section" id="chemreac-util-plotting">
+<h1>chemreac.util.plotting<a class="headerlink" href="#chemreac-util-plotting" title="Permalink to this headline">¶</a></h1>
+<p>This module collects convenience functions to create matplotlib plots
+of results.</p>
+<dl class="function">
+<dt id="chemreac.util.plotting.coloured_spy">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">coloured_spy</code><span class="sig-paren">(</span><em>A</em>, <em>cmap_name='coolwarm'</em>, <em>log=False</em>, <em>symmetric_colorbar=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#coloured_spy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.coloured_spy" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function for using matplotlib to
+generate a spy plot for inspecting e.g. a jacobian
+matrix or its LU decomposition.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>A: 2D array</strong></dt>
+<dd><p class="first last">Array to inspect, populated e.g. by jacobian callback.</p>
+</dd>
+<dt><strong>cmap_name: string (default: coolwarm)</strong></dt>
+<dd><p class="first last">name of matplotlib colormap to use, kwargs[“cmap”] overrides this.</p>
+</dd>
+<dt><strong>log: bool or int</strong></dt>
+<dd><p class="first last">when True: LogNorm/SymLogNorm is used,
+when integer: SymlogNorm(10**log). Note that “norm” in kwargs
+override this.</p>
+</dd>
+<dt><strong>symmetric_colorbar: bool or float</strong></dt>
+<dd><p class="first last">to make divergent colormaps pass through zero as intended.
+if float: max abolute value of colormap (linear)</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>Pair (tuple) of axes plotted to (spy, colorbar)</strong></dt>
+<dd></dd>
+<dt><strong>.. note:: colorbar does not play nicely with</strong></dt>
+<dd><p class="first last">SymLogNorm why a custom colorbar axes is drawn.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_C_vs_t_and_x">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_C_vs_t_and_x</code><span class="sig-paren">(</span><em>rd</em>, <em>tout</em>, <em>Cout</em>, <em>substance</em>, <em>ax=None</em>, <em>log10=False</em>, <em>**plot_kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_C_vs_t_and_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_C_vs_t_and_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots 3D surface of concentration as function of time and x for a
+selected substance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>rd: ReactionDiffusion</strong></dt>
+<dd></dd>
+<dt><strong>tout: 1D array of floats</strong></dt>
+<dd></dd>
+<dt><strong>Cout: concentration trajectories from solver</strong></dt>
+<dd></dd>
+<dt><strong>substance: int or string</strong></dt>
+<dd><p class="first last">index or name of substance</p>
+</dd>
+<dt><strong>ax: Axes instance</strong></dt>
+<dd></dd>
+<dt><strong>log10: bool</strong></dt>
+<dd><p class="first last">Use log logarithmic (base 10) axis</p>
+</dd>
+<dt><strong>**plot_kwargs:</strong></dt>
+<dd><p class="first last">passed onto plot_surface</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>Axes3D instance</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_C_vs_t_in_bin">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_C_vs_t_in_bin</code><span class="sig-paren">(</span><em>rd</em>, <em>tout</em>, <em>Cout</em>, <em>bi=0</em>, <em>ax=None</em>, <em>labels=None</em>, <em>xscale='log'</em>, <em>yscale='log'</em>, <em>substances=None</em>, <em>ttlfmt=None</em>, <em>legend_kwargs=None</em>, <em>ls=None</em>, <em>c=None</em>, <em>xlabel=None</em>, <em>ylabel=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_C_vs_t_in_bin"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_C_vs_t_in_bin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots bin local concentration as function of time for selected
+substances.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>rd: ReactionDiffusion</strong></dt>
+<dd></dd>
+<dt><strong>tout: 1D array of floats</strong></dt>
+<dd></dd>
+<dt><strong>Cout: concentration trajectories from solver</strong></dt>
+<dd></dd>
+<dt><strong>bi: bin index</strong></dt>
+<dd></dd>
+<dt><strong>ax: Axes instance</strong></dt>
+<dd></dd>
+<dt><strong>labels: sequence of strings</strong></dt>
+<dd></dd>
+<dt><strong>xscale: matplotlib scale choice (e.g. ‘log’, ‘symlog’)</strong></dt>
+<dd></dd>
+<dt><strong>yscale: matplotlib scale choice (e.g. ‘log’, ‘symlog’)</strong></dt>
+<dd></dd>
+<dt><strong>substances: sequence of indies or names of substances</strong></dt>
+<dd></dd>
+<dt><strong>ttlfmt: string formatted with bin boundaries (set to empty to suppress)</strong></dt>
+<dd></dd>
+<dt><strong>legend_kwargs: dict</strong></dt>
+<dd><p class="first last">kwargs passed to matplotlib legend function,
+(default: {‘loc’: None, ‘prop’: {‘size’: 12}}), set
+to False to suppress legend.</p>
+</dd>
+<dt><strong>ls: sequence of strings</strong></dt>
+<dd><p class="first last">linestyles</p>
+</dd>
+<dt><strong>c: sequence of strings</strong></dt>
+<dd><p class="first last">colors</p>
+</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>Axes instance</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_C_vs_x">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_C_vs_x</code><span class="sig-paren">(</span><em>rd</em>, <em>tout</em>, <em>Cout</em>, <em>substances</em>, <em>ti</em>, <em>ax=None</em>, <em>labels=None</em>, <em>xscale='log'</em>, <em>yscale='log'</em>, <em>basetitle='C(x)'</em>, <em>ls=None</em>, <em>c=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_C_vs_x"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_C_vs_x" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots concentration as function of x for selected
+substances at time index ‘ti’.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>rd: ReactionDiffusion</strong></dt>
+<dd></dd>
+<dt><strong>tout: 1D array of floats</strong></dt>
+<dd></dd>
+<dt><strong>Cout: concentration trajectories from solver</strong></dt>
+<dd></dd>
+<dt><strong>substances: sequence of indies or names of substances</strong></dt>
+<dd></dd>
+<dt><strong>ti: int</strong></dt>
+<dd><p class="first last">time index</p>
+</dd>
+<dt><strong>ax: Axes instance</strong></dt>
+<dd></dd>
+<dt><strong>labels: sequence of strings</strong></dt>
+<dd></dd>
+<dt><strong>xscale: matplotlib scale choice (e.g. ‘linear’, ‘log’, ‘symlog’)</strong></dt>
+<dd></dd>
+<dt><strong>yscale: matplotlib scale choice (e.g. ‘linear’, ‘log’, ‘symlog’)</strong></dt>
+<dd></dd>
+<dt><strong>basetitle: string</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>Axes instance</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_fields">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_fields</code><span class="sig-paren">(</span><em>rd</em>, <em>ax=None</em>, <em>indices=None</em>, <em>rho=None</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_fields"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_fields" title="Permalink to this definition">¶</a></dt>
+<dd><p>Convenience function to inspect fields in of
+ReactionDiffusion instance</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>rd: ReactionDiffusion</strong></dt>
+<dd></dd>
+<dt><strong>ax: Axes instance or dict</strong></dt>
+<dd><p class="first last">if ax is a dict it is used as keyword arguments passed to
+matplotlib.pyplot.axes (default: None)</p>
+</dd>
+<dt><strong>indices: sequence of integers</strong></dt>
+<dd><p class="first last">what field strengths sequences to plot</p>
+</dd>
+<dt><strong>rho: float (optional)</strong></dt>
+<dd><p class="first last">density, with consistent unit. If passed doserate
+will be plotted instead.</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_jacobian">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_jacobian</code><span class="sig-paren">(</span><em>rd</em>, <em>tout</em>, <em>yout</em>, <em>substances</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_jacobian"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_jacobian" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots time evolution of Jacobian values (useful when investigating
+numerical instabilities).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>rd: ReactionDiffusion</strong></dt>
+<dd><p class="first last">system at hand</p>
+</dd>
+<dt><strong>tout: array_like</strong></dt>
+<dd><p class="first last">output time from integration</p>
+</dd>
+<dt><strong>yout: array_like</strong></dt>
+<dd><p class="first last">output data from integration (differs from Cout for logy=True)</p>
+</dd>
+<dt><strong>substances: iterable of int or string</strong></dt>
+<dd><p class="first last">indices or names of substances to plot jacobian values for</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_per_reaction_contribution">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_per_reaction_contribution</code><span class="sig-paren">(</span><em>integr</em>, <em>substances</em>, <em>equilibria=None</em>, <em>field_yields=False</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_per_reaction_contribution"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_per_reaction_contribution" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots contributions to concentration derivatives of selected
+substances from individual reactions.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first docutils">
+<dt><strong>integr: Integration instance</strong></dt>
+<dd></dd>
+<dt><strong>substances: sequence of Substance instances</strong></dt>
+<dd></dd>
+<dt><strong>equilibria: set of tuples of reaction indices (optional)</strong></dt>
+<dd><p class="first last">When passed only net effect of equilibria reaction will be plotted</p>
+</dd>
+<dt><strong>field_yields: bool (default: False)</strong></dt>
+<dd><p class="first last">If <code class="docutils literal notranslate"><span class="pre">True</span></code> contributions from g_values times field will be shown</p>
+</dd>
+<dt><strong>**kwargs: kwargs passed on to _plot_analysis</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>list of matplotlib.axes.Axes instances</strong></dt>
+<dd></dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_solver_linear_error">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_solver_linear_error</code><span class="sig-paren">(</span><em>integration</em>, <em>Cref=0</em>, <em>ax=None</em>, <em>x=None</em>, <em>ti=slice(None</em>, <em>None</em>, <em>None)</em>, <em>bi=0</em>, <em>si=0</em>, <em>plot_kwargs=None</em>, <em>fill_between_kwargs=None</em>, <em>scale_err=1.0</em>, <em>fill=True</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_solver_linear_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_solver_linear_error" title="Permalink to this definition">¶</a></dt>
+<dd><table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>integration: chemreac.integrate.Integration</strong></dt>
+<dd><p class="first last">result from integration.</p>
+</dd>
+<dt><strong>Cref: array or float</strong></dt>
+<dd><p class="first last">analytic solution to compare with</p>
+</dd>
+<dt><strong>ax: Axes instance or dict</strong></dt>
+<dd><p class="first last">if ax is a dict it is used as key word arguments passed to
+matplotlib.pyplot.axes (default: None)</p>
+</dd>
+<dt><strong>x: array</strong></dt>
+<dd><p class="first last">(optional) x-values, when None it is deduced to be
+either t or x (when ti or bi are slices repecitvely)
+(default: None)</p>
+</dd>
+<dt><strong>ti: slice</strong></dt>
+<dd><p class="first last">time indices</p>
+</dd>
+<dt><strong>bi: slice</strong></dt>
+<dd><p class="first last">bin indices</p>
+</dd>
+<dt><strong>si: integer</strong></dt>
+<dd><p class="first last">specie index</p>
+</dd>
+<dt><strong>plot_kwargs: dict</strong></dt>
+<dd><p class="first last">keyword arguments passed to matplotlib.pyplot.plot (default: None)</p>
+</dd>
+<dt><strong>fill_between_kwargs: dict</strong></dt>
+<dd><p class="first last">keyword arguments passed to matplotlib.pyplot.fill_between
+(default: None)</p>
+</dd>
+<dt><strong>scale_err: float</strong></dt>
+<dd><p class="first last">value with which errors are scaled. (default: 1.0)</p>
+</dd>
+<dt><strong>fill: bool</strong></dt>
+<dd><p class="first last">whether or not to fill error span</p>
+</dd>
+<dt><strong>**kwargs</strong></dt>
+<dd><p class="first last">common keyword arguments of plot_kwargs and fill_between_kwargs,
+e.g. ‘color’, (default: None).</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#chemreac.util.plotting.plot_solver_linear_excess_error" title="chemreac.util.plotting.plot_solver_linear_excess_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_solver_linear_excess_error</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.plot_solver_linear_excess_error">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">plot_solver_linear_excess_error</code><span class="sig-paren">(</span><em>integration</em>, <em>Cref</em>, <em>ax=None</em>, <em>x=None</em>, <em>ti=slice(None</em>, <em>None</em>, <em>None)</em>, <em>bi=0</em>, <em>si=0</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#plot_solver_linear_excess_error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.plot_solver_linear_excess_error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the excess error commited by the intergrator, divided by the span
+of the tolerances (atol + rtol*|y_i|).</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>integration: chemreac.integrate.Integration</strong></dt>
+<dd><p class="first last">result from integration.</p>
+</dd>
+<dt><strong>Cref: array or float</strong></dt>
+<dd><p class="first last">analytic solution to compare with</p>
+</dd>
+<dt><strong>ax: Axes instance or dict</strong></dt>
+<dd><p class="first last">if ax is a dict it is used as **kwargs passed to
+matplotlib.pyplot.axes (default: None)</p>
+</dd>
+<dt><strong>x: array</strong></dt>
+<dd><p class="first last">(optional) x-values, when None it is deduced to be
+either t or x (when ti or bi are slices repecitvely)
+(default: None)</p>
+</dd>
+<dt><strong>ti: slice</strong></dt>
+<dd><p class="first last">time indices</p>
+</dd>
+<dt><strong>bi: slice</strong></dt>
+<dd><p class="first last">bin indices</p>
+</dd>
+<dt><strong>si: integer</strong></dt>
+<dd><p class="first last">specie index</p>
+</dd>
+<dt><strong>plot_kwargs: dict</strong></dt>
+<dd><p class="first last">keyword arguments passed to matplotlib.pyplot.plot (default: None)</p>
+</dd>
+<dt><strong>fill_between_kwargs: dict</strong></dt>
+<dd><p class="first last">keyword arguments passed to matplotlib.pyplot.fill_between
+(default: None)</p>
+</dd>
+<dt><strong>scale_err: float</strong></dt>
+<dd><p class="first last">value with which errors are scaled. (default: 1.0)</p>
+</dd>
+<dt><strong>fill: bool</strong></dt>
+<dd><p class="first last">whether or not to fill error span</p>
+</dd>
+<dt><strong>**kwargs:</strong></dt>
+<dd><p class="first last">common keyword arguments of plot_kwargs and fill_between_kwargs,
+e.g. ‘color’, (default: None).</p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition seealso">
+<p class="first admonition-title">See also</p>
+<p class="last"><a class="reference internal" href="#chemreac.util.plotting.plot_solver_linear_error" title="chemreac.util.plotting.plot_solver_linear_error"><code class="xref py py-obj docutils literal notranslate"><span class="pre">plot_solver_linear_error</span></code></a></p>
+</div>
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.util.plotting.save_and_or_show_plot">
+<code class="descclassname">chemreac.util.plotting.</code><code class="descname">save_and_or_show_plot</code><span class="sig-paren">(</span><em>show=None</em>, <em>savefig='None'</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/chemreac/util/plotting.html#save_and_or_show_plot"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.util.plotting.save_and_or_show_plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Save and/or show current matplotlib figure</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><dl class="first last docutils">
+<dt><strong>show: bool or None</strong></dt>
+<dd><p class="first last">Show plot, when None only show when savefig is not used
+default: None</p>
+</dd>
+<dt><strong>savefig: string</strong></dt>
+<dd><p class="first last">path to output file of figure. If extension is html, mpld3
+will be used to generate a d3 backed html output.</p>
+</dd>
+<dt><strong>**kwargs:</strong></dt>
+<dd><p class="first last">keyword arguments passed on to <code class="docutils literal notranslate"><span class="pre">matplotlib.pyplot.savefig</span></code></p>
+</dd>
+</dl>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="pyutil.html" class="btn btn-neutral float-right" title="chemreac.util.pyutil" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="grid.html" class="btn btn-neutral" title="chemreac.util.grid" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.9.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
