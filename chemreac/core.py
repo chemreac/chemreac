@@ -114,8 +114,8 @@ class ReactionDiffusionBase(object):
         if fields is None:
             # Each doserate_name gets its own field:
             fields = [[variables['density']*variables[
-                dname if dname=='doserate' else ('doserate_'+dname)
-                ]]* kwargs.get('N', 1) for dname in yields]
+                dname if dname == 'doserate' else ('doserate_'+dname)
+            ]] * kwargs.get('N', 1) for dname in yields]
             if fields == [[]]:
                 fields = None
 

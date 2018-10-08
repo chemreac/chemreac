@@ -986,7 +986,6 @@ def test_from_ReactionSystem__g_values__multiple_types():
     assert abs(rat['H'] - ref) < 1e-13
     assert RABG.parameter_keys == ('density', 'doserate_alpha', 'doserate_beta', 'doserate_gamma')
     assert RABG.argument_names == tuple('radiolytic_yield_%s' % k for k in 'alpha beta gamma'.split())
-    #assert rxn.param.unique_keys == ('ya', 'yb', 'yg')
 
     rs = RS([rxn], checks=())
     rd = ReactionDiffusion.from_ReactionSystem(rs, variables=params)
