@@ -113,7 +113,9 @@ class ReactionDiffusionBase(object):
 
         if fields is None:
             # Each doserate_name gets its own field:
-            fields = [[variables['density']*variables[dname]]*kwargs.get('N', 1) for dname in yields]
+            fields = [[variables['density']*variables[
+                dname if dname=='doserate' else ('doserate_'+dname)
+                ]]* kwargs.get('N', 1) for dname in yields]
             if fields == [[]]:
                 fields = None
 
@@ -140,7 +142,7 @@ class ReactionDiffusionBase(object):
         if kwargs.get('unit_registry', None) is None:
             assert all(is_unitless(arg) for arg in [fields, rate_coeffs, g_values] + (
                 [kwargs['D']] if 'D' in kwargs else []
-                ) + ([kwargs['mobility'] if 'mobility' in kwargs else []]))
+            ) + ([kwargs['mobility'] if 'mobility' in kwargs else []]))
             cb = ReactionDiffusion
         else:
             cb = ReactionDiffusion.nondimensionalisation

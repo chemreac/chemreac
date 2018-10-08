@@ -972,6 +972,35 @@ def test_from_ReactionSystem__g_values():
     assert np.allclose(rd.fields[0][0], 998*0.15)
 
 
+def test_from_ReactionSystem__g_values__multiple_types():
+    from chempy import Reaction, ReactionSystem as RS
+    from chempy.kinetics.rates import mk_Radiolytic
+    RABG = mk_Radiolytic('alpha', 'beta', 'gamma')
+    dens, yields_k, yields_v = .7, 'ya yb yg'.split(), [3, 5, 7]
+    rxn = Reaction({}, {'H': 2}, RABG(yields_k))
+    doserates = {'doserate_alpha': 11, 'doserate_beta': 13, 'doserate_gamma': 17}
+    yields = dict(zip(yields_k, yields_v))
+    params = dict(doserates, **yields, **{'density': dens})
+    ref = .7*2*(3*11 + 5*13 + 7*17)
+    rat = rxn.rate(params)
+    assert abs(rat['H'] - ref) < 1e-13
+    assert RABG.parameter_keys == ('density', 'doserate_alpha', 'doserate_beta', 'doserate_gamma')
+    assert RABG.argument_names == tuple('radiolytic_yield_%s' % k for k in 'alpha beta gamma'.split())
+    #assert rxn.param.unique_keys == ('ya', 'yb', 'yg')
+
+    rs = RS([rxn], checks=())
+    rd = ReactionDiffusion.from_ReactionSystem(rs, variables=params)
+    gv = rd.g_values
+    assert len(gv) == 3
+    assert np.allclose(sorted(gv), [[v*2] for v in sorted(yields_v)])
+    assert len(rd.fields) == 3
+    assert len(rd.fields[0]) == 1
+    assert np.allclose(sorted(np.array(rd.fields).squeeze()), sorted([drat*dens for drat in doserates.values()]))
+    fout = rd.alloc_fout()
+    rd.f(0, np.array([0.0]), fout)
+    assert np.allclose(fout, ref)
+
+
 def test_from_ReactionSystem__g_values__units():
     from chempy import ReactionSystem as RS
     from chempy.units import SI_base_registry, default_units as u
