@@ -980,7 +980,9 @@ def test_from_ReactionSystem__g_values__multiple_types():
     rxn = Reaction({}, {'H': 2}, RABG(yields_k))
     doserates = {'doserate_alpha': 11, 'doserate_beta': 13, 'doserate_gamma': 17}
     yields = dict(zip(yields_k, yields_v))
-    params = dict(doserates, **yields, **{'density': dens})
+    params = dict(doserates)
+    params.update(yields)
+    params['density'] = dens
     ref = .7*2*(3*11 + 5*13 + 7*17)
     rat = rxn.rate(params)
     assert abs(rat['H'] - ref) < 1e-13
