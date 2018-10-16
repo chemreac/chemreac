@@ -56,6 +56,7 @@ class ReactionDiffusionBase(object):
 
         """
         from chempy.kinetics.rates import RadiolyticBase
+        from chempy.units import is_unitless
         mass_action_rxns = []
         radiolytic_rxns = []
         for rxn in rsys.rxns:
@@ -112,7 +113,9 @@ class ReactionDiffusionBase(object):
 
         if fields is None:
             # Each doserate_name gets its own field:
-            fields = [[variables['density']*variables[dname]]*kwargs.get('N', 1) for dname in yields]
+            fields = [[variables['density']*variables[
+                dname if dname == 'doserate' else ('doserate_'+dname)
+            ]] * kwargs.get('N', 1) for dname in yields]
             if fields == [[]]:
                 fields = None
 
@@ -135,7 +138,11 @@ class ReactionDiffusionBase(object):
                  'substance_latex_names']):
             _kwargs_updater(key, attr)
 
+        rate_coeffs = [rxn.rate_expr().rate_coeff(variables) for rxn in mass_action_rxns]
         if kwargs.get('unit_registry', None) is None:
+            assert all(is_unitless(arg) for arg in [fields, rate_coeffs, g_values] + (
+                [kwargs['D']] if 'D' in kwargs else []
+            ) + ([kwargs['mobility'] if 'mobility' in kwargs else []]))
             cb = ReactionDiffusion
         else:
             cb = ReactionDiffusion.nondimensionalisation
@@ -145,7 +152,7 @@ class ReactionDiffusionBase(object):
                           in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
             [reduce(add, [[i]*rxn.prod.get(k, 0) for i, k
                           in enumerate(rsys.substances)]) for rxn in mass_action_rxns],
-            [rxn.rate_expr().rate_coeff(variables) for rxn in mass_action_rxns],
+            rate_coeffs,
             stoich_inact=[reduce(add, [
                 [i]*(0 if rxn.inact_reac is None else
                      rxn.inact_reac.get(k, 0)) for i, k in enumerate(rsys.substances)
