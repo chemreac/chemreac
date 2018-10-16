@@ -1,6 +1,10 @@
 {% set name = "chemreac" %}
-{% set version = "0.7.13.dev0+git" %}
 {% set variant = "openblas" %}
+{% set version = GIT_DESCRIBE_TAG | replace("v", "") %}
+{% set number = GIT_DESCRIBE_NUMBER | int %}
+{% if number > 0 %}
+   {% set version = version + ".post" + GIT_DESCRIBE_NUMBER %}
+{% endif %}
 
 package:
   name: {{ name|lower }}
@@ -26,8 +30,6 @@ requirements:
     - sundials
     - mako
     - quantities >=0.12.1
-    - pycompilation
-    - pycodeexport >=0.1.2
     - block_diag_ilu >=0.3.9,<0.4.0
     - finitediff >=0.6.2
     - pycvodes >=0.10.12,<0.11.0
@@ -42,8 +44,6 @@ requirements:
     - sundials
     - mako
     - quantities >=0.12.1
-    - pycompilation
-    - pycodeexport >=0.1.2
     - block_diag_ilu >=0.3.9,<0.4.0
     - finitediff >=0.6.2
     - pycvodes >=0.10.12,<0.11.0
