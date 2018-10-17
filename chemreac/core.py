@@ -17,7 +17,6 @@ import os
 
 import numpy as np
 
-from .chemistry import mk_sn_dict_from_names, ReactionSystem
 from .util.pyutil import monotonic
 from .units import get_derived_unit, to_unitless, linspace
 from .constants import get_unitless_constant
@@ -30,12 +29,34 @@ Geom_names = {'f': 'Flat', 'c': 'Cylindrical', 's': 'Spherical'}
 class ReactionDiffusionBase(object):
 
     def to_ReactionSystem(self, substance_names=None):
+        from chempy import Reaction
+        from chempy.kinetics.rates import mk_Radiolytic
+        from .chemistry import mk_sn_dict_from_names, ReactionSystem
         substance_names = substance_names or self.substance_names
         rxns = []
         for ri in range(self.nr):
             rxn = self.to_Reaction(ri, substance_names)
             rxns.append(rxn)
         kw = {}
+        if len(self.fields) == 1:
+            doserate_names = ['doserate']
+        elif len(self.fields) > 1:
+            doserate_names = ['doserate%d' % i for i in range(len(self.fields))]
+
+        for drnam, gvals, par in zip(doserate_names, self.g_values, self.g_value_parents):
+            reac = {} if par == -1 else {substance_names[par]: 1}
+            prod = {}
+            mxabs = np.max(np.abs(gvals))
+            for k, v in zip(substance_names, gvals):
+                if v == 0:
+                    continue
+                elif v < 0:
+                    reac[k] = -v/mxabs
+                else:
+                    prod[k] = v/mxabs
+            Rad = mk_Radiolytic(drnam)
+            rxns.append(Reaction(reac, prod, Rad(mxabs), checks=()))
+
         if self.substance_latex_names:
             kw['latex_name'] = self.substance_latex_names
         return ReactionSystem(rxns, mk_sn_dict_from_names(substance_names, **kw))
@@ -51,7 +72,7 @@ class ReactionDiffusionBase(object):
         variables : dict
         fields: optional
         unit_registry : dict, optional
-        \*\*kwargs :
+        \\*\\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """

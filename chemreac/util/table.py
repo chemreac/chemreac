@@ -25,7 +25,7 @@ def radyields2pdf_table(rd, output_dir=None, save=True, unit_registry=None,
     unit_registry: dict
     siunitx: bool
     fmtstr: str
-    \*\*kwargs:
+    \\*\\*kwargs:
         extends the table template dictionary
     """
     line_term = r' \\'
