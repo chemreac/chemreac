@@ -42,6 +42,10 @@ class ReactionDiffusionBase(object):
             doserate_names = ['doserate']
         elif len(self.fields) > 1:
             doserate_names = ['doserate%d' % i for i in range(len(self.fields))]
+        else:
+            doserate_names = []
+            if len(self.g_values) > 0 or len(self.g_value_parents) > 0:
+                raise ValueError("Found g_values but no fields?")
 
         for drnam, gvals, par in zip(doserate_names, self.g_values, self.g_value_parents):
             reac = {} if par == -1 else {substance_names[par]: 1}
