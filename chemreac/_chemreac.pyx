@@ -204,8 +204,12 @@ cdef class PyReactionDiffusion:
 
         def __set__(self, vector[double] D):
             cdef size_t i
-            assert len(D) == self.n
-            self.thisptr.D = D
+            if len(D) == self.n:
+                self.thisptr.D = list(D)*self.N
+            elif len(D) == self.n*self.N:
+                self.thisptr.D = D
+            else:
+                raise ValueError("Incorrect length")
 
     property z_chg:
         def __get__(self):
