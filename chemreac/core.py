@@ -81,7 +81,7 @@ class ReactionDiffusionBase(object):
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """
-        if fields is not None:
+        if fields is not None and variables is not None:
             for k in variables:
                 if k.startswith('doserate') or k == 'density':
                     warnings.warn("value for %s in variables in from_ReactionSystem possibly overriden by field" % k)
