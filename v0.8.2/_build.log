@@ -1,0 +1,2 @@
+python3 examples/examples/analytic_diffusion.py --plot --nstencil 3 --nspecies 3 --geom f --savefig _generated/analytic_diffusion.png
+generate.mk:13: recipe for target '_generated/analytic_diffusion.png' failed

@@ -1,0 +1,346 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Installation &mdash; chemreac 0.9.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Derivations" href="derivations.html" />
+    <link rel="prev" title="Welcome to chemreac’s documentation!" href="index.html" /> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Installation</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#building-from-source">Building from source</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#prerequisites">Prerequisites</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#building-and-installing">Building and installing</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#tests">Tests</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="modules.html">Modules Reference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Installation</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/install.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="installation">
+<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this headline">¶</a></h1>
+<p>The easiest way to install <code class="docutils literal notranslate"><span class="pre">chemreac</span></code> (on linux) is to use
+<a class="reference external" href="http://docs.continuum.io/anaconda/index.html">conda</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ conda install -c chemreac chemreac pytest
+</pre></div>
+</div>
+<p>and you’re done! To check if <code class="docutils literal notranslate"><span class="pre">chemreac</span></code> is installed correctly you may run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pytest --pyargs chemreac
+</pre></div>
+</div>
+<p>which should run the test suite (all tests should pass or xfail).
+If you are using a special platform with non-standard math libraries you
+may need to compile your own pacakges. The “recipes” for the conda packages
+are kept <a class="reference external" href="https://github.com/chemreac/chemreac_anaconda/">here</a>.</p>
+<p>If you are not using the conda package manager you can still install
+<code class="docutils literal notranslate"><span class="pre">chemreac</span></code> from source. You will find the instructions for doing so below.</p>
+<div class="section" id="building-from-source">
+<h2>Building from source<a class="headerlink" href="#building-from-source" title="Permalink to this headline">¶</a></h2>
+<p>Below you will find instructions for installation by building <code class="docutils literal notranslate"><span class="pre">chemreac</span></code> from source.
+You may also look in <code class="docutils literal notranslate"><span class="pre">scripts/</span></code> folder for automated install scripts used
+on the continuous integration servers.</p>
+<div class="section" id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h3>
+<p>Version numbers of dependencies indicate what has been tested:</p>
+<ul class="simple">
+<li>C++ compiler with C++11 support (e.g. <a class="reference external" href="https://gcc.gnu.org/">GCC</a> &gt;= 4.8)</li>
+<li>LAPACK (provided by e.g. <a class="reference external" href="http://www.openblas.net/">OpenBLAS</a>)</li>
+<li><a class="reference external" href="http://computation.llnl.gov/casc/sundials/main.html">Sundials</a> 2.6.2</li>
+<li>Python (2.7 or &gt;=3.4)</li>
+</ul>
+<p>In addition to the standard library provided by Python, a number of python
+packages are required (see <a class="reference external" href="./setup.py">setup.py</a>), they are found on <a class="reference external" href="https://pypi.python.org/pypi">PyPI</a> and are automatically installed when
+using <code class="docutils literal notranslate"><span class="pre">pip</span></code>.</p>
+<p>For rendering the documentation you also need:</p>
+<ul class="simple">
+<li><a class="reference external" href="http://sphinx-doc.org/">Sphinx</a></li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/numpydoc">numpydoc</a></li>
+<li><a class="reference external" href="https://pypi.python.org/pypi/sphinx_rtd_theme">sphinx_rtd_theme</a></li>
+</ul>
+<p>to run all the tests you also need these tools:</p>
+<ul class="simple">
+<li>valgrind</li>
+<li>graphviz</li>
+<li>dot2tex</li>
+<li>pdflatex</li>
+</ul>
+</div>
+<div class="section" id="building-and-installing">
+<h3>Building and installing<a class="headerlink" href="#building-and-installing" title="Permalink to this headline">¶</a></h3>
+<p>Once non-python prerequisites are in installed, you may procede e.g. as:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ git clone https://github.com/chemreac/chemreac.git
+$ cd chemreac
+$ pip install --user -e .[all]
+$ ./scripts/run_tests.sh
+</pre></div>
+</div>
+<p>the above procedure works on Ubuntu 14.04 for example.</p>
+<p>To specify an alternative LAPACK lib, set the environment variable LLAPACK, e.g.:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ LLAPACK=openblas python setup.py build_ext --inplace
+</pre></div>
+</div>
+<p>The following environment variables are also supported by
+<code class="docutils literal notranslate"><span class="pre">setup.py</span></code> (defaults to “0”, enable by setting them to “1”):</p>
+<table border="1" class="docutils">
+<colgroup>
+<col width="42%" />
+<col width="7%" />
+<col width="51%" />
+</colgroup>
+<thead valign="bottom">
+<tr class="row-odd"><th class="head">Environament variable</th>
+<th class="head">Default</th>
+<th class="head">Action</th>
+</tr>
+</thead>
+<tbody valign="top">
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">WITH_OPENMP</span></code></td>
+<td>0</td>
+<td>Enable parallell evaluation of rhs and jac.</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">WITH_BLOCK_DIAG_ILU_DGETRF</span></code></td>
+<td>0</td>
+<td>Use unblocked version of dgetrf instead of LAPACK</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">WITH_BLOCK_DIAG_ILU_OPENMP</span></code></td>
+<td>0</td>
+<td>Evaluate LU decomposition of blocks in parallel</td>
+</tr>
+<tr class="row-odd"><td><code class="docutils literal notranslate"><span class="pre">WITH_DATA_DUMPING</span></code></td>
+<td>0</td>
+<td>For debugging purposes only</td>
+</tr>
+<tr class="row-even"><td><code class="docutils literal notranslate"><span class="pre">WITH_DEBUG</span></code></td>
+<td>0</td>
+<td>For debugging purposes only</td>
+</tr>
+</tbody>
+</table>
+<p>Enabling the first three is known to provide significant speed up for some scenarios (performance is
+system dependent, hence recommendations are not possible to give without benchmarking).</p>
+</div>
+</div>
+<div class="section" id="tests">
+<h2>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h2>
+<p>If you have <code class="docutils literal notranslate"><span class="pre">py.test</span></code> installed you may run the test suite on the
+installed package:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ py.test --pyargs chemreac
+</pre></div>
+</div>
+<p>All tests should pass (or xfail). If they do not, please <a class="reference external" href="https://github.com/chemreac/chemreac/issues">file an
+issue</a>.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="derivations.html" class="btn btn-neutral float-right" title="Derivations" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="Welcome to chemreac’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'0.9.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

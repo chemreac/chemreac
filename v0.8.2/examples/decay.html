@@ -1,0 +1,274 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Two coupled decays &mdash; chemreac 0.9.0.dev0+git documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Equilibrium" href="equilibrium.html" />
+    <link rel="prev" title="Diffusion from constant concentration surface" href="const_surf_conc.html" /> 
+
+  
+  <script src="../_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search">
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.0.dev0+git
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../derivations.html">Derivations</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../modules.html">Modules Reference</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">Examples</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="analytic_diffusion.html">Analytic diffusion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="analytic_N_scaling.html">Analytic error scaling vs. number of bins</a></li>
+<li class="toctree-l2"><a class="reference internal" href="aqueous_radiolysis.html">Aqueous radiolysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="auto_efield.html">Automatic electric field computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="const_surf_conc.html">Diffusion from constant concentration surface</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">Two coupled decays</a></li>
+<li class="toctree-l2"><a class="reference internal" href="equilibrium.html">Equilibrium</a></li>
+<li class="toctree-l2"><a class="reference internal" href="four_species.html">Four species two reactions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="steady_state_approx.html">Steady state approximation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="index.html">Examples</a> &raquo;</li>
+        
+      <li>Two coupled decays</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/examples/decay.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-decay"></span><div class="section" id="two-coupled-decays">
+<h1>Two coupled decays<a class="headerlink" href="#two-coupled-decays" title="Permalink to this headline">¶</a></h1>
+<p><a class="reference download internal" href="../_downloads/decay.py" download=""><code class="xref download docutils literal notranslate"><span class="pre">examples/decay.py</span></code></a> demonstrates accuracy
+by comparison with analytic solution for a simple system
+of two coupled decays</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python decay.py --help
+</pre></div>
+</div>
+<p>Here is an example generated by:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python decay.py --plot --savefig decay.png
+</pre></div>
+</div>
+<img alt="../_images/decay.png" src="../_images/decay.png" />
+<p>Motivation for sigmoid damped exp(); vary tend: 5, 700, 1700.
+Never mind 700 not being correctly represented, the problem
+is 1700 completely ruining the integration (NaN’s due to overflow).</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python decay.py --plot --savefig decay_long.png --rates 1.0 --logy --logt    --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024 --tend 1700
+</pre></div>
+</div>
+<img alt="../_images/decay_long.png" src="../_images/decay_long.png" />
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ python decay.py --plot --savefig decay_long_damp.png --rates 1.0 --logy    --logt --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024    --tend 1700 --sigm-damp
+</pre></div>
+</div>
+<img alt="../_images/decay_long_damp.png" src="../_images/decay_long_damp.png" />
+<dl class="function">
+<dt id="decay.get_Cref">
+<code class="descclassname">decay.</code><code class="descname">get_Cref</code><span class="sig-paren">(</span><em>k</em>, <em>y0</em>, <em>tout</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/decay.html#get_Cref"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#decay.get_Cref" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="decay.integrate_rd">
+<code class="descclassname">decay.</code><code class="descname">integrate_rd</code><span class="sig-paren">(</span><em>tend=2.0</em>, <em>A0=1.0</em>, <em>nt=67</em>, <em>t0=0.0</em>, <em>rates='3.40715</em>, <em>4.0'</em>, <em>logy=False</em>, <em>logt=False</em>, <em>plot=False</em>, <em>savefig='None'</em>, <em>method='bdf'</em>, <em>atol='1e-7</em>, <em>1e-6</em>, <em>1e-5'</em>, <em>rtol='1e-6'</em>, <em>sigm_damp=False</em>, <em>num_jac=False</em>, <em>scale_err=1.0</em>, <em>small='None'</em>, <em>use_log2=False</em>, <em>plotlogy=False</em>, <em>plotlogt=False</em>, <em>verbose=False</em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/decay.html#integrate_rd"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#decay.integrate_rd" title="Permalink to this definition">¶</a></dt>
+<dd><p>Analytic solution through Bateman equation =&gt;
+ensure <span class="math notranslate nohighlight">\(|k_i - k_j| \gg eps\)</span></p>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="equilibrium.html" class="btn btn-neutral float-right" title="Equilibrium" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="const_surf_conc.html" class="btn btn-neutral" title="Diffusion from constant concentration surface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren.
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'../',
+            VERSION:'0.9.0.dev0+git',
+            LANGUAGE:'None',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true,
+            SOURCELINK_SUFFIX: '.txt'
+        };
+    </script>
+      <script type="text/javascript" src="../_static/jquery.js"></script>
+      <script type="text/javascript" src="../_static/underscore.js"></script>
+      <script type="text/javascript" src="../_static/doctools.js"></script>
+      <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+  
+
+  <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
