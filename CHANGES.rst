@@ -1,3 +1,7 @@
+v0.8.2
+======
+- Fixes to ReactionDiffusion.from_ReactionSystem
+
 v0.8.1
 ======
 - Support for constraints (sundials>=0.3.2)
