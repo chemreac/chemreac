@@ -14,6 +14,7 @@ import inspect
 from itertools import chain
 from operator import add
 import os
+import warnings
 
 import numpy as np
 
@@ -80,6 +81,10 @@ class ReactionDiffusionBase(object):
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """
+        if fields is not None and variables is not None:
+            for k in variables:
+                if k.startswith('doserate') or k == 'density':
+                    warnings.warn("value for %s in variables in from_ReactionSystem possibly overriden by field" % k)
         from chempy.kinetics.rates import RadiolyticBase
         from chempy.units import is_unitless
         mass_action_rxns = []
