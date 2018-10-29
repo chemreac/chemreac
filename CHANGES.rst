@@ -1,3 +1,7 @@
+v0.8.3
+======
+- Warn if fields given & doserate/density in vars
+
 v0.8.2
 ======
 - Fixes to ReactionDiffusion.from_ReactionSystem
