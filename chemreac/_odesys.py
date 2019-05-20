@@ -79,7 +79,7 @@ class ODESys(_ODESys):
         if integrator != 'cvode':
             raise NotImplementedError("chained_parameter_variation requires cvode for now")
         drate = uniform(varied_params['doserate'])
-        time_cpu = time.clock()
+        time_cpu = time.process_time()
         time_wall = time.time()
         tout, yout = cvode_predefined_durations_fields(
             self.rd, _dedim([y0[k] for k in self.names]),
@@ -91,7 +91,7 @@ class ODESys(_ODESys):
             nfev=self.rd.nfev,
             njev=self.rd.njev,
             time_wall=time.time() - time_wall,
-            time_cpu=time.clock() - time_cpu,
+            time_cpu=time.process_time() - time_cpu,
             success=True,
             integrator=[integrator],
             t0_set=False,

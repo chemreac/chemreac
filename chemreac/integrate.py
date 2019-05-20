@@ -61,7 +61,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
     # Run the integration
     rd.zero_counters()
     time_wall = time.time()
-    time_cpu = time.clock()
+    time_cpu = time.process_time()
     try:
         if dense_output:
             if not len(tout) == 2:
@@ -81,7 +81,7 @@ def integrate_cvode(rd, y0, tout, dense_output=None, **kwargs):
     else:
         success = True
     time_wall = time.time() - time_wall
-    time_cpu = time.clock() - time_cpu
+    time_cpu = time.process_time() - time_cpu
 
     kwargs.update({
         'nfev': rd.nfev,
@@ -113,13 +113,13 @@ def _integrate_rk4(rd, y0, tout, **kwargs):
     """
     from ._chemreac import rk4
     time_wall = time.time()
-    time_cpu = time.clock()
+    time_cpu = time.process_time()
     yout, Dyout = rk4(rd, y0, tout)
     info = {
         'nfev': 4*(tout.size-1),
         'njev': 0,
         'time_wall': time.time() - time_wall,
-        'time_cpu': time.clock() - time_cpu,
+        'time_cpu': time.process_time() - time_cpu,
         'success': True,
         'integrator': ['rk4'],
         'nsteps': -1,
@@ -154,7 +154,7 @@ def _integrate_cb(callbacks, integrator, rd, y0, tout, linear_solver='dense',
             dfdx_out[:] = 0
     new_kwargs['check_indexing'] = False
     time_wall = time.time()
-    time_cpu = time.clock()
+    time_cpu = time.process_time()
     if dense_output:
         xout, yout, info_ = callbacks[0](rd.f, jac, **new_kwargs)
     else:
@@ -162,7 +162,7 @@ def _integrate_cb(callbacks, integrator, rd, y0, tout, linear_solver='dense',
         yout, info_ = callbacks[1](rd.f, jac, **new_kwargs)
     info.update({
         'time_wall': time.time() - time_wall,
-        'time_cpu': time.clock() - time_cpu,
+        'time_cpu': time.process_time() - time_cpu,
         'success': True,
         'integrator': [integrator],
     })
@@ -295,7 +295,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
         dense_output = (len(tout) == 2)
 
     time_wall = time.time()
-    time_cpu = time.clock()
+    time_cpu = time.process_time()
     if dense_output:
         import warnings
         if not len(tout) == 2:
@@ -320,7 +320,7 @@ def integrate_scipy(rd, y0, tout, linear_solver='default',
             yout[i, :] = runner.y
 
     time_wall = time.time() - time_wall
-    time_cpu = time.clock() - time_cpu
+    time_cpu = time.process_time() - time_cpu
 
     info = new_kwargs.copy()
     info.update({
