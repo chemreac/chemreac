@@ -26,26 +26,26 @@ pipeline:
       - python3 -m pip install --user --upgrade numpy
       - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff block_diag_ilu
 
-  test-dbg-gcc-8-sund-4.1.0:
+  test-dbg-gcc-8-sund-3.2.1:
     image: bjodah/bjodahimg18:v2.1
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
       - CC=gcc-8
       - CXX=g++-8
-      - SUNDBASE=/opt/sundials-4.1.0-klu-lapack
+      - SUNDBASE=/opt/sundials-3.2.1-klu-lapack
       - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" 
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
 
-  test-rel-gcc-7-sund-3.2.1:
+  test-rel-gcc-7-sund-2.7.0:
     image: bjodah/bjodahimg18:v2.1
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
       - CC=gcc-7
       - CXX=g++-7
-      - SUNDBASE=/opt/sundials-3.2.1-klu-lapack
+      - SUNDBASE=/opt/sundials-2.7.0-klu-lapack
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh"
 
