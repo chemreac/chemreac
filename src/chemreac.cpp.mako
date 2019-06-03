@@ -1,4 +1,4 @@
-// ${'-{0}- eval: (read-only-mode) -{0}-'.format('*')}
+// ${'-{0}- eval: ({1}) -{0}-'.format('*', 'read-only-mode')}
 // ${__import__('codecs').encode('Guvf svyr jnf trarengrq, qb abg rqvg', 'rot_13')}
 <%doc> This is a source file template for use with the Python rendering engine "mako" </%doc>
 #include <algorithm> // std::count
