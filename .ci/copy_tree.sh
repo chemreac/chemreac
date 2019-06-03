@@ -3,7 +3,7 @@ if [ "$#" -ne 2 ]; then
     exit 1
 fi
 mkdir -p "$1"
-cp -ra external scripts chemreac tests-native examples *.* .ci "$1"
+git archive HEAD | tar x -C "$1"
 cp -ra ci-cache/pyusrb /opt
 export PYTHONUSERBASE=/opt/pyusrb
 
