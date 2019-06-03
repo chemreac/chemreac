@@ -23,6 +23,7 @@ pipeline:
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
+      - python3 -m pip install --user --upgrade numpy
       - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff block_diag_ilu
 
   test-dbg-gcc-8-sund-4.1.0:
