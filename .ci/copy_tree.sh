@@ -12,6 +12,6 @@ export CPATH=$SUNDBASE/include:$CPATH
 export LIBRARY_PATH=$SUNDBASE/lib
 export LD_LIBRARY_PATH=$SUNDBASE/lib
 export CMAKE_PREFIX_PATH=$SUNDBASE:$CMAKE_PREFIX_PATH
-python3 -m pip install pycvodes
+python3 -m pip install "pycvodes<0.11.0"
 cd $1
 ${PYTHON:-python3} -c "import pycvodes"
