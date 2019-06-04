@@ -10,7 +10,7 @@ pipeline:
     ttl: 90  # liftetime in days
 
   install-reqs:
-    image: bjodah/bjodahimg18:v2.1
+    image: bjodah/bjodahimg18:v2.2
     environment:
       - PYCVODES_LAPACK=lapack,blas
       - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
@@ -23,11 +23,10 @@ pipeline:
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --upgrade numpy
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu<0.4.0"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.3.10,<0.4.0"
 
   test-dbg-gcc-8-sund-3.2.1:
-    image: bjodah/bjodahimg18:v2.1
+    image: bjodah/bjodahimg18:v2.2
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
@@ -39,7 +38,7 @@ pipeline:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
 
   test-rel-gcc-7-sund-2.7.0:
-    image: bjodah/bjodahimg18:v2.1
+    image: bjodah/bjodahimg18:v2.2
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
