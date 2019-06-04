@@ -14,4 +14,6 @@ export LD_LIBRARY_PATH=$SUNDBASE/lib
 export CMAKE_PREFIX_PATH=$SUNDBASE:$CMAKE_PREFIX_PATH
 python3 -m pip install --user "pycvodes<0.11.0"
 cd $1
-${PYTHON:-python3} -c "import pycvodes" || ( >&2 echo "failed to install pycvodes"; exit 1 )
+${PYTHON:-python3} -c "import pycvodes as pcv; print(pcv.__version__)" || ( >&2 echo "failed to install pycvodes"; exit 1 )
+${PYTHON:-python3} -c "import block_diag_ilu as bdi; print(bdi.__version__)" || ( >&2 echo "failed to install block_diag_ilu"; exit 1 )
+
