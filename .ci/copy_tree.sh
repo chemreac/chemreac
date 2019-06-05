@@ -4,6 +4,7 @@ if [ "$#" -ne 2 ]; then
 fi
 mkdir -p "$1"
 git archive HEAD | tar x -C "$1"
+cp -ra external/ "$1"
 cp -ra ci_cache/pyusrb /opt
 export PYTHONUSERBASE=/opt/pyusrb
 
