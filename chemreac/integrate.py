@@ -557,7 +557,7 @@ def run(*args, **kwargs):
     if environ_kwargs:
         environ_kwargs = eval(environ_kwargs)
         if not isinstance(environ_kwargs, dict):
-            fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}"
-            raise TypeError(fmtstr.format(environ_kwargs))
+            fmtstr = "CHEMREAC_INTEGRATION_KWARGS not evaluated to a dict: {}, got: {} ({})"
+            raise TypeError(fmtstr.format(environ_kwargs, environ_kwargs, type(environ_kwargs)))
         kwargs.update(environ_kwargs)
     return Integration(*args, **kwargs)
