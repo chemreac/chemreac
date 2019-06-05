@@ -1,9 +1,3 @@
-clone:
-  depth: 2
-  recursive: true
-  submodule_override:
-    external/anyode: git://github.com/bjodah/anyode.git
-
 pipeline:
   restore-cache:
     image: drillster/drone-volume-cache
@@ -32,6 +26,7 @@ pipeline:
       - mkdir -p $PYTHONUSERBASE
       - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.0" "pyodeint>=0.10.0" "pygslodeiv2>=0.9.0" "batemaneq" "pyodesys>=0.12.0"
       - python3 -c "import block_diag_ilu"
+      - ls external/anyode
 
   test-dbg-gcc-8-sund-4.1.0:
     image: bjodah/bjodahimg18:v2.2

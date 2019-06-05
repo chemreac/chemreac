@@ -1,5 +1,4 @@
 {% set name = "chemreac" %}
-{% set variant = "openblas" %}
 {% set version = GIT_DESCRIBE_TAG | replace("v", "") %}
 {% set number = GIT_DESCRIBE_NUMBER | int %}
 {% if number > 0 %}
@@ -14,15 +13,14 @@ source:
   git_url: ../
 
 build:
-  number: 200
-  features:
-    - blas_{{ variant }}  # [not win]
+  number: 0
 
 requirements:
   build:
-    - toolchain
-    - blas 1.1 {{ variant }}  # [not win]
-    - openblas 0.2.20*  # [not win]
+    - {{ compiler('cxx') }}
+  host:
+    - libblas
+    - liblapack
     - python
     - setuptools
     - pip
@@ -33,16 +31,11 @@ requirements:
     - block_diag_ilu >=0.4.0
     - finitediff
     - pycvodes >=0.11.9
-    - numpy 1.11.*
+    - numpy
   run:
-    - blas 1.1 {{ variant }}  # [not win]
-    - openblas 0.2.20*  # [not win]
     - python
-    - cython
-    - numpy >=1.11
+    - {{ pin_compatible('numpy') }}
     - scipy
-    - sundials
-    - mako
     - quantities >=0.12.1
     - block_diag_ilu >=0.4.0
     - finitediff
