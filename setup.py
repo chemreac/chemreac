@@ -65,9 +65,19 @@ setup_requires = _common_requires + ['mako>=1.0']
 install_requires = _common_requires + ['chempy>=0.6.8,<0.7.0', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
-USE_CYTHON = None
+_cpp = _path_under_setup(pkg_name, '_%s.cpp' % pkg_name)
+_pyx = _path_under_setup(pkg_name, '_%s.pyx' % pkg_name)
+if os.path.exists(_cpp):
+    if os.path.exists(_pyx) and os.path.getmtime(_pyx) - 1e-6 >= os.path.getmtime(_cpp):
+        USE_CYTHON = True
+    else:
+        USE_CYTHON = False
+else:
+    if os.path.exists(_pyx):
+        USE_CYTHON = True
+    else:
+        raise ValueError("Neither pyx nor cpp file found")
 
-# Cythonize .pyx file if it exists (not in source distribution)
 ext_modules = []
 
 if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
@@ -93,29 +103,15 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         else:
             open(rendered_path, 'wt').write(rendered)
 
-    try:
-        from Cython.Build import cythonize
-    except Exception:
-        USE_CYTHON = False
-    else:
-        _cpp = _path_under_setup(pkg_name, '_%s.cpp' % pkg_name)
-        _pyx = _path_under_setup(pkg_name, '_%s.pyx' % pkg_name)
-        if os.path.exists(_cpp):
-            if os.path.exists(_pyx) and os.path.getmtime(_pyx) - 1e-6 >= os.path.getmtime(_cpp):
-                USE_CYTHON = True
-            else:
-                USE_CYTHON = False
-        else:
-            if os.path.exists(_pyx):
-                USE_CYTHON = True
-            else:
-                raise ValueError("Neither pyx nor cpp file found")
-
-    ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
+    sources = [_pyx if USE_CYTHON else _cpp]
+    ext_modules.append(Extension('{0}._{0}'.format(pkg_name), sources))
 
     if USE_CYTHON:
+        from Cython.Build import cythonize
         ext_modules = cythonize(ext_modules, include_path=[
-            'chemreac/include', pc.get_include(), os.path.join('external', 'anyode', 'cython_def')])
+            package_include,
+            os.path.join('external', 'anyode', 'cython_def')
+        ])
     ext_modules[0].include_dirs += [
         np.get_include(), fd.get_include(), bdi.get_include(),
         pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
