@@ -68,7 +68,7 @@ public:
     vector<Real_t> m_upper_bounds;
     vector<Real_t> m_lower_bounds;
     const Real_t ilu_limit;
-    Real_t m_get_dx_max_factor {0.0};
+//    Real_t m_get_dx_max_factor {0.0};
     const int n_jac_diags;
     const bool use_log2;
     const bool clip_to_pos;
@@ -131,8 +131,8 @@ public:
     int get_ny() const override;
     int get_mlower() const override;
     int get_mupper() const override;
-    Real_t get_dx_max(Real_t, const Real_t * const) override;
-    Real_t get_dx0(Real_t x, const Real_t * const y) override;
+    // Real_t get_dx_max(Real_t, const Real_t * const) override;
+    // Real_t get_dx0(Real_t x, const Real_t * const y) override;
 
     AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const ANYODE_RESTRICT) override;
     // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;
