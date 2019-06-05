@@ -318,7 +318,7 @@ ReactionDiffusion<Real_t>::get_mupper() const
 // ReactionDiffusion<Real_t>::get_dx0(Real_t x, const Real_t * const y)
 // {
 //     const int ny = get_ny();
-//     m_upper_bounds = upper_conc_bounds(${init_conc});
+//     m_upper_bounds = upper_conc_bounds(init_conc);
 //     m_lower_bounds.resize(get_ny);
 //     return m_rtol*std::min(get_dx_max(x, y), 1.0);
 // }
