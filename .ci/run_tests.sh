@@ -31,4 +31,4 @@ cp dist/${PKG_NAME}-*.tar.gz /tmp
 (mkdir /tmp/sdist_tar_gz; cd /tmp/sdist_tar_gz; tar xf ../${PKG_NAME}-*.tar.gz; cd ${PKG_NAME}-*/; python3 setup.py build_ext -i; PYTHONPATH=$(pwd); python3 -c "import $PKG_NAME")
 
 # Make sure repo is pip installable from git-archive zip
-(mkdir /tmp/archive_zip; cd /tmp/archive_zip; unzip ../${PKG_NAME}.zip; cd ${PKG_NAME}-*/; python3 setup.py build_ext -i; PYTHONPATH=$(pwd); python3 -c "import $PKG_NAME")
+(mkdir /tmp/archive_zip; cd /tmp/archive_zip; unzip ../HEAD.zip; python3 setup.py build_ext -i; PYTHONPATH=$(pwd); python3 -c "import $PKG_NAME")
