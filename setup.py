@@ -32,17 +32,21 @@ _version_env_var = '%s_RELEASE_VERSION' % pkg_name.upper()
 RELEASE_VERSION = os.environ.get(_version_env_var, '')
 
 
-if len(RELEASE_VERSION) > 1 and RELEASE_VERSION[0] == 'v':
+_version_env_var = '%s_RELEASE_VERSION' % pkg_name.upper()
+RELEASE_VERSION = os.environ.get(_version_env_var, '')
+
+if len(RELEASE_VERSION) > 1:
+    if RELEASE_VERSION[0] != 'v':
+        raise ValueError("$%s does not start with 'v'" % _version_env_var)
     TAGGED_RELEASE = True
     __version__ = RELEASE_VERSION[1:]
-else:
+else:  # set `__version__` from _release.py:
     TAGGED_RELEASE = False
-    # read __version__ attribute from _release.py:
-    exec(io.open(release_py_path, encoding='utf-8').read())
+    exec(open(release_py_path).read())
     if __version__.endswith('git'):
         try:
             _git_version = subprocess.check_output(
-                ['git', 'describe', '--dirty']).rstrip().decode('utf-8').replace('-dirty', '.dirty')
+                ['git', 'describe', '--dirty']).rstrip().decode('utf-8')
         except subprocess.CalledProcessError:
             warnings.warn("A git-archive is being installed - version information incomplete.")
         else:
@@ -55,6 +59,10 @@ _WITH_DEBUG = env['WITH_DEBUG'] == '1'
 _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
+# Source distributions contain rendered sources
+_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.3.12,<0.4.0', 'pycvodes>=0.10.12,<0.11.0', 'finitediff>=0.6.2']
+setup_requires = _common_requires + ['mako>=1.0']
+install_requires = _common_requires + ['chempy>=0.6.8,<0.7.0', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
 USE_CYTHON = None
@@ -180,7 +188,7 @@ setup_kwargs = dict(
         'sym>=0.3.3', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7'
     ]},
-    python_requires='>=3.5',
+    python_requires='>=3.6',
 )
 
 if __name__ == '__main__':
