@@ -110,6 +110,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         from Cython.Build import cythonize
         ext_modules = cythonize(ext_modules, include_path=[
             package_include,
+            pc.get_include(),
             os.path.join('external', 'anyode', 'cython_def')
         ])
         if not os.path.exists(os.path.join('external', 'anyode', 'cython_def', 'anyode.pxd')):
