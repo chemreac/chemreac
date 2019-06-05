@@ -112,6 +112,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
             package_include,
             os.path.join('external', 'anyode', 'cython_def')
         ])
+        if not os.path.exists(os.path.join('external', 'anyode', 'cython_def', 'anyode.pxd')):
+            raise FileNotFoundError("No anyode.pxd?")
     ext_modules[0].include_dirs += [
         np.get_include(), fd.get_include(), bdi.get_include(),
         pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
