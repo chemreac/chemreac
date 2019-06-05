@@ -22,11 +22,14 @@ CC=clang-8 \
   python3 setup.py build_ext -i
 ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-8/lib/clang/8.0.1/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh "${@:2}"
 
+python3 -m pip uninstall -y chemreac
+
 rm -r build/
+
 python3 setup.py sdist
 cp dist/${PKG_NAME}-*.tar.gz /tmp
-(cd /; python3 -m pip uninstall -y chemreac; python3 -m pip install /tmp/${PKG_NAME}-*.tar.gz; python3 -c "import $PKG_NAME")
+(mkdir /tmp/sdist_tar_gz; cd /tmp/sdist_tar_gz; tar xf ../${PKG_NAME}-*.tar.gz; python3 build_ext -i; PYTHONPATH=$(pwd); python3 -c "import $PKG_NAME")
 
 # Make sure repo is pip installable from git-archive zip
 git archive -o /tmp/$PKG_NAME.zip HEAD
-(cd /; python3 -m pip uninstall -y chemreac; python3 -m pip install /tmp/$PKG_NAME.zip; python3 -c "import ${PKG_NAME}")
+(mkdir /tmp/sdist_zip; cd /tmp/sdist_zip; unzip ../${PKG_NAME}-*.tar.gz; python3 build_ext -i; PYTHONPATH=$(pwd); python3 -c "import $PKG_NAME")
