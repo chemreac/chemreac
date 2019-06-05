@@ -24,7 +24,7 @@ pipeline:
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.3.12,<0.4.0" "pyodeint>=0.9.8,<0.10.0" "pygslodeiv2>=0.8.4,<0.9.0" "batemaneq" "pyodesys>=0.11.7,<0.12.0" "pycvodes>=0.10.16,<0.11.0"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.3.12,<0.4.0" "pyodeint>=0.9.8,<0.10.0" "pygslodeiv2>=0.8.4,<0.9.0" "batemaneq" "pyodesys>=0.11.7,<0.12.0"
       - python3 -c "import block_diag_ilu"
 
   test-dbg-gcc-8-sund-3.2.1:
