@@ -35,7 +35,7 @@ pipeline:
       - CC=gcc-8
       - CXX=g++-8
       - SUNDBASE=/opt/sundials-4.1.0-klu-lapack
-      - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" 
+      - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
 
@@ -47,7 +47,7 @@ pipeline:
       - CC=gcc-8
       - CXX=g++-8
       - SUNDBASE=/opt/sundials-3.2.1-klu-lapack
-      - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" 
+      - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode')
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
 
