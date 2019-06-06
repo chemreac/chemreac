@@ -69,7 +69,7 @@ pipeline:
       - SUNDBASE=/opt/sundials-2.7.0-klu-lapack
       - PYCVODES_NO_KLU=0
     commands:
-      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh"
+      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac"
 
   test-conda-pkgs:
     image: bjodah/bjodahimg18dev:v2.1
