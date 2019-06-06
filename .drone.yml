@@ -47,8 +47,8 @@ pipeline:
       - CC=gcc-7
       - CXX=g++-7
       - SUNDBASE=/opt/sundials-2.7.0-klu-lapack
-      - PYCVODES_LAPACK=lapack,blas
-      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,klu,blas
+      - PYCVODES_LAPACK=
+      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,klu,lapack,blas
       - PYCVODES_NO_KLU=0
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh"
