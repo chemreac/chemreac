@@ -46,6 +46,13 @@ pipeline:
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
+      - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
+      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
+      - ./scripts/generate_docs.sh
+      - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
+      - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
+      - ./scripts/prepare_deploy.sh
+
 
   test-dbg-gcc-8-sund-3.2.1:
     image: bjodah/bjodahimg18:v2.2
@@ -74,13 +81,8 @@ pipeline:
   test-conda-pkgs:
     image: bjodah/bjodahimg18dev:v2.1
     commands:
-      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
-      - ./scripts/generate_docs.sh
-      - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
-      - ./scripts/prepare_deploy.sh
       - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
       - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
-      - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
 
   rebuild-cache:
     image: drillster/drone-volume-cache
