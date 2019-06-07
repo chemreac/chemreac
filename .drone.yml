@@ -46,9 +46,10 @@ pipeline:
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
-      - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
+      - rm -r chemreac/
+      - cp -r /tmp/ci/dist /tmp/ci/htmlcov /tmp/ci/chemreac .
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
-      - PYTHONUSERBASE=/opt/pyusrb ./scripts/generate_docs.sh
+      - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=/ ./scripts/generate_docs.sh
       - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
       - ./scripts/prepare_deploy.sh
