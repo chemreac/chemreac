@@ -5,6 +5,7 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
 fi
 
 python3 -m pip install -e .[all]
+cp -r chemreac dist/
 
 set -e
 
