@@ -26,7 +26,7 @@ requirements:
     - setuptools
     - pip
     - cython
-    - sundials <0.4.0
+    - sundials <4.0.0
     - mako
     - quantities >=0.12.1
     - block_diag_ilu >=0.3.9,<0.4.0
@@ -36,7 +36,7 @@ requirements:
   run:
     - python
     - {{ pin_compatible('numpy') }}
-    - sundials <0.4.0
+    - sundials <4.0.0
     - pycvodes >=0.10.12,<0.11.0
     - scipy
     - pyodesys >=0.11.16,<0.12.0
