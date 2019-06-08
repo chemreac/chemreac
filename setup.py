@@ -18,7 +18,7 @@ license = 'BSD'
 
 
 def _path_under_setup(*args):
-    return os.path.join(os.path.dirname(__file__), *args)
+    return os.path.join('.', *args)
 
 
 release_py_path = _path_under_setup(pkg_name, '_release.py')
@@ -61,7 +61,6 @@ _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
 # Source distributions contain rendered sources
 _common_requires = ['numpy>=1.14', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.11.0', 'finitediff>=0.6.2']
-setup_requires = _common_requires + ['mako>=1.0']
 install_requires = _common_requires + ['chempy>=0.7.8', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
@@ -87,6 +86,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import finitediff as fd
     import pycvodes as pc
     import block_diag_ilu as bdi
+
+    setup_requires = _common_requires + ['mako>=1.0']
 
     rendered_path = 'src/chemreac.cpp'
     template_path = rendered_path + '.mako'
@@ -128,6 +129,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
     ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
+else:
+    setup_requires = []
 
 modules = [
     pkg_name+'.util',

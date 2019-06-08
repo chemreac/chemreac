@@ -51,6 +51,7 @@ pipeline:
       - mv dist/chemreac chemreac
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
+      - git fetch -tq
       - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
       - ./scripts/prepare_deploy.sh
