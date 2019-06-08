@@ -31,7 +31,7 @@ requirements:
     - block_diag_ilu >=0.4.0
     - finitediff
     - pycvodes >=0.11.9
-    - numpy
+    - numpy >=1.14.0
   run:
     - python
     - {{ pin_compatible('numpy') }}
