@@ -38,9 +38,9 @@ pipeline:
       - PYCVODES_NO_KLU=0
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
-      - cp -r /tmp/ci/dist /tmp/ci/htmlcov /tmp/ci/chemreac .
+      - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
-      - mv dist/chemreac .
+      - mv dist/chemreac chemreac
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
