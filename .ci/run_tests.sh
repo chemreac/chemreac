@@ -9,6 +9,7 @@ mkdir -p dist
 cp -r chemreac dist/.
 
 set -e
+( cd dist; python3 -c "import chemreac" )
 
 (cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC' test)
 (cd tests-native; make -B CXX=clang++-8 CC=clang-8 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
