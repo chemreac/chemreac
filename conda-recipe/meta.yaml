@@ -34,7 +34,7 @@ requirements:
     - numpy >=1.14.0
   run:
     - python
-    - {{ pin_compatible('numpy') }}
+    - numpy >=1.14.0
     - sundials <4.0.0
     - pycvodes >=0.10.12,<0.11.0
     - scipy
