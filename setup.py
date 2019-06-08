@@ -118,7 +118,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
         ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
-    ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
+    ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + [lib for lib in pc.config['LAPACK'].split(',') if lib != ''] + ['m']
 else:
     setup_requires = []
 
