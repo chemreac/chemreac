@@ -49,6 +49,8 @@ pipeline:
       - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
       - mv dist/chemreac chemreac
+      - pwd   # DEBUG
+      - ls chemreac/   # DEBUG
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - git fetch -tq
@@ -82,7 +84,7 @@ pipeline:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac"
 
   test-conda-pkgs:
-    image: bjodah/bjodahimg18dev:v2.1
+    image: bjodah/bjodahimg18dev:v2.2
     commands:
       - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
       - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
