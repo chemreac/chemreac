@@ -62,11 +62,11 @@ pipeline:
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac"
 
-  test-conda-pkgs:
-    image: bjodah/bjodahimg18dev:v2.2
-    commands:
-      - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
-      - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
+  # test-conda-pkgs:
+  #   image: bjodah/bjodahimg18dev:v2.2
+  #   commands:
+  #     - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
+  #     - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
 
   rebuild-cache:
     image: drillster/drone-volume-cache
