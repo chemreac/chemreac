@@ -93,7 +93,7 @@ def integrate_rd(tend=2.0, A0=1.0, nt=67, t0=0.0,
                  plotlogy=False, plotlogt=False, verbose=False):
     """
     Analytic solution through Bateman equation =>
-    ensure :math:`|k_i - k_j| \gg eps`
+    ensure :math:`|k_i - k_j| \\gg eps`
     """
     k = list(map(float, rates.split(',')))
     n = len(k)+1

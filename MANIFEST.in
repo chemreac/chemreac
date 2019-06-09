@@ -1,7 +1,8 @@
 graft external/anyode/include
 graft external/anyode/cython_def
 include external/anyode/LICENSE
-include chemreac/*.pyx
+include chemreac/_chemreac.pyx
+include chemreac/_chemreac.cpp
 recursive-include docs *
 prune docs/_build
 prune docs/_build.log

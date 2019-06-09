@@ -18,7 +18,7 @@ license = 'BSD'
 
 
 def _path_under_setup(*args):
-    return os.path.join(os.path.dirname(__file__), *args)
+    return os.path.join('.', *args)
 
 
 release_py_path = _path_under_setup(pkg_name, '_release.py')
@@ -32,17 +32,21 @@ _version_env_var = '%s_RELEASE_VERSION' % pkg_name.upper()
 RELEASE_VERSION = os.environ.get(_version_env_var, '')
 
 
-if len(RELEASE_VERSION) > 1 and RELEASE_VERSION[0] == 'v':
+_version_env_var = '%s_RELEASE_VERSION' % pkg_name.upper()
+RELEASE_VERSION = os.environ.get(_version_env_var, '')
+
+if len(RELEASE_VERSION) > 1:
+    if RELEASE_VERSION[0] != 'v':
+        raise ValueError("$%s does not start with 'v'" % _version_env_var)
     TAGGED_RELEASE = True
     __version__ = RELEASE_VERSION[1:]
-else:
+else:  # set `__version__` from _release.py:
     TAGGED_RELEASE = False
-    # read __version__ attribute from _release.py:
-    exec(io.open(release_py_path, encoding='utf-8').read())
+    exec(open(release_py_path).read())
     if __version__.endswith('git'):
         try:
             _git_version = subprocess.check_output(
-                ['git', 'describe', '--dirty']).rstrip().decode('utf-8').replace('-dirty', '.dirty')
+                ['git', 'describe', '--dirty']).rstrip().decode('utf-8')
         except subprocess.CalledProcessError:
             warnings.warn("A git-archive is being installed - version information incomplete.")
         else:
@@ -55,11 +59,25 @@ _WITH_DEBUG = env['WITH_DEBUG'] == '1'
 _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
+# Source distributions contain rendered sources
+_common_requires = ['numpy>=1.14', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.11.0', 'finitediff>=0.6.2']
+install_requires = _common_requires + ['chempy>=0.7.8', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
-USE_CYTHON = None
 
-# Cythonize .pyx file if it exists (not in source distribution)
+_cpp = _path_under_setup(pkg_name, '_%s.cpp' % pkg_name)
+_pyx = _path_under_setup(pkg_name, '_%s.pyx' % pkg_name)
+if os.path.exists(_cpp):
+    if os.path.exists(_pyx) and os.path.getmtime(_pyx) - 1e-6 >= os.path.getmtime(_cpp):
+        USE_CYTHON = True
+    else:
+        USE_CYTHON = False
+else:
+    if os.path.exists(_pyx):
+        USE_CYTHON = True
+    else:
+        raise ValueError("Neither pyx nor cpp file found")
+
 ext_modules = []
 
 if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
@@ -69,6 +87,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import finitediff as fd
     import pycvodes as pc
     import block_diag_ilu as bdi
+
+    setup_requires = _common_requires + ['mako>=1.0']
 
     rendered_path = 'src/chemreac.cpp'
     template_path = rendered_path + '.mako'
@@ -85,29 +105,18 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         else:
             open(rendered_path, 'wt').write(rendered)
 
-    try:
-        from Cython.Build import cythonize
-    except Exception:
-        USE_CYTHON = False
-    else:
-        _cpp = _path_under_setup(pkg_name, '_%s.cpp' % pkg_name)
-        _pyx = _path_under_setup(pkg_name, '_%s.pyx' % pkg_name)
-        if os.path.exists(_cpp):
-            if os.path.exists(_pyx) and os.path.getmtime(_pyx) - 1e-6 >= os.path.getmtime(_cpp):
-                USE_CYTHON = True
-            else:
-                USE_CYTHON = False
-        else:
-            if os.path.exists(_pyx):
-                USE_CYTHON = True
-            else:
-                raise ValueError("Neither pyx nor cpp file found")
-
-    ext_modules.append(Extension('chemreac._chemreac', ['chemreac/_chemreac' + ('.pyx' if USE_CYTHON else '.cpp')]))
+    sources = [_pyx if USE_CYTHON else _cpp]
+    ext_modules.append(Extension('{0}._{0}'.format(pkg_name), sources))
 
     if USE_CYTHON:
+        from Cython.Build import cythonize
         ext_modules = cythonize(ext_modules, include_path=[
-            'chemreac/include', pc.get_include(), os.path.join('external', 'anyode', 'cython_def')])
+            package_include,
+            pc.get_include(),
+            os.path.join('external', 'anyode', 'cython_def')
+        ])
+        if not os.path.exists(os.path.join('external', 'anyode', 'cython_def', 'anyode.pxd')):
+            raise FileNotFoundError("No anyode.pxd?")
     ext_modules[0].include_dirs += [
         np.get_include(), fd.get_include(), bdi.get_include(),
         pc.get_include(), package_include, os.path.join('external', 'anyode', 'include')
@@ -121,6 +130,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
     ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
+else:
+    setup_requires = []
 
 modules = [
     pkg_name+'.util',
@@ -150,11 +161,6 @@ if not len(long_description) > 100:
     warnings.warn("Long description from README.rst probably not read correctly.")
 _author, _author_email = io.open(_path_under_setup('AUTHORS'), 'rt', encoding='utf-8').readline().split('<')
 
-# Source distributions contain rendered sources
-_common_requires = ['numpy>=1.11', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.11.7', 'finitediff>=0.6.2']
-setup_requires = _common_requires + ['mako>=1.0'] + (['cython'] if USE_CYTHON else []),
-install_requires = _common_requires + ['chempy>=0.6.7', 'quantities>=0.12.1']
-
 setup_kwargs = dict(
     name=pkg_name,
     version=__version__,
@@ -180,7 +186,7 @@ setup_kwargs = dict(
         'sym>=0.3.3', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.11.7'
     ]},
-    python_requires='>=3.5',
+    python_requires='>=3.6',
 )
 
 if __name__ == '__main__':

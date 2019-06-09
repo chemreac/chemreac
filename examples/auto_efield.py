@@ -218,7 +218,7 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
         plt.subplot(4, 1, 3)
         plt.plot(rd.xcenters, rd.efield, label="E at t=tend")
         plt.xlabel("$x~/~m$")
-        plt.ylabel("$E~/~V\cdot m^{-1}$")
+        plt.ylabel(r"$E~/~V\cdot m^{-1}$")
         plt.legend()
 
         for i in range(3):
