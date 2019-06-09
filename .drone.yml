@@ -12,9 +12,6 @@ pipeline:
   install-reqs:
     image: bjodah/bjodahimg18:v2.2
     environment:
-      - PYCVODES_LAPACK=lapack,blas
-      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
-      - PYCVODES_NO_KLU=0
       - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
       - CPATH=/usr/include/suitesparse
       - CPLUS_INCLUDE_PATH=/opt/boost_1_70_0/include
@@ -24,7 +21,7 @@ pipeline:
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.3.12,<0.4.0" "pyodeint>=0.9.8,<0.10.0" "pygslodeiv2>=0.8.4,<0.9.0" "batemaneq" "pyodesys>=0.11.7,<0.12.0" "pycvodes>=0.10.16,<0.11.0"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.3.12,<0.4.0" "pyodeint>=0.9.8,<0.10.0" "pygslodeiv2>=0.8.4,<0.9.0" "batemaneq" "pyodesys>=0.11.7,<0.12.0"
       - python3 -c "import block_diag_ilu"
 
   test-dbg-gcc-8-sund-3.2.1:
@@ -35,9 +32,21 @@ pipeline:
       - CC=gcc-8
       - CXX=g++-8
       - SUNDBASE=/opt/sundials-3.2.1-klu-lapack
-      - CHEMREAC_INTEGRATION_KWARGS="dict(integrator='cvode')" 
+      - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode')
+      - PYCVODES_LAPACK=lapack,blas
+      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
+      - PYCVODES_NO_KLU=0
     commands:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
+      - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
+      - rm -r chemreac/
+      - mv dist/chemreac chemreac
+      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
+      - PYTHONUSERBASE=/opt/pyusrb LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
+      - git fetch -tq
+      - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
+      - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
+      - ./scripts/prepare_deploy.sh
 
   test-rel-gcc-7-sund-2.7.0:
     image: bjodah/bjodahimg18:v2.2
@@ -47,19 +56,17 @@ pipeline:
       - CC=gcc-7
       - CXX=g++-7
       - SUNDBASE=/opt/sundials-2.7.0-klu-lapack
+      - PYCVODES_LAPACK=
+      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,klu,lapack,blas
+      - PYCVODES_NO_KLU=0
     commands:
-      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh"
+      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac"
 
-  test-conda-pkgs:
-    image: bjodah/bjodahimg18dev:v2.1
-    commands:
-      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
-      - ./scripts/generate_docs.sh
-      - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
-      - ./scripts/prepare_deploy.sh
-      - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
-      - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
-      - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
+  # test-conda-pkgs:
+  #   image: bjodah/bjodahimg18dev:v2.2
+  #   commands:
+  #     - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
+  #     - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
 
   rebuild-cache:
     image: drillster/drone-volume-cache
