@@ -97,13 +97,6 @@ cdef class PyReactionDiffusion:
     def __dealloc__(self):
         del self.thisptr
 
-    def enable_get_dx_max(self, lower_bounds, upper_bounds):
-        assert len(lower_bounds) == self.thisptr.n*self.thisptr.N, "lower_bounds of incorrect length"
-        assert len(upper_bounds) == self.thisptr.n*self.thisptr.N, "upper_bounds of incorrect length"
-        self.lower_bounds = lower_bounds
-        self.upper_bounds = upper_bounds
-        self.thisptr.use_get_dx_max = True
-
     def f(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
           cnp.ndarray[cnp.float64_t, ndim=1] fout):
         assert y.size == fout.size
@@ -364,6 +357,25 @@ cdef class PyReactionDiffusion:
             return self.thisptr.m_get_dx0_max_dx
         def __set__(self, val):
             self.thisptr.m_get_dx0_max_dx = val
+
+    property use_get_dx_max:
+        def __get__(self):
+            return self.thisptr.use_get_dx_max
+        def __set__(self, val):
+            assert self.thisptr.m_lower_bounds.size() == self.thisptr.n*self.thisptr.N, "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == self.thisptr.n*self.thisptr.N, "upper_bounds of incorrect length"
+            assert val in (True, False), "need boolean for use_get_dx_max"
+            self.thisptr.use_get_dx_max = val
+
+    property error_outside_bounds:
+        def __get__(self):
+            return self.thisptr.m_error_outside_bounds
+        def __set__(self, val):
+            assert self.thisptr.m_lower_bounds.size() == self.thisptr.n*self.thisptr.N, "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == self.thisptr.n*self.thisptr.N, "upper_bounds of incorrect length"
+            assert val in (True, False), "need boolean for use_get_dx_max"
+            self.thisptr.m_error_outside_bounds = val
+
 
     def logb(self, x):
         """ log_2 if self.use_log2 else log_e """

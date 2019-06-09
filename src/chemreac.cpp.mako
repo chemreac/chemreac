@@ -291,6 +291,11 @@ template<typename Real_t>
 Real_t
 ReactionDiffusion<Real_t>::get_dx_max(Real_t x, const Real_t * const y)
 {
+    %for side in "upper lower".split():
+    if (m_${side}_bounds.size() != static_cast<std::size_t>(n*N)) {
+        throw std::runtime_error("trying to use get_dx_max without m_${side}_bounds set to correct size.");
+    }
+    %endfor
     const int ny = get_ny();
     auto fvec = std::vector<Real_t>(ny);
     auto hvec = std::vector<Real_t>(ny);
@@ -317,6 +322,11 @@ template<typename Real_t>
 Real_t
 ReactionDiffusion<Real_t>::get_dx0(Real_t x, const Real_t * const y)
 {
+    %for side in "upper lower".split():
+    if (m_${side}_bounds.size() != static_cast<std::size_t>(n*N)) {
+        return this->default_dx0;
+    }
+    %endfor
     return m_get_dx0_factor*std::min(get_dx_max(x, y), m_get_dx0_max_dx);
 }
 
@@ -497,6 +507,28 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
     }
     const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
     const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
+    if (m_error_outside_bounds) {
+        if (m_lower_bounds.size() > 0) {
+            for (int i=0; i < n*N; ++i) {
+                if (linC[i] < m_lower_bounds[i]) {
+                    std::cerr << "Lower bound (" << m_lower_bounds[0] << ") for "
+                              << std::to_string(i)
+                              << " exceeded (" << linC[i] << ") at t="<< t << "\n";
+                    return AnyODE::Status::recoverable_error;
+                }
+            }
+        }
+        if (m_upper_bounds.size() > 0) {
+            for (int i=0; i < n*N; ++i) {
+                if (linC[i] > m_upper_bounds[i]) {
+                    std::cerr << "Upper bound (" << m_upper_bounds[0] << ") for "
+                              <<  std::to_string(i)
+                              << " exceeded (" << linC[i] << ") at t="<< t << "\n";
+                    return AnyODE::Status::recoverable_error;
+                }
+            }
+        }
+    }
     if (auto_efield){
         calc_efield(linC);
     }

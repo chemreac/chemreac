@@ -73,6 +73,7 @@ public:
     const int n_jac_diags;
     const bool use_log2;
     const bool clip_to_pos;
+    bool m_error_outside_bounds {false};
     const int nroots = 0;
 private:
     std::unique_ptr<block_diag_ilu::BlockDiagMatrix<Real_t>> jac_cache;

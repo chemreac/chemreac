@@ -43,6 +43,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         int n_jac_diags
         bool use_log2
         bool clip_to_pos
+        bool m_error_outside_bounds
         T * efield
         vector[T] gradD
         T * xc
