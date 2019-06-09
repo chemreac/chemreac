@@ -287,41 +287,38 @@ ReactionDiffusion<Real_t>::get_mupper() const
     return this->get_mlower();
 }
 
-// template<typename Real_t>
-// Real_t
-// ReactionDiffusion<Real_t>::get_dx_max(Real_t x, const Real_t * y const)
-// {
-//     const int ny = get_ny();
-//     auto fvec = std::vector<Real_t>(ny);
-//     auto hvec = std::vector<Real_t>(ny);
-//     rhs(x, y, &fvec[0]);
-//     for (indextype idx=0; idx < ny; ++idx){
-//         if (fvec[idx] == 0) {
-//             hvec[idx] = std::numeric_limits<Real_t>::max();
-//         } else if (fvec[idx] > 0) {
-//             hvec[idx] = std::abs(m_upper_bounds[idx] - y[idx])/fvec[idx];
-//         } else { // fvec[idx] < 0
-//             hvec[idx] = std::abs((m_lower_bounds[idx] - y[idx])/fvec[idx]);
-//         }
-//     }
-//     const auto result = *std::min_element(std::begin(hvec), std::end(hvec));
-//     if (m_get_dx_max_factor == 0.0)
-//         return result;
-//     else if (m_get_dx_max_factor < 0.0)
-//         return -m_get_dx_max_factor*result;
-//     else
-//         return m_get_dx_max_factor*result;
-// }
+template<typename Real_t>
+Real_t
+ReactionDiffusion<Real_t>::get_dx_max(Real_t x, const Real_t * const y)
+{
+    const int ny = get_ny();
+    auto fvec = std::vector<Real_t>(ny);
+    auto hvec = std::vector<Real_t>(ny);
+    rhs(x, y, &fvec[0]);
+    for (int idx=0; idx < ny; ++idx){
+        if (fvec[idx] == 0) {
+            hvec[idx] = std::numeric_limits<Real_t>::max();
+        } else if (fvec[idx] > 0) {
+            hvec[idx] = std::abs(m_upper_bounds[idx] - y[idx])/fvec[idx];
+        } else { // fvec[idx] < 0
+            hvec[idx] = std::abs((m_lower_bounds[idx] - y[idx])/fvec[idx]);
+        }
+    }
+    const auto result = *std::min_element(std::begin(hvec), std::end(hvec));
+    if (m_get_dx_max_factor == 0.0)
+        return result;
+    else if (m_get_dx_max_factor < 0.0)
+        return -m_get_dx_max_factor*result;
+    else
+        return m_get_dx_max_factor*result;
+}
 
-// template<typename Real_t>
-// Real_t
-// ReactionDiffusion<Real_t>::get_dx0(Real_t x, const Real_t * const y)
-// {
-//     const int ny = get_ny();
-//     m_upper_bounds = upper_conc_bounds(init_conc);
-//     m_lower_bounds.resize(get_ny);
-//     return m_rtol*std::min(get_dx_max(x, y), 1.0);
-// }
+template<typename Real_t>
+Real_t
+ReactionDiffusion<Real_t>::get_dx0(Real_t x, const Real_t * const y)
+{
+    return m_get_dx0_factor*std::min(get_dx_max(x, y), m_get_dx0_max_dx);
+}
 
 template<typename Real_t>
 int

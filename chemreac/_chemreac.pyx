@@ -92,9 +92,17 @@ cdef class PyReactionDiffusion:
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
             modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2, clip_to_pos)
+        self.thisptr.autonomous_exprs = True
 
     def __dealloc__(self):
         del self.thisptr
+
+    def enable_get_dx_max(self, lower_bounds, upper_bounds):
+        assert len(lower_bounds) == self.thisptr.n*self.thisptr.N, "lower_bounds of incorrect length"
+        assert len(upper_bounds) == self.thisptr.n*self.thisptr.N, "upper_bounds of incorrect length"
+        self.lower_bounds = lower_bounds
+        self.upper_bounds = upper_bounds
+        self.thisptr.use_get_dx_max = True
 
     def f(self, double t, cnp.ndarray[cnp.float64_t, ndim=1] y,
           cnp.ndarray[cnp.float64_t, ndim=1] fout):
@@ -326,6 +334,36 @@ cdef class PyReactionDiffusion:
     property clip_to_pos:
         def __get__(self):
             return self.thisptr.clip_to_pos
+
+    property upper_bounds:
+        def __get__(self):
+            return self.thisptr.m_upper_bounds
+        def __set__(self, val):
+            self.thisptr.m_upper_bounds = val
+
+    property lower_bounds:
+        def __get__(self):
+            return self.thisptr.m_lower_bounds
+        def __set__(self, val):
+            self.thisptr.m_lower_bounds = val
+
+    property get_dx_max_factor:
+        def __get__(self):
+            return self.thisptr.m_get_dx_max_factor
+        def __set__(self, val):
+            self.thisptr.m_get_dx_max_factor = val
+
+    property get_dx0_factor:
+        def __get__(self):
+            return self.thisptr.m_get_dx0_factor
+        def __set__(self, val):
+            self.thisptr.m_get_dx0_factor = val
+
+    property get_dx0_max_dx:
+        def __get__(self):
+            return self.thisptr.m_get_dx0_max_dx
+        def __set__(self, val):
+            self.thisptr.m_get_dx0_max_dx = val
 
     def logb(self, x):
         """ log_2 if self.use_log2 else log_e """
