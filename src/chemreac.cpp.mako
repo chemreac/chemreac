@@ -479,14 +479,8 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
                     linC[bi*n + si] = expb(Y(bi, si));
                 }
             } else {
-                if (clip_to_pos) {
-                    for (int si=0; si<n; ++si){
-                        linC[bi*n + si] = std::abs(Y(bi, si));
-                    }
-                } else {
-                    for (int si=0; si<n; ++si){
-                        linC[bi*n + si] = Y(bi, si);
-                    }
+                for (int si=0; si<n; ++si){
+                    linC[bi*n + si] = Y(bi, si);
                 }
             }
         }
@@ -501,12 +495,29 @@ AnyODE::Status
 ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
 {
     // note condifiontal call to free at end of this function
+    bool use_work = false;
     if (logy) {
         populate_linC(AnyODE::buffer_get_raw_ptr(work1), y, true);
         populate_linC(AnyODE::buffer_get_raw_ptr(work2), y, true, true);
+        use_work = true;
     }
-    const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
-    const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
+    if (clip_to_pos) {
+        if (!use_work) {
+            memcpy(AnyODE::buffer_get_raw_ptr(work1), y, sizeof(Real_t)*n*N);
+            for (int i=0; i<get_ny(); ++i){
+                work2[i] = 1.0/y[i];
+            }
+            use_work = true;
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work1[i] = (y[i] < 0) ? 0 : y[i];
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work2[i] = (y[i] < 0) ? INFINITY : y[i];
+        }
+    }
+    const Real_t * const linC = (use_work) ? AnyODE::buffer_get_raw_ptr(work1) : y;
+    const Real_t * const rlinC = (use_work) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
     if (m_error_outside_bounds) {
         if (m_lower_bounds.size() > 0) {
             for (int i=0; i < n*N; ++i) {
@@ -649,14 +660,30 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
             rhs(t, y, fout);
         }
     }
-
+    bool use_work = false;
     // note conditional call to free at end of this function
     if (logy) {
         populate_linC(AnyODE::buffer_get_raw_ptr(work1), y, true, false);
         populate_linC(AnyODE::buffer_get_raw_ptr(work2), y, true, true);
+        use_work = true;
     }
-    const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
-    const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
+    if (clip_to_pos) {
+        if (!use_work) {
+            memcpy(AnyODE::buffer_get_raw_ptr(work1), y, sizeof(Real_t)*n*N);
+            for (int i=0; i<get_ny(); ++i){
+                work2[i] = 1.0/y[i];
+            }
+            use_work = true;
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work1[i] = (y[i] < 0) ? 0 : y[i];
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work2[i] = (y[i] < 0) ? INFINITY : y[i];
+        }
+    }
+    const Real_t * const linC = (use_work) ? AnyODE::buffer_get_raw_ptr(work1) : y;
+    const Real_t * const rlinC = (use_work) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
     if (auto_efield) {
         calc_efield(linC);
     }
