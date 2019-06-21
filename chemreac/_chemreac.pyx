@@ -82,7 +82,7 @@ cdef class PyReactionDiffusion:
                   bint clip_to_pos=False
               ):
         cdef size_t i
-        if D.size() == n:
+        if D.size() == <unsigned>(n):
             D = list(D)*N
 
         self.thisptr = new ReactionDiffusion[double](
@@ -362,8 +362,8 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.use_get_dx_max
         def __set__(self, val):
-            assert self.thisptr.m_lower_bounds.size() == self.thisptr.n*self.thisptr.N, "lower_bounds of incorrect length"
-            assert self.thisptr.m_upper_bounds.size() == self.thisptr.n*self.thisptr.N, "upper_bounds of incorrect length"
+            assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
             assert val in (True, False), "need boolean for use_get_dx_max"
             self.thisptr.use_get_dx_max = val
 
@@ -371,8 +371,8 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.m_error_outside_bounds
         def __set__(self, val):
-            assert self.thisptr.m_lower_bounds.size() == self.thisptr.n*self.thisptr.N, "lower_bounds of incorrect length"
-            assert self.thisptr.m_upper_bounds.size() == self.thisptr.n*self.thisptr.N, "upper_bounds of incorrect length"
+            assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
             assert val in (True, False), "need boolean for use_get_dx_max"
             self.thisptr.m_error_outside_bounds = val
 
