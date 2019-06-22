@@ -43,7 +43,7 @@ pipeline:
       - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
       - mv dist/chemreac chemreac
-      - ls chemreac/; python3 -c "import chemreac"
+      - ls chemreac/; PYTHONUSERBASE=/opt/pyusrb python3 -c "import chemreac"
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=$PWD LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
