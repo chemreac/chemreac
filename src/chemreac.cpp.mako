@@ -524,7 +524,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                 if (linC[i] < m_lower_bounds[i]) {
                     std::cerr << "Lower bound (" << m_lower_bounds[0] << ") for "
                               << std::to_string(i)
-                              << " exceeded (" << linC[i] << ") at t="<< t << "\n";
+                              << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
                     return AnyODE::Status::recoverable_error;
                 }
             }
@@ -534,7 +534,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                 if (linC[i] > m_upper_bounds[i]) {
                     std::cerr << "Upper bound (" << m_upper_bounds[0] << ") for "
                               <<  std::to_string(i)
-                              << " exceeded (" << linC[i] << ") at t="<< t << "\n";
+                              << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
                     return AnyODE::Status::recoverable_error;
                 }
             }
