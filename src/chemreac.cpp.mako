@@ -19,7 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
+#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << '\n';
 #include "chemreac_util.hpp" // save_array, load_array
 #endif
 
@@ -522,7 +522,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         if (m_lower_bounds.size() > 0) {
             for (int i=0; i < n*N; ++i) {
                 if (linC[i] < m_lower_bounds[i]) {
-                    std::cerr << "Lower bound (" << m_lower_bounds[0] << ") for "
+                    std::clog << "Lower bound (" << m_lower_bounds[0] << ") for "
                               << std::to_string(i)
                               << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
                     return AnyODE::Status::recoverable_error;
@@ -532,7 +532,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         if (m_upper_bounds.size() > 0) {
             for (int i=0; i < n*N; ++i) {
                 if (linC[i] > m_upper_bounds[i]) {
-                    std::cerr << "Upper bound (" << m_upper_bounds[0] << ") for "
+                    std::clog << "Upper bound (" << m_upper_bounds[0] << ") for "
                               <<  std::to_string(i)
                               << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
                     return AnyODE::Status::recoverable_error;
