@@ -332,12 +332,16 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.m_upper_bounds
         def __set__(self, val):
+            if len(val) != <unsigned>(self.thisptr.n*self.thisptr.N):
+                raise ValueError("upper_bounds of incorrect size")
             self.thisptr.m_upper_bounds = val
 
     property lower_bounds:
         def __get__(self):
             return self.thisptr.m_lower_bounds
         def __set__(self, val):
+            if len(val) != <unsigned>(self.thisptr.n*self.thisptr.N):
+                raise ValueError("lower_bounds of incorrect size")
             self.thisptr.m_lower_bounds = val
 
     property get_dx_max_factor:
@@ -373,7 +377,7 @@ cdef class PyReactionDiffusion:
         def __set__(self, val):
             assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
             assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
-            assert val in (True, False), "need boolean for use_get_dx_max"
+            assert val in (True, False), "need boolean for error_outside_bounds"
             self.thisptr.m_error_outside_bounds = val
 
 
