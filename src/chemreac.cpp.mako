@@ -309,13 +309,14 @@ ReactionDiffusion<Real_t>::get_dx_max(Real_t x, const Real_t * const y)
             hvec[idx] = std::abs((m_lower_bounds[idx] - y[idx])/fvec[idx]);
         }
     }
-    const auto result = *std::min_element(std::begin(hvec), std::end(hvec));
-    if (m_get_dx_max_factor == 0.0)
-        return result;
-    else if (m_get_dx_max_factor < 0.0)
-        return -m_get_dx_max_factor*result;
-    else
-        return m_get_dx_max_factor*result;
+    auto result = *std::min_element(std::begin(hvec), std::end(hvec));
+    if (m_get_dx_max_factor != 0.0) {
+        result *= std::abs(m_get_dx_max_factor);
+    }
+    if (m_get_dx_max_upper_limit != 0.0) {
+        result = std::min(result, m_get_dx_max_upper_limit);
+    }
+    return result;
 }
 
 template<typename Real_t>
@@ -522,7 +523,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         if (m_lower_bounds.size() > 0) {
             for (int i=0; i < n*N; ++i) {
                 if (linC[i] < m_lower_bounds[i]) {
-                    std::clog << "Lower bound (" << m_lower_bounds[0] << ") for "
+                    std::clog << "Lower bound (" << m_lower_bounds[i] << ") for "
                               << std::to_string(i)
                               << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
                     return AnyODE::Status::recoverable_error;
@@ -532,7 +533,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         if (m_upper_bounds.size() > 0) {
             for (int i=0; i < n*N; ++i) {
                 if (linC[i] > m_upper_bounds[i]) {
-                    std::clog << "Upper bound (" << m_upper_bounds[0] << ") for "
+                    std::clog << "Upper bound (" << m_upper_bounds[i] << ") for "
                               <<  std::to_string(i)
                               << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
                     return AnyODE::Status::recoverable_error;

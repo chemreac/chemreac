@@ -68,7 +68,7 @@ public:
     vector<Real_t> m_upper_bounds;
     vector<Real_t> m_lower_bounds;
     const Real_t ilu_limit;
-    Real_t m_get_dx_max_factor {0.0};
+    Real_t m_get_dx_max_factor {0.0}, m_get_dx_max_upper_limit {0.0};
     Real_t m_get_dx0_factor {1e-10}, m_get_dx0_max_dx {1.0};
     const int n_jac_diags;
     const bool use_log2;

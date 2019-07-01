@@ -38,7 +38,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[T] m_upper_bounds
         vector[T] m_lower_bounds
         T ilu_limit
-        T m_get_dx_max_factor
+        T m_get_dx_max_factor, m_get_dx_max_upper_limit
         T m_get_dx0_factor, m_get_dx0_max_dx
         int n_jac_diags
         bool use_log2

@@ -346,6 +346,12 @@ cdef class PyReactionDiffusion:
         def __set__(self, val):
             self.thisptr.m_get_dx_max_factor = val
 
+    property get_dx_max_upper_limit:
+        def __get__(self):
+            return self.thisptr.m_get_dx_max_upper_limit
+        def __set__(self, val):
+            self.thisptr.m_get_dx_max_upper_limit = val
+
     property get_dx0_factor:
         def __get__(self):
             return self.thisptr.m_get_dx0_factor
