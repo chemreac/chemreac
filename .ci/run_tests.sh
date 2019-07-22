@@ -5,9 +5,11 @@ if [[ "$CI_BRANCH" =~ ^v[0-9]+.[0-9]?* ]]; then
 fi
 
 python3 -m pip install --user -e .[all]
+python3 setup.py build_ext -i
 mkdir -p dist
 cp -r chemreac dist/.
-
+ls dist/chemreac
+rm -r build
 set -e
 ( cd dist; python3 -c "import chemreac" )
 
@@ -17,16 +19,16 @@ set -e
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC" python3 setup.py build_ext -i
 bash -c "ulimit -v 2048000; ./scripts/run_tests.sh"
 
-rm -r build/
+rm -rf build/
 CC=clang-8 \
   CXX=clang++-8 \
   CFLAGS="-fsanitize=address -UNDEBUG" \
   python3 setup.py build_ext -i
-ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-8/lib/clang/8.0.1/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh "${@:2}"
+PYTHONMALLOC=malloc ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-8/lib/clang/8.0.1/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh "${@:2}"
 
 python3 -m pip uninstall -y ${PKG_NAME}
 
-rm -r build/
+rm -rf build/
 
 python3 setup.py sdist
 cp dist/${PKG_NAME}-*.tar.gz /tmp

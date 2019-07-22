@@ -86,7 +86,7 @@ cdef class PyReactionDiffusion:
                   bint clip_to_pos=False
               ):
         cdef size_t i
-        if D.size() == n:
+        if D.size() == <unsigned>(n):
             D = list(D)*N
 
         self.thisptr = new ReactionDiffusion[double](
@@ -96,6 +96,7 @@ cdef class PyReactionDiffusion:
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
             modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2, clip_to_pos)
+        self.thisptr.autonomous_exprs = True
 
     def __dealloc__(self):
         del self.thisptr
@@ -326,6 +327,65 @@ cdef class PyReactionDiffusion:
     property clip_to_pos:
         def __get__(self):
             return self.thisptr.clip_to_pos
+
+    property upper_bounds:
+        def __get__(self):
+            return self.thisptr.m_upper_bounds
+        def __set__(self, val):
+            if len(val) != <unsigned>(self.thisptr.n*self.thisptr.N):
+                raise ValueError("upper_bounds of incorrect size")
+            self.thisptr.m_upper_bounds = val
+
+    property lower_bounds:
+        def __get__(self):
+            return self.thisptr.m_lower_bounds
+        def __set__(self, val):
+            if len(val) != <unsigned>(self.thisptr.n*self.thisptr.N):
+                raise ValueError("lower_bounds of incorrect size")
+            self.thisptr.m_lower_bounds = val
+
+    property get_dx_max_factor:
+        def __get__(self):
+            return self.thisptr.m_get_dx_max_factor
+        def __set__(self, val):
+            self.thisptr.m_get_dx_max_factor = val
+
+    property get_dx_max_upper_limit:
+        def __get__(self):
+            return self.thisptr.m_get_dx_max_upper_limit
+        def __set__(self, val):
+            self.thisptr.m_get_dx_max_upper_limit = val
+
+    property get_dx0_factor:
+        def __get__(self):
+            return self.thisptr.m_get_dx0_factor
+        def __set__(self, val):
+            self.thisptr.m_get_dx0_factor = val
+
+    property get_dx0_max_dx:
+        def __get__(self):
+            return self.thisptr.m_get_dx0_max_dx
+        def __set__(self, val):
+            self.thisptr.m_get_dx0_max_dx = val
+
+    property use_get_dx_max:
+        def __get__(self):
+            return self.thisptr.use_get_dx_max
+        def __set__(self, val):
+            assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
+            assert val in (True, False), "need boolean for use_get_dx_max"
+            self.thisptr.use_get_dx_max = val
+
+    property error_outside_bounds:
+        def __get__(self):
+            return self.thisptr.m_error_outside_bounds
+        def __set__(self, val):
+            assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
+            assert val in (True, False), "need boolean for error_outside_bounds"
+            self.thisptr.m_error_outside_bounds = val
+
 
     def logb(self, x):
         """ log_2 if self.use_log2 else log_e """

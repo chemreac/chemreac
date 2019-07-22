@@ -68,10 +68,12 @@ public:
     vector<Real_t> m_upper_bounds;
     vector<Real_t> m_lower_bounds;
     const Real_t ilu_limit;
-//    Real_t m_get_dx_max_factor {0.0};
+    Real_t m_get_dx_max_factor {0.0}, m_get_dx_max_upper_limit {0.0};
+    Real_t m_get_dx0_factor {1e-10}, m_get_dx0_max_dx {1.0};
     const int n_jac_diags;
     const bool use_log2;
     const bool clip_to_pos;
+    bool m_error_outside_bounds {false};
     const int nroots = 0;
 private:
     std::unique_ptr<block_diag_ilu::BlockDiagMatrix<Real_t>> jac_cache;
@@ -131,8 +133,8 @@ public:
     int get_ny() const override;
     int get_mlower() const override;
     int get_mupper() const override;
-    // Real_t get_dx_max(Real_t, const Real_t * const) override;
-    // Real_t get_dx0(Real_t x, const Real_t * const y) override;
+    Real_t get_dx_max(Real_t, const Real_t * const) override;
+    Real_t get_dx0(Real_t x, const Real_t * const y) override;
 
     AnyODE::Status rhs(Real_t, const Real_t * const, Real_t * const ANYODE_RESTRICT) override;
     // AnyODE::Status roots(Real_t xval, const Real_t * const y, Real_t * const out) override;

@@ -45,16 +45,16 @@ pipeline:
       - SUNDBASE=/opt/sundials-4.1.0-klu-lapack
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
+      - git fetch -tq
+      - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
       - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
       - mv dist/chemreac chemreac
-      - pwd   # DEBUG
-      - ls chemreac/   # DEBUG
+      - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
+      - ls chemreac/; PYTHONUSERBASE=/opt/pyusrb python3 -c "import chemreac"
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
-      - PYTHONUSERBASE=/opt/pyusrb LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
-      - git fetch -tq
-      - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
+      - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=$PWD LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
       - ./scripts/prepare_deploy.sh
 

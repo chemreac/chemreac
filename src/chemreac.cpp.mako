@@ -19,7 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << std::endl;
+#define PRINT_ARR(ARR, LARR) for(int i_=0; i_<LARR; ++i_) {std::cout << ARR[i_] << " ";}; std::cout << '\n';
 #include "chemreac_util.hpp" // save_array, load_array
 #endif
 
@@ -287,41 +287,49 @@ ReactionDiffusion<Real_t>::get_mupper() const
     return this->get_mlower();
 }
 
-// template<typename Real_t>
-// Real_t
-// ReactionDiffusion<Real_t>::get_dx_max(Real_t x, const Real_t * y const)
-// {
-//     const int ny = get_ny();
-//     auto fvec = std::vector<Real_t>(ny);
-//     auto hvec = std::vector<Real_t>(ny);
-//     rhs(x, y, &fvec[0]);
-//     for (indextype idx=0; idx < ny; ++idx){
-//         if (fvec[idx] == 0) {
-//             hvec[idx] = std::numeric_limits<Real_t>::max();
-//         } else if (fvec[idx] > 0) {
-//             hvec[idx] = std::abs(m_upper_bounds[idx] - y[idx])/fvec[idx];
-//         } else { // fvec[idx] < 0
-//             hvec[idx] = std::abs((m_lower_bounds[idx] - y[idx])/fvec[idx]);
-//         }
-//     }
-//     const auto result = *std::min_element(std::begin(hvec), std::end(hvec));
-//     if (m_get_dx_max_factor == 0.0)
-//         return result;
-//     else if (m_get_dx_max_factor < 0.0)
-//         return -m_get_dx_max_factor*result;
-//     else
-//         return m_get_dx_max_factor*result;
-// }
+template<typename Real_t>
+Real_t
+ReactionDiffusion<Real_t>::get_dx_max(Real_t x, const Real_t * const y)
+{
+    %for side in "upper lower".split():
+    if (m_${side}_bounds.size() != static_cast<std::size_t>(n*N)) {
+        throw std::runtime_error("trying to use get_dx_max without m_${side}_bounds set to correct size.");
+    }
+    %endfor
+    const int ny = get_ny();
+    auto fvec = std::vector<Real_t>(ny);
+    auto hvec = std::vector<Real_t>(ny);
+    rhs(x, y, &fvec[0]);
+    for (int idx=0; idx < ny; ++idx){
+        if (fvec[idx] == 0) {
+            hvec[idx] = std::numeric_limits<Real_t>::max();
+        } else if (fvec[idx] > 0) {
+            hvec[idx] = std::abs(m_upper_bounds[idx] - y[idx])/fvec[idx];
+        } else { // fvec[idx] < 0
+            hvec[idx] = std::abs((m_lower_bounds[idx] - y[idx])/fvec[idx]);
+        }
+    }
+    auto result = *std::min_element(std::begin(hvec), std::end(hvec));
+    if (m_get_dx_max_factor != 0.0) {
+        result *= std::abs(m_get_dx_max_factor);
+    }
+    if (m_get_dx_max_upper_limit != 0.0) {
+        result = std::min(result, m_get_dx_max_upper_limit);
+    }
+    return result;
+}
 
-// template<typename Real_t>
-// Real_t
-// ReactionDiffusion<Real_t>::get_dx0(Real_t x, const Real_t * const y)
-// {
-//     const int ny = get_ny();
-//     m_upper_bounds = upper_conc_bounds(init_conc);
-//     m_lower_bounds.resize(get_ny);
-//     return m_rtol*std::min(get_dx_max(x, y), 1.0);
-// }
+template<typename Real_t>
+Real_t
+ReactionDiffusion<Real_t>::get_dx0(Real_t x, const Real_t * const y)
+{
+    %for side in "upper lower".split():
+    if (m_${side}_bounds.size() != static_cast<std::size_t>(n*N)) {
+        return this->default_dx0;
+    }
+    %endfor
+    return m_get_dx0_factor*std::min(get_dx_max(x, y), m_get_dx0_max_dx);
+}
 
 template<typename Real_t>
 int
@@ -472,14 +480,8 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
                     linC[bi*n + si] = expb(Y(bi, si));
                 }
             } else {
-                if (clip_to_pos) {
-                    for (int si=0; si<n; ++si){
-                        linC[bi*n + si] = std::abs(Y(bi, si));
-                    }
-                } else {
-                    for (int si=0; si<n; ++si){
-                        linC[bi*n + si] = Y(bi, si);
-                    }
+                for (int si=0; si<n; ++si){
+                    linC[bi*n + si] = Y(bi, si);
                 }
             }
         }
@@ -494,12 +496,51 @@ AnyODE::Status
 ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
 {
     // note condifiontal call to free at end of this function
+    bool use_work = false;
     if (logy) {
         populate_linC(AnyODE::buffer_get_raw_ptr(work1), y, true);
         populate_linC(AnyODE::buffer_get_raw_ptr(work2), y, true, true);
+        use_work = true;
     }
-    const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
-    const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
+    if (clip_to_pos) {
+        if (!use_work) {
+            memcpy(AnyODE::buffer_get_raw_ptr(work1), y, sizeof(Real_t)*n*N);
+            for (int i=0; i<get_ny(); ++i){
+                work2[i] = 1.0/y[i];
+            }
+            use_work = true;
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work1[i] = (y[i] < 0) ? 0 : y[i];
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work2[i] = (y[i] < 0) ? INFINITY : y[i];
+        }
+    }
+    const Real_t * const linC = (use_work) ? AnyODE::buffer_get_raw_ptr(work1) : y;
+    const Real_t * const rlinC = (use_work) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
+    if (m_error_outside_bounds) {
+        if (m_lower_bounds.size() > 0) {
+            for (int i=0; i < n*N; ++i) {
+                if (linC[i] < m_lower_bounds[i]) {
+                    std::clog << "Lower bound (" << m_lower_bounds[i] << ") for "
+                              << std::to_string(i)
+                              << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
+                    return AnyODE::Status::recoverable_error;
+                }
+            }
+        }
+        if (m_upper_bounds.size() > 0) {
+            for (int i=0; i < n*N; ++i) {
+                if (linC[i] > m_upper_bounds[i]) {
+                    std::clog << "Upper bound (" << m_upper_bounds[i] << ") for "
+                              <<  std::to_string(i)
+                              << " not satisfied (" << linC[i] << ") at t="<< t << "\n";
+                    return AnyODE::Status::recoverable_error;
+                }
+            }
+        }
+    }
     if (auto_efield){
         calc_efield(linC);
     }
@@ -620,14 +661,30 @@ ReactionDiffusion<Real_t>::${token}(Real_t t,
             rhs(t, y, fout);
         }
     }
-
+    bool use_work = false;
     // note conditional call to free at end of this function
     if (logy) {
         populate_linC(AnyODE::buffer_get_raw_ptr(work1), y, true, false);
         populate_linC(AnyODE::buffer_get_raw_ptr(work2), y, true, true);
+        use_work = true;
     }
-    const Real_t * const linC = (logy) ? AnyODE::buffer_get_raw_ptr(work1) : y;
-    const Real_t * const rlinC = (logy) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
+    if (clip_to_pos) {
+        if (!use_work) {
+            memcpy(AnyODE::buffer_get_raw_ptr(work1), y, sizeof(Real_t)*n*N);
+            for (int i=0; i<get_ny(); ++i){
+                work2[i] = 1.0/y[i];
+            }
+            use_work = true;
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work1[i] = (y[i] < 0) ? 0 : y[i];
+        }
+        for (int i=0; i<get_ny(); ++i){
+            work2[i] = (y[i] < 0) ? INFINITY : y[i];
+        }
+    }
+    const Real_t * const linC = (use_work) ? AnyODE::buffer_get_raw_ptr(work1) : y;
+    const Real_t * const rlinC = (use_work) ? AnyODE::buffer_get_raw_ptr(work2) : nullptr;
     if (auto_efield) {
         calc_efield(linC);
     }

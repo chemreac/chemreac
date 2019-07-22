@@ -35,10 +35,15 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         vector[vector[T]] fields
         vector[int] modulated_rxns
         vector[vector[T]] modulation
+        vector[T] m_upper_bounds
+        vector[T] m_lower_bounds
         T ilu_limit
+        T m_get_dx_max_factor, m_get_dx_max_upper_limit
+        T m_get_dx0_factor, m_get_dx0_max_dx
         int n_jac_diags
         bool use_log2
         bool clip_to_pos
+        bool m_error_outside_bounds
         T * efield
         vector[T] gradD
         T * xc
@@ -52,6 +57,7 @@ cdef extern from "chemreac.hpp" namespace "chemreac":
         long nprec_solve_lu
 
         Info current_info
+        bool autonomous_exprs, use_get_dx_max
 
         ReactionDiffusion(int,
                           const vector[vector[int]],
