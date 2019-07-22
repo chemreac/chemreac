@@ -1,3 +1,9 @@
+#
+# Usage example:
+#
+#  $ make -B CONTEXT="gdb -ex run --args" EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC'
+#
+
 CXX?=g++ 
 CC?=gcc
 PERFFLAGS=-funroll-loops -O3 -ffast-math # -march=native
