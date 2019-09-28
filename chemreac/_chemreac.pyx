@@ -529,7 +529,7 @@ def cvode_predefined(
         vector[realtype] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
-        bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[], int msbj=0):
+        bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[], int msbj=0, bool stab_lim_det=False):
     cdef:
         int ny = rd.n*rd.N
         cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*ny)
@@ -544,7 +544,7 @@ def cvode_predefined(
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver_from_name(linear_solver.encode('UTF-8')),
-        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL, constraints, msbj)
+        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL, constraints, msbj, stab_lim_det)
     info = rd.get_last_info(success=False if return_on_error and nreached < tout.size else True)
     info['nreached'] = nreached
     if ew_ele:
@@ -562,7 +562,7 @@ def cvode_predefined_durations_fields(
         bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver='default', int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
-        bool return_on_error=False, bool with_jtimes=False, ew_ele=False, vector[double] constraints=[], int msbj=0):
+        bool return_on_error=False, bool with_jtimes=False, ew_ele=False, vector[double] constraints=[], int msbj=0, bool stab_lim_det=False):
     cdef:
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout = np.empty(durations.size*npoints + 1)
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] yout = np.empty(tout.size*rd.n*rd.N)
@@ -603,7 +603,7 @@ def cvode_predefined_durations_fields(
             root_indices, roots_output, nsteps, first_step, dx_min,
             dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
             linear_solver_from_name(linear_solver.encode('UTF-8')), maxl, eps_lin, nderiv,
-            autorestart, return_on_error, with_jtimes, ew_ele_out, constraints, msbj)
+            autorestart, return_on_error, with_jtimes, ew_ele_out, constraints, msbj, stab_lim_det)
 
         if nreached != npoints+1:
             raise ValueError("Did not reach all points for index %d" % i)
@@ -617,7 +617,7 @@ def cvode_adaptive(
         basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
         bool return_on_root=False, int autorestart=0, bool return_on_error=False,
-        bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[], int msbj=0):
+        bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[], int msbj=0, bool stab_lim_det=False):
     cdef:
         int nout, nderiv = 0, td = 1
         vector[int] root_indices
@@ -646,7 +646,7 @@ def cvode_adaptive(
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver_from_name(linear_solver.encode('UTF-8')), maxl, eps_lin, nderiv,
         return_on_root, autorestart, return_on_error,
-        with_jtimes, 0, &ew_ele_out if ew_ele else NULL, constraints, msbj)
+        with_jtimes, 0, &ew_ele_out if ew_ele else NULL, constraints, msbj, stab_lim_det)
     xyout_dims[0] = nout + 1
     xyout_dims[1] = y0.size*(nderiv+1) + 1
     xyout_arr = cnp.PyArray_SimpleNewFromData(2, xyout_dims, cnp.NPY_DOUBLE, <void *>xyout)

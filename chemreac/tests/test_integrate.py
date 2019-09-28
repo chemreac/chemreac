@@ -234,7 +234,9 @@ def test_integrators(log):
             'rtol': 1e-8,
             'method': 'bdf',
             'tout': (t0, tend),
-            'constraints': [1.0, 1.0]
+            'constraints': [1.0, 1.0],
+            'msbj': 5,
+            'stab_lim_det': True
         }
     }
     import pycvodes
