@@ -1,0 +1,346 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>chemreac.core &mdash; chemreac 0.8.4 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script type="text/javascript" src="_static/jquery.js"></script>
+        <script type="text/javascript" src="_static/underscore.js"></script>
+        <script type="text/javascript" src="_static/doctools.js"></script>
+        <script type="text/javascript" src="_static/language_data.js"></script>
+        <script async="async" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="chemreac.integrate" href="integrate.html" />
+    <link rel="prev" title="Modules Reference" href="modules.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.8.4
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="derivations.html">Derivations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules Reference</a><ul class="current">
+<li class="toctree-l2 current"><a class="current reference internal" href="#">chemreac.core</a></li>
+<li class="toctree-l2"><a class="reference internal" href="integrate.html">chemreac.integrate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">chemreac.chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="util/index.html">chemreac.util</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules Reference</a> &raquo;</li>
+        
+      <li>chemreac.core</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/core.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-chemreac.core"></span><div class="section" id="chemreac-core">
+<h1>chemreac.core<a class="headerlink" href="#chemreac-core" title="Permalink to this headline">¶</a></h1>
+<p>In <code class="docutils literal notranslate"><span class="pre">chemreac.core</span></code> you will find <a class="reference internal" href="#chemreac.core.ReactionDiffusion" title="chemreac.core.ReactionDiffusion"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionDiffusion</span></code></a> which
+is the class describing the system of ODEs.</p>
+<dl class="class">
+<dt id="chemreac.core.ReactionDiffusion">
+<em class="property">class </em><code class="descclassname">chemreac.core.</code><code class="descname">ReactionDiffusion</code><a class="reference internal" href="_modules/chemreac/core.html#ReactionDiffusion"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.core.ReactionDiffusion" title="Permalink to this definition">¶</a></dt>
+<dd><p>Object representing the numerical model, with callbacks for evaluating
+derivatives and jacobian.</p>
+<p>Instances provide the methods:</p>
+<ul class="simple">
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">f()</span></code></p></li>
+<li><p><code class="xref py py-meth docutils literal notranslate"><span class="pre">dense_jac_rmaj()</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f(t,</span> <span class="pre">y,</span> <span class="pre">fout)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dense_jac_rmaj(t,</span> <span class="pre">y,</span> <span class="pre">jout)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dense_jac_cmaj(t,</span> <span class="pre">y,</span> <span class="pre">jout)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">banded_jac_cmaj(t,</span> <span class="pre">y,</span> <span class="pre">jout)</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">banded_packed_jac_cmaj(t,</span> <span class="pre">y,</span> <span class="pre">jout)</span></code></p></li>
+</ul>
+<p>some of which are used by e.g. <a class="reference internal" href="integrate.html#chemreac.integrate.integrate_scipy" title="chemreac.integrate.integrate_scipy"><code class="xref py py-func docutils literal notranslate"><span class="pre">integrate_scipy()</span></code></a></p>
+<p>Additional convenience attributes (not used by underlying C++ class):</p>
+<ul class="simple">
+<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">substance_names</span></code></p></li>
+<li><p><code class="xref py py-attr docutils literal notranslate"><span class="pre">substance_latex_names</span></code></p></li>
+</ul>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>only the four first arguments (up to k) are considered positional</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>n: integer</strong></dt><dd><p>Number of species.</p>
+</dd>
+<dt><strong>stoich_active: list of lists of integer indices</strong></dt><dd><p>Reactant index lists per reaction.</p>
+</dd>
+<dt><strong>stoich_prod: list of lists of integer indices</strong></dt><dd><p>Product index lists per reaction.</p>
+</dd>
+<dt><strong>k: 1-dimensional array</strong></dt><dd><p>Reaction rate coefficients.</p>
+</dd>
+<dt><strong>N: integer</strong></dt><dd><p>Number of compartments (default: 1 if <code class="docutils literal notranslate"><span class="pre">x==None</span></code> else <code class="docutils literal notranslate"><span class="pre">len(x)-1</span></code>).</p>
+</dd>
+<dt><strong>D: sequence of floats</strong></dt><dd><p>Diffusion coefficients (of length n).</p>
+</dd>
+<dt><strong>z_chg: sequence of integers</strong></dt><dd><p>1-dimensional array of ion charges.</p>
+</dd>
+<dt><strong>mobility: sequence of floats</strong></dt><dd><p>Mobility of ions.</p>
+</dd>
+<dt><strong>x: sequence of floats or pair of flats or float, optional</strong></dt><dd><p>Compartment boundaries (of length N+1), if x is a pair of floats it is
+expanded into <code class="docutils literal notranslate"><span class="pre">linspace(x[0],</span> <span class="pre">x[1],</span> <span class="pre">N+1)</span></code>, if x is a float it is
+expanded into <code class="docutils literal notranslate"><span class="pre">linspace(0,</span> <span class="pre">x,</span> <span class="pre">N+1)</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p>
+</dd>
+<dt><strong>stoich_inact: list of lists of integer indices</strong></dt><dd><p>List of inactive reactant index lists per reaction.n, default: <code class="docutils literal notranslate"><span class="pre">[]</span></code>.</p>
+</dd>
+<dt><strong>geom: str (letter)</strong></dt><dd><p>Any in ‘fcs’ (flat, cylindrical, spherical).</p>
+</dd>
+<dt><strong>logy: bool</strong></dt><dd><p>f and *_jac_* routines operate on log_b(concentration).</p>
+</dd>
+<dt><strong>logt: bool</strong></dt><dd><p>f and *_jac_* routines operate on log_b(time).</p>
+</dd>
+<dt><strong>logx: bool</strong></dt><dd><p>f and *_jac_* routines operate on log_b(space).</p>
+</dd>
+<dt><strong>nstencil: integer</strong></dt><dd><p>Number of points used in finite difference scheme.</p>
+</dd>
+<dt><strong>lrefl: bool</strong></dt><dd><p>Reflective left boundary (default: True).</p>
+</dd>
+<dt><strong>rrefl: bool</strong></dt><dd><p>Reflective right boundary (default: True).</p>
+</dd>
+<dt><strong>auto_efield: bool</strong></dt><dd><p>Calculate electric field from concentrations (default: False).</p>
+</dd>
+<dt><strong>surf_chg: pair of floats</strong></dt><dd><p>Total charge of surface (defaut: (0.0, 0.0)).</p>
+</dd>
+<dt><strong>eps_rel: float</strong></dt><dd><p>Relative permitivity of medium (dielectric constant).</p>
+</dd>
+<dt><strong>g_values: sequence of sequences of floats</strong></dt><dd><p>Per specie yields (amount / energy) per field type.</p>
+</dd>
+<dt><strong>g_value_parents: sequence of integers (optional)</strong></dt><dd><p>Indices of parents for each g_value. <code class="docutils literal notranslate"><span class="pre">-1</span></code> denotes no concentration
+dependence of g_values. default: <code class="docutils literal notranslate"><span class="pre">[-1]*len(g_values)</span></code>.</p>
+</dd>
+<dt><strong>fields: sequence of sequence of floats</strong></dt><dd><p>Per bin field strength (energy / volume / time) per field type.
+May be calculated as product between density and doserate.</p>
+</dd>
+<dt><strong>modulated_rxns: sequence of integers</strong></dt><dd><p>Indicies of reactions subject to per bin modulation.</p>
+</dd>
+<dt><strong>modulation: sequence of sequences of floats</strong></dt><dd><p>Per bin modulation vectors for each index in modulated_rxns.</p>
+</dd>
+<dt><strong>ilu_limit: float</strong></dt><dd><p>Requirement on (average) diagonal dominance for performing ILU
+factorization.</p>
+</dd>
+<dt><strong>n_jac_diags: int</strong></dt><dd><p>Number of diagonals to include in Jacobian. <code class="docutils literal notranslate"><span class="pre">-1</span></code> delegates to
+environment variable <code class="docutils literal notranslate"><span class="pre">CHEMREAC_N_JAC_DIAGS</span></code>. <code class="docutils literal notranslate"><span class="pre">0</span></code> makes it equal to
+<code class="docutils literal notranslate"><span class="pre">nstencil</span> <span class="pre">-</span> <span class="pre">1</span> <span class="pre">/</span> <span class="pre">2</span></code>.</p>
+</dd>
+<dt><strong>use_log2: bool</strong></dt><dd><p>Use base 2 for logarithmic transform instead of e.</p>
+</dd>
+<dt><strong>unit_registry: dict (optional)</strong></dt><dd><p>See <code class="docutils literal notranslate"><span class="pre">chemreac.units.SI_base_registry</span></code> for an example (default: None).</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>unit_registry: dict</strong></dt><dd></dd>
+</dl>
+</dd>
+</dl>
+<dl class="classmethod">
+<dt id="chemreac.core.ReactionDiffusion.nondimensionalisation">
+<em class="property">classmethod </em><code class="descname">nondimensionalisation</code><span class="sig-paren">(</span><em>n</em>, <em>stoich_active</em>, <em>stoich_prod</em>, <em>k</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/core.html#ReactionDiffusion.nondimensionalisation"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.core.ReactionDiffusion.nondimensionalisation" title="Permalink to this definition">¶</a></dt>
+<dd><p>Alternative constructor taking arguments with units</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="chemreac.core.g_units">
+<code class="descclassname">chemreac.core.</code><code class="descname">g_units</code><span class="sig-paren">(</span><em>unit_registry</em>, <em>g_value_parents</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/core.html#g_units"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.core.g_units" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forms the unit of radiolytic yield</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>g_value_parents: iterable of integers</strong></dt><dd><p>parent substance indices (-1 indicates no parent)</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="integrate.html" class="btn btn-neutral float-right" title="chemreac.integrate" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="modules.html" class="btn btn-neutral float-left" title="Modules Reference" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
