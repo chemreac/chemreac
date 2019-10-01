@@ -86,7 +86,7 @@ cdef class PyReactionDiffusion:
                   bint clip_to_pos=False
               ):
         cdef size_t i
-        if D.size() == n:
+        if D.size() == <unsigned>(n):
             D = list(D)*N
 
         self.thisptr = new ReactionDiffusion[double](
@@ -96,6 +96,7 @@ cdef class PyReactionDiffusion:
             lrefl, rrefl, auto_efield, surf_chg, eps_rel, faraday_const,
             vacuum_permittivity, g_values, g_value_parents, fields,
             modulated_rxns, modulation, ilu_limit, n_jac_diags, use_log2, clip_to_pos)
+        self.thisptr.autonomous_exprs = True
 
     def __dealloc__(self):
         del self.thisptr
@@ -327,6 +328,65 @@ cdef class PyReactionDiffusion:
         def __get__(self):
             return self.thisptr.clip_to_pos
 
+    property upper_bounds:
+        def __get__(self):
+            return self.thisptr.m_upper_bounds
+        def __set__(self, val):
+            if len(val) != <unsigned>(self.thisptr.n*self.thisptr.N):
+                raise ValueError("upper_bounds of incorrect size")
+            self.thisptr.m_upper_bounds = val
+
+    property lower_bounds:
+        def __get__(self):
+            return self.thisptr.m_lower_bounds
+        def __set__(self, val):
+            if len(val) != <unsigned>(self.thisptr.n*self.thisptr.N):
+                raise ValueError("lower_bounds of incorrect size")
+            self.thisptr.m_lower_bounds = val
+
+    property get_dx_max_factor:
+        def __get__(self):
+            return self.thisptr.m_get_dx_max_factor
+        def __set__(self, val):
+            self.thisptr.m_get_dx_max_factor = val
+
+    property get_dx_max_upper_limit:
+        def __get__(self):
+            return self.thisptr.m_get_dx_max_upper_limit
+        def __set__(self, val):
+            self.thisptr.m_get_dx_max_upper_limit = val
+
+    property get_dx0_factor:
+        def __get__(self):
+            return self.thisptr.m_get_dx0_factor
+        def __set__(self, val):
+            self.thisptr.m_get_dx0_factor = val
+
+    property get_dx0_max_dx:
+        def __get__(self):
+            return self.thisptr.m_get_dx0_max_dx
+        def __set__(self, val):
+            self.thisptr.m_get_dx0_max_dx = val
+
+    property use_get_dx_max:
+        def __get__(self):
+            return self.thisptr.use_get_dx_max
+        def __set__(self, val):
+            assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
+            assert val in (True, False), "need boolean for use_get_dx_max"
+            self.thisptr.use_get_dx_max = val
+
+    property error_outside_bounds:
+        def __get__(self):
+            return self.thisptr.m_error_outside_bounds
+        def __set__(self, val):
+            assert self.thisptr.m_lower_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "lower_bounds of incorrect length"
+            assert self.thisptr.m_upper_bounds.size() == <unsigned>(self.thisptr.n*self.thisptr.N), "upper_bounds of incorrect length"
+            assert val in (True, False), "need boolean for error_outside_bounds"
+            self.thisptr.m_error_outside_bounds = val
+
+
     def logb(self, x):
         """ log_2 if self.use_log2 else log_e """
         result = np.log(x)
@@ -469,7 +529,7 @@ def cvode_predefined(
         vector[realtype] atol, double rtol, basestring method, bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
-        bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[]):
+        bool return_on_error=False, bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[], int msbj=0, bool stab_lim_det=False):
     cdef:
         int ny = rd.n*rd.N
         cnp.ndarray[cnp.float64_t, ndim=1] yout = np.empty(tout.size*ny)
@@ -484,7 +544,7 @@ def cvode_predefined(
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver_from_name(linear_solver.encode('UTF-8')),
-        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL, constraints)
+        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL, constraints, msbj, stab_lim_det)
     info = rd.get_last_info(success=False if return_on_error and nreached < tout.size else True)
     info['nreached'] = nreached
     if ew_ele:
@@ -502,7 +562,7 @@ def cvode_predefined_durations_fields(
         bool with_jacobian=True,
         basestring iter_type='undecided', str linear_solver='default', int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500, int autorestart=0,
-        bool return_on_error=False, bool with_jtimes=False, ew_ele=False, vector[double] constraints=[]):
+        bool return_on_error=False, bool with_jtimes=False, ew_ele=False, vector[double] constraints=[], int msbj=0, bool stab_lim_det=False):
     cdef:
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] tout = np.empty(durations.size*npoints + 1)
         cnp.ndarray[cnp.float64_t, ndim=1, mode='c'] yout = np.empty(tout.size*rd.n*rd.N)
@@ -543,7 +603,7 @@ def cvode_predefined_durations_fields(
             root_indices, roots_output, nsteps, first_step, dx_min,
             dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
             linear_solver_from_name(linear_solver.encode('UTF-8')), maxl, eps_lin, nderiv,
-            autorestart, return_on_error, with_jtimes, ew_ele_out, constraints)
+            autorestart, return_on_error, with_jtimes, ew_ele_out, constraints, msbj, stab_lim_det)
 
         if nreached != npoints+1:
             raise ValueError("Did not reach all points for index %d" % i)
@@ -557,7 +617,7 @@ def cvode_adaptive(
         basestring iter_type='undecided', str linear_solver="default", int maxl=5, double eps_lin=0.05,
         double first_step=0.0, double dx_min=0.0, double dx_max=0.0, int nsteps=500,
         bool return_on_root=False, int autorestart=0, bool return_on_error=False,
-        bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[]):
+        bool with_jtimes=False, bool ew_ele=False, vector[double] constraints=[], int msbj=0, bool stab_lim_det=False):
     cdef:
         int nout, nderiv = 0, td = 1
         vector[int] root_indices
@@ -586,7 +646,7 @@ def cvode_adaptive(
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver_from_name(linear_solver.encode('UTF-8')), maxl, eps_lin, nderiv,
         return_on_root, autorestart, return_on_error,
-        with_jtimes, 0, &ew_ele_out if ew_ele else NULL, constraints)
+        with_jtimes, 0, &ew_ele_out if ew_ele else NULL, constraints, msbj, stab_lim_det)
     xyout_dims[0] = nout + 1
     xyout_dims[1] = y0.size*(nderiv+1) + 1
     xyout_arr = cnp.PyArray_SimpleNewFromData(2, xyout_dims, cnp.NPY_DOUBLE, <void *>xyout)
