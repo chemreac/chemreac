@@ -17,26 +17,26 @@ pipeline:
     ttl: 90  # liftetime in days
 
   install-reqs:
-    image: bjodah/bjodahimg18:v2.2
+    image: bjodah/bjodahimg18:v3.0
     environment:
       - PYCVODES_LAPACK=lapack,blas
       - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
       - PYCVODES_NO_KLU=0
       - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
       - CPATH=/usr/include/suitesparse
-      - CPLUS_INCLUDE_PATH=/opt/boost_1_70_0/include
+      - CPLUS_INCLUDE_PATH=/opt/boost_1_71_0/include
     commands:
       - export CPATH=$SUNDBASE/include:$CPATH
       - export LIBRARY_PATH=$SUNDBASE/lib:$LIBRARY_PATH
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.0" "pyodeint>=0.10.0" "pygslodeiv2>=0.9.0" "batemaneq" "pyodesys>=0.12.0" "chempy>=0.7.8"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.0" "pyodeint>=0.10.0" "pygslodeiv2>=0.9.0" "batemaneq" "pyodesys>=0.12.6" "chempy>=0.7.9"
       - python3 -c "import block_diag_ilu"
       - ls external/anyode
 
   test-dbg-gcc-8-sund-4.1.0:
-    image: bjodah/bjodahimg18:v2.2
+    image: bjodah/bjodahimg18:v3.0
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
@@ -60,7 +60,7 @@ pipeline:
 
 
   test-dbg-gcc-8-sund-3.2.1:
-    image: bjodah/bjodahimg18:v2.2
+    image: bjodah/bjodahimg18:v3.0
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
@@ -72,7 +72,7 @@ pipeline:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
 
   test-rel-gcc-7-sund-2.7.0:
-    image: bjodah/bjodahimg18:v2.2
+    image: bjodah/bjodahimg18:v3.0
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
@@ -84,7 +84,7 @@ pipeline:
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac"
 
   # test-conda-pkgs:
-  #   image: bjodah/bjodahimg18dev:v2.2
+  #   image: bjodah/bjodahimg18dev:v3.0.1
   #   commands:
   #     - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
   #     - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
