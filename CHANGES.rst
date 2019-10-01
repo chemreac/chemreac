@@ -1,3 +1,7 @@
+v0.8.4
+======
+- Update pycvodes
+
 v0.8.3
 ======
 - Warn if fields given & doserate/density in vars
