@@ -39,7 +39,7 @@ def save_and_or_show_plot(show=None, savefig='None', **kwargs):
     savefig: string
         path to output file of figure. If extension is html, mpld3
         will be used to generate a d3 backed html output.
-    \*\*kwargs:
+    \\*\\*kwargs:
         keyword arguments passed on to ``matplotlib.pyplot.savefig``
     """
     if savefig is not None and savefig != 'None':
@@ -686,7 +686,7 @@ def plot_solver_linear_error(
         value with which errors are scaled. (default: 1.0)
     fill: bool
         whether or not to fill error span
-    \*\*kwargs
+    \\*\\*kwargs
         common keyword arguments of plot_kwargs and fill_between_kwargs,
         e.g. 'color', (default: None).
 
@@ -737,7 +737,7 @@ def plot_solver_linear_excess_error(integration, Cref, ax=None, x=None,
     Cref: array or float
         analytic solution to compare with
     ax: Axes instance or dict
-        if ax is a dict it is used as \*\*kwargs passed to
+        if ax is a dict it is used as \\*\\*kwargs passed to
         matplotlib.pyplot.axes (default: None)
     x: array
         (optional) x-values, when None it is deduced to be
@@ -758,7 +758,7 @@ def plot_solver_linear_excess_error(integration, Cref, ax=None, x=None,
         value with which errors are scaled. (default: 1.0)
     fill: bool
         whether or not to fill error span
-    \*\*kwargs:
+    \\*\\*kwargs:
         common keyword arguments of plot_kwargs and fill_between_kwargs,
         e.g. 'color', (default: None).
 

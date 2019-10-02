@@ -52,7 +52,7 @@ class ReactionDiffusionBase(object):
         variables : dict
         fields: optional
         unit_registry : dict, optional
-        \\*\\*kwargs :
+        \\\*\\\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """
@@ -315,11 +315,11 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     geom: str (letter)
         Any in 'fcs' (flat, cylindrical, spherical).
     logy: bool
-        f and \\*_jac_\\* routines operate on log_b(concentration).
+        f and \\\*_jac_\\\* routines operate on log_b(concentration).
     logt: bool
-        f and \\*_jac_\\* routines operate on log_b(time).
+        f and \\\*_jac_\\\* routines operate on log_b(time).
     logx: bool
-        f and \\*_jac_\\* routines operate on log_b(space).
+        f and \\\*_jac_\\\* routines operate on log_b(space).
     nstencil: integer
         Number of points used in finite difference scheme.
     lrefl: bool

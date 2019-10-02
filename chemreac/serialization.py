@@ -62,7 +62,7 @@ def load(source, RD=None, **kwargs):
     ----------
     source: file object or path string
     RD: subclass of ReactionDiffusion (default: ReactionDiffusion)
-    \*\*kwargs
+    \\*\\*kwargs
         override parameters in source with kwargs
     """
     RD = RD or ReactionDiffusion
