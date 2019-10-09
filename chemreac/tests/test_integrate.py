@@ -235,11 +235,13 @@ def test_integrators(log):
             'method': 'bdf',
             'tout': (t0, tend),
             'constraints': [1.0, 1.0],
-            'msbj': 5,
-            'stab_lim_det': True
         }
     }
     import pycvodes
+    if pycvodes.sundials_version > (4, 1, 0):
+        solver_kwargs['cvode5']['msbj'] = 5
+        solver_kwargs['cvode5']['stab_lim_det'] = True
+
     if logy or pycvodes.sundials_version < (3, 2, 0):
         solver_kwargs.pop('cvode5')  # sundials >=3.2.0 required for constraints
 
