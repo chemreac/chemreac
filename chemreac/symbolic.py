@@ -72,8 +72,9 @@ class SymRD(ReactionDiffusionBase):
         self.fields = [] if fields is None else fields
         self.modulated_rxns = [] if modulated_rxns is None else modulated_rxns
         self.modulation = [] if modulation is None else modulation
+        _minus_one = -1
         self.n_jac_diags = (int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
-                            n_jac_diags is -1 else n_jac_diags)
+                            n_jac_diags is _minus_one else n_jac_diags)
         self.use_log2 = use_log2
         if kwargs:
             raise KeyError("Don't know what to do with:", kwargs)

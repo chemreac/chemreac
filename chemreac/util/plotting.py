@@ -297,7 +297,7 @@ def plot_jacobian(rd, tout, yout, substances, **kwargs):
                               print_names[i] for i in indices], **kwargs)
     for ax in axes:
         ax.set_ylabel(
-            "$\\frac{\\partial r_{tot}}{\partial C_i}~/~s^{-1}$")
+            "$\\frac{\\partial r_{tot}}{\\partial C_i}~/~s^{-1}$")
     return axes
 
 

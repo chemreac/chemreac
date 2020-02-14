@@ -52,7 +52,7 @@ class ReactionDiffusionBase(object):
         variables : dict
         fields: optional
         unit_registry : dict, optional
-        \\\*\\\*kwargs :
+        \\*\\*kwargs :
             Keyword arguments passed on to :class:`ReactionDiffusion`
 
         """
@@ -315,11 +315,11 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
     geom: str (letter)
         Any in 'fcs' (flat, cylindrical, spherical).
     logy: bool
-        f and \\\*_jac_\\\* routines operate on log_b(concentration).
+        f and \\*_jac_\\* routines operate on log_b(concentration).
     logt: bool
-        f and \\\*_jac_\\\* routines operate on log_b(time).
+        f and \\*_jac_\\* routines operate on log_b(time).
     logx: bool
-        f and \\\*_jac_\\\* routines operate on log_b(space).
+        f and \\*_jac_\\* routines operate on log_b(space).
     nstencil: integer
         Number of points used in finite difference scheme.
     lrefl: bool
@@ -491,7 +491,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
         _k = np.asarray(k)
         if _k.ndim != 1:
             raise ValueError("Rates vector has inproper dimension")
-
+        _minus_one = -1
         rd = super(ReactionDiffusion, cls).__new__(
             cls, n, stoich_active, stoich_prod, _k,
             N, D, z_chg, mobility, _x, stoich_inact, 'fcs'.index(geom), logy,
@@ -505,7 +505,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
             ilu_limit=(float(os.environ.get('CHEMREAC_ILU_LIMIT', 1000)) if
                        ilu_limit is None else ilu_limit),
             n_jac_diags=(int(os.environ.get('CHEMREAC_N_JAC_DIAGS', 1)) if
-                         n_jac_diags is -1 else n_jac_diags),
+                         n_jac_diags is _minus_one else n_jac_diags),
             use_log2=use_log2,
             clip_to_pos=clip_to_pos
         )

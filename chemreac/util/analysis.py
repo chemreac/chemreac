@@ -39,8 +39,8 @@ def solver_linear_error(y, rtol, atol, logy=False, scale_err=1.0, expb=None):
     upper bounds around y.
 
     .. note:: Assumes maximum mangitude of error be: \
-    :math:`\\boldsymbol{e}_{max} = \|\\boldsymbol{y} \
-    \\cdot \\mathrm{rtol}\| + \\mathrm{atol}`
+    :math:`\\boldsymbol{e}_{max} = \\|\\boldsymbol{y} \
+    \\cdot \\mathrm{rtol}\\| + \\mathrm{atol}`
     """
     solver_err = scale_err*(np.abs(y*rtol) + atol)
     if logy:
