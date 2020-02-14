@@ -12,7 +12,7 @@ export CPATH=$SUNDBASE/include:$CPATH
 export LIBRARY_PATH=$SUNDBASE/lib
 export LD_LIBRARY_PATH=$SUNDBASE/lib
 export CMAKE_PREFIX_PATH=$SUNDBASE:$CMAKE_PREFIX_PATH
-python3 -m pip install --user "pycvodes>=0.11.0"
+python3 -m pip install --user "pycvodes>=0.12.0"
 
 mkdir -p "$1"
 cd "$1"

@@ -17,7 +17,7 @@ pipeline:
     ttl: 90  # liftetime in days
 
   install-reqs:
-    image: bjodah/bjodahimg18:v3.0
+    image: bjodah/bjodahimg18dev:v3.0.2
     environment:
       - PYCVODES_LAPACK=lapack,blas
       - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
@@ -35,14 +35,14 @@ pipeline:
       - python3 -c "import block_diag_ilu"
       - ls external/anyode
 
-  test-dbg-gcc-8-sund-4.1.0:
-    image: bjodah/bjodahimg18:v3.0
+  test-dbg-gcc-8-sund-5.1.0:
+    image: bjodah/bjodahimg18dev:v3.0.2
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
       - CC=gcc-8
       - CXX=g++-8
-      - SUNDBASE=/opt/sundials-4.1.0-klu-lapack
+      - SUNDBASE=/opt/sundials-5.1.0-klu-lapack
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - git fetch -tq
@@ -57,37 +57,6 @@ pipeline:
       - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=$PWD LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
       - ./scripts/prepare_deploy.sh
-
-
-  test-dbg-gcc-8-sund-3.2.1:
-    image: bjodah/bjodahimg18:v3.0
-    group: testing
-    environment:
-      - CPATH=/usr/include/suitesparse
-      - CC=gcc-8
-      - CXX=g++-8
-      - SUNDBASE=/opt/sundials-3.2.1-klu-lapack
-      - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode')
-    commands:
-      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
-
-  test-rel-gcc-7-sund-2.7.0:
-    image: bjodah/bjodahimg18:v3.0
-    group: testing
-    environment:
-      - CPATH=/usr/include/suitesparse
-      - CC=gcc-7
-      - CXX=g++-7
-      - SUNDBASE=/opt/sundials-2.7.0-klu-lapack
-      - PYCVODES_NO_KLU=0
-    commands:
-      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac"
-
-  # test-conda-pkgs:
-  #   image: bjodah/bjodahimg18dev:v3.0.1
-  #   commands:
-  #     - PATH=/opt/miniconda3/bin:$PATH conda config --add channels bjodah  # sym, pyodesys, pyneqsys
-  #     - PATH=/opt/miniconda3/bin:$PATH conda build --output-folder "deploy/public_html/branches/${CI_BRANCH}" conda-recipe
 
   rebuild-cache:
     image: drillster/drone-volume-cache
