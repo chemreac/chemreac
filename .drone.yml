@@ -25,6 +25,7 @@ pipeline:
       - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
       - CPATH=/usr/include/suitesparse
       - CPLUS_INCLUDE_PATH=/opt/boost_1_72_p/include
+      - SUNDBASE=/opt/sundials-5.1.0-klu-lapack
     commands:
       - export CPATH=$SUNDBASE/include:$CPATH
       - export LIBRARY_PATH=$SUNDBASE/lib:$LIBRARY_PATH
