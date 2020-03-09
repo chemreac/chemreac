@@ -31,7 +31,7 @@ pipeline:
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.0" "pyodeint>=0.10.0" "pygslodeiv2>=0.9.0" "batemaneq" "pyodesys>=0.12.6" "chempy>=0.7.9"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.3" "pygslodeiv2>=0.9.3" "pycvodes>=0.12.1" "batemaneq>0.2.1" "pyodesys>=0.13.0" "chempy>=0.7.10"
       - python3 -c "import block_diag_ilu"
       - ls external/anyode
 
