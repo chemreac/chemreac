@@ -60,7 +60,7 @@ _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
 # Source distributions contain rendered sources
-_common_requires = ['numpy>=1.16.5', 'block_diag_ilu>=0.4.0', 'pycvodes>=0.12.0', 'finitediff>=0.6.2']
+_common_requires = ['numpy>=1.16.6', 'block_diag_ilu>=0.4.3', 'pycvodes>=0.12.1', 'finitediff>=0.6.3']
 install_requires = _common_requires + ['chempy>=0.7.9', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
