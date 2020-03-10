@@ -11,6 +11,13 @@ import sys
 import warnings
 
 from setuptools import setup, Extension
+try:
+    import cython
+except ImportError:
+    _HAVE_CYTHON = False
+else:
+    _HAVE_CYTHON = True
+    assert cython  # silence pep8
 
 pkg_name = 'chemreac'
 url = 'https://github.com/chemreac/' + pkg_name
@@ -65,18 +72,16 @@ install_requires = _common_requires + ['chempy>=0.7.9', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
 
-_cpp = _path_under_setup(pkg_name, '_%s.cpp' % pkg_name)
-_pyx = _path_under_setup(pkg_name, '_%s.pyx' % pkg_name)
-if os.path.exists(_cpp):
-    if os.path.exists(_pyx) and os.path.getmtime(_pyx) - 1e-6 >= os.path.getmtime(_cpp):
-        USE_CYTHON = True
-    else:
-        USE_CYTHON = False
+_src = {ext: _path_under_setup(pkg_name, '_%s.%s' % (pkg_name, ext)) for ext in "cpp pyx".split()}
+if _HAVE_CYTHON and os.path.exists(_src["pyx"]):
+    # Possible that a new release of Python needs a re-rendered Cython source,
+    # or that we want to include possible bug-fix to Cython, disable by manually
+    # deleting .pyx file from source distribution.
+    USE_CYTHON = True
+    if os.path.exists(_src['cpp']):
+        os.unlink(_src['cpp'])  # ensure c++ source is re-generated.
 else:
-    if os.path.exists(_pyx):
-        USE_CYTHON = True
-    else:
-        raise ValueError("Neither pyx nor cpp file found")
+    USE_CYTHON = False
 
 ext_modules = []
 
@@ -88,7 +93,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import pycvodes as pc
     import block_diag_ilu as bdi
 
-    setup_requires = _common_requires + ['mako>=1.0']
+    setup_requires = _common_requires + ['mako>=1.0'] + (["cython>=0.29.15"] if USE_CYTHON else [])
 
     rendered_path = 'src/chemreac.cpp'
     template_path = rendered_path + '.mako'
@@ -105,7 +110,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         else:
             open(rendered_path, 'wt').write(rendered)
 
-    sources = [_pyx if USE_CYTHON else _cpp]
+    sources = [_src["pyx" if USE_CYTHON else "cpp"]]
     ext_modules.append(Extension('{0}._{0}'.format(pkg_name), sources))
 
     if USE_CYTHON:

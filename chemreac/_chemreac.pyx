@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 # distutils: language = c++
+# cython: language_level=3str
+#
+# note that we require cython>=0.29.15
 
 from libc.stdlib cimport malloc
 import cython
