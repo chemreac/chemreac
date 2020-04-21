@@ -10,8 +10,8 @@ pipeline:
     image: drillster/drone-volume-cache
     restore: true
     mount:
-      - ./ci_cache/pip_cache
-      - ./ci_cache/pyusrb
+      - ./ci-cache/pip-cache
+      - ./ci-cache/pyusrb
     volumes:
       - /tmp/cache:/cache
     ttl: 90  # liftetime in days
@@ -29,15 +29,15 @@ pipeline:
       - CPLUS_INCLUDE_PATH=/opt/boost_1_72_p/include
       - SUNDBASE=/opt/sundials-5.2.0-klu-lapack
     commands:
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.3" "pygslodeiv2>=0.9.3"  "batemaneq>=0.2.2"
+      - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.3" "pygslodeiv2>=0.9.3"  "batemaneq>=0.2.2"
       - python3 -c "import block_diag_ilu"
       - export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
       - export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
-      - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
+      - export PYTHONUSERBASE=$(pwd)/ci-cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade "http://hera.physchem.kth.se/~pycvodes/branches/master/pycvodes-0.13.0.dev0+git.tar.gz"
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade "https://github.com/bjodah/pyodesys/archive/bump-versions.tar.gz"
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade "chempy>=0.7.10"
+      - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "http://hera.physchem.kth.se/~pycvodes/branches/master/pycvodes-0.13.0.dev0+git.tar.gz"
+      - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "https://github.com/bjodah/pyodesys/archive/bump-versions.tar.gz"
+      - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
 
   test-dbg-gcc-10-sund-5.2.0:
@@ -52,7 +52,7 @@ pipeline:
     commands:
       - git fetch -tq
       - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
-      - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
+      - export PYTHONUSERBASE=$(pwd)/ci-cache/pyusrb
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
       - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
@@ -68,8 +68,8 @@ pipeline:
     image: drillster/drone-volume-cache
     rebuild: true
     mount:
-      - ./ci_cache/pip_cache
-      - ./ci_cache/pyusrb
+      - ./ci-cache/pip-cache
+      - ./ci-cache/pyusrb
     volumes:
       - /tmp/cache:/cache
 
