@@ -134,8 +134,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
         ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
-    ext_modules[0].libraries += pc._libs.get_libs().split(',') + os.environ.get(
-            'CHEMREAC_LAPACK', "lapack,blas").split(",") if l != ""]) + ['m']
+    ext_modules[0].libraries += [l for l in (pc._libs.get_libs().split(',') + os.environ.get(
+            'CHEMREAC_LAPACK', "lapack,blas").split(",")) if l != ""] + ['m']
 else:
     setup_requires = []
 
