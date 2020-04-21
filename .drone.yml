@@ -19,6 +19,8 @@ pipeline:
   install-reqs:
     image: bjodah/bjodahimg20:v1.1
     environment:
+      - CC=gcc-10
+      - CXX=g++-10
 #      - PYCVODES_LAPACK=lapack,blas
 #      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
       - PYCVODES_NO_KLU=0
