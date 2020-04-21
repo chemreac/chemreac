@@ -91,6 +91,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import numpy as np
     import finitediff as fd
     import pycvodes as pc
+    from pycvodes._libs import get_libs as pc_get_libs
     import block_diag_ilu as bdi
 
     setup_requires = _common_requires + ['mako>=1.0'] + (["cython>=0.29.15"] if USE_CYTHON else [])
@@ -134,7 +135,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
         ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
-    ext_modules[0].libraries += [l for l in (pc._libs.get_libs().split(',') + os.environ.get(
+    ext_modules[0].libraries += [l for l in (pc_get_libs().split(',') + os.environ.get(
             'CHEMREAC_LAPACK', "lapack,blas").split(",")) if l != ""] + ['m']
 else:
     setup_requires = []
