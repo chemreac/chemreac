@@ -17,43 +17,46 @@ pipeline:
     ttl: 90  # liftetime in days
 
   install-reqs:
-    image: bjodah/bjodahimg20dev:v1.0.3
+    image: bjodah/bjodahimg20:v1.1
     environment:
-      - PYCVODES_LAPACK=lapack,blas
-      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
+#      - PYCVODES_LAPACK=lapack,blas
+#      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
       - PYCVODES_NO_KLU=0
       - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
       - CPATH=/usr/include/suitesparse
       - CPLUS_INCLUDE_PATH=/opt/boost_1_72_p/include
-      - SUNDBASE=/opt/sundials-5.1.0-klu-lapack
+      - SUNDBASE=/opt/sundials-5.2.0-klu-lapack
     commands:
-      - export CPATH=$SUNDBASE/include:$CPATH
-      - export LIBRARY_PATH=$SUNDBASE/lib:$LIBRARY_PATH
-      - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.3" "pygslodeiv2>=0.9.3"  "batemaneq>=0.2.2"
+      - python3 -c "import block_diag_ilu"
+      - export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
+      - export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
       - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
-      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.3" "pygslodeiv2>=0.9.3" "pycvodes>=0.12.1" "batemaneq>=0.2.2" "pyodesys>=0.13.0" "chempy>=0.7.10"
-      - python3 -c "import block_diag_ilu"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade "https://github.com/bjodah/pycvodes/archive/master.tar.gz"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade "https://github.com/bjodah/pyodesys/archive/bump-versions.tar.gz"
+      - python3 -m pip install --user --cache-dir ./ci_cache/pip_cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
 
-  test-dbg-gcc-10-sund-5.1.0:
-    image: bjodah/bjodahimg20dev:v1.0.3
+  test-dbg-gcc-10-sund-5.2.0:
+    image: bjodah/bjodahimg20:v1.1
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
       - CC=gcc-10
       - CXX=g++-10
-      - SUNDBASE=/opt/sundials-5.1.0-klu-lapack
+      - SUNDBASE=/opt/sundials-5.2.0-klu-lapack
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - git fetch -tq
       - bash -c '[[ $(python3 setup.py --version) =~ ^[0-9]+.* ]]'
+      - export PYTHONUSERBASE=$(pwd)/ci_cache/pyusrb
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
       - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
       - mv dist/chemreac chemreac
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
-      - ls chemreac/; PYTHONUSERBASE=/opt/pyusrb python3 -c "import chemreac"
+      - ls chemreac/; python3 -c "import chemreac"
       - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=$PWD LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
