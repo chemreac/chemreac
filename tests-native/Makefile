@@ -12,7 +12,7 @@ CXXFLAGS=-std=c++11 -Wall -Wextra -pedantic -Werror $(EXTRA_COMPILE_ARGS)
 OPENMPLIBS=-lgomp
 OPENMPFLAG=-fopenmp
 LIBS=-lrt -llapack -lblas
-
+SUNDIALS_LIBS ?= $(${PYTHON} -c "from pycvodes._libs import print_libs_linkline as pll; pll()")
 ifeq ($(OPTIMIZE),1)
   CONTEXT ?= # /usr/bin/time
   CXXFLAGS += $(PERFFLAGS) -DBENCHMARK
@@ -65,7 +65,7 @@ test_chemreac: chemreac.cpp test_chemreac.cpp test_utils.o
 
 
 test_chemreac_sundials: chemreac.o test_utils.o test_chemreac_sundials.cpp
-	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LDFLAGS) -lm
+	$(CXX) $(CXXFLAGS) $(INCLUDE) -o $@ $^ $(LDFLAGS) $(SUNDIALS_LIBS) -lm
 
 gmon.out: test_chemreac
 	./$<
