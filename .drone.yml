@@ -36,7 +36,7 @@ pipeline:
       - export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
       - export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "http://hera.physchem.kth.se/~pycvodes/branches/master/pycvodes-0.13.0.dev0+git.tar.gz"
-      - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "https://github.com/bjodah/pyodesys/archive/bump-versions.tar.gz"
+      - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "https://github.com/bjodah/pyodesys/archive/master.tar.gz"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
 
