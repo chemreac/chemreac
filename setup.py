@@ -190,7 +190,7 @@ setup_kwargs = dict(
     install_requires=install_requires,
     extras_require={'all': [
         'argh', 'pytest', 'scipy>=0.19.1', 'matplotlib', 'mpld3',
-        'sym>=0.3.4', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq>=0.2.2',
+        'sym>=0.3.4', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.4', 'pygslodeiv2>=0.9.1', 'batemaneq>=0.2.2',
         'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.13.1'
     ]},
     python_requires='>=3.6',
