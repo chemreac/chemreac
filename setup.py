@@ -68,7 +68,7 @@ _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
 # Source distributions contain rendered sources
 _common_requires = ['numpy>=1.16.6', 'block_diag_ilu>=0.4.3', 'pycvodes>=0.13.1', 'finitediff>=0.6.3']
-install_requires = _common_requires + ['chempy>=0.7.9', 'quantities>=0.12.1']
+install_requires = _common_requires + ['chempy>=0.7.11', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
 
@@ -191,7 +191,7 @@ setup_kwargs = dict(
     extras_require={'all': [
         'argh', 'pytest', 'scipy>=0.19.1', 'matplotlib', 'mpld3',
         'sym>=0.3.4', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq>=0.2.2',
-        'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.12.6'
+        'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.13.1'
     ]},
     python_requires='>=3.6',
 )
