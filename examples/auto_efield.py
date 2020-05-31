@@ -204,7 +204,7 @@ def integrate_rd(D=-3e-1, t0=0.0, tend=7., x0=0.1, xend=1.0, N=1024,
 
             plt.subplot(4, 1, 2)
             delta_y = Cout[i, :, 0] - Cout[i, :, 1]
-            _plot(delta_y, 'Diff'.format(rd.N),
+            _plot(delta_y, 'Diff',
                   c=[c[2], c[0], c[1]],
                   label='A-B (positive excess)' if i == nt-1 else None)
             plt.legend(loc='best')
