@@ -7,15 +7,15 @@ export PYTHONUSERBASE=/opt/pyusrb
 
 git-archive-all --prefix='' /tmp/HEAD.zip
 
-export SUNDBASE=$2
-export CPATH=$SUNDBASE/include:$CPATH
-export LIBRARY_PATH=$SUNDBASE/lib
-export LD_LIBRARY_PATH=$SUNDBASE/lib
-export CMAKE_PREFIX_PATH=$SUNDBASE:$CMAKE_PREFIX_PATH
-python3 -m pip install --user "pycvodes>=0.12.1"
+set -u
+DESTDIR=$1
+SUNDBASE=$2
+set +u
+export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
+export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
 
-mkdir -p "$1"
-cd "$1"
+mkdir -p "$DESTDIR"
+cd "$DESTDIR"
 unzip /tmp/HEAD.zip
 
 ${PYTHON:-python3} -c "import pycvodes as pcv; print(pcv.__version__)" || ( >&2 echo "failed to install pycvodes"; exit 1 )

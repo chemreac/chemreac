@@ -370,7 +370,7 @@ def integrate_rd(N=64, geom='f', nspecies=1, nstencil=3,
         plt.title('Linear rel. error / Abs. tol. (={})'.format(atol))
 
         plt.subplot(4, 1, 4)
-        plt.title('RMS error vs. time'.format(atol))
+        plt.title('RMS error vs. time')
         tspan = [tout[0], tout[-1]]
         for si in range(nspecies):
             plt.plot(tout, rmsd[:, si] / atol, c=color(si, -1))

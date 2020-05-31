@@ -67,8 +67,8 @@ _WITH_OPENMP = env['WITH_OPENMP'] == '1'
 _WITH_DATA_DUMPING = env['WITH_DATA_DUMPING'] == '1'
 
 # Source distributions contain rendered sources
-_common_requires = ['numpy>=1.16.6', 'block_diag_ilu>=0.4.3', 'pycvodes>=0.12.1', 'finitediff>=0.6.3']
-install_requires = _common_requires + ['chempy>=0.7.9', 'quantities>=0.12.1']
+_common_requires = ['numpy>=1.16.6', 'block_diag_ilu>=0.4.3', 'pycvodes>=0.13.1', 'finitediff>=0.6.3']
+install_requires = _common_requires + ['chempy>=0.7.11', 'quantities>=0.12.1']
 package_include = os.path.join(pkg_name, 'include')
 
 
@@ -91,6 +91,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     import numpy as np
     import finitediff as fd
     import pycvodes as pc
+    from pycvodes._libs import get_libs as pc_get_libs
     import block_diag_ilu as bdi
 
     setup_requires = _common_requires + ['mako>=1.0'] + (["cython>=0.29.15"] if USE_CYTHON else [])
@@ -134,7 +135,8 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
         ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
         ([('BLOCK_DIAG_ILU_WITH_OPENMP', None)] if os.environ.get('BLOCK_DIAG_ILU_WITH_OPENMP', '') == '1' else [])
     )
-    ext_modules[0].libraries += pc.config['SUNDIALS_LIBS'].split(',') + pc.config['LAPACK'].split(',') + ['m']
+    ext_modules[0].libraries += [l for l in (pc_get_libs().split(',') + os.environ.get(
+            'CHEMREAC_LAPACK', "lapack,blas").split(",")) if l != ""] + ['m']
 else:
     setup_requires = []
 
@@ -188,8 +190,8 @@ setup_kwargs = dict(
     install_requires=install_requires,
     extras_require={'all': [
         'argh', 'pytest', 'scipy>=0.19.1', 'matplotlib', 'mpld3',
-        'sym>=0.3.4', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.1', 'pygslodeiv2>=0.9.1', 'batemaneq>=0.2.2',
-        'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.12.6'
+        'sym>=0.3.4', 'sympy>=1.1.1,!=1.2', 'pyodeint>=0.10.4', 'pygslodeiv2>=0.9.1', 'batemaneq>=0.2.2',
+        'sphinx', 'sphinx_rtd_theme', 'numpydoc', 'pyodesys>=0.13.1'
     ]},
     python_requires='>=3.6',
 )
