@@ -1,0 +1,371 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>chemreac.integrate &mdash; chemreac 0.9.2 documentation</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/language_data.js"></script>
+        <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="chemreac.chemistry" href="chemistry.html" />
+    <link rel="prev" title="chemreac.core" href="core.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> chemreac
+          
+
+          
+          </a>
+
+          
+            
+            
+              <div class="version">
+                0.9.2
+              </div>
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="derivations.html">Derivations</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="modules.html">Modules Reference</a><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="core.html">chemreac.core</a></li>
+<li class="toctree-l2 current"><a class="current reference internal" href="#">chemreac.integrate</a></li>
+<li class="toctree-l2"><a class="reference internal" href="chemistry.html">chemreac.chemistry</a></li>
+<li class="toctree-l2"><a class="reference internal" href="util/index.html">chemreac.util</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="examples/index.html">Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">Development</a></li>
+</ul>
+
+            
+          
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">chemreac</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+          <li><a href="modules.html">Modules Reference</a> &raquo;</li>
+        
+      <li>chemreac.integrate</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+            
+            
+              <a href="https://github.com/bjodah/chemreac/blob/master/docs/integrate.rst" class="fa fa-github"> Edit on GitHub</a>
+            
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <span class="target" id="module-chemreac.integrate"></span><div class="section" id="chemreac-integrate">
+<h1>chemreac.integrate<a class="headerlink" href="#chemreac-integrate" title="Permalink to this headline">¶</a></h1>
+<p>This module provides functions for integrating the
+system of ODEs which the <a class="reference internal" href="core.html#chemreac.core.ReactionDiffusion" title="chemreac.core.ReactionDiffusion"><code class="xref py py-class docutils literal notranslate"><span class="pre">ReactionDiffusion</span></code></a> object
+represents. The main class representing a numerical integration (for a set of
+parameters) of the system of ODEs is <a class="reference internal" href="#chemreac.integrate.Integration" title="chemreac.integrate.Integration"><code class="xref py py-class docutils literal notranslate"><span class="pre">Integration</span></code></a>.</p>
+<p>If one does not want to hard code the choice of integrator and solver
+parameters (e.g. tolerances), one may use <a class="reference internal" href="#chemreac.integrate.run" title="chemreac.integrate.run"><code class="xref py py-func docutils literal notranslate"><span class="pre">run()</span></code></a> which defers those
+choices to the user of the script through the use of environment variables.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Preferred ways to perform the integration is
+using <a class="reference internal" href="#chemreac.integrate.Integration" title="chemreac.integrate.Integration"><code class="xref py py-class docutils literal notranslate"><span class="pre">Integration</span></code></a> or <a class="reference internal" href="#chemreac.integrate.run" title="chemreac.integrate.run"><code class="xref py py-func docutils literal notranslate"><span class="pre">run()</span></code></a></p>
+</div>
+<dl class="py class">
+<dt id="chemreac.integrate.Integration">
+<em class="property">class </em><code class="sig-prename descclassname">chemreac.integrate.</code><code class="sig-name descname">Integration</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">rd</span></em>, <em class="sig-param"><span class="n">C0</span></em>, <em class="sig-param"><span class="n">tout</span></em>, <em class="sig-param"><span class="n">sigm_damp</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">C0_is_log</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">tiny</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">integrator</span><span class="o">=</span><span class="default_value">'scipy'</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/integrate.html#Integration"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.integrate.Integration" title="Permalink to this definition">¶</a></dt>
+<dd><p>Model kinetcs by integrating system of ODEs using
+user specified integrator.</p>
+<dl class="field-list">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl>
+<dt><strong>rd</strong><span class="classifier">ReactionDiffusion instance</span></dt><dd></dd>
+<dt><strong>C0</strong><span class="classifier">array</span></dt><dd><p>Initial concentrations (untransformed, i.e. linear).</p>
+</dd>
+<dt><strong>tout</strong><span class="classifier">array</span></dt><dd><p>Times for which to report results (untransformed).</p>
+</dd>
+<dt><strong>sigm_damp</strong><span class="classifier">bool or tuple of (lim: float, n: int)</span></dt><dd><p>Conditionally damp C0 with an algebraic sigmoid when rd.logy == True.
+if sigm==True then <cite>lim</cite> and <cite>n</cite> are the default of <a class="reference internal" href="#chemreac.integrate.sigm" title="chemreac.integrate.sigm"><code class="xref py py-func docutils literal notranslate"><span class="pre">sigm()</span></code></a>.</p>
+</dd>
+<dt><strong>C0_is_log</strong><span class="classifier">bool</span></dt><dd><p>If True: passed values in C0 are taken to be the natural logarithm of
+initial concentrations. If False and rd.logy == True: a very small
+number is added to C0 to avoid applying log to zero (see <cite>tiny</cite>).</p>
+</dd>
+<dt><strong>tiny</strong><span class="classifier">float</span></dt><dd><p>Added to C0 when <code class="docutils literal notranslate"><span class="pre">rd.logy==True</span></code> and <code class="docutils literal notranslate"><span class="pre">C0_is_log==False</span></code>. Note that
+if you explicitly want to avoid adding tiny you need to set it
+to zero (e.g. when manually setting any C0==0 to some epsilon).
+(default: None =&gt; <code class="docutils literal notranslate"><span class="pre">numpy.finfo(np.float64).tiny</span></code>).</p>
+</dd>
+<dt><strong>integrator</strong><span class="classifier">string</span></dt><dd><p>“cvode” or “scipy” where scipy uses VODE
+as the integrator.</p>
+</dd>
+<dt><strong>**kwargs :</strong></dt><dd><p>Keyword arguments passed on to integartor, e.g.:</p>
+<dl class="simple">
+<dt>atol: float or sequence</dt><dd><p>absolute tolerance of solution</p>
+</dd>
+<dt>rtol: float</dt><dd><p>relative tolerance of solution</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Attributes</dt>
+<dd class="field-even"><dl class="simple">
+<dt><strong>Cout: array</strong></dt><dd><p>linear output concentrations</p>
+</dd>
+<dt><strong>yout: array</strong></dt><dd><p>output from integrator: log_b(concentrations) if rd.logy == True</p>
+</dd>
+<dt><strong>info: dict</strong></dt><dd><dl class="simple">
+<dt>Information from integrator. Guaranteed to contain:</dt><dd><ul class="simple">
+<li><p>‘time_wall’: execution time in seconds (wall clock).</p></li>
+<li><p>‘time_cpu’: execution time in seconds (cpu time).</p></li>
+<li><p>‘atol’: float or array, absolute tolerance(s).</p></li>
+<li><p>‘rtol’: float, relative tolerance</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+<dt><strong>rd: ReactionDiffusion instance</strong></dt><dd><p>same instance as passed in Parameters.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 22%" />
+<col style="width: 78%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>_integrate()</strong></p></td>
+<td><p>performs the integration, automatically called by __init__</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt id="chemreac.integrate.Integration.internal_iter">
+<code class="sig-name descname">internal_iter</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">self</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/integrate.html#Integration.internal_iter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.integrate.Integration.internal_iter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns an iterator over (t, y)-pairs</p>
+<p><code class="docutils literal notranslate"><span class="pre">t</span></code> is entries in <code class="docutils literal notranslate"><span class="pre">internal_t</span></code> and <code class="docutils literal notranslate"><span class="pre">y</span></code> is a (2-dim)
+array over the bins (1st dim) with the corresponding
+dependent variables (2nd dim).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt id="chemreac.integrate.integrate_cvode">
+<code class="sig-prename descclassname">chemreac.integrate.</code><code class="sig-name descname">integrate_cvode</code><span class="sig-paren">(</span><em class="sig-param">rd</em>, <em class="sig-param">y0</em>, <em class="sig-param">tout</em>, <em class="sig-param">dense_output=None</em>, <em class="sig-param">\*\*kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/integrate.html#integrate_cvode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.integrate.integrate_cvode" title="Permalink to this definition">¶</a></dt>
+<dd><p>see <code class="xref py py-func docutils literal notranslate"><span class="pre">integrate()</span></code></p>
+<dl class="simple">
+<dt>kwargs:</dt><dd><p>method: linear multistep method: ‘bdf’ or ‘adams’</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="chemreac.integrate.integrate_scipy">
+<code class="sig-prename descclassname">chemreac.integrate.</code><code class="sig-name descname">integrate_scipy</code><span class="sig-paren">(</span><em class="sig-param">rd</em>, <em class="sig-param">y0</em>, <em class="sig-param">tout</em>, <em class="sig-param">linear_solver='default'</em>, <em class="sig-param">name='vode'</em>, <em class="sig-param">dense_output=None</em>, <em class="sig-param">\*\*kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/integrate.html#integrate_scipy"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.integrate.integrate_scipy" title="Permalink to this definition">¶</a></dt>
+<dd><p>see <a class="reference internal" href="#chemreac.integrate.Integration" title="chemreac.integrate.Integration"><code class="xref py py-class docutils literal notranslate"><span class="pre">Integration</span></code></a></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><dl class="simple">
+<dt><strong>rd: ReactionDiffusion</strong></dt><dd></dd>
+<dt><strong>y0: array_like</strong></dt><dd><p>Initial conditions</p>
+</dd>
+<dt><strong>tout: array-like</strong></dt><dd><p>At what times to report, e.g.:
+- <code class="docutils literal notranslate"><span class="pre">np.linspace(t0,</span> <span class="pre">tend,</span> <span class="pre">nt)</span></code>
+- <code class="docutils literal notranslate"><span class="pre">np.logspace(np.log10(t0</span> <span class="pre">+</span> <span class="pre">1e-12),</span> <span class="pre">np.log10(tend),</span> <span class="pre">nt)</span></code></p>
+</dd>
+<dt><strong>linear_solver: str (default: ‘default’)</strong></dt><dd><p>‘dense’ or ‘banded’</p>
+</dd>
+<dt><strong>name: string (default: ‘vode’)</strong></dt><dd></dd>
+<dt><strong>dense_output: bool (default: None)</strong></dt><dd><p>if True, tout is taken to be length 2 tuple (t0, tend),
+if unspecified (None), length of tout decides (length 2 =&gt; True)</p>
+</dd>
+</dl>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><dl class="simple">
+<dt>yout: numpy array of shape <code class="docutils literal notranslate"><span class="pre">(len(tout),</span> <span class="pre">rd.N,</span> <span class="pre">rd.n)</span></code>.</dt><dd></dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt id="chemreac.integrate.run">
+<code class="sig-prename descclassname">chemreac.integrate.</code><code class="sig-name descname">run</code><span class="sig-paren">(</span><em class="sig-param">\*args</em>, <em class="sig-param">\*\*kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/integrate.html#run"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.integrate.run" title="Permalink to this definition">¶</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">run</span></code> is provided for environment variable directed integration choices.</p>
+<p>Set <code class="docutils literal notranslate"><span class="pre">CHEMREAC_INTEGRATION_KWARGS</span></code> to a string which can be evaluated to
+a python dictionary. e.g. “{‘integrator’: ‘cvode’, ‘atol’: 1e-4}”</p>
+</dd></dl>
+
+<dl class="py function">
+<dt id="chemreac.integrate.sigm">
+<code class="sig-prename descclassname">chemreac.integrate.</code><code class="sig-name descname">sigm</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">x</span></em>, <em class="sig-param"><span class="n">lim</span><span class="o">=</span><span class="default_value">150.0</span></em>, <em class="sig-param"><span class="n">n</span><span class="o">=</span><span class="default_value">8</span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/chemreac/integrate.html#sigm"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#chemreac.integrate.sigm" title="Permalink to this definition">¶</a></dt>
+<dd><p>Algebraic sigmoid to avoid overflow/underflow of ‘double exp(double)’.</p>
+<div class="math notranslate nohighlight">
+\[s(x) = \frac{x}{\left((\frac{x}{lim})^n+1\right)^\frac{1}{n}}\]</div>
+</dd></dl>
+
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="chemistry.html" class="btn btn-neutral float-right" title="chemreac.chemistry" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="core.html" class="btn btn-neutral float-left" title="chemreac.core" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014-2018, Björn I. Dahlgren
+
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/rtfd/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>
