@@ -1,3 +1,7 @@
+v0.9.2
+======
+- Updated dependencies
+
 v0.9.1
 ======
 - Update setup.py
