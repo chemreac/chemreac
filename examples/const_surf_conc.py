@@ -181,7 +181,7 @@ def integrate_rd(D=2e-3, t0=1., tend=13., x0=1e-10, xend=1.0, N=256,
 
             plt.subplot(4, 1, 3)
             _plot((Cout[i, :, 1]-Cref[i, :, 0]), c,
-                  "Error".format(atol),
+                  "Error",
                   **kwargs)
 
             plt.subplot(4, 1, 4)

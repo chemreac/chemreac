@@ -33,6 +33,7 @@ if [[ $? -ne 0 ]]; then
     preexisting=0
 else
     preexisting=1
+    git fetch $remote
     git pull
 fi
 
