@@ -33,7 +33,7 @@ pipeline:
       - mkdir -p $PYTHONUSERBASE
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.4" "pygslodeiv2>=0.9.3"  "batemaneq>=0.2.2"
       - python3 -c "import block_diag_ilu"
-      - CFLAGS="-isystem $SUNDBASE/include $CFLAGS" LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS" python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "https://github.com/bjodah/pycvodes/archive/jtimes_setup.tar.gz"
+      - CFLAGS="-isystem $SUNDBASE/include $CFLAGS" LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS" python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "git+https://github.com/bjodah/pycvodes@jtimes_setup"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "pyodesys>=0.13.1"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
