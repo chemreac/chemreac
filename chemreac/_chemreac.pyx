@@ -547,7 +547,7 @@ def cvode_predefined(
         &y0[0], tout.size, &tout[0], &yout[0], root_indices, roots_output, nsteps, first_step, dx_min,
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver_from_name(linear_solver.encode('UTF-8')),
-        maxl, eps_lin, nderiv, autorestart, return_on_error, with_jtimes, <double *>ew_ele_arr.data if ew_ele else NULL, constraints, msbj, stab_lim_det)
+        maxl, eps_lin, nderiv, autorestart, return_on_error, 2 if with_jtimes else 0, <double *>ew_ele_arr.data if ew_ele else NULL, constraints, msbj, stab_lim_det)
     info = rd.get_last_info(success=False if return_on_error and nreached < tout.size else True)
     info['nreached'] = nreached
     if ew_ele:
@@ -606,7 +606,7 @@ def cvode_predefined_durations_fields(
             root_indices, roots_output, nsteps, first_step, dx_min,
             dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
             linear_solver_from_name(linear_solver.encode('UTF-8')), maxl, eps_lin, nderiv,
-            autorestart, return_on_error, with_jtimes, ew_ele_out, constraints, msbj, stab_lim_det)
+            autorestart, return_on_error, 2 if with_jtimes else 0, ew_ele_out, constraints, msbj, stab_lim_det)
 
         if nreached != npoints+1:
             raise ValueError("Did not reach all points for index %d" % i)
@@ -649,7 +649,7 @@ def cvode_adaptive(
         dx_max, with_jacobian, iter_type_from_name(iter_type.lower().encode('UTF-8')),
         linear_solver_from_name(linear_solver.encode('UTF-8')), maxl, eps_lin, nderiv,
         return_on_root, autorestart, return_on_error,
-        with_jtimes, 0, &ew_ele_out if ew_ele else NULL, constraints, msbj, stab_lim_det)
+        2 if with_jtimes else 0, 0, &ew_ele_out if ew_ele else NULL, constraints, msbj, stab_lim_det)
     xyout_dims[0] = nout + 1
     xyout_dims[1] = y0.size*(nderiv+1) + 1
     xyout_arr = cnp.PyArray_SimpleNewFromData(2, xyout_dims, cnp.NPY_DOUBLE, <void *>xyout)

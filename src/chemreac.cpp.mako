@@ -259,6 +259,7 @@ ReactionDiffusion<Real_t>::zero_counters(){
     nprec_setup = 0;
     nprec_solve = 0;
     njacvec_dot = 0;
+    njacvec_setup = 0;
     nprec_solve_ilu = 0;
     nprec_solve_lu = 0;
 }
@@ -818,6 +819,20 @@ ReactionDiffusion<Real_t>::jtimes(const Real_t * const ANYODE_RESTRICT vec,
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
+    std::memset(out, 0, sizeof(Real_t)*get_ny());
+    jac_times_cache->dot_vec(vec, out);
+    njacvec_dot++;
+    return AnyODE::Status::success;
+}
+
+template<typename Real_t>
+AnyODE::Status
+ReactionDiffusion<Real_t>::jtimes_setup(Real_t t,
+                                        const Real_t * const ANYODE_RESTRICT y,
+                                        const Real_t * const ANYODE_RESTRICT fy
+    )
+{
+    ignore(t);
     if (!jac_times_cache){
         const int nsat = (geom == Geom::PERIODIC) ? nsidep : 0;
         const int ld = n;
@@ -826,9 +841,7 @@ ReactionDiffusion<Real_t>::jtimes(const Real_t * const ANYODE_RESTRICT vec,
         const int ld_dummy = 0;
         compressed_jac_cmaj(t, y, fy, jac_times_cache->m_data, ld_dummy);
     }
-    std::memset(out, 0, sizeof(Real_t)*get_ny());
-    jac_times_cache->dot_vec(vec, out);
-    njacvec_dot++;
+    njacvec_setup++;
     return AnyODE::Status::success;
 }
 
