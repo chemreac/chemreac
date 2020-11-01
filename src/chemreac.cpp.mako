@@ -820,6 +820,8 @@ ReactionDiffusion<Real_t>::jtimes(const Real_t * const ANYODE_RESTRICT vec,
 {
     // See 4.6.7 on page 67 (77) in cvs_guide.pdf (Sundials 2.5)
     ignore(t);
+    ignore(y);
+    ignore(fy);
     std::memset(out, 0, sizeof(Real_t)*get_ny());
     jac_times_cache->dot_vec(vec, out);
     njacvec_dot++;
