@@ -823,6 +823,9 @@ ReactionDiffusion<Real_t>::jtimes(const Real_t * const ANYODE_RESTRICT vec,
     ignore(y);
     ignore(fy);
     std::memset(out, 0, sizeof(Real_t)*get_ny());
+    if (!jac_times_cache) {
+        throw std::runtime_error("Forgot to call jtimes_setup?");
+    }
     jac_times_cache->dot_vec(vec, out);
     njacvec_dot++;
     return AnyODE::Status::success;
