@@ -1031,3 +1031,9 @@ ReactionDiffusion<Real_t>::calc_efield(const Real_t * const linC)
 } // namespace chemreac
 
 template class chemreac::ReactionDiffusion<double>; // instantiate template
+<%doc>
+// Local Variables:
+// mode: c++
+// eval: (mmm-mode)
+// End:
+</%doc>
