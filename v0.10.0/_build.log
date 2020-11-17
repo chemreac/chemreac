@@ -1,0 +1,102 @@
+python3 examples/examples/analytic_diffusion.py --plot --nstencil 3 --nspecies 3 --geom f --savefig _generated/analytic_diffusion.png
+python3 examples/examples/steady_state_approx.py --plot --savefig _generated/steady_state_approx.png
+python3 examples/examples/steady_state_approx.py --plot --savefig _generated/steady_state_approx.html
+python3 examples/examples/aqueous_radiolysis.py --doserate 25 --plot --savefig _generated/aqueous_radiolysis.png
+python3 examples/examples/analytic_N_scaling.py --nNs 6 --plot --savefig _generated/analytic_N_scaling.png
+python3 examples/examples/auto_efield.py --plot --savefig _generated/auto_efield.png
+python3 examples/examples/decay.py --plot --savefig _generated/decay.png
+python3 examples/examples/decay.py --plot --savefig _generated/decay_long.png --rates 1.0 --logy --logt --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024 --tend 1700
+python3 examples/examples/decay.py --plot --savefig _generated/decay_long_damp.png --rates 1.0 --logy --logt --rtol 1e-13 --atol 1e-6 --scale-err 100.0 --plotlogy --nt 1024 --tend 1700 --sigm-damp
+python3 examples/examples/four_species.py --plot --savefig _generated/four_species.png
+python3 examples/examples/equilibrium.py --plot --savefig _generated/equilibrium.png
+python3 examples/examples/equilibrium.py --A0 1.0 --B0 1e-10 --C0 1e-30 --kf 10 --kb 1 --t0 0 --tend 5 --plot --plotlogy --plotlogt --savefig _generated/equilibrium_unscaled.png
+python3 examples/examples/equilibrium.py  --scaling 1e10 --A0 1.0 --B0 1e-10 --C0 1e-30 --kf 10 --kb 1 --t0 0 --tend 5 --plot --plotlogy --plotlogt --savefig _generated/equilibrium_scaled.png
+python3 examples/examples/const_surf_conc.py --plot --savefig _generated/const_surf_conc.png
+python3 examples/examples/const_surf_conc.py --logx --logy --x0 1e-6 --scaling 1e-20 --factor 1e12 --plot --savefig _generated/const_surf_conc_logy_logx.png
+sphinx-build -b html -d _build/doctrees   . _build/html
+Running Sphinx v2.2.0
+loading pickled environment... failed
+failed: unsupported pickle protocol: 5
+building [mo]: targets for 0 po files that are out of date
+building [html]: targets for 27 source files that are out of date
+updating environment: [new config] 27 added, 0 changed, 0 removed
+reading sources... [  3%] chemistry
+reading sources... [  7%] core
+reading sources... [ 11%] derivations
+reading sources... [ 14%] dev
+reading sources... [ 18%] examples/analytic_N_scaling
+reading sources... [ 22%] examples/analytic_diffusion
+reading sources... [ 25%] examples/aqueous_radiolysis
+reading sources... [ 29%] examples/auto_efield
+reading sources... [ 33%] examples/const_surf_conc
+reading sources... [ 37%] examples/decay
+reading sources... [ 40%] examples/equilibrium
+reading sources... [ 44%] examples/four_species
+reading sources... [ 48%] examples/index
+reading sources... [ 51%] examples/steady_state_approx
+reading sources... [ 55%] index
+reading sources... [ 59%] install
+reading sources... [ 62%] integrate
+reading sources... [ 66%] modules
+reading sources... [ 70%] util/analysis
+reading sources... [ 74%] util/banded
+reading sources... [ 77%] util/grid
+reading sources... [ 81%] util/index
+reading sources... [ 85%] util/plotting
+reading sources... [ 88%] util/pyutil
+reading sources... [ 92%] util/stoich
+reading sources... [ 96%] util/table
+reading sources... [100%] util/testing
+
+looking for now-outdated files... none found
+pickling environment... done
+checking consistency... done
+preparing documents... done
+writing output... [  3%] chemistry
+writing output... [  7%] core
+writing output... [ 11%] derivations
+writing output... [ 14%] dev
+writing output... [ 18%] examples/analytic_N_scaling
+writing output... [ 22%] examples/analytic_diffusion
+writing output... [ 25%] examples/aqueous_radiolysis
+writing output... [ 29%] examples/auto_efield
+writing output... [ 33%] examples/const_surf_conc
+writing output... [ 37%] examples/decay
+writing output... [ 40%] examples/equilibrium
+writing output... [ 44%] examples/four_species
+writing output... [ 48%] examples/index
+writing output... [ 51%] examples/steady_state_approx
+writing output... [ 55%] index
+writing output... [ 59%] install
+writing output... [ 62%] integrate
+writing output... [ 66%] modules
+writing output... [ 70%] util/analysis
+writing output... [ 74%] util/banded
+writing output... [ 77%] util/grid
+writing output... [ 81%] util/index
+writing output... [ 85%] util/plotting
+writing output... [ 88%] util/pyutil
+writing output... [ 92%] util/stoich
+writing output... [ 96%] util/table
+writing output... [100%] util/testing
+
+generating indices...  genindex py-modindexdone
+highlighting module code... [ 12%] chemreac.util.analysis
+highlighting module code... [ 25%] chemreac.util.banded
+highlighting module code... [ 37%] chemreac.util.grid
+highlighting module code... [ 50%] chemreac.util.plotting
+highlighting module code... [ 62%] chemreac.util.pyutil
+highlighting module code... [ 75%] chemreac.util.stoich
+highlighting module code... [ 87%] chemreac.util.table
+highlighting module code... [100%] chemreac.util.testing
+
+writing additional pages...  searchdone
+copying static files... ... done
+copying extra files... done
+dumping search index in English (code: en)... done
+dumping object inventory... done
+build succeeded, 165 warnings.
+
+The HTML pages are in _build/html.
+
+Build finished. The HTML pages are in _build/html.
