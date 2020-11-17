@@ -13,8 +13,6 @@ import pytest
 from chemreac.util.analysis import solver_linear_error
 
 
-slow = pytest.mark.slow  # call time >~ 100 ms
-veryslow = pytest.mark.veryslow  # call time > a few seconds
 
 
 def check_rd_integration_run(cb, forgiveness=10, **kwargs):

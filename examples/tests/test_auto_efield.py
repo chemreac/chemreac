@@ -7,7 +7,6 @@ from itertools import product
 import numpy as np
 import pytest
 
-from chemreac.util.testing import veryslow, slow
 from auto_efield import integrate_rd
 
 
@@ -16,8 +15,8 @@ TR_FLS = (True, False)
 COMBOS = list(product(
     TR_FLS, TR_FLS, [False], [False], [3]))
 
-EXTRA_COMBOS = list(product(  # "py.test --veryslow" to invoke
-    TR_FLS, TR_FLS, TR_FLS, TR_FLS, [3]))  # nstencil > 3 too slow..
+EXTRA_COMBOS = list(product(
+    TR_FLS, TR_FLS, TR_FLS, TR_FLS, [3]))  # nstencil > 3: too long runtime..
 
 
 def _test_perfect_overlap(params):
@@ -40,7 +39,6 @@ def test_perfect_overlap(params):
     _test_perfect_overlap(params)
 
 
-@veryslow
 @pytest.mark.parametrize('params', list(product(EXTRA_COMBOS, 'fcs', TR_FLS)))
 def test_perfect_overlap_extended(params):
     _test_perfect_overlap(params)
@@ -77,7 +75,6 @@ def test_mass_conservation_flat(params):
     _test_mass_conservation(params)
 
 
-@veryslow
 @pytest.mark.parametrize('params', list(product(EXTRA_COMBOS, 'f', [False])))
 def test_mass_conservation_flat_extended(params):
     _test_mass_conservation(params)
@@ -114,13 +111,11 @@ def test_pair_centered_at_x0_different_sigma_flat_logx(params):
     _test_pair_centered_at_x0_different_sigma(params)
 
 
-@slow
 @pytest.mark.parametrize('params', list(product(EXTRA_COMBOS, 'f', [True])))
 def test_pair_centered_at_x0_different_sigma_flat_logx_extended(params):
     _test_pair_centered_at_x0_different_sigma(params)
 
 
-@slow
 @pytest.mark.parametrize('params', list(product(COMBOS, 'cs', [True])))
 @pytest.mark.xfail
 def test_pair_centered_at_x0_different_sigma_cyl_sph_logx(params):

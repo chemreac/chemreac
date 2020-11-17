@@ -11,7 +11,6 @@ from chemreac.util.plotting import (
     plot_C_vs_t_in_bin, plot_C_vs_x, plot_C_vs_t_and_x, plot_fields,
     plot_solver_linear_error, plot_solver_linear_excess_error,
 )
-from chemreac.util.testing import slow
 
 
 def _get_decay_rd(N):
@@ -123,7 +122,6 @@ def test_plot_fields():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
-@slow
 def test_plot_solver_linear_error():
     N = 3
     rd = _get_decay_rd(N)
@@ -146,7 +144,6 @@ def test_plot_solver_linear_excess_error():
     assert isinstance(ax, matplotlib.axes.Axes)
 
 
-@slow
 def test_coloured_spy():
     from matplotlib.axes import Axes
     A = np.arange(9).reshape((3, 3))

@@ -19,7 +19,6 @@ import pytest
 
 from chemreac import ReactionDiffusion
 from chemreac.integrate import run, Integration
-from chemreac.util.testing import veryslow
 from chemreac.units import (
     metre, molar, umol, hour, day, SI_base_registry
 )
@@ -84,7 +83,6 @@ def test_autodimerization(arrhenius):
     assert np.allclose(integr.yout[:, 0, :], yref)
 
 
-@veryslow
 @pytest.mark.parametrize("log_geom", product(
     LOG_COMOBS, 'fcs'))
 def test_ReactionDiffusion_fields_and_g_values(log_geom):

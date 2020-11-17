@@ -13,7 +13,6 @@ from chemreac import ReactionDiffusion
 from chemreac.symbolic import SymRD
 from chemreac.util.banded import get_banded
 from chemreac.util.grid import padded_centers, stencil_pxci_lbounds, pxci_to_bi
-from chemreac.util.testing import slow
 from chemreac.units import (
     mole, metre, molar, second, SI_base_registry, allclose
 )
@@ -298,7 +297,6 @@ def test_ReactionDiffusion__rrefl_3(log):
     _test_dense_jac_rmaj(rd, t, y, jref)
 
 
-@slow
 @pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__lrefl_7(log):
     # Diffusion without reaction (7 bins)
@@ -550,7 +548,6 @@ def test_ReactionDiffusion__D_weight():
     ]).flatten())
 
 
-@slow
 @pytest.mark.parametrize("log", TR_FLS_PAIRS)
 def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     # Diffusion without reaction
@@ -648,7 +645,6 @@ def test_ReactionDiffusion__only_1_species_diffusion_7bins(log):
     assert np.allclose(jout_cmprs, jref_cmprs)
 
 
-@slow
 @pytest.mark.parametrize("geom_refl_logx", list(product(
     'fcs', TR_FLS_PAIRS, TR_FLS)))
 def test_diffusion_jac(geom_refl_logx):
@@ -691,7 +687,6 @@ def test_integrated_conc(params):
     assert abs(res - ref) < 1e-8
 
 
-@slow
 @pytest.mark.parametrize("geom_refl", list(product('fcs', TR_FLS_PAIRS)))
 def test_ReactionDiffusion__3_reactions_4_species_5_bins_k_factor(
         geom_refl):
