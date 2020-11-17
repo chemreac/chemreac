@@ -1,5 +1,5 @@
 #!/bin/bash
-if [[ $(git rev-parse --abbrev-ref HEAD) != master ]]; then
+if [[ ${CHEMREAC_CHECK_MASTER:-1} == 1 && $(git rev-parse --abbrev-ref HEAD) != master ]]; then
     echo "We are not on the master branch. Aborting..."
     exit 1
 fi

@@ -8,11 +8,7 @@ Utility module for unit testing.
 
 from __future__ import (absolute_import, division, print_function)
 import numpy as np
-import pytest
-
 from chemreac.util.analysis import solver_linear_error
-
-
 
 
 def check_rd_integration_run(cb, forgiveness=10, **kwargs):
