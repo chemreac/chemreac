@@ -40,7 +40,7 @@ pipeline:
 
   test-dbg-gcc-10-sund-5.4.0:
     image: bjodah/bjodahimg20dev:2.1.0
-    priveliged: true
+    privileged: true  # or in the future(?): --cap-add SYS_PTRACE
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
