@@ -8,19 +8,6 @@ code repository is found at https://github.com/chemreac/chemreac which is also
 where issues and patches ("pull requests") are accepted.
 
 
-Coding standards
-----------------
-The Python code should comply with `PEP8
-<http://legacy.python.org/dev/peps/pep-0008/>`_.  Before submitting a
-Pull Request you also want to pass ``--pep8`` to ``py.test`` (it is
-done automatically by the ``./scripts/run_tests.sh`` script but you
-need ``pytest-pep8`` for it to work).
-
-PEP8 complience is
-also checked by the CI servers. For the C++ code, `PyNE's C/C++ style
-guide <http://pyne.io/devsguide/style_guide.html#c-c-style-guide>`_ is
-recommended.
-
 Documentation standard
 ----------------------
 The API docs are generated automatically and `numpydoc

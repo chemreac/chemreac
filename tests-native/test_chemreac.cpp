@@ -168,6 +168,7 @@ int test_jac(){
     for (int i=0; i<12; ++i) vec[i] = i+2.0;
     vector<double> out(12);
     for (int i=0; i<12; ++i) out[i] = 0.0;
+    rd.jtimes_setup(0.0, &y[0], nullptr);
     rd.jtimes(&vec[0], &out[0], 0.0, &y[0], nullptr);
     for (int ri=0; ri<12; ++ri){
         double val = 0.0;

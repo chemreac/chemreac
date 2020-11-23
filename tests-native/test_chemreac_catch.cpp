@@ -87,6 +87,7 @@ TEST_CASE( "jtimes", "[ReactionDiffusion]" ) {
         }
         // REQUIRE(std::abs(bref[ri] - bref2[ri] < 1e-14));
     }
+    rd.jtimes_setup(0.0, &y[0], nullptr);
     rd.jtimes(&x[0], &b[0], 0.0, &y[0], nullptr);
     for (int i=0; i<3*4; ++i){
         std::cout << "jtimes out[i="<< i<<"]=" << b[i] << std::endl;

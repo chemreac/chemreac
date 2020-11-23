@@ -13,7 +13,6 @@ from chemreac import ReactionDiffusion
 from chemreac.integrate import run
 from chemreac.serialization import load
 from chemreac.chemistry import mk_sn_dict_from_names, Reaction, ReactionSystem
-from chemreac.util.testing import slow, veryslow
 
 from .test_reactiondiffusion import _test_f_and_dense_jac_rmaj
 
@@ -195,13 +194,11 @@ def test_integrate(params):
     _test_integrate(params)
 
 
-@slow
 @pytest.mark.parametrize("params", SLOW_COMBOS)
-def test_integrate_slow(params):
+def test_integrate_long_runtime(params):
     _test_integrate(params)
 
 
-@veryslow
 @pytest.mark.parametrize("params", VERYSLOW_COMBOS)
-def test_integrate_veryslow(params):
+def test_integrate_very_long_runtime(params):
     _test_integrate(params)

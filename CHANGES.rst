@@ -1,3 +1,7 @@
+v0.10.0
+=======
+- Drop deprecated pytest features
+
 v0.9.2
 ======
 - Updated dependencies

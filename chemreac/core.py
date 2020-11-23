@@ -517,7 +517,7 @@ class ReactionDiffusion(PyReactionDiffusion, ReactionDiffusionBase):
                 setattr(rd, '_' + attr, kwargs.pop(attr))
         rd.param_names = kwargs.pop('param_names', None)
         if kwargs:
-            raise KeyError("Unkown kwargs: ", kwargs.keys())
+            raise KeyError("Unkown kwargs: %s" % ", ".join(kwargs))
         return rd
 
     def __reduce__(self):

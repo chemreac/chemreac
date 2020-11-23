@@ -14,17 +14,17 @@ set -e
 ( cd dist; python3 -c "import chemreac" )
 
 (cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC' test)
-(cd tests-native; make -B CXX=clang++-10 CC=clang-10 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
+(cd tests-native; make -B CXX=clang++-11 CC=clang-11 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
 
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py build_ext -i
 bash -c "ulimit -v 2048000; ./scripts/run_tests.sh"
 
 rm -rf build/
-CC=clang-10 \
-  CXX=clang++-10 \
+CC=clang-11 \
+  CXX=clang++-11 \
   CFLAGS="-fsanitize=address -UNDEBUG $CFLAGS" \
   python3 setup.py build_ext -i
-PYTHONMALLOC=malloc ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-10/lib/clang/10.0.0/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh "${@:2}"
+PYTHONMALLOC=malloc ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=/usr/lib/llvm-11/lib/clang/11.0.0/lib/linux/libclang_rt.asan-x86_64.so ./scripts/run_tests.sh "${@:2}"
 
 python3 -m pip uninstall -y ${PKG_NAME}
 

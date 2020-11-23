@@ -3,8 +3,8 @@
 """
 This module is used for verification of mathematical correctness in the
 implementation (used by the test suite). It uses SymPy to to derivations
-symbolically. It is therefore too slow for use in integration or large systems
-in general.
+symbolically. Its performance is therefore too poor for use in integration
+of large systems in general.
 """
 
 from __future__ import print_function, division, absolute_import

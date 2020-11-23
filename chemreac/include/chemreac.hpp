@@ -91,6 +91,7 @@ public:
     long nprec_setup {0};
     long nprec_solve {0};
     long njacvec_dot {0};
+    long njacvec_setup {0};
     long nprec_solve_ilu {0};
     long nprec_solve_lu {0};
 
@@ -152,7 +153,10 @@ public:
                           Real_t * const ANYODE_RESTRICT out,
                           Real_t t, const Real_t * const ANYODE_RESTRICT y,
                           const Real_t * const ANYODE_RESTRICT fy
-        ) override;
+        ) override final;
+    AnyODE::Status jtimes_setup(Real_t t, const Real_t * const ANYODE_RESTRICT y,
+                                const Real_t * const ANYODE_RESTRICT fy
+        ) override final;
     AnyODE::Status prec_setup(Real_t t, const Real_t * const ANYODE_RESTRICT y,
                               const Real_t * const ANYODE_RESTRICT fy,
                               bool jok, bool& jac_recomputed, Real_t gamma
