@@ -1,3 +1,7 @@
+v0.10.1
+=======
+- New upstream version of AnyODE
+
 v0.10.0
 =======
 - Drop deprecated pytest features
