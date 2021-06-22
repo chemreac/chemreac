@@ -6,6 +6,7 @@
 #include <algorithm> // std::max, std::min
 #include <cstdlib> // free,  C++11 aligned_alloc
 #include <cstring> // memcpy
+#include <limits> // numeric_limits
 #include <memory>
 #include "anyode/anyode_buffer.hpp"
 #include "anyode/anyode_decomposition_lapack.hpp"
