@@ -501,22 +501,22 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #  define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 #  define DYDT_ALLOC(nelem) do {} while (0)
 #  define DYDT_COMMIT() do {} while (0)
-#  define DYDT_INIT(nelem)                        \
+#  define DYDT_INIT(bi)                         \
     do {                                        \
-        for (int si = 0; si < nelem; ++si) {    \
+        for (int si = 0; si < n; ++si) {        \
             DYDT(bi, si) = 0.0;                 \
         }                                       \
     } while(0)
 #else
 #  ifdef __FAST_MATH__
-#    error "If you compile with fast math, you also must define CHEMREAC_NO_KAHAN"
+#    error "If you compile with fast math, you also must define CHEMREAC_COMPENSATED_SUMMATION as 0"
 #  endif
 #define DYDT(bi, si) accum[si]
 #define DYDT_ALLOC(nelem) std::vector<Accum<Real_t>> accum; accum.reserve(nelem)
 #define DYDT_COMMIT() accum.clear()
-#define DYDT_INIT(nelem)                                \
+#define DYDT_INIT(bi)                                   \
     do {                                                \
-        for (int si = 0; si < nelem; ++si) {            \
+        for (int si = 0; si < n; ++si) {                \
             accum.emplace_back(&dydt[bi*n + si]);       \
         }                                               \
     } while (0)
@@ -646,7 +646,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         // compartment bi
         ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3) + ((nr/8)+1)*8*omp_get_thread_num();" if WITH_OPENMP else ""}
 
-        DYDT_INIT(n); // set to zero
+        DYDT_INIT(bi); // set to zero
 
         // Contributions from reactions
         // ----------------------------
