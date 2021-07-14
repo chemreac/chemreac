@@ -19,8 +19,8 @@ pipeline:
   install-reqs:
     image: bjodah/bjodahimg20:21.7
     environment:
-      - CC=gcc-10
-      - CXX=g++-10
+      - CC=gcc-11
+      - CXX=g++-11
 #      - PYCVODES_LAPACK=lapack,blas
 #      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
       - PYCVODES_NO_KLU=0
@@ -38,14 +38,14 @@ pipeline:
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
 
-  test-dbg-gcc-10-sund-5.7.0:
+  test-dbg-gcc-11-sund-5.7.0:
     image: bjodah/bjodahimg20:21.7
     privileged: true  # or in the future(?): --cap-add SYS_PTRACE
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
-      - CC=gcc-10
-      - CXX=g++-10
+      - CC=gcc-11
+      - CXX=g++-11
       - CPLUS_INCLUDE_PATH=/opt/boost-1.76.0/include
       - SUNDBASE=/opt/sundials-5.7.0-release
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
