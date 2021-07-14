@@ -26,7 +26,7 @@ CC=clang-12 \
   CXX=clang++-12 \
   CFLAGS="-fsanitize=address -UNDEBUG $CFLAGS" \
   python3 setup.py build_ext -i
-PYTHONMALLOC=malloc ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=$(clang++-12 -print-file-name libclang_rt.asan-$(uname -m).so) ./scripts/run_tests.sh "${@:2}"
+PYTHONMALLOC=malloc ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=$(clang++-12 --print-file-name=libclang_rt.asan-$(uname -m).so) ./scripts/run_tests.sh "${@:2}"
 
 python3 -m pip uninstall -y ${PKG_NAME}
 
