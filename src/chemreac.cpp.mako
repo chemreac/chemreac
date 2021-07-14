@@ -493,7 +493,53 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
+#ifdef CHEMREAC_NO_KAHAN
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
+#define DYDT_INIT(nelem)                        \
+    do {                                        \
+        for (int si = 0; si < nelem; ++si) {    \
+            DYDT(bi, si) = 0.0;                 \
+        }                                       \
+    } while(0)
+#else
+#ifdef __FAST_MATH__
+#error "If you compile with fast math, you also must define CHEMREAC_NO_KAHAN"
+#endif
+#define DYDT_INIT(nelem)                        \
+    std::vector<Accum> accum;                   \
+    while (0) {                                 \
+        accum.reserve(nelem);                   \
+        for (int si = 0; si < nelem; ++si) {    \
+            accum.push_back(&dydt[bi*n + si]);  \
+        }                                       \
+    }
+#define DYDT(bi, si) accum[si]
+struct Accum {
+    Real_t hi {0}, lo {0};
+    Real_t *target;
+    Accum(Real_t *tgt) : target(tgt)
+    {
+    }
+    void clear() { hi = 0; lo = 0; }
+    void operator+=(Real_t arg) {
+        Real_t tmp1 = arg - lo;
+        Real_t tmp2 = hi + tmp1;
+        lo = (tmp2 - hi) - tmp1;
+        hi = tmp2;
+    }
+    void operator*=(Real_t arg) {
+        hi *= arg;
+        lo *= arg;
+    }
+    void operator/=(Real_t arg) {
+        hi /= arg;
+        lo /= arg;
+    }
+    ~Accum() {
+        *target = hi + lo;
+    }
+}
+#endif
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
@@ -554,8 +600,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         // compartment bi
         ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3) + ((nr/8)+1)*8*omp_get_thread_num();" if WITH_OPENMP else ""}
 
-        for (int si=0; si<n; ++si)
-            DYDT(bi, si) = 0.0; // zero out
+        DYDT_INIT(n); // set to zero
 
         // Contributions from reactions
         // ----------------------------
