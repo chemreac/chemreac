@@ -17,7 +17,7 @@ pipeline:
     ttl: 90  # liftetime in days
 
   install-reqs:
-    image: bjodah/bjodahimg20dev:2.1.0
+    image: bjodah/bjodahimg20:21.7
     environment:
       - CC=gcc-10
       - CXX=g++-10
@@ -26,28 +26,28 @@ pipeline:
       - PYCVODES_NO_KLU=0
       - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
       - CPATH=/usr/include/suitesparse
-      - CPLUS_INCLUDE_PATH=/opt/boost_1_74_p/include
-      - SUNDBASE=/opt/sundials-5.4.0-klu-lapack
+      - CPLUS_INCLUDE_PATH=/opt/boost-1.76.0/include
+      - SUNDBASE=/opt/sundials-5.7.0-release
     commands:
       - export PYTHONUSERBASE=$(pwd)/ci-cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.4" "pygslodeiv2>=0.9.3"  "batemaneq>=0.2.2"
       - python3 -c "import block_diag_ilu"
-      - CFLAGS="-isystem $SUNDBASE/include $CFLAGS" LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS" python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "http://hera.physchem.kth.se/~pycvodes/releases/pycvodes-0.13.1.post10+gf20facb.tar.gz"
+      - CFLAGS="-isystem $SUNDBASE/include $CFLAGS" LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS" python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "pycvodes>=0.14.1"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "pyodesys>=0.13.1"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
 
-  test-dbg-gcc-10-sund-5.4.0:
-    image: bjodah/bjodahimg20dev:2.1.0
+  test-dbg-gcc-10-sund-5.7.0:
+    image: bjodah/bjodahimg20:21.7
     privileged: true  # or in the future(?): --cap-add SYS_PTRACE
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
       - CC=gcc-10
       - CXX=g++-10
-      - CPLUS_INCLUDE_PATH=/opt/boost_1_74_p/include
-      - SUNDBASE=/opt/sundials-5.4.0-klu-lapack
+      - CPLUS_INCLUDE_PATH=/opt/boost-1.76.0/include
+      - SUNDBASE=/opt/sundials-5.7.0-release
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - git fetch -tq

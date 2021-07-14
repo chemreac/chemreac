@@ -514,10 +514,10 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
         }                                       \
     }
 #define DYDT(bi, si) accum[si]
-struct Accum {
+struct Kahan {
     Real_t hi {0}, lo {0};
     Real_t *target;
-    Accum(Real_t *tgt) : target(tgt)
+    Kahan(Real_t *tgt) : target(tgt)
     {
     }
     void clear() { hi = 0; lo = 0; }
@@ -535,10 +535,39 @@ struct Accum {
         hi /= arg;
         lo /= arg;
     }
-    ~Accum() {
+    ~Kahan() {
+        *target = hi;
+    }
+}
+struct Neumaier {
+    Real_t hi {0}, lo {0};
+    Real_t *target;
+    Neumaier(Real_t *tgt) : target(tgt)
+    {
+    }
+    void clear() { hi = 0; lo = 0; }
+    void operator+=(Real_t arg) {
+        Real_t tmp1 = hi + arg;
+        if (std::abs(hi)  >= std::bas(arg)) {
+            lo += (hi - tmp1) + arg;
+        } else {
+            lo += (arg - tmp1) + hi;
+        }
+        hi = tmp1;
+    }
+    void operator*=(Real_t arg) {
+        hi *= arg;
+        lo *= arg;
+    }
+    void operator/=(Real_t arg) {
+        hi /= arg;
+        lo /= arg;
+    }
+    ~Neumaier() {
         *target = hi + lo;
     }
 }
+using Accum = Kahan;
 #endif
 template<typename Real_t>
 AnyODE::Status
