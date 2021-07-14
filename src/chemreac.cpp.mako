@@ -495,6 +495,8 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 
 #ifdef CHEMREAC_NO_KAHAN
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
+#define DYDT_ALLOC(nelem) do {} while (0)
+#define DYDT_COMMIT() do {} while (0)
 #define DYDT_INIT(nelem)                        \
     do {                                        \
         for (int si = 0; si < nelem; ++si) {    \
@@ -505,15 +507,16 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #ifdef __FAST_MATH__
 #error "If you compile with fast math, you also must define CHEMREAC_NO_KAHAN"
 #endif
-#define DYDT_INIT(nelem)                        \
-    std::vector<Accum> accum;                   \
-    while (0) {                                 \
-        accum.reserve(nelem);                   \
-        for (int si = 0; si < nelem; ++si) {    \
-            accum.push_back(&dydt[bi*n + si]);  \
-        }                                       \
-    }
 #define DYDT(bi, si) accum[si]
+#define DYDT_ALLOC(nelem) std::vector<Accum<Real_t>> accum; accum.reserve(nelem)
+#define DYDT_COMMIT() accum.clear()
+#define DYDT_INIT(nelem)                                \
+    do {                                                \
+        for (int si = 0; si < nelem; ++si) {            \
+            accum.emplace_back(&dydt[bi*n + si]);       \
+        }                                               \
+    } while (0)
+template<typename Real_t>
 struct Kahan {
     Real_t hi {0}, lo {0};
     Real_t *target;
@@ -538,7 +541,8 @@ struct Kahan {
     ~Kahan() {
         *target = hi;
     }
-}
+};
+template<typename Real_t>
 struct Neumaier {
     Real_t hi {0}, lo {0};
     Real_t *target;
@@ -548,7 +552,7 @@ struct Neumaier {
     void clear() { hi = 0; lo = 0; }
     void operator+=(Real_t arg) {
         Real_t tmp1 = hi + arg;
-        if (std::abs(hi)  >= std::bas(arg)) {
+        if (std::abs(hi)  >= std::abs(arg)) {
             lo += (hi - tmp1) + arg;
         } else {
             lo += (arg - tmp1) + hi;
@@ -566,8 +570,9 @@ struct Neumaier {
     ~Neumaier() {
         *target = hi + lo;
     }
-}
-using Accum = Kahan;
+};
+template<typename Real_t>
+using Accum = Neumaier<Real_t>; //Kahan;
 #endif
 template<typename Real_t>
 AnyODE::Status
@@ -623,6 +628,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         calc_efield(linC);
     }
     const Real_t expb_t = (logt) ? expb(t) : 0.0;
+    DYDT_ALLOC(n);
     ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3);" if not WITH_OPENMP else ""}
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
@@ -687,6 +693,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                     DYDT(bi, si) *= log(2);
             }
         }
+        DYDT_COMMIT();
     }
     nfev++;
     return AnyODE::Status::success;
