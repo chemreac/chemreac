@@ -14,7 +14,7 @@ set -e
 ( cd dist; python3 -c "import chemreac" )
 
 (cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC' test)
-(cd tests-native; make -B CXX=clang++-12 CC=clang-11 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
+(cd tests-native; make -B CXX=clang++-12 CC=clang-12 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
 
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py build_ext -i
 #gdb -q -ex "set confirm off" -ex r -ex bt -ex q -args python3 -m pytest
@@ -22,7 +22,7 @@ CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py bui
 bash -c "ulimit -v 2048000; ./scripts/run_tests.sh"
 
 rm -rf build/
-CC=clang-11 \
+CC=clang-12 \
   CXX=clang++-12 \
   CFLAGS="-fsanitize=address -UNDEBUG $CFLAGS" \
   python3 setup.py build_ext -i
