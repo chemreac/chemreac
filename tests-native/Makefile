@@ -6,7 +6,7 @@
 
 CXX?=g++ 
 CC?=gcc
-PERFFLAGS=-funroll-loops -O3 -ffast-math # -march=native
+PERFFLAGS=-funroll-loops -O3 -ffast-math -DCHEMREAC_COMPENSATED_SUMMATION=0 # -march=native
 PROFFLAGS=-pg
 CXXFLAGS=-std=c++11 -Wall -Wextra -pedantic -Werror $(EXTRA_COMPILE_ARGS) ${CFLAGS}
 OPENMPLIBS=-lgomp

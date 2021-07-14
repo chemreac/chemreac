@@ -493,7 +493,11 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
-#ifdef CHEMREAC_NO_KAHAN
+#ifndef CHEMREAC_COMPENSATED_SUMMATION
+#define CHEMREAC_COMPENSATED_SUMMATION 2
+#endif
+
+#if CHEMREAC_COMPENSATED_SUMMATION == 0
 #define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 #define DYDT_ALLOC(nelem) do {} while (0)
 #define DYDT_COMMIT() do {} while (0)
@@ -516,6 +520,7 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
             accum.emplace_back(&dydt[bi*n + si]);       \
         }                                               \
     } while (0)
+#if CHEMREAC_COMPENSATED_SUMMATION == 1
 template<typename Real_t>
 struct Kahan {
     Real_t hi {0}, lo {0};
@@ -542,6 +547,9 @@ struct Kahan {
         *target = hi;
     }
 };
+template<typename Real_t>
+using Accum = Kahan<Real_t>;
+#elif CHEMREAC_COMPENSATED_SUMMATION == 2
 template<typename Real_t>
 struct Neumaier {
     Real_t hi {0}, lo {0};
@@ -573,6 +581,8 @@ struct Neumaier {
 };
 template<typename Real_t>
 using Accum = Neumaier<Real_t>; //Kahan;
+#else
+#error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
 #endif
 template<typename Real_t>
 AnyODE::Status
