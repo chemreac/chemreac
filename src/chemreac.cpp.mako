@@ -4,7 +4,7 @@
 #include <algorithm> // std::count
 //#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
-#include <cstdlib> // free,  C++11 aligned_alloc
+#include <cstdlib> // free,  C++17 aligned_alloc
 #include <cstring> // memcpy
 #include <limits> // numeric_limits
 #include <memory>
