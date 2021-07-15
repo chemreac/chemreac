@@ -497,6 +497,7 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #  define CHEMREAC_COMPENSATED_SUMMATION 2
 #endif
 
+// No compensation
 #if CHEMREAC_COMPENSATED_SUMMATION == 0
 #  define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 #  define DYDT_ALLOC(nelem) do {} while (0)
@@ -512,75 +513,108 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #    error "If you compile with fast math, you also must define CHEMREAC_COMPENSATED_SUMMATION as 0"
 #  endif
 #define DYDT(bi, si) accum[si]
-#define DYDT_ALLOC(nelem) std::vector<Accum<Real_t>> accum; accum.reserve(nelem)
-#define DYDT_COMMIT() accum.clear()
-#define DYDT_INIT(bi)                                   \
-    do {                                                \
-        for (int si = 0; si < n; ++si) {                \
-            accum.emplace_back(&dydt[bi*n + si]);       \
-        }                                               \
-    } while (0)
+#define DYDT_ALLOC(nelem) Accum<Real_t> accum(nelem)
+#define DYDT_COMMIT() accum.commit()
+#define DYDT_INIT(bi) accum.init(&dydt[bi*n])
+
+// Kahan
 #  if CHEMREAC_COMPENSATED_SUMMATION == 1
 template<typename Real_t>
-struct Kahan {
-    Real_t hi {0}, lo {0};
+struct KahanArray {
+private:
+    struct KahanRef {
+    private:
+        Real_t * ptr;
+        Real_t & hi() { return ptr[0]; }
+        Real_t & lo() { return ptr[1]; }
+    public:
+        KahanRef(Real_t * ptr) : ptr(ptr) {}
+        void operator+=(Real_t arg) {
+            Real_t tmp1 = arg - lo();
+            Real_t tmp2 = hi() + tmp1;
+            lo() = (tmp2 - hi()) - tmp1;
+            hi() = tmp2;
+        }
+        void operator*=(Real_t arg) {
+            hi() *= arg;
+            lo() *= arg;
+        }
+        void operator/=(Real_t arg) {
+            hi() /= arg;
+            lo() /= arg;
+        }
+    };
+    std::unique_ptr<Real_t[]> hilo;
+    std::size_t sz;
     Real_t *target;
-    Kahan(Real_t *tgt) : target(tgt)
+public:
+    KahanArray(std::size_t sz) : hilo(std::make_unique<Real_t[]>(sz*2)), sz(sz)
     {
     }
-    void clear() { hi = 0; lo = 0; }
-    void operator+=(Real_t arg) {
-        Real_t tmp1 = arg - lo;
-        Real_t tmp2 = hi + tmp1;
-        lo = (tmp2 - hi) - tmp1;
-        hi = tmp2;
+    void init(Real_t * tgt) {
+        target = tgt;
+        std::memset(hilo.get(), 0x00, sizeof(Real_t)*sz*2);
     }
-    void operator*=(Real_t arg) {
-        hi *= arg;
-        lo *= arg;
-    }
-    void operator/=(Real_t arg) {
-        hi /= arg;
-        lo /= arg;
-    }
-    ~Kahan() {
-        *target = hi;
+    KahanRef operator[](std::size_t idx) { return KahanRef{&hilo[idx*2]}; }
+    void commit() {
+        for (size_t i=0; i<sz; ++i) {
+            target[i] = hilo[i*2];
+        }
     }
 };
 template<typename Real_t>
-using Accum = Kahan<Real_t>;
+using Accum = KahanArray<Real_t>;
+
+// Neumaier
 #  elif CHEMREAC_COMPENSATED_SUMMATION == 2
 template<typename Real_t>
-struct Neumaier {
-    Real_t hi {0}, lo {0};
+struct NeumaierArray {
+private:
+    struct NeumaierRef {
+    private:
+        Real_t * ptr;
+        Real_t & hi() { return ptr[0]; }
+        Real_t & lo() { return ptr[1]; }
+    public:
+        NeumaierRef(Real_t * ptr) : ptr(ptr) {}
+        void operator+=(Real_t arg) {
+            Real_t tmp1 = hi() + arg;
+            if (std::abs(hi())  >= std::abs(arg)) {
+                lo() += (hi() - tmp1) + arg;
+            } else {
+                lo() += (arg - tmp1) + hi();
+            }
+            hi() = tmp1;
+        }
+        void operator*=(Real_t arg) {
+            hi() *= arg;
+            lo() *= arg;
+        }
+        void operator/=(Real_t arg) {
+            hi() /= arg;
+            lo() /= arg;
+        }
+    };
+    std::unique_ptr<Real_t[]> hilo;
+    std::size_t sz;
     Real_t *target;
-    Neumaier(Real_t *tgt) : target(tgt)
+public:
+    NeumaierArray(std::size_t sz) : hilo(std::make_unique<Real_t[]>(sz*2)), sz(sz)
     {
     }
-    void clear() { hi = 0; lo = 0; }
-    void operator+=(Real_t arg) {
-        Real_t tmp1 = hi + arg;
-        if (std::abs(hi)  >= std::abs(arg)) {
-            lo += (hi - tmp1) + arg;
-        } else {
-            lo += (arg - tmp1) + hi;
+    void init(Real_t * tgt) {
+        target = tgt;
+        std::memset(hilo.get(), 0x00, sizeof(Real_t)*sz*2);
+    }
+    NeumaierRef operator[](std::size_t idx) { return NeumaierRef{&hilo[idx*2]}; }
+    void commit() {
+        for (size_t i=0; i<sz; ++i) {
+            target[i] = hilo[i*2 + 1];
         }
-        hi = tmp1;
-    }
-    void operator*=(Real_t arg) {
-        hi *= arg;
-        lo *= arg;
-    }
-    void operator/=(Real_t arg) {
-        hi /= arg;
-        lo /= arg;
-    }
-    ~Neumaier() {
-        *target = hi + lo;
     }
 };
 template<typename Real_t>
-using Accum = Neumaier<Real_t>; //Kahan;
+using Accum = NeumaierArray<Real_t>; //Kahan;
 #  else
 #    error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
 #  endif
