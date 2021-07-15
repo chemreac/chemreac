@@ -15,6 +15,7 @@ set -e
 
 (cd tests-native; make -B CONTEXT=valgrind EXTRA_COMPILE_ARGS='-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC' test)
 (cd tests-native; make -B CXX=clang++-12 CC=clang-12 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=address -DNDEBUG' test)
+(cd tests-native; make -B CXX=clang++-12 CC=clang-12 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=undefined' test)
 
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py build_ext -i
 bash -c 'ulimit -v 3072000; gdb -q -ex "set confirm off" -ex r -ex bt -ex q -args python3 -m pytest'
@@ -24,9 +25,15 @@ exit 1  # DO-NOT-MERGE (gdb debugging via CI server)
 rm -rf build/
 CC=clang-12 \
   CXX=clang++-12 \
-  CFLAGS="-fsanitize=address -UNDEBUG $CFLAGS" \
+  CFLAGS="-fsanitize=address,undefined -UNDEBUG $CFLAGS" \
   python3 setup.py build_ext -i
-PYTHONMALLOC=malloc ASAN_OPTIONS=detect_leaks=0 LD_PRELOAD=$(clang++-12 --print-file-name=libclang_rt.asan-$(uname -m).so) ./scripts/run_tests.sh "${@:2}"
+LD_PRELOAD="\
+$(clang++-12 --print-file-name=libclang_rt.asan-$( uname -m).so) \
+$(clang++-12 --print-file-name=libclang_rt.ubsan_standalone-$(uname -m).so)" \
+          PYTHONMALLOC=malloc \
+          ASAN_OPTIONS=detect_leaks=0 \
+          UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1 \
+./scripts/run_tests.sh "${@:2}"
 
 python3 -m pip uninstall -y ${PKG_NAME}
 
