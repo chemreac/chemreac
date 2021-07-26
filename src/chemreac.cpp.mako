@@ -13,6 +13,14 @@
 #include "finitediff_templated.hpp" // fintie differences
 #include "chemreac.hpp"
 
+#ifndef CHEMREAC_COMPENSATED_SUMMATION
+#  define CHEMREAC_COMPENSATED_SUMMATION 2
+#endif
+#if CHEMREAC_COMPENSATED_SUMMATION == 0
+#  pragma message "Uncompensated summation"
+#else
+#  include "summation_cxx/deferred.hpp"
+#endif
 #include <iostream> //DEBUG
 
 
@@ -493,10 +501,6 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
-#ifndef CHEMREAC_COMPENSATED_SUMMATION
-#  define CHEMREAC_COMPENSATED_SUMMATION 2
-#endif
-
 // No compensation
 #if CHEMREAC_COMPENSATED_SUMMATION == 0
 #  define DYDT(bi, si) dydt[(bi)*(n)+(si)]
@@ -509,112 +513,17 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
         }                                       \
     } while(0)
 #else
-#  ifdef __FAST_MATH__
-#    error "If you compile with fast math, you also must define CHEMREAC_COMPENSATED_SUMMATION as 0"
-#  endif
 #define DYDT(bi, si) accum[si]
 #define DYDT_ALLOC(nelem) Accum<Real_t> accum(nelem)
 #define DYDT_COMMIT() accum.commit()
 #define DYDT_INIT(bi) accum.init(&dydt[bi*n])
-
-// Kahan
 #  if CHEMREAC_COMPENSATED_SUMMATION == 1
 template<typename Real_t>
-struct KahanArray {
-private:
-    struct KahanRef {
-    private:
-        Real_t * ptr;
-        Real_t & hi() { return ptr[0]; }
-        Real_t & lo() { return ptr[1]; }
-    public:
-        KahanRef(Real_t * ptr) : ptr(ptr) {}
-        void operator+=(Real_t arg) {
-            Real_t tmp1 = arg - lo();
-            Real_t tmp2 = hi() + tmp1;
-            lo() = (tmp2 - hi()) - tmp1;
-            hi() = tmp2;
-        }
-        void operator*=(Real_t arg) {
-            hi() *= arg;
-            lo() *= arg;
-        }
-        void operator/=(Real_t arg) {
-            hi() /= arg;
-            lo() /= arg;
-        }
-    };
-    std::unique_ptr<Real_t[]> hilo;
-    std::size_t sz;
-    Real_t *target;
-public:
-    KahanArray(std::size_t sz) : hilo(std::make_unique<Real_t[]>(sz*2)), sz(sz)
-    {
-    }
-    void init(Real_t * tgt) {
-        target = tgt;
-        std::memset(hilo.get(), 0x00, sizeof(Real_t)*sz*2);
-    }
-    KahanRef operator[](std::size_t idx) { return KahanRef{&hilo[idx*2]}; }
-    void commit() {
-        for (size_t i=0; i<sz; ++i) {
-            target[i] = hilo[i*2];
-        }
-    }
-};
-template<typename Real_t>
-using Accum = KahanArray<Real_t>;
-
+using Accum = summation_cxx::RangedAccumulatorKahan<Real_t>;
 // Neumaier
 #  elif CHEMREAC_COMPENSATED_SUMMATION == 2
 template<typename Real_t>
-struct NeumaierArray {
-private:
-    struct NeumaierRef {
-    private:
-        Real_t * ptr;
-        Real_t & hi() { return ptr[0]; }
-        Real_t & lo() { return ptr[1]; }
-    public:
-        NeumaierRef(Real_t * ptr) : ptr(ptr) {}
-        void operator+=(Real_t arg) {
-            Real_t tmp1 = hi() + arg;
-            if (std::abs(hi())  >= std::abs(arg)) {
-                lo() += (hi() - tmp1) + arg;
-            } else {
-                lo() += (arg - tmp1) + hi();
-            }
-            hi() = tmp1;
-        }
-        void operator*=(Real_t arg) {
-            hi() *= arg;
-            lo() *= arg;
-        }
-        void operator/=(Real_t arg) {
-            hi() /= arg;
-            lo() /= arg;
-        }
-    };
-    std::unique_ptr<Real_t[]> hilo;
-    std::size_t sz;
-    Real_t *target;
-public:
-    NeumaierArray(std::size_t sz) : hilo(std::make_unique<Real_t[]>(sz*2)), sz(sz)
-    {
-    }
-    void init(Real_t * tgt) {
-        target = tgt;
-        std::memset(hilo.get(), 0x00, sizeof(Real_t)*sz*2);
-    }
-    NeumaierRef operator[](std::size_t idx) { return NeumaierRef{&hilo[idx*2]}; }
-    void commit() {
-        for (size_t i=0; i<sz; ++i) {
-            target[i] = hilo[i*2 + 1];
-        }
-    }
-};
-template<typename Real_t>
-using Accum = NeumaierArray<Real_t>; //Kahan;
+using Accum = RangedAccumulatorNeumaier<Real_t>; //Kahan;
 #  else
 #    error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
 #  endif

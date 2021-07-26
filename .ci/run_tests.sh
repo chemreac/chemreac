@@ -18,9 +18,7 @@ set -e
 (cd tests-native; make -B CXX=clang++-12 CC=clang-12 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=undefined' test)
 
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py build_ext -i
-bash -c 'ulimit -v 3072000; gdb -q -ex "set confirm off" -ex r -ex bt -ex q -args python3 -m pytest'
-exit 1  # DO-NOT-MERGE (gdb debugging via CI server)
-#bash -c "ulimit -v 3072000; ./scripts/run_tests.sh"
+bash -c "ulimit -v 3072000; ./scripts/run_tests.sh"
 
 rm -rf build/
 CC=clang-12 \
