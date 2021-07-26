@@ -1,3 +1,4 @@
+// -*- eval: (read-only-mode); -*-
 #pragma once
 #include <cstddef>
 #include <cstring> // std::memset
@@ -24,7 +25,7 @@ namespace summation_cxx {
                 this->carry() *= arg;
             }
             void operator/=(T arg) {
-                this->acuum() /= arg;
+                this->accum() /= arg;
                 this->carry() /= arg;
             }
         };
