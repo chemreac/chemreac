@@ -523,7 +523,7 @@ using Accum = summation_cxx::RangedAccumulatorKahan<Real_t>;
 // Neumaier
 #  elif CHEMREAC_COMPENSATED_SUMMATION == 2
 template<typename Real_t>
-using Accum = RangedAccumulatorNeumaier<Real_t>; //Kahan;
+using Accum = summation_cxx::RangedAccumulatorNeumaier<Real_t>; //Kahan;
 #  else
 #    error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
 #  endif
