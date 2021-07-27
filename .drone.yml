@@ -55,7 +55,7 @@ pipeline:
       - export PYTHONUSERBASE=$(pwd)/ci-cache/pyusrb
       - export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
       - export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
-      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
+      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/ci-run.sh chemreac --cov chemreac --cov-report html"
       - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
       - rm -r chemreac/
       - mv dist/chemreac chemreac

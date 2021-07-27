@@ -18,7 +18,7 @@ set -e
 (cd tests-native; make -B CXX=clang++-12 CC=clang-12 OPTIMIZE=1 WITH_OPENMP=0 EXTRA_COMPILE_ARGS='-fsanitize=undefined' test)
 
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py build_ext -i
-bash -c "ulimit -v 3072000; ./scripts/run_tests.sh"
+bash -c "ulimit -v 3072000; ./scripts/run_tests.sh ${@:2}"
 
 for san in address undefined; do
     if [[ $san == "address" ]]; then
@@ -39,7 +39,7 @@ for san in address undefined; do
     LD_PRELOAD=$PY_LD_PRELOAD \
               PYTHONMALLOC=malloc \
               env $SAN_OPTS \
-              ./scripts/run_tests.sh "${@:2}"
+              ./scripts/run_tests.sh -s -v 
 done
 
 python3 -m pip uninstall -y ${PKG_NAME}
