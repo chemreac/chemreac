@@ -23,8 +23,10 @@ bash -c "ulimit -v 3072000; ./scripts/run_tests.sh"
 for san in address undefined; do
     if [[ $san == "address" ]]; then
         PY_LD_PRELOAD=$(clang++-12 --print-file-name=libclang_rt.asan-$( uname -m).so)
+        SAN_OPTS="ASAN_OPTIONS=detect_leaks=0"
     elif [[ $san == "undefined" ]]; then
         PY_LD_PRELOAD=$(clang++-12 --print-file-name=libclang_rt.ubsan_standalone-$(uname -m).so)
+        SAN_OPTS="UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1"
     else
         >&2 echo "bug in script"
         exit 1
@@ -32,12 +34,11 @@ for san in address undefined; do
     rm -rf build/
     CC=clang-12 \
       CXX=clang++-12 \
-      CFLAGS="-fsanitize=address,undefined -UNDEBUG $CFLAGS" \
+      CFLAGS="-fsanitize=$san -UNDEBUG $CFLAGS" \
       python3 setup.py build_ext -i
     LD_PRELOAD=$PY_LD_PRELOAD \
               PYTHONMALLOC=malloc \
-              ASAN_OPTIONS=detect_leaks=0 \
-              UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1 \
+              env $SAN_OPTS \
               ./scripts/run_tests.sh "${@:2}"
 done
 
