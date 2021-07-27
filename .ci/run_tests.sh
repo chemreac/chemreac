@@ -20,18 +20,26 @@ set -e
 CFLAGS="-D_GLIBCXX_DEBUG -D_GLIBCXX_DEBUG_PEDANTIC $CFLAGS" python3 setup.py build_ext -i
 bash -c "ulimit -v 3072000; ./scripts/run_tests.sh"
 
-rm -rf build/
-CC=clang-12 \
-  CXX=clang++-12 \
-  CFLAGS="-fsanitize=address,undefined -UNDEBUG $CFLAGS" \
-  python3 setup.py build_ext -i
-LD_PRELOAD="\
-$(clang++-12 --print-file-name=libclang_rt.asan-$( uname -m).so) \
-$(clang++-12 --print-file-name=libclang_rt.ubsan_standalone-$(uname -m).so)" \
-          PYTHONMALLOC=malloc \
-          ASAN_OPTIONS=detect_leaks=0 \
-          UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1 \
-./scripts/run_tests.sh "${@:2}"
+for san in address undefined; do
+    if [[ $san == "address" ]]; then
+        PY_LD_PRELOAD=$(clang++-12 --print-file-name=libclang_rt.asan-$( uname -m).so)
+    elif [[ $san == "undefined" ]]; then
+        PY_LD_PRELOAD=$(clang++-12 --print-file-name=libclang_rt.ubsan_standalone-$(uname -m).so)
+    else
+        >&2 echo "bug in script"
+        exit 1
+    fi
+    rm -rf build/
+    CC=clang-12 \
+      CXX=clang++-12 \
+      CFLAGS="-fsanitize=address,undefined -UNDEBUG $CFLAGS" \
+      python3 setup.py build_ext -i
+    LD_PRELOAD=$PY_LD_PRELOAD \
+              PYTHONMALLOC=malloc \
+              ASAN_OPTIONS=detect_leaks=0 \
+              UBSAN_OPTIONS=halt_on_error=1:abort_on_error=1 \
+              ./scripts/run_tests.sh "${@:2}"
+done
 
 python3 -m pip uninstall -y ${PKG_NAME}
 
