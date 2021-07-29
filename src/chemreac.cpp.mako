@@ -585,7 +585,7 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
     const Real_t expb_t = (logt) ? expb(t) : 0.0;
     DYDT_ALLOC(n);
     ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3);" if not WITH_OPENMP else ""}
-    assert(local_r);
+    if (nr) { assert(local_r); }
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
         // compartment bi
