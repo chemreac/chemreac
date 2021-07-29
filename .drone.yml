@@ -56,12 +56,12 @@ pipeline:
       - export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
       - export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
       - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/ci-run.sh chemreac --cov chemreac --cov-report html"
-      - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
+      - cp -r /tmp/ci/dist .
       - rm -r chemreac/
       - mv dist/chemreac chemreac
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - ls chemreac/; python3 -c "import chemreac"
-      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
+#      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=$PWD LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
       - ./scripts/prepare_deploy.sh
