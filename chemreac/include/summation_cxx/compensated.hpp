@@ -1,12 +1,14 @@
-#pragma once
+#pragma once // -*- eval: (read-only-mode); -*-
+#line 2 "/work/summation_cxx/compensated.hpp"
 #ifdef __FAST_MATH__
 #error fast math enabled (/fp:fast, -ffast-math), this would negate compensation.
 #endif
 #include "summation_cxx/macros.hpp"
 #include <cstddef> // std::size_t
-#include <iterator>
 
 namespace summation_cxx {
+    enum class Compensation { NONE, KAHAN, NEUMAIER };
+
     namespace /* anonymous */ {
         template<typename T>
         SMMTNCXX_PREFER_INLINE void accum_kahan_destructive(
@@ -49,20 +51,4 @@ namespace summation_cxx {
             acm = tmp;
         }
     }
-
-#define SMMTN_COMPENSATED(NAME, EXPR)                              \
-    template<std::forward_iterator It>                                  \
-    typename std::iterator_traits<It>::value_type NAME(It begin, It end) { \
-        using T = typename std::iterator_traits<It>::value_type;        \
-        T carry = T {0};                                                \
-        T acm_sum = T {0};                                              \
-        while(begin!=end) {                                             \
-            accum_##NAME<T>(acm_sum, carry, *begin++);                  \
-        }                                                               \
-        return EXPR;                                                    \
-    }
-    SMMTN_COMPENSATED(kahan, acm_sum)
-    SMMTN_COMPENSATED(kahan_destructive, acm_sum)
-    SMMTN_COMPENSATED(neumaier, acm_sum + carry)
-#undef SMMTN_COMPENSATED
 }
