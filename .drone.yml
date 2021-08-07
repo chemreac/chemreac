@@ -17,37 +17,37 @@ pipeline:
     ttl: 90  # liftetime in days
 
   install-reqs:
-    image: bjodah/bjodahimg20dev:2.1.0
+    image: bjodah/bjodahimg20:21.7
     environment:
-      - CC=gcc-10
-      - CXX=g++-10
+      - CC=gcc-11
+      - CXX=g++-11
 #      - PYCVODES_LAPACK=lapack,blas
 #      - PYCVODES_SUNDIALS_LIBS=sundials_cvodes,sundials_nvecserial,sundials_sunlinsollapackdense,sundials_sunlinsollapackband,sundials_sunlinsolklu
       - PYCVODES_NO_KLU=0
       - LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
       - CPATH=/usr/include/suitesparse
-      - CPLUS_INCLUDE_PATH=/opt/boost_1_74_p/include
-      - SUNDBASE=/opt/sundials-5.4.0-klu-lapack
+      - CPLUS_INCLUDE_PATH=/opt/boost-1.76.0/include
+      - SUNDBASE=/opt/sundials-5.7.0-release
     commands:
       - export PYTHONUSERBASE=$(pwd)/ci-cache/pyusrb
       - mkdir -p $PYTHONUSERBASE
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade finitediff "block_diag_ilu>=0.4.3" "pyodeint>=0.10.4" "pygslodeiv2>=0.9.3"  "batemaneq>=0.2.2"
       - python3 -c "import block_diag_ilu"
-      - CFLAGS="-isystem $SUNDBASE/include $CFLAGS" LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS" python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "http://hera.physchem.kth.se/~pycvodes/releases/pycvodes-0.13.1.post10+gf20facb.tar.gz"
+      - CFLAGS="-isystem $SUNDBASE/include $CFLAGS" LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS" python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "pycvodes>=0.14.1"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "pyodesys>=0.13.1"
       - python3 -m pip install --user --cache-dir ./ci-cache/pip-cache --upgrade "chempy>=0.7.10"
       - ls external/anyode
 
-  test-dbg-gcc-10-sund-5.4.0:
-    image: bjodah/bjodahimg20dev:2.1.0
+  test-dbg-gcc-11-sund-5.7.0:
+    image: bjodah/bjodahimg20:21.7
     privileged: true  # or in the future(?): --cap-add SYS_PTRACE
     group: testing
     environment:
       - CPATH=/usr/include/suitesparse
-      - CC=gcc-10
-      - CXX=g++-10
-      - CPLUS_INCLUDE_PATH=/opt/boost_1_74_p/include
-      - SUNDBASE=/opt/sundials-5.4.0-klu-lapack
+      - CC=gcc-11
+      - CXX=g++-11
+      - CPLUS_INCLUDE_PATH=/opt/boost-1.76.0/include
+      - SUNDBASE=/opt/sundials-5.7.0-release
       - CHEMREAC_INTEGRATION_KWARGS=dict(integrator='cvode') 
     commands:
       - git fetch -tq
@@ -55,13 +55,13 @@ pipeline:
       - export PYTHONUSERBASE=$(pwd)/ci-cache/pyusrb
       - export CFLAGS="-isystem $SUNDBASE/include $CFLAGS"
       - export LDFLAGS="-Wl,--disable-new-dtags -Wl,-rpath,$SUNDBASE/lib -L$SUNDBASE/lib $LDFLAGS"
-      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/run_tests.sh chemreac --cov chemreac --cov-report html"
-      - cp -r /tmp/ci/dist /tmp/ci/htmlcov .
+      - bash -c "source .ci/copy_tree.sh /tmp/ci $SUNDBASE; pwd; .ci/ci-run.sh chemreac --cov chemreac --cov-report html"
+      - cp -r /tmp/ci/dist .
       - rm -r chemreac/
       - mv dist/chemreac chemreac
       - export LD_LIBRARY_PATH=$SUNDBASE/lib:$LD_LIBRARY_PATH
       - ls chemreac/; python3 -c "import chemreac"
-      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
+#      - ./scripts/coverage_badge.py htmlcov/ htmlcov/coverage.svg
       - PYTHONUSERBASE=/opt/pyusrb PYTHONPATH=$PWD LD_LIBRARY_PATH=$SUNDBASE/lib ./scripts/generate_docs.sh
       - if grep --exclude ".drone.yml" "DO-NOT-MERGE!" -R .; then exit 1; fi
       - ./scripts/prepare_deploy.sh
@@ -79,9 +79,9 @@ pipeline:
     image: drillster/drone-rsync
     when:
       event: [push]
-    hosts: [ "hera.physchem.kth.se" ]  # 127.0.0.1  192.168.1.99 davycrockett.mooo.com
-    port: 22
+    hosts: [ sayyy.mooo.com ]  # 127.0.0.1  192.168.1.99 davycrockett.mooo.com
+    port: 40022
     user: chemreac
     secrets: [ rsync_key ]  # secret only set fro event "push" not "pull_request"
-    source: ./deploy/public_html
-    target: ~/
+    source: ./deploy/public_html/branches
+    target: ~/public_html/

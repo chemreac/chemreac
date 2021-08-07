@@ -4,14 +4,29 @@
 #include <algorithm> // std::count
 //#include <vector>    // std::vector
 #include <algorithm> // std::max, std::min
-#include <cstdlib> // free,  C++11 aligned_alloc
+#include <cassert>
+#include <cstdlib> // free,  C++17 aligned_alloc
 #include <cstring> // memcpy
+#include <limits> // numeric_limits
 #include <memory>
 #include "anyode/anyode_buffer.hpp"
 #include "anyode/anyode_decomposition_lapack.hpp"
 #include "finitediff_templated.hpp" // fintie differences
 #include "chemreac.hpp"
 
+#ifndef CHEMREAC_COMPENSATED_SUMMATION
+#  define CHEMREAC_COMPENSATED_SUMMATION 2
+#endif
+
+#if CHEMREAC_COMPENSATED_SUMMATION == 0
+#  pragma message "Uncompensated summation"
+#elif CHEMREAC_COMPENSATED_SUMMATION <= 2
+#  include "summation_cxx/ranged.hpp"
+#elif CHEMREAC_COMPENSATED_SUMMATION == 16
+#  include "summation_cxx/ranged_qd.hpp"
+#else
+#  error "Unknown compensation scheme"
+#endif
 #include <iostream> //DEBUG
 
 
@@ -492,11 +507,37 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
-#define DYDT(bi, si) dydt[(bi)*(n)+(si)]
 template<typename Real_t>
 AnyODE::Status
 ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
 {
+#if CHEMREAC_COMPENSATED_SUMMATION == 0
+# define DYDT(bi, si) dydt[(bi)*(n)+(si)]
+# define DYDT_ALLOC(nelem) do {} while (0)
+# define DYDT_COMMIT() do {} while (0)
+# define DYDT_INIT(bi)                         \
+    do {                                        \
+        for (int si = 0; si < n; ++si) {        \
+            DYDT(bi, si) = 0.0;                 \
+        }                                       \
+    } while(0)
+#else
+# define DYDT(bi, si) accum[si]
+# define DYDT_ALLOC(nelem) Accum accum(nelem)
+# define DYDT_COMMIT() accum.commit()
+# define DYDT_INIT(bi) accum.init(&dydt[bi*n])
+# if CHEMREAC_COMPENSATED_SUMMATION == 1
+    using Accum = summation_cxx::RangedAccumulatorKahan<Real_t>;
+// Neumaier
+# elif CHEMREAC_COMPENSATED_SUMMATION == 2
+    using Accum = summation_cxx::RangedAccumulatorNeumaier<Real_t>;
+# elif CHEMREAC_COMPENSATED_SUMMATION == 16
+    using Accum = summation_cxx::RangedAccumulatorDD;
+# else
+#    error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
+# endif
+#endif
+
     // note condifiontal call to free at end of this function
     bool use_work = false;
     if (logy) {
@@ -547,14 +588,15 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
         calc_efield(linC);
     }
     const Real_t expb_t = (logt) ? expb(t) : 0.0;
+    DYDT_ALLOC(n);
     ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3);" if not WITH_OPENMP else ""}
+    if (nr) { assert(local_r); }
     ${"#pragma omp parallel for schedule(static) if (N*n > 65536)" if WITH_OPENMP else ""}
     for (int bi=0; bi<N; ++bi){
         // compartment bi
         ${"Real_t * const local_r = AnyODE::buffer_get_raw_ptr(work3) + ((nr/8)+1)*8*omp_get_thread_num();" if WITH_OPENMP else ""}
 
-        for (int si=0; si<n; ++si)
-            DYDT(bi, si) = 0.0; // zero out
+        DYDT_INIT(bi); // set to zero
 
         // Contributions from reactions
         // ----------------------------
@@ -612,10 +654,14 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
                     DYDT(bi, si) *= log(2);
             }
         }
+        DYDT_COMMIT();
     }
     nfev++;
     return AnyODE::Status::success;
 }
+#undef DYDT_INIT
+#undef DYDT_COMMIT
+#undef DYDT_ALLOC
 #undef DYDT
 
 #define FOUT(bi, si) fout[(bi)*n+si]

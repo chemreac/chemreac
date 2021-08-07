@@ -128,7 +128,7 @@ if len(sys.argv) > 1 and '--help' not in sys.argv[1:] and sys.argv[1] not in (
     ]
     ext_modules[0].sources = [rendered_path] + ext_modules[0].sources
     ext_modules[0].language = 'c++'
-    ext_modules[0].extra_compile_args = ['-std=c++11'] + (['-fopenmp'] if _WITH_OPENMP else [])
+    ext_modules[0].extra_compile_args = ['-std=c++20'] + (['-fopenmp'] if _WITH_OPENMP else [])
     ext_modules[0].define_macros += (
         ([('CHEMREAC_WITH_DEBUG', None)] if _WITH_DEBUG else []) +
         ([('CHEMREAC_WITH_DATA_DUMPING', None)] if _WITH_DATA_DUMPING else []) +
