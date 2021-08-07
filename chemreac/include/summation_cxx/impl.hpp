@@ -102,10 +102,13 @@ namespace summation_cxx::detail {
         }
         accumulator_type operator/(const accumulator_type& other) const {
             const T denom = other.template to<T>();
-            accumulator_type result {ACCUM()/denom, CARRY()/denom};
+            return accumulator_type {ACCUM(const)/denom, CARRY(const)/denom};
         }
         accumulator_type operator+(const accumulator_type& other) const {
             return accumulator_type(ACCUM(const)+other.accum(), CARRY(const)+other.carry());
+        }
+        accumulator_type operator-(const accumulator_type& other) const {
+            return accumulator_type(ACCUM(const)-other.accum(), CARRY(const)-other.carry());
         }
         accumulator_type operator+() const {
             return accumulator_type(ACCUM(const), CARRY(const));
@@ -114,12 +117,25 @@ namespace summation_cxx::detail {
             return accumulator_type(-ACCUM(const), -CARRY(const));
         }
     };
-    template<typename T, typename Derived>
-    typename Derived::accumulator_type operator*(const T& factor_a, const Derived& factor_b)
-    {
-        return factor_b*factor_a; // multiplication is commutative
+#define SMMTNCXX_COMMUTATIVE_OP(OP)                                     \
+    template<typename Derived>                                          \
+    typename Derived::accumulator_type operator OP(                     \
+        const typename Derived::underlying_type& arg_a, const Derived& arg_b) \
+    {                                                                   \
+        return arg_b OP arg_a; /* multiplication is commutative */      \
     }
+    SMMTNCXX_COMMUTATIVE_OP(*)
+    SMMTNCXX_COMMUTATIVE_OP(+)
+#define SMMTNCXX_PROMOTING_OP(OP)                                              \
+  template <typename Derived>                                                  \
+  typename Derived::accumulator_type operator OP(                              \
+      const typename Derived::underlying_type &arg_a, const Derived &arg_b) {  \
+    return Derived{arg_a} OP arg_b; /* multiplication is commutative */        \
+  }
+    SMMTNCXX_PROMOTING_OP(-)
 
+#undef SMMTNCXX_COMMUTATIVE_OP
+#undef SMMTNCXX_PROMOTING_OP
 #undef ACCUM
 #undef CARRY
 

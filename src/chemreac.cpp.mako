@@ -17,10 +17,15 @@
 #ifndef CHEMREAC_COMPENSATED_SUMMATION
 #  define CHEMREAC_COMPENSATED_SUMMATION 2
 #endif
+
 #if CHEMREAC_COMPENSATED_SUMMATION == 0
 #  pragma message "Uncompensated summation"
-#else
+#elif CHEMREAC_COMPENSATED_SUMMATION <= 2
 #  include "summation_cxx/ranged.hpp"
+#elif CHEMREAC_COMPENSATED_SUMMATION == 16
+#  include "summation_cxx/ranged_qd.hpp"
+#else
+#  error "Unknown compensation scheme"
 #endif
 #include <iostream> //DEBUG
 
@@ -515,16 +520,16 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
     } while(0)
 #else
 #define DYDT(bi, si) accum[si]
-#define DYDT_ALLOC(nelem) Accum<Real_t> accum(nelem)
+#define DYDT_ALLOC(nelem) Accum accum(nelem)
 #define DYDT_COMMIT() accum.commit()
 #define DYDT_INIT(bi) accum.init(&dydt[bi*n])
 #  if CHEMREAC_COMPENSATED_SUMMATION == 1
-template<typename Real_t>
 using Accum = summation_cxx::RangedAccumulatorKahan<Real_t>;
 // Neumaier
 #  elif CHEMREAC_COMPENSATED_SUMMATION == 2
-template<typename Real_t>
 using Accum = summation_cxx::RangedAccumulatorNeumaier<Real_t>;
+#  elif CHEMREAC_COMPENSATED_SUMMATION == 16
+using Accum = summation_cxx::RangedAccumulatorDD;
 #  else
 #    error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
 #  endif

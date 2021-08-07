@@ -1,5 +1,4 @@
-#pragma once // -*- eval: (read-only-mode); -*-
-#line 2 "/work/summation_cxx/macros.hpp"
+#pragma once
 #ifndef SMMTNCXX_RESTRICT
   #if defined(__GNUC__)
     #define SMMTNCXX_RESTRICT __restrict__
@@ -31,11 +30,3 @@
 // see test/bench.cpp
 #define SMMTNCXX_NEUMAIER_BRANCH 1
 #endif
-
-// #define SMMTNCXX_FRIEND_OPERATORS(CLS, RET, TYP)
-//     friend RET operator+(const CLS&, const TYP&);
-//     friend RET operator+(const TYP&, const CLS&);
-
-// #define SMMTNCXX_OPERATORS_IMPL(CLS, RET, TYP)
-//     friend RET operator+(const CLS&, const TYP&);
-//     friend RET operator+(const TYP&, const CLS&);

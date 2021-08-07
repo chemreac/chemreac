@@ -1,5 +1,4 @@
-#pragma once // -*- eval: (read-only-mode); -*-
-#line 2 "/work/summation_cxx/compensated.hpp"
+#pragma once
 #ifdef __FAST_MATH__
 #error fast math enabled (/fp:fast, -ffast-math), this would negate compensation.
 #endif

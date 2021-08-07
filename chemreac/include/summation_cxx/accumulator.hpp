@@ -1,5 +1,6 @@
 #pragma once
 #include <array>
+#include <cmath>
 #include <cstring>
 #include "summation_cxx/compensated.hpp"
 #include <summation_cxx/impl.hpp>
@@ -43,4 +44,14 @@ namespace summation_cxx {
     };
     template<typename T> using AccumulatorKahan = Accumulator<T, Compensation::KAHAN>;
     template<typename T> using AccumulatorNeumaier = Accumulator<T, Compensation::NEUMAIER>;
+
+    template<typename T, Compensation scheme>
+    T pow(const Accumulator<T, scheme>& base, T exponent) {
+        return std::pow(base.accum(), exponent);
+    }
+    template<typename T, Compensation scheme>
+    T pow(const Accumulator<T, scheme>& base, int exponent) {
+        return std::pow(base.accum(), static_cast<T>(exponent));
+    }
+
 }

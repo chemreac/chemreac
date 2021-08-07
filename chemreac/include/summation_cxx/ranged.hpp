@@ -17,7 +17,7 @@ namespace summation_cxx {
         target_type * tgt {};
         std::unique_ptr<underlying_type[]> storage {};
         std::size_t sz {};
-        bool cumulative;
+        bool cumulative {};
     public:
         RangedAccumulator() = default;
         RangedAccumulator(std::size_t sz) : storage(std::make_unique<underlying_type[]>(sz*2)), sz(sz) {}

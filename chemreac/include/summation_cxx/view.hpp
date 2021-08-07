@@ -1,12 +1,10 @@
-#pragma once // -*- eval: (read-only-mode); -*-
-#line 2 "/work/summation_cxx/view.hpp"
+#pragma once
 #include <summation_cxx/impl.hpp>
 
 namespace summation_cxx {
 
     template <typename T, Compensation scheme>
-    struct AccuView : //public summation_cxx::detail::AccuBase<T>,
-                      public detail::Operators<T, scheme, AccuView<T, scheme>> {
+    struct AccuView : public detail::Operators<T, scheme, AccuView<T, scheme>> {
         static constexpr Compensation compensation_scheme { scheme };
     private:
         T * ptr;
