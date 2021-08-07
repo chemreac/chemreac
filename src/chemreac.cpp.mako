@@ -507,37 +507,37 @@ ReactionDiffusion<Real_t>::populate_linC(Real_t * const ANYODE_RESTRICT linC,
 #define LINC(bi, si) linC[(bi)*n+(si)]
 #define RLINC(bi, si) rlinC[(bi)*n+(si)]
 
-// No compensation
+template<typename Real_t>
+AnyODE::Status
+ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
+{
 #if CHEMREAC_COMPENSATED_SUMMATION == 0
-#  define DYDT(bi, si) dydt[(bi)*(n)+(si)]
-#  define DYDT_ALLOC(nelem) do {} while (0)
-#  define DYDT_COMMIT() do {} while (0)
-#  define DYDT_INIT(bi)                         \
+# define DYDT(bi, si) dydt[(bi)*(n)+(si)]
+# define DYDT_ALLOC(nelem) do {} while (0)
+# define DYDT_COMMIT() do {} while (0)
+# define DYDT_INIT(bi)                         \
     do {                                        \
         for (int si = 0; si < n; ++si) {        \
             DYDT(bi, si) = 0.0;                 \
         }                                       \
     } while(0)
 #else
-#define DYDT(bi, si) accum[si]
-#define DYDT_ALLOC(nelem) Accum accum(nelem)
-#define DYDT_COMMIT() accum.commit()
-#define DYDT_INIT(bi) accum.init(&dydt[bi*n])
-#  if CHEMREAC_COMPENSATED_SUMMATION == 1
-using Accum = summation_cxx::RangedAccumulatorKahan<Real_t>;
+# define DYDT(bi, si) accum[si]
+# define DYDT_ALLOC(nelem) Accum accum(nelem)
+# define DYDT_COMMIT() accum.commit()
+# define DYDT_INIT(bi) accum.init(&dydt[bi*n])
+# if CHEMREAC_COMPENSATED_SUMMATION == 1
+    using Accum = summation_cxx::RangedAccumulatorKahan<Real_t>;
 // Neumaier
-#  elif CHEMREAC_COMPENSATED_SUMMATION == 2
-using Accum = summation_cxx::RangedAccumulatorNeumaier<Real_t>;
-#  elif CHEMREAC_COMPENSATED_SUMMATION == 16
-using Accum = summation_cxx::RangedAccumulatorDD;
-#  else
+# elif CHEMREAC_COMPENSATED_SUMMATION == 2
+    using Accum = summation_cxx::RangedAccumulatorNeumaier<Real_t>;
+# elif CHEMREAC_COMPENSATED_SUMMATION == 16
+    using Accum = summation_cxx::RangedAccumulatorDD;
+# else
 #    error "Unknown value of CHEMREAC_COMPENSATED_SUMMATION"
-#  endif
+# endif
 #endif
-template<typename Real_t>
-AnyODE::Status
-ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const ANYODE_RESTRICT dydt)
-{
+
     // note condifiontal call to free at end of this function
     bool use_work = false;
     if (logy) {
@@ -659,6 +659,9 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
     nfev++;
     return AnyODE::Status::success;
 }
+#undef DYDT_INIT
+#undef DYDT_COMMIT
+#undef DYDT_ALLOC
 #undef DYDT
 
 #define FOUT(bi, si) fout[(bi)*n+si]
