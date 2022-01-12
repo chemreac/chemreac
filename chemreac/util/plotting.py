@@ -175,7 +175,7 @@ def coloured_spy(A, cmap_name='coolwarm', log=False,
         if isinstance(norm, LogNorm):
             ax_colorbar.set_yscale('log')
         elif isinstance(norm, SymLogNorm):
-            ax_colorbar.set_yscale('symlog', linthreshy=10**log)
+            ax_colorbar.set_yscale('symlog', linthresh=10**log)
         ax_colorbar.yaxis.tick_right()
         ax_colorbar.set_xticks([])
         ax_colorbar.set_yticks(ticks)
@@ -214,7 +214,7 @@ DEFAULT = dict(
 
 
 def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
-                   titles=None, lintreshy=1e-10, logx=True,
+                   titles=None, linthresh=1e-10, logx=True,
                    legend_kwargs=None, ls=None, c=None):
     """
     Parameters
@@ -231,8 +231,8 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     axes: sequence of matplotlib Axes instances
         (default: len(indices) number of subplot axes)
     titles: titles per axis
-    lintreshy: float
-        symlog option 'linthreshy' (default: 1e-10)
+    linthresh: float
+        symlog option 'linthresh' (default: 1e-10)
     logx: set x scale to 'log'
     legend_kwargs: dict
         dict of kwargs to pass to matplotlib legend function
@@ -255,12 +255,12 @@ def _plot_analysis(cb, labels, rd, tout, yout, indices, axes=None,
     c = c or DEFAULT['c']
     row_out = cb(rd, tout, yout, indices)
     for i, ax in enumerate(axes):
-        ax.set_yscale('symlog', linthreshy=lintreshy)
+        ax.set_yscale('symlog', linthresh=linthresh)
         if logx:
             ax.set_xscale('log')
         istl = 0  # style counter
         for j, lbl in enumerate(labels):
-            if np.all(np.abs(row_out[:, i, j]) < lintreshy):
+            if np.all(np.abs(row_out[:, i, j]) < linthresh):
                 continue
             ax.plot(tout, row_out[:, i, j], label=lbl, c=c[istl % len(c)],
                     ls=ls[istl % len(ls)])

@@ -120,7 +120,7 @@ def integrate_rd(tend=10.0, N=1, nt=500, jac_spy=False,
                 np.log(integr.tout) if rd.logt else integr.tout,
                 np.log(integr.Cout) if rd.logy else integr.Cout,
                 'ABCD',
-                lintreshy=1e-10
+                linthresh=1e-10
             )
             plt.tight_layout()
             if savefig != 'None':
