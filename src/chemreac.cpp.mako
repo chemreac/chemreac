@@ -15,12 +15,12 @@
 #include "chemreac.hpp"
 
 #ifndef CHEMREAC_COMPENSATED_SUMMATION
-#  define CHEMREAC_COMPENSATED_SUMMATION 2
+#  define CHEMREAC_COMPENSATED_SUMMATION 3
 #endif
 
 #if CHEMREAC_COMPENSATED_SUMMATION == 0
 #  pragma message "Uncompensated summation"
-#elif CHEMREAC_COMPENSATED_SUMMATION <= 2
+#elif CHEMREAC_COMPENSATED_SUMMATION <= 3
 #  include "summation_cxx/ranged.hpp"
 #elif CHEMREAC_COMPENSATED_SUMMATION == 16
 #  include "summation_cxx/ranged_qd.hpp"
@@ -531,6 +531,8 @@ ReactionDiffusion<Real_t>::rhs(Real_t t, const Real_t * const y, Real_t * const 
 // Neumaier
 # elif CHEMREAC_COMPENSATED_SUMMATION == 2
     using Accum = summation_cxx::RangedAccumulatorNeumaier<Real_t>;
+# elif CHEMREAC_COMPENSATED_SUMMATION == 3
+    using Accum = summation_cxx::RangedAccumulatorTwoSum<Real_t>;
 # elif CHEMREAC_COMPENSATED_SUMMATION == 16
     using Accum = summation_cxx::RangedAccumulatorDD;
 # else

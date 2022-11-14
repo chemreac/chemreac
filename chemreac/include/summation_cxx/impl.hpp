@@ -1,143 +1,168 @@
 #pragma once
-#include <summation_cxx/compensated.hpp>
 #include <array>
 #include <cassert>
-
+#include <summation_cxx/compensated.hpp>
 
 namespace summation_cxx {
-    template <typename T, summation_cxx::Compensation Scheme> struct Accumulator;
-    template <typename T, summation_cxx::Compensation Scheme> struct AccuView;
-    namespace detail {
-        template <typename T, Compensation scheme, typename Derived> struct Operators;
-    }
+template <typename T, summation_cxx::Compensation Scheme>
+struct Accumulator;
+template <typename T, summation_cxx::Compensation Scheme>
+struct AccuView;
+namespace detail {
+    template <typename T, Compensation scheme, typename Derived>
+    struct Operators;
+}
 }
 namespace summation_cxx::detail {
-    template <typename T, Compensation scheme, typename Derived>
-    struct Operators {
-        typedef T underlying_type;
-        typedef Accumulator<T, scheme> accumulator_type;
-        typedef AccuView<T, scheme> view_type;
+template <typename T, Compensation scheme, typename Derived>
+struct Operators {
+    typedef T underlying_type;
+    typedef Accumulator<T, scheme> accumulator_type;
+    typedef AccuView<T, scheme> view_type;
 
-#define ACCUM(cv_qual) static_cast<cv_qual Derived *>(this)->accum()
-#define CARRY(cv_qual) static_cast<cv_qual Derived *>(this)->carry()
-        template <typename U>
-        U to() const {
-            if constexpr (Derived::compensation_scheme == Compensation::KAHAN) {
-                return ACCUM(const);
-            } else if constexpr (Derived::compensation_scheme == Compensation::NEUMAIER) {
-                if constexpr (sizeof(T) > sizeof(U)) {
-                    return ACCUM(const) + CARRY(const);
-                } else {
-                    return static_cast<U>(ACCUM(const)) + static_cast<U>(CARRY(const));
-                }
+#define ACCUM(cv_qual) static_cast<cv_qual Derived*>(this)->accum()
+#define CARRY(cv_qual) static_cast<cv_qual Derived*>(this)->carry()
+    template <typename U>
+    U to() const
+    {
+        if constexpr (Derived::compensation_scheme == Compensation::KAHAN) {
+            return ACCUM(const);
+        } else if constexpr (Derived::compensation_scheme == Compensation::NEUMAIER
+                             || Derived::compensation_scheme == Compensation::NEUMAIER_SWAP
+                             || Derived::compensation_scheme == Compensation::TWO_SUM
+                             || Derived::compensation_scheme == Compensation::FAST_TWO_SUM
+            ) {
+            if constexpr (sizeof(T) > sizeof(U)) {
+                return ACCUM(const) + CARRY(const);
             } else {
-                assert(false);
+                return static_cast<U>(ACCUM(const)) + static_cast<U>(CARRY(const));
             }
-        }
-        Derived& operator+=(T arg) {
-          if constexpr (scheme == Compensation::KAHAN) {
-            accum_kahan_destructive(ACCUM(), CARRY(), arg);
-          } else if constexpr (scheme == Compensation::NEUMAIER) {
-            accum_neumaier(ACCUM(), CARRY(), arg);
-          } else {
+        } else {
             assert(false);
-          }
-          return *(static_cast<Derived *>(this));
         }
-        Derived& operator-=(T arg) {
-            Derived& self = *(static_cast<Derived *>(this));
-            self += -arg;
-            return self;
-        }
-
-        // template<std::enable_if<scheme == Compensation::KAHAN>>
-        // Derived& operator+=(T&& arg) {
-        //     accum_kahan_destructive(ACCUM(), CARRY(), arg);
-        //     return *this;
-        // }
-
-        // template<std::enable_if<scheme == Compensation::NEUMAIER>>
-        // Derived& operator+=(T&& arg) {
-        //     accum_neumaier(ACCUM(), CARRY(), arg);
-        //     return *this;
-        // }
-        // template<std::enable_if<scheme == Compensation::KAHAN>>
-        // Derived& operator+=(const T& arg) {
-        //     accum_kahan(ACCUM(), CARRY(), arg);
-        //     return *this;
-        // }
-
-        // template<std::enable_if<scheme == Compensation::NEUMAIER>>
-        // Derived& operator+=(const T& arg) {
-        //     accum_neumaier(ACCUM(), CARRY(), arg);
-        //     return *this;
-        // }
-
-        void operator=(const T& arg) {
-            ACCUM() = arg;
-            CARRY() = 0;
-        }
-        void operator/=(const T& arg) {
-            ACCUM() /= arg;
-            CARRY() /= arg;
-        }
-        void operator*=(const T& arg) {
-            ACCUM() *= arg;
-            CARRY() *= arg;
-        }
-        void operator+=(const accumulator_type& other) {
-            *this += other.accum();
-            CARRY() += other.carry();
-        }
-        void operator-=(const accumulator_type& other) {
-            *this -= other.accum();
-            CARRY() -= other.carry();
-        }
-        accumulator_type operator*(const T &arg) const {
-            return accumulator_type(ACCUM(const)*arg, CARRY(const)*arg);
-        }
-        accumulator_type operator*(const accumulator_type& other) const {
-            return accumulator_type(ACCUM(const)*other.accum(),
-                                    CARRY(const)*other.accum() + ACCUM(const)*other.carry() + CARRY(const)*other.carry());
-        }
-        accumulator_type operator/(const accumulator_type& other) const {
-            const T denom = other.template to<T>();
-            return accumulator_type {ACCUM(const)/denom, CARRY(const)/denom};
-        }
-        accumulator_type operator+(const accumulator_type& other) const {
-            return accumulator_type(ACCUM(const)+other.accum(), CARRY(const)+other.carry());
-        }
-        accumulator_type operator-(const accumulator_type& other) const {
-            return accumulator_type(ACCUM(const)-other.accum(), CARRY(const)-other.carry());
-        }
-        accumulator_type operator+() const {
-            return accumulator_type(ACCUM(const), CARRY(const));
-        }
-        accumulator_type operator-() const {
-            return accumulator_type(-ACCUM(const), -CARRY(const));
-        }
-    };
-#define SMMTNCXX_COMMUTATIVE_OP(OP)                                     \
-    template<typename Derived>                                          \
-    typename Derived::accumulator_type operator OP(                     \
-        const typename Derived::underlying_type& arg_a, const Derived& arg_b) \
-    {                                                                   \
-        return arg_b OP arg_a; /* multiplication is commutative */      \
+        return U { 0 } / U { 0 }; /* unreachable code, but would return NaN */
     }
-    SMMTNCXX_COMMUTATIVE_OP(*)
-    SMMTNCXX_COMMUTATIVE_OP(+)
-#define SMMTNCXX_PROMOTING_OP(OP)                                              \
-  template <typename Derived>                                                  \
-  typename Derived::accumulator_type operator OP(                              \
-      const typename Derived::underlying_type &arg_a, const Derived &arg_b) {  \
-    return Derived{arg_a} OP arg_b; /* multiplication is commutative */        \
-  }
-    SMMTNCXX_PROMOTING_OP(-)
+    Derived& operator+=(T arg)
+    {
+        if constexpr (scheme == Compensation::KAHAN) {
+            accum_kahan_destructive(ACCUM(), CARRY(), arg);
+        } else if constexpr (scheme == Compensation::NEUMAIER) {
+            accum_neumaier(ACCUM(), CARRY(), arg);
+        } else if constexpr (scheme == Compensation::NEUMAIER_SWAP) {
+            accum_neumaier_swap(ACCUM(), CARRY(), arg);
+        } else if constexpr (scheme == Compensation::TWO_SUM) {
+            accum_two_sum(ACCUM(), CARRY(), arg);
+        } else if constexpr (scheme == Compensation::FAST_TWO_SUM) {
+            accum_fast_two_sum(ACCUM(), CARRY(), arg);
+        } else {
+            assert(false);
+        }
+        return *(static_cast<Derived*>(this));
+    }
+    Derived& operator-=(T arg)
+    {
+        Derived& self = *(static_cast<Derived*>(this));
+        self += -arg;
+        return self;
+    }
 
-#undef SMMTNCXX_COMMUTATIVE_OP
-#undef SMMTNCXX_PROMOTING_OP
+    Derived& operator=(const T arg)
+    {
+        Derived& self = *(static_cast<Derived *>(this));
+        ACCUM() = arg;
+        CARRY() = 0;
+        return self;
+    }
+    void operator/=(const T& arg)
+    {
+        ACCUM() /= arg;
+        CARRY() /= arg;
+    }
+    void operator*=(const T& arg)
+    {
+        const T ori {ACCUM()};
+        ACCUM() *= arg;
+        CARRY() *= arg;
+        CARRY() += fma(ori, arg, -ACCUM()); // 2product
+    }
+    Derived& operator+=(const accumulator_type& other)
+    {
+        Derived& self = *(static_cast<Derived*>(this));
+        self += other.accum();
+        self /*CARRY()*/ += other.carry();
+        return self;
+    }
+    Derived& operator-=(const accumulator_type& other)
+    {
+        Derived& self = *(static_cast<Derived*>(this));
+        self -= other.accum();
+        self /*CARRY()*/ -= other.carry();
+        return self;
+    }
+    accumulator_type operator*(const T& arg) const
+    {
+        Derived cpy = *(static_cast<const Derived*>(this));
+        cpy *= arg;
+        return cpy;
+    }
+    accumulator_type operator*(const accumulator_type& other) const
+    {
+        return accumulator_type(ACCUM(const) * other.accum(),
+            CARRY(const) * other.accum() + ACCUM(const) * other.carry() + CARRY(const) * other.carry());
+    }
+    accumulator_type operator/(const accumulator_type& other) const
+    {
+        const T denom = other.template to<T>();
+        return accumulator_type { ACCUM(const) / denom, CARRY(const) / denom };
+    }
+    accumulator_type operator+(const accumulator_type& other) const
+    {
+        Derived cpy = *(static_cast<const Derived*>(this));
+        cpy += other;
+        return cpy;
+    }
+    accumulator_type operator+(const T& arg) const
+    {
+        Derived cpy = *(static_cast<const Derived*>(this));
+        cpy += arg;
+        return cpy;
+    }
+    accumulator_type operator-(const accumulator_type& other) const
+    {
+        Derived cpy = *(static_cast<const Derived*>(this));
+        cpy -= other;
+        return cpy;
+    }
+    accumulator_type operator+() const
+    {
+        return accumulator_type(ACCUM(const), CARRY(const));
+    }
+    accumulator_type operator-() const
+    {
+        return accumulator_type(-ACCUM(const), -CARRY(const));
+    }
+};
+#define SXX_COMMUTATIVE_OP(OP)                                           \
+    template <typename Derived>                                               \
+    typename Derived::accumulator_type operator OP(                           \
+        const typename Derived::underlying_type& arg_a, const Derived& arg_b) \
+    {                                                                         \
+        return arg_b OP arg_a; /* multiplication is commutative */            \
+    }
+SXX_COMMUTATIVE_OP(*)
+SXX_COMMUTATIVE_OP(+)
+#define SXX_PROMOTING_OP(OP)                                              \
+    template <typename Derived>                                                \
+    typename Derived::accumulator_type operator OP(                            \
+        const typename Derived::underlying_type& arg_a, const Derived& arg_b)  \
+    {                                                                          \
+        return Derived { arg_a } OP arg_b; /* multiplication is commutative */ \
+    }
+SXX_PROMOTING_OP(-)
+
+#undef SXX_COMMUTATIVE_OP
+#undef SXX_PROMOTING_OP
 #undef ACCUM
 #undef CARRY
-
 
 }

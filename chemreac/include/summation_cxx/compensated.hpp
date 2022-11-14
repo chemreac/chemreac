@@ -6,48 +6,82 @@
 #include <cstddef> // std::size_t
 
 namespace summation_cxx {
-    enum class Compensation { NONE, KAHAN, NEUMAIER };
+enum class Compensation {
+    NONE,
+    KAHAN, // should be equivalent to FAST_TWO_SUM
+    NEUMAIER,
+    NEUMAIER_SWAP,
+    TWO_SUM,
+    FAST_TWO_SUM
+};
 
-    namespace /* anonymous */ {
-        template<typename T>
-        SMMTNCXX_PREFER_INLINE void accum_kahan_destructive(
-            T& SMMTNCXX_RESTRICT accu,
-            T& SMMTNCXX_RESTRICT carry,
-            T& SMMTNCXX_RESTRICT elem)
-        {
-            elem -= carry;
-            const T tmp = accu + elem;
-            carry = T{tmp - accu} - elem;
-            accu = tmp;
-        }
-        template<typename T>
-        SMMTNCXX_PREFER_INLINE void accum_kahan(
-            T& SMMTNCXX_RESTRICT accu,
-            T& SMMTNCXX_RESTRICT carry,
-            const T& SMMTNCXX_RESTRICT elem)
-        {
-            T y = elem;
-            accum_kahan_destructive(accu, carry, y);
-        }
-
-        template<typename T>
-        SMMTNCXX_PREFER_INLINE void accum_neumaier(
-            T& SMMTNCXX_RESTRICT acm,
-            T& SMMTNCXX_RESTRICT carry,
-            const T& SMMTNCXX_RESTRICT elem)
-        {
-            const T tmp = acm + elem;
-#if SMMTNCXX_NEUMAIER_BRANCH == 1
-            if (SMMTNCXX_ABS(tmp) > SMMTNCXX_ABS(elem)) {
-              carry += T{acm - tmp} + elem;
-            } else {
-                carry += T{elem - tmp} + acm;
-            }
-#else
-            T cases[2] = {T{elem - tmp} + acm, T{acm - tmp} + elem};
-            carry += cases[SMMTNCXX_ABS(tmp) > SMMTNCXX_ABS(elem)];
-#endif
-            acm = tmp;
-        }
+namespace /* anonymous */ {
+    template <typename T>
+    SXX_PREFER_INLINE void accum_kahan_destructive(
+        T& SXX_RESTRICT accu,
+        T& SXX_RESTRICT carry,
+        T& SXX_RESTRICT elem)
+    {
+        elem -= carry;
+        const T tmp = accu + elem;
+        carry = T { tmp - accu } - elem;
+        accu = tmp;
     }
+    template <typename T>
+    SXX_PREFER_INLINE void accum_kahan(
+        T& SXX_RESTRICT accu,
+        T& SXX_RESTRICT carry,
+        const T& SXX_RESTRICT elem)
+    {
+        T y = elem;
+        accum_kahan_destructive(accu, carry, y);
+    }
+
+    template <typename T>
+    SXX_PREFER_INLINE void accum_neumaier(
+        T& SXX_RESTRICT acm,
+        T& SXX_RESTRICT carry,
+        const T& SXX_RESTRICT elem)
+    {
+        SXX_NEUMAIER_ADD(acm, carry, elem, T, tmp, false);
+    }
+
+    template <typename T>
+    SXX_PREFER_INLINE void accum_neumaier_swap(
+        T& SXX_RESTRICT acm,
+        T& SXX_RESTRICT carry,
+        const T& SXX_RESTRICT elem)
+    {
+        // cppcheck-suppress redundantAssignment
+        SXX_NEUMAIER_ADD(acm, carry, elem, T, tmp, true);
+    }
+
+    template <typename T>
+    SXX_PREFER_INLINE void accum_two_sum(
+        T& SXX_RESTRICT accu,
+        T& SXX_RESTRICT carry,
+        const T& SXX_RESTRICT elem)
+    {
+        const T s = accu + elem;
+        const T ap = s - elem;
+        const T bp = s - ap;
+        const T da = accu - ap;
+        const T db = elem - bp;
+        carry += da + db;
+        accu = s;
+    }
+
+    template <typename T>
+    SXX_PREFER_INLINE void accum_fast_two_sum(
+        T& SXX_RESTRICT accu,
+        T& SXX_RESTRICT carry,
+        const T& SXX_RESTRICT elem)
+    {
+        const T s = accu + elem;
+        const T z = s - accu;
+        const T t = elem - z;
+        carry += t;
+        accu = s;
+    }
+}
 }
